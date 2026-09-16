@@ -22,6 +22,8 @@
 - Graph traversal is bounded; CLI default depth is `1`, and graph commands reject depth values greater than `5`.
 - `context` uses a documented deterministic token estimate `ceil(len(text) / 4)`; it does not claim tokenizer-exact accounting.
 - Public-repository baseline operation requires no hosted credentials.
+- Producer/source failures preserve spec error states: checkout/fetch failure -> `BLOCKED_SOURCE_BINDING`; readback SHA mismatch -> `BLOCKED_SOURCE_MISMATCH`; Lean build/extractor failure -> `DEGRADED_EXACT_EXTRACTION_UNAVAILABLE`.
+- Exact graph operations against a lexical/static-only artifact fail explicitly with `UNAVAILABLE_EVIDENCE_GRADE`; they never infer elaborated edges from text.
 
 ---
 
@@ -587,7 +589,7 @@ Populate one transaction, then:
 INSERT INTO sources_fts(sources_fts) VALUES('rebuild');
 ```
 
-Store artifact identity, source commit, root modules JSON, and boundary in `meta`. Fingerprint canonical ordered logical rows, never SQLite page bytes. Missing FTS5 => `UNAVAILABLE_FTS5`.
+Store artifact identity, source commit, root modules JSON, boundary, and `producer.kind` in `meta`. Fingerprint canonical ordered logical rows, never SQLite page bytes. Missing FTS5 => `UNAVAILABLE_FTS5`. Graph code uses `producer.kind` only to decide whether elaborated graph evidence is available; it never upgrades lexical data.
 
 - [ ] **Step 4: Run tests**
 
@@ -919,12 +921,12 @@ on:
 Job:
 1. checkout this repository;
 2. read pin JSON;
-3. checkout target exact commit into `_target/formal-math`;
-4. require `git rev-parse HEAD == source_commit`;
+3. fetch/checkout the target exact commit into `_target/formal-math` inside a guarded shell step; any fetch/checkout failure emits `status=BLOCKED`, `code=BLOCKED_SOURCE_BINDING` to stderr/GitHub summary and exits non-zero;
+4. read `git rev-parse HEAD` after checkout and compare to `source_commit`; mismatch emits `status=BLOCKED`, `code=BLOCKED_SOURCE_MISMATCH` and exits before extraction;
 5. install pinned Elan and verify SHA-256;
-6. run `lake exe cache get` and `lake build` in `zeta23`;
+6. run `lake exe cache get` and `lake build` in `zeta23`; failure emits `status=DEGRADED`, `code=DEGRADED_EXACT_EXTRACTION_UNAVAILABLE` and exits non-zero;
 7. fetch pinned `LeanDepViz/Main.lean`, verify SHA-256;
-8. run extractor with root `Zeta23` to `_out/raw-depgraph.json`;
+8. run extractor with root `Zeta23` to `_out/raw-depgraph.json`; extractor failure emits `status=DEGRADED`, `code=DEGRADED_EXACT_EXTRACTION_UNAVAILABLE` and exits non-zero;
 9. `python -m pip install -e .`;
 10. `repo-search build-artifact ... --authoritative-readback --out _out/artifact`;
 11. verify artifact;
@@ -954,7 +956,7 @@ git commit -m "feat: add pinned Zeta23 artifact producer"
 
 - [ ] **Step 6: Require green producer smoke before merge**
 
-Observed evidence must include exact source readback, exact extractor hash, `verify-artifact=VERIFIED`, replay PASS, and artifact upload. Green CI alone does not satisfy Task 10.
+Observed evidence must include exact source readback, exact extractor hash, `verify-artifact=VERIFIED`, replay PASS, and artifact upload. Add workflow failure-path tests by invoking the guarded source/readback helper with a nonexistent commit and a forced mismatched expected SHA; assert the emitted codes are `BLOCKED_SOURCE_BINDING` and `BLOCKED_SOURCE_MISMATCH`. Unit-test the build/extractor wrapper with a failing command and assert `DEGRADED_EXACT_EXTRACTION_UNAVAILABLE`. Green CI alone does not satisfy Task 10.
 
 ---
 
