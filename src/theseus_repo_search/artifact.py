@@ -372,6 +372,41 @@ def load_artifact(
         if _sha256(chunk.text.encode("utf-8")) != chunk.content_sha256:
             raise _integrity(f"source chunk content hash mismatch: {chunk.id}")
 
+    source_binding_counts: dict[tuple[str, int, int, str], int] = {}
+    for chunk in sources:
+        if chunk.declaration_hint is None:
+            continue
+        key = (
+            chunk.source_path,
+            chunk.source_start_line,
+            chunk.source_end_line,
+            chunk.declaration_hint,
+        )
+        source_binding_counts[key] = source_binding_counts.get(key, 0) + 1
+
+    for node in nodes:
+        location = (node.source_path, node.source_start_line, node.source_end_line)
+        present = tuple(value is not None for value in location)
+        if any(present) and not all(present):
+            raise _integrity(f"partial node source location: {node.id}")
+        if all(present):
+            source_path = node.source_path
+            source_start_line = node.source_start_line
+            source_end_line = node.source_end_line
+            if source_path is None or source_start_line is None or source_end_line is None:
+                raise _integrity(f"partial node source location: {node.id}")
+            if source_start_line < 1 or source_end_line < source_start_line:
+                raise _integrity(f"invalid node source range: {node.id}")
+            if sources:
+                key = (
+                    source_path,
+                    source_start_line,
+                    source_end_line,
+                    node.name,
+                )
+                if source_binding_counts.get(key, 0) != 1:
+                    raise _integrity(f"node source location mismatch: {node.id}")
+
     node_ids = set(node_id_list)
     for edge in edges:
         expected_grade = _DEPENDENCY_GRADE_BY_RELATION.get(edge.relation)

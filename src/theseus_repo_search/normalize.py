@@ -49,6 +49,7 @@ def normalize_leandepviz(
     raw_edges = _require_list(raw, "edges")
 
     nodes_by_full_name: dict[str, Node] = {}
+    raw_modules_by_full_name: dict[str, str] = {}
     seen_full_names: set[str] = set()
     for index, item in enumerate(raw_nodes):
         row = _require_object(item, f"node[{index}]")
@@ -59,6 +60,7 @@ def normalize_leandepviz(
         if full_name in seen_full_names:
             raise _integrity(f"duplicate LeanDepViz fullName: {full_name}")
         seen_full_names.add(full_name)
+        raw_modules_by_full_name[full_name] = module
         if not _module_in_scope(module, root_modules):
             continue
         nodes_by_full_name[full_name] = Node.from_lean(
@@ -77,8 +79,16 @@ def normalize_leandepviz(
         dependent = _require_string(row, "target", f"edge[{index}]")
         if kind not in RELATION_BY_KIND:
             raise _integrity(f"unknown LeanDepViz edge kind: {kind}")
-        if dependency not in nodes_by_full_name or dependent not in nodes_by_full_name:
+        for endpoint in (dependency, dependent):
+            if endpoint not in raw_modules_by_full_name:
+                raise _integrity(f"unknown LeanDepViz edge endpoint: {endpoint}")
+        if (
+            not _module_in_scope(raw_modules_by_full_name[dependency], root_modules)
+            or not _module_in_scope(raw_modules_by_full_name[dependent], root_modules)
+        ):
             continue
+        if dependency not in nodes_by_full_name or dependent not in nodes_by_full_name:
+            raise _integrity("in-scope LeanDepViz edge endpoint missing normalized node")
 
         relation, evidence_grade = RELATION_BY_KIND[kind]
         edges.add(

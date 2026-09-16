@@ -112,6 +112,22 @@ class NormalizeLeanDepVizTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
         self.assertIn("edge[0].source", str(caught.exception))
 
+
+    def test_unknown_endpoint_fails_closed_instead_of_being_filtered(self):
+        raw = self.load_fixture()
+        raw["edges"] = [
+            {"source":"Zeta23.Tiny.missing","target":"Zeta23.Tiny.b","kind":"value"}
+        ]
+        with self.assertRaises(RepoSearchError) as caught:
+            normalize_leandepviz(
+                raw,
+                source_commit="abc123",
+                root_modules=("Zeta23",),
+                producer_ref="LeanDepViz@7859d91",
+            )
+        self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+        self.assertIn("unknown LeanDepViz edge endpoint", str(caught.exception))
+
     def test_unknown_edge_kind_blocks_normalization(self):
         raw = self.load_fixture()
         raw["edges"] = [

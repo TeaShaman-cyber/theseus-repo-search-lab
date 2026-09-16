@@ -303,6 +303,47 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("node outside declared root-module scope", str(caught.exception))
 
+
+    def test_node_source_location_must_match_unique_source_chunk(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = Node(
+                id=nodes[0].id,
+                name=nodes[0].name,
+                kind=nodes[0].kind,
+                module=nodes[0].module,
+                source_path="Zeta23/Tiny.lean",
+                source_start_line=1,
+                source_end_line=1,
+                source_commit=nodes[0].source_commit,
+            )
+            write_sample_raw(path, nodes=[bad, nodes[1]])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node source location mismatch", str(caught.exception))
+
+    def test_partial_node_source_location_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = Node(
+                id=nodes[0].id,
+                name=nodes[0].name,
+                kind=nodes[0].kind,
+                module=nodes[0].module,
+                source_path="Zeta23/Tiny.lean",
+                source_start_line=None,
+                source_end_line=None,
+                source_commit=nodes[0].source_commit,
+            )
+            write_sample_raw(path, nodes=[bad, nodes[1]])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("partial node source location", str(caught.exception))
+
     def test_duplicate_edge_rows_are_blocked_before_projection(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
