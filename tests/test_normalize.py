@@ -54,6 +54,64 @@ class NormalizeLeanDepVizTests(unittest.TestCase):
             sorted((e.source_id, e.target_id, e.relation, e.producer) for e in edges),
         )
 
+
+    def test_non_list_collections_fail_closed(self):
+        for key in ("nodes", "edges"):
+            with self.subTest(key=key):
+                raw = self.load_fixture()
+                raw[key] = None
+                with self.assertRaises(RepoSearchError) as caught:
+                    normalize_leandepviz(
+                        raw,
+                        source_commit="abc123",
+                        root_modules=("Zeta23",),
+                        producer_ref="LeanDepViz@7859d91",
+                    )
+                self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+
+    def test_malformed_node_fields_fail_closed_without_string_coercion(self):
+        raw = self.load_fixture()
+        raw["nodes"] = [
+            {"module": "Zeta23.Tiny", "fullName": None, "name": None, "kind": None}
+        ]
+        raw["edges"] = []
+        with self.assertRaises(RepoSearchError) as caught:
+            normalize_leandepviz(
+                raw,
+                source_commit="abc123",
+                root_modules=("Zeta23",),
+                producer_ref="LeanDepViz@7859d91",
+            )
+        self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+        self.assertIn("node[0].fullName", str(caught.exception))
+
+    def test_duplicate_full_name_fails_closed(self):
+        raw = self.load_fixture()
+        raw["nodes"] = [raw["nodes"][0], dict(raw["nodes"][0])]
+        raw["edges"] = []
+        with self.assertRaises(RepoSearchError) as caught:
+            normalize_leandepviz(
+                raw,
+                source_commit="abc123",
+                root_modules=("Zeta23",),
+                producer_ref="LeanDepViz@7859d91",
+            )
+        self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+        self.assertIn("duplicate LeanDepViz fullName", str(caught.exception))
+
+    def test_malformed_edge_fields_fail_closed(self):
+        raw = self.load_fixture()
+        raw["edges"] = [{"source": None, "target": "Zeta23.Tiny.b", "kind": "value"}]
+        with self.assertRaises(RepoSearchError) as caught:
+            normalize_leandepviz(
+                raw,
+                source_commit="abc123",
+                root_modules=("Zeta23",),
+                producer_ref="LeanDepViz@7859d91",
+            )
+        self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+        self.assertIn("edge[0].source", str(caught.exception))
+
     def test_unknown_edge_kind_blocks_normalization(self):
         raw = self.load_fixture()
         raw["edges"] = [
