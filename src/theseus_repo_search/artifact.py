@@ -23,6 +23,11 @@ from .model import (
 
 SCHEMA = "theseus.repo-index.v1"
 
+_DEPENDENCY_GRADE_BY_RELATION = {
+    "type_dependency": EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
+    "value_dependency": EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+}
+
 
 def _json_line(data: dict[str, object]) -> bytes:
     return (
@@ -373,6 +378,15 @@ def load_artifact(
 
     node_ids = set(node_id_list)
     for edge in edges:
+        expected_grade = _DEPENDENCY_GRADE_BY_RELATION.get(edge.relation)
+        if expected_grade is None:
+            raise _integrity(f"unsupported dependency relation: {edge.relation}")
+        if edge.evidence_grade is not expected_grade:
+            raise _integrity(
+                "relation/evidence mismatch: "
+                f"{edge.relation} requires {expected_grade.value}, "
+                f"observed {edge.evidence_grade.value}"
+            )
         if edge.source_id not in node_ids or edge.target_id not in node_ids:
             raise _integrity("edge endpoint outside node set")
 

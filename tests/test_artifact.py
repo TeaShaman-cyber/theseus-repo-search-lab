@@ -329,6 +329,38 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("duplicate source id", str(caught.exception))
 
+    def test_dependency_relation_must_match_evidence_grade(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = Edge(
+                source_id="lean:Zeta23.Tiny.b",
+                target_id="lean:Zeta23.Tiny.a",
+                relation="value_dependency",
+                evidence_grade=EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
+                producer="LeanDepViz@deadbeef",
+            )
+            write_sample_raw(path, edges=[edge])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("relation/evidence mismatch", str(caught.exception))
+
+    def test_unknown_dependency_relation_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = Edge(
+                source_id="lean:Zeta23.Tiny.b",
+                target_id="lean:Zeta23.Tiny.a",
+                relation="mystery_dependency",
+                evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+                producer="LeanDepViz@deadbeef",
+            )
+            write_sample_raw(path, edges=[edge])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("unsupported dependency relation", str(caught.exception))
+
     def test_invalid_source_line_range_is_blocked(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
