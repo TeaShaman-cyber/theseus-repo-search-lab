@@ -53,8 +53,11 @@ def scan_lean_sources(source_root: Path, *, source_commit: str) -> list[SourceCh
     for path in files:
         relative_path = path.relative_to(source_root).as_posix()
         lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+        comment_flags = _comment_lines(lines)
         declarations: list[tuple[int, str]] = []
         for index, line in enumerate(lines):
+            if comment_flags[index]:
+                continue
             match = DECL_RE.match(line)
             if match:
                 declarations.append((index, match.group("name")))

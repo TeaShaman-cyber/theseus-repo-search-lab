@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from hashlib import sha256
 from pathlib import Path
@@ -40,3 +41,20 @@ class SourceChunkTests(unittest.TestCase):
             chunks,
             sorted(chunks, key=lambda chunk: (chunk.source_path, chunk.source_start_line, chunk.id)),
         )
+
+    def test_theorem_shaped_lines_inside_block_comments_are_ignored(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            path = root / "Commented.lean"
+            path.write_text(
+                "namespace Zeta23.Commented\n"
+                "/-! STATEMENTS:\n"
+                "  theorem fake_one : True\n"
+                "  lemma fake_two : True\n"
+                "-/\n"
+                "theorem real_one : True := by trivial\n"
+                "end Zeta23.Commented\n",
+                encoding="utf-8",
+            )
+            chunks = scan_lean_sources(root, source_commit="abc123")
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["real_one"])
