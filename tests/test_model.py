@@ -20,6 +20,7 @@ class ModelTests(unittest.TestCase):
             source_commit="abc123",
         )
         self.assertEqual(node.id, "lean:Zeta23.Tiny.a")
+        self.assertEqual(node.full_name, "Zeta23.Tiny.a")
         self.assertIsNone(node.source_start_line)
 
     def test_repo_search_error_keeps_machine_code(self):
@@ -110,6 +111,7 @@ class SerializationTests(unittest.TestCase):
         )
         self.assertEqual(node.to_dict()["source_start_line"], None)
         self.assertEqual(node.to_dict()["id"], "lean:Zeta23.Tiny.a")
+        self.assertEqual(node.to_dict()["full_name"], "Zeta23.Tiny.a")
 
     def test_source_chunk_to_dict_preserves_provenance(self):
         from theseus_repo_search.model import SourceChunk

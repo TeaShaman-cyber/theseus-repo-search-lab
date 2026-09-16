@@ -44,6 +44,7 @@ class EvidenceGrade(str, Enum):
 @dataclass(frozen=True)
 class Node:
     id: str
+    full_name: str
     name: str
     kind: str
     module: str
@@ -64,6 +65,7 @@ class Node:
     ) -> "Node":
         return cls(
             id=f"lean:{full_name}",
+            full_name=full_name,
             name=name,
             kind=kind,
             module=module,
@@ -76,6 +78,7 @@ class Node:
     def to_dict(self) -> dict[str, object]:
         return {
             "id": self.id,
+            "full_name": self.full_name,
             "name": self.name,
             "kind": self.kind,
             "module": self.module,

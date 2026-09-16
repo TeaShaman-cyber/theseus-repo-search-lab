@@ -79,9 +79,16 @@ def normalize_leandepviz(
         candidates = raw_full_names_by_short_name.get(endpoint, set())
         if not candidates:
             raise _integrity(f"unknown LeanDepViz edge endpoint: {endpoint}")
-        if len(candidates) != 1:
-            raise _integrity(f"ambiguous LeanDepViz edge endpoint: {endpoint}")
-        return next(iter(candidates))
+        if len(candidates) == 1:
+            return next(iter(candidates))
+        synthetic_top_level = {
+            candidate
+            for candidate in candidates
+            if candidate == f"{raw_modules_by_full_name[candidate]}.{endpoint}"
+        }
+        if len(synthetic_top_level) == 1:
+            return next(iter(synthetic_top_level))
+        raise _integrity(f"ambiguous LeanDepViz edge endpoint: {endpoint}")
 
     edges: set[Edge] = set()
     for index, item in enumerate(raw_edges):

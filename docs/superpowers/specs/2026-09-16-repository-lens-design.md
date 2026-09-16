@@ -4,6 +4,8 @@
 
 `theseus-repo-search-lab` is a specialized repository-evidence tool. It indexes a repository snapshot, preserves exact provenance, exposes dependency structure where the language/runtime can prove it, and returns bounded context suitable for LLM research work.
 
+Its primary use is a repository analogue of Session Search: given a large formal-mathematics corpus, locate the declaration, theorem interface, dependency neighborhood, or load-bearing bridge relevant to the next research step without pushing the whole repository into model context. The first proving use case is modern Lean mathematics around Zeta23 / Riemann-hypothesis research. The goal is a practical research lens, not a general repository platform.
+
 MarcoPolo is an initial producer/consumer runtime, not the architectural owner. The tool must remain portable to another runtime that can read the same artifacts.
 
 ## Core invariant
@@ -86,7 +88,7 @@ A producer run must:
 6. emit a manifest binding source, extractor, scope, hashes, counts, and evidence grades;
 7. publish the artifact for downstream consumption.
 
-The consumer must not need Lean merely to search or traverse a previously produced artifact.
+The consumer must not need Lean merely to verify, search, traverse, or build a disposable query projection from a previously produced artifact. This is a runtime-dependency boundary, not a requirement that Lean be physically absent from the machine. Producer-side extraction may and normally will require Lean/Lake and the exact source build environment. The Lean-free check does not justify containers, registries, servers, embeddings, or other product/platform scope solely for isolation purity.
 
 ## Normalized artifact v1
 
@@ -128,10 +130,11 @@ Artifact identity is not the source commit alone. A v1 artifact identity is deri
 
 ### `nodes.jsonl`
 
-One declaration/entity per row. Within one artifact, Lean declaration IDs use the canonical full declaration name prefixed by the language (`lean:<fullName>`); the artifact manifest supplies the source/scope identity. Other languages may define their own deterministic ID scheme in a later schema revision.
+One declaration/entity per row. Within one artifact, Lean declaration IDs use the canonical full declaration name prefixed by the language (`lean:<fullName>`); the artifact also retains that extractor-provided `full_name` explicitly and requires `id == "lean:" + full_name`. `name` remains the extractor's declaration name used for source binding. The artifact manifest supplies the source/scope identity. Other languages may define their own deterministic ID scheme in a later schema revision.
 
 ```text
 id
+full_name
 name
 kind
 module
@@ -140,6 +143,8 @@ source_start_line
 source_end_line
 source_commit
 ```
+
+Because bootstrap v1 is not yet accepted, pre-acceptance artifacts that lack the required `full_name` field are stale projections and must be rebuilt rather than silently grandfathered.
 
 Source ranges may be null when the exact producer cannot provide them. Null means unknown; consumers must not invent ranges.
 
@@ -234,7 +239,7 @@ The bootstrap implementation passes when:
 
 - source and extractor commits/hashes are recorded and independently verifiable;
 - the producer emits a normalized artifact without hidden mutable state;
-- MarcoPolo consumes a previously built artifact without Lean installed in the query path;
+- MarcoPolo verifies the artifact, builds the disposable SQLite projection, and runs search/graph/context without invoking or requiring the Lean toolchain or source build environment; physical presence of Lean on the host is irrelevant;
 - lexical replay reduces unrelated file scanning for meaning/role queries;
 - exact graph replay answers the three registered dependency questions from elaborated edges;
 - all returned evidence includes provenance, evidence grade, and declared scope/boundary;

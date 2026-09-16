@@ -1,3 +1,4 @@
+from dataclasses import replace
 import hashlib
 import json
 import tempfile
@@ -310,6 +311,7 @@ class StructuralIntegrityTests(unittest.TestCase):
             nodes = sample_nodes()
             bad = Node(
                 id=nodes[0].id,
+                full_name=nodes[0].full_name,
                 name=nodes[0].name,
                 kind=nodes[0].kind,
                 module=nodes[0].module,
@@ -354,6 +356,7 @@ class StructuralIntegrityTests(unittest.TestCase):
             nodes = [
                 Node(
                     id="lean:Zeta23.A.foo",
+                    full_name="Zeta23.A.foo",
                     name="foo",
                     kind="thm",
                     module="Zeta23.A",
@@ -364,6 +367,7 @@ class StructuralIntegrityTests(unittest.TestCase):
                 ),
                 Node(
                     id="lean:Zeta23.B.foo",
+                    full_name="Zeta23.B.foo",
                     name="foo",
                     kind="thm",
                     module="Zeta23.B",
@@ -385,6 +389,7 @@ class StructuralIntegrityTests(unittest.TestCase):
             nodes = sample_nodes()
             bad = Node(
                 id=nodes[0].id,
+                full_name=nodes[0].full_name,
                 name=nodes[0].name,
                 kind=nodes[0].kind,
                 module=nodes[0].module,
@@ -405,6 +410,7 @@ class StructuralIntegrityTests(unittest.TestCase):
             nodes = sample_nodes()
             bad = Node(
                 id="python:Zeta23.Tiny.b",
+                full_name=nodes[0].full_name,
                 name=nodes[0].name,
                 kind=nodes[0].kind,
                 module=nodes[0].module,
@@ -418,6 +424,17 @@ class StructuralIntegrityTests(unittest.TestCase):
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("non-canonical Lean node id", str(caught.exception))
+
+    def test_lean_node_id_must_match_full_declaration_identity(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = replace(nodes[0], id="lean:Zeta23.Forged.not_b")
+            write_sample_raw(path, nodes=[bad, nodes[1]], edges=[])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node id/full-name mismatch", str(caught.exception))
 
     def test_edge_producer_must_match_manifest_pin(self):
         with tempfile.TemporaryDirectory() as d:

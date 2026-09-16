@@ -251,6 +251,7 @@ def _optional_int(data: dict[str, object], key: str) -> int | None:
 def _node_from_dict(data: dict[str, object]) -> Node:
     return Node(
         id=_require_str(data, "id"),
+        full_name=_require_str(data, "full_name"),
         name=_require_str(data, "name"),
         kind=_require_str(data, "kind"),
         module=_require_str(data, "module"),
@@ -347,6 +348,12 @@ def load_artifact(
     for node in nodes:
         if not node.id.startswith("lean:") or not node.id.removeprefix("lean:"):
             raise _integrity(f"non-canonical Lean node id: {node.id}")
+        if not node.full_name:
+            raise _integrity(f"non-canonical Lean full name: {node.id}")
+        if node.id != f"lean:{node.full_name}":
+            raise _integrity(f"node id/full-name mismatch: {node.id}")
+        if node.full_name != node.name and not node.full_name.endswith(f".{node.name}"):
+            raise _integrity(f"node full-name/short-name mismatch: {node.id}")
     edge_keys = [
         (edge.source_id, edge.target_id, edge.relation, edge.producer)
         for edge in edges

@@ -137,6 +137,28 @@ class NormalizeLeanDepVizTests(unittest.TestCase):
         self.assertEqual(edges[0].source_id, "lean:Zeta23.Mod.use")
         self.assertEqual(edges[0].target_id, "lean:Zeta23.Mod.dep")
 
+    def test_ambiguous_short_endpoint_resolves_unique_synthetic_top_level_candidate(self):
+        raw = {
+            "nodes": [
+                {"module": "Zeta23.Top", "fullName": "Zeta23.Top.CS", "name": "CS", "kind": "inductive"},
+                {"module": "Zeta23.Other.Module", "fullName": "Zeta23.Other.CS", "name": "CS", "kind": "def"},
+                {"module": "Zeta23.Top", "fullName": "Zeta23.Top.use", "name": "use", "kind": "thm"},
+            ],
+            "edges": [
+                {"source": "CS", "target": "use", "kind": "value"}
+            ],
+        }
+        nodes, edges = normalize_leandepviz(
+            raw,
+            source_commit="abc123",
+            root_modules=("Zeta23",),
+            producer_ref="LeanDepViz@7859d91",
+        )
+        self.assertEqual(len(nodes), 3)
+        self.assertEqual(len(edges), 1)
+        self.assertEqual(edges[0].source_id, "lean:Zeta23.Top.use")
+        self.assertEqual(edges[0].target_id, "lean:Zeta23.Top.CS")
+
     def test_ambiguous_short_endpoint_alias_fails_closed(self):
         raw = {
             "nodes": [
