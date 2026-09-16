@@ -111,8 +111,19 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _out
-          python3 scripts/producer_guard.py run \
-            --cwd _target/formal-math/zeta23 -- \
+          python3 scripts/producer_guard.py extract \
+            --cwd _target/formal-math/zeta23 \
+            --repo-dir _target/formal-math \
+            --expected "$SOURCE_COMMIT" \
+            --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
+            --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
+            --source-repo "$SOURCE_REPO" \
+            --source-subdir "$SOURCE_SUBDIR" \
+            --root-module "$ROOT_MODULE" \
+            --producer-kind lean-dep-viz \
+            --producer-tool-repo "$EXTRACTOR_REPO" \
+            --producer-tool-commit "$EXTRACTOR_COMMIT" \
+            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" -- \
             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
             --roots "$ROOT_MODULE" \
             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
@@ -136,6 +147,7 @@ jobs:
             --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" \
             --authoritative-readback \
             --raw-depgraph _out/raw-depgraph.json \
+            --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
             --out _out/artifact
 
       - name: Verify normalized artifact
@@ -157,8 +169,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f _out/raw-depgraph.json _out/index.sqlite
+          rm -f _out/raw-depgraph.json _out/raw-depgraph-receipt.json _out/index.sqlite
           test ! -e _out/raw-depgraph.json
+          test ! -e _out/raw-depgraph-receipt.json
           test ! -e _out/index.sqlite
 
       - name: Upload normalized repository lens artifact

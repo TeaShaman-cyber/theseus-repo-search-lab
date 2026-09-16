@@ -20,6 +20,7 @@ class GraphResult:
     dependency_boundary: str
     complete_within_scope: bool
     created_from_authoritative_commit: bool
+    found: bool
 
 
 def _validate_depth(depth: int) -> None:
@@ -147,6 +148,7 @@ def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphRe
         dependency_boundary=boundary,
         complete_within_scope=True,
         created_from_authoritative_commit=authoritative,
+        found=True,
     )
 
 
@@ -174,13 +176,14 @@ def path(
 
         if source_id == target_id:
             path_edges: list[dict[str, object]] = []
+            path_found = True
         else:
             path_edges = []
             queue = deque([(source_id, tuple(), 0)])
             visited = {source_id}
-            found: tuple[dict[str, object], ...] | None = None
+            found_path: tuple[dict[str, object], ...] | None = None
 
-            while queue and found is None:
+            while queue and found_path is None:
                 current, prior_edges, current_depth = queue.popleft()
                 if current_depth >= max_depth:
                     continue
@@ -190,14 +193,15 @@ def path(
                     edge_record = _edge_record(row, depth=current_depth + 1)
                     next_path = prior_edges + (edge_record,)
                     if neighbor == target_id:
-                        found = next_path
+                        found_path = next_path
                         break
                     if neighbor not in visited:
                         visited.add(neighbor)
                         queue.append((neighbor, next_path, current_depth + 1))
 
-            if found is not None:
-                path_edges = list(found)
+            path_found = found_path is not None
+            if found_path is not None:
+                path_edges = list(found_path)
 
     return GraphResult(
         query=f"path:{source}->{target}",
@@ -206,4 +210,5 @@ def path(
         dependency_boundary=boundary,
         complete_within_scope=True,
         created_from_authoritative_commit=authoritative,
+        found=path_found,
     )

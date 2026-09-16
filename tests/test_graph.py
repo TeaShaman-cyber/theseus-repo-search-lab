@@ -125,6 +125,16 @@ class GraphTests(unittest.TestCase):
                 ],
             )
 
+    def test_path_distinguishes_bounded_miss_from_zero_length_success(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d))
+            missing = path(db, "B", "D", max_depth=1)
+            self.assertFalse(missing.found)
+            self.assertEqual(missing.edges, ())
+            same = path(db, "A", "A", max_depth=1)
+            self.assertTrue(same.found)
+            self.assertEqual(same.edges, ())
+
     def test_scope_metadata_is_explicit(self):
         with tempfile.TemporaryDirectory() as d:
             db = self.build_db(Path(d))

@@ -19,16 +19,68 @@ DECL_RE = re.compile(
 
 
 def _comment_lines(lines: list[str]) -> list[bool]:
+    """Return whether each line begins in comment context.
+
+    This is intentionally only the lexical state needed by the chunker, not a
+    full Lean parser. Block comments are nested; comment delimiters inside
+    strings and line comments do not affect block depth.
+    """
     flags: list[bool] = []
     block_depth = 0
+
     for line in lines:
-        stripped = line.strip()
-        is_comment = block_depth > 0 or stripped.startswith("--") or stripped.startswith("/-")
-        flags.append(is_comment)
-        block_depth += line.count("/-")
-        block_depth -= line.count("-/")
-        if block_depth < 0:
-            block_depth = 0
+        line_starts_in_block = block_depth > 0
+        first_token_is_comment = False
+        code_seen = False
+        in_string = False
+        escaped = False
+        index = 0
+
+        while index < len(line):
+            if block_depth > 0:
+                if line.startswith("/-", index):
+                    block_depth += 1
+                    index += 2
+                    continue
+                if line.startswith("-/", index):
+                    block_depth -= 1
+                    index += 2
+                    continue
+                index += 1
+                continue
+
+            char = line[index]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                index += 1
+                continue
+
+            if line.startswith("--", index):
+                if not code_seen:
+                    first_token_is_comment = True
+                break
+            if line.startswith("/-", index):
+                if not code_seen:
+                    first_token_is_comment = True
+                block_depth += 1
+                index += 2
+                continue
+            if char == '"':
+                code_seen = True
+                in_string = True
+                index += 1
+                continue
+            if not char.isspace():
+                code_seen = True
+            index += 1
+
+        flags.append(line_starts_in_block or first_token_is_comment)
+
     return flags
 
 

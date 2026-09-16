@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+from hashlib import sha256
 import subprocess
 import sys
 from pathlib import Path
@@ -59,6 +61,63 @@ def run_exact_command(argv: list[str], cwd: Path) -> None:
         ) from exc
 
 
+def run_bound_extraction(
+    argv: list[str],
+    *,
+    cwd: Path,
+    repo_dir: Path,
+    expected_commit: str,
+    raw_depgraph: Path,
+    receipt_path: Path,
+    source_repo: str,
+    source_subdir: str,
+    root_modules: tuple[str, ...],
+    producer_kind: str,
+    producer_tool_repo: str,
+    producer_tool_commit: str,
+    producer_tool_hash: str,
+) -> None:
+    verify_checked_out_commit(repo_dir, expected_commit)
+    raw_depgraph.parent.mkdir(parents=True, exist_ok=True)
+    raw_depgraph.unlink(missing_ok=True)
+    run_exact_command(argv, cwd)
+    verify_checked_out_commit(repo_dir, expected_commit)
+    try:
+        raw_bytes = raw_depgraph.read_bytes()
+    except OSError as exc:
+        raise RepoSearchError(
+            "DEGRADED_EXACT_EXTRACTION_UNAVAILABLE",
+            f"exact extraction did not produce raw dependency graph: {raw_depgraph}",
+        ) from exc
+
+    receipt = {
+        "schema": "theseus.raw-depgraph-receipt.v1",
+        "source": {
+            "repo": source_repo,
+            "commit": expected_commit,
+            "subdir": source_subdir,
+        },
+        "scope": {"root_modules": list(root_modules)},
+        "producer": {
+            "kind": producer_kind,
+            "tool_repo": producer_tool_repo,
+            "tool_commit": producer_tool_commit,
+            "tool_hash": producer_tool_hash,
+        },
+        "raw_depgraph": {"sha256": sha256(raw_bytes).hexdigest()},
+    }
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    temp = receipt_path.with_name(f".{receipt_path.name}.tmp-{os.getpid()}")
+    try:
+        temp.write_text(
+            json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+        os.replace(temp, receipt_path)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
 def _status(code: str) -> str:
     if code.startswith("BLOCKED_"):
         return "BLOCKED"
@@ -95,6 +154,21 @@ def build_parser() -> argparse.ArgumentParser:
     run = subparsers.add_parser("run")
     run.add_argument("--cwd", type=Path, required=True)
     run.add_argument("argv", nargs=argparse.REMAINDER)
+
+    extract = subparsers.add_parser("extract")
+    extract.add_argument("--cwd", type=Path, required=True)
+    extract.add_argument("--repo-dir", type=Path, required=True)
+    extract.add_argument("--expected", required=True)
+    extract.add_argument("--raw-depgraph", type=Path, required=True)
+    extract.add_argument("--receipt", type=Path, required=True)
+    extract.add_argument("--source-repo", required=True)
+    extract.add_argument("--source-subdir", required=True)
+    extract.add_argument("--root-module", action="append", required=True)
+    extract.add_argument("--producer-kind", required=True)
+    extract.add_argument("--producer-tool-repo", required=True)
+    extract.add_argument("--producer-tool-commit", required=True)
+    extract.add_argument("--producer-tool-hash", required=True)
+    extract.add_argument("argv", nargs=argparse.REMAINDER)
     return parser
 
 
@@ -115,6 +189,30 @@ def main(argv: list[str] | None = None) -> int:
                     "no exact extraction command provided",
                 )
             run_exact_command(command, args.cwd)
+        elif args.command == "extract":
+            command = list(args.argv)
+            if command and command[0] == "--":
+                command = command[1:]
+            if not command:
+                raise RepoSearchError(
+                    "DEGRADED_EXACT_EXTRACTION_UNAVAILABLE",
+                    "no exact extraction command provided",
+                )
+            run_bound_extraction(
+                command,
+                cwd=args.cwd,
+                repo_dir=args.repo_dir,
+                expected_commit=args.expected,
+                raw_depgraph=args.raw_depgraph,
+                receipt_path=args.receipt,
+                source_repo=args.source_repo,
+                source_subdir=args.source_subdir,
+                root_modules=tuple(args.root_module),
+                producer_kind=args.producer_kind,
+                producer_tool_repo=args.producer_tool_repo,
+                producer_tool_commit=args.producer_tool_commit,
+                producer_tool_hash=args.producer_tool_hash,
+            )
         return 0
     except RepoSearchError as exc:
         return _emit_error(exc)

@@ -5,6 +5,7 @@ import json
 import sqlite3
 import sys
 import subprocess
+from hashlib import sha256
 from dataclasses import asdict
 from pathlib import Path
 
@@ -128,7 +129,7 @@ def _search_hit_dict(hit: SearchHit) -> dict[str, object]:
 
 def _graph_payload(result) -> dict[str, object]:
     return {
-        "status": "FOUND",
+        "status": "FOUND" if result.found else "UNKNOWN",
         "query": result.query,
         "edges": list(result.edges),
         "scope_root_modules": list(result.scope_root_modules),
@@ -136,6 +137,55 @@ def _graph_payload(result) -> dict[str, object]:
         "complete_within_scope": result.complete_within_scope,
         "created_from_authoritative_commit": result.created_from_authoritative_commit,
     }
+
+
+def _verify_raw_depgraph_receipt(
+    receipt_path: Path,
+    raw_depgraph_path: Path,
+    *,
+    source_repo: str,
+    source_commit: str,
+    source_subdir: str,
+    root_modules: tuple[str, ...],
+    producer_kind: str,
+    producer_tool_repo: str,
+    producer_tool_commit: str,
+    producer_tool_hash: str,
+) -> None:
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        raw_hash = sha256(raw_depgraph_path.read_bytes()).hexdigest()
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"invalid raw dependency graph receipt: {exc}",
+        ) from exc
+    if not isinstance(receipt, dict):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "invalid raw dependency graph receipt: root must be an object",
+        )
+    expected = {
+        "schema": "theseus.raw-depgraph-receipt.v1",
+        "source": {
+            "repo": source_repo,
+            "commit": source_commit,
+            "subdir": source_subdir,
+        },
+        "scope": {"root_modules": list(root_modules)},
+        "producer": {
+            "kind": producer_kind,
+            "tool_repo": producer_tool_repo,
+            "tool_commit": producer_tool_commit,
+            "tool_hash": producer_tool_hash,
+        },
+        "raw_depgraph": {"sha256": raw_hash},
+    }
+    if receipt != expected:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "raw dependency graph receipt does not match source, producer, scope, or graph hash",
+        )
 
 
 def _load_raw_depgraph(path: Path) -> dict[str, object]:
@@ -162,7 +212,25 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
             source_commit=args.source_commit,
             source_subdir=args.source_subdir,
         )
+        if not args.lexical_only and args.raw_depgraph_receipt is None:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "authoritative exact mode requires a bound raw dependency graph receipt",
+            )
     root_modules = tuple(args.root_module)
+    if args.authoritative_readback and not args.lexical_only:
+        _verify_raw_depgraph_receipt(
+            args.raw_depgraph_receipt,
+            args.raw_depgraph,
+            source_repo=args.source_repo,
+            source_commit=args.source_commit,
+            source_subdir=args.source_subdir,
+            root_modules=root_modules,
+            producer_kind=args.producer_kind,
+            producer_tool_repo=args.producer_tool_repo,
+            producer_tool_commit=args.producer_tool_commit,
+            producer_tool_hash=args.producer_tool_hash,
+        )
     if args.lexical_only:
         nodes = []
         edges = []
@@ -295,6 +363,7 @@ def _add_build_artifact(subparsers) -> None:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--raw-depgraph", type=Path)
     mode.add_argument("--lexical-only", action="store_true")
+    parser.add_argument("--raw-depgraph-receipt", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     parser.set_defaults(func=_cmd_build_artifact)
 

@@ -167,13 +167,48 @@ def _exact_hit(
     )
 
 
-def _declaration_id_for_hint(conn: sqlite3.Connection, hint: str | None) -> str | None:
+def _declaration_id_for_hit(
+    conn: sqlite3.Connection,
+    hint: str | None,
+    *,
+    source_path: str,
+    source_start_line: int,
+    source_end_line: int,
+) -> str | None:
     if hint is None:
         return None
     rows = conn.execute(
-        "SELECT id FROM nodes WHERE name = ? ORDER BY id",
+        "SELECT id, source_path, source_start_line, source_end_line "
+        "FROM nodes WHERE name = ? ORDER BY id",
         (hint,),
     ).fetchall()
+    if not rows:
+        return None
+
+    exact = [
+        str(row[0])
+        for row in rows
+        if row[1] == source_path
+        and row[2] == source_start_line
+        and row[3] == source_end_line
+    ]
+    if len(exact) == 1:
+        return exact[0]
+
+    containing = [
+        str(row[0])
+        for row in rows
+        if row[1] == source_path
+        and row[2] is not None
+        and source_start_line <= int(row[2]) <= source_end_line
+    ]
+    if len(containing) == 1:
+        return containing[0]
+
+    path_ids = sorted({str(row[0]) for row in rows if row[1] == source_path})
+    if len(path_ids) == 1:
+        return path_ids[0]
+
     ids = sorted({str(row[0]) for row in rows})
     return ids[0] if len(ids) == 1 else None
 
@@ -201,7 +236,13 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
         ).fetchall()
         return [
             SearchHit(
-                declaration_id=_declaration_id_for_hint(conn, row[5]),
+                declaration_id=_declaration_id_for_hit(
+                    conn,
+                    row[5],
+                    source_path=str(row[2]),
+                    source_start_line=int(row[3]),
+                    source_end_line=int(row[4]),
+                ),
                 declaration_hint=None if row[5] is None else str(row[5]),
                 source_commit=str(row[1]),
                 source_path=str(row[2]),

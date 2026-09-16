@@ -62,6 +62,51 @@ class SourceChunkTests(unittest.TestCase):
             chunks = scan_lean_sources(root, source_commit="abc123")
             self.assertEqual([chunk.declaration_hint for chunk in chunks], ["real_one"])
 
+    def test_comment_delimiters_inside_strings_do_not_hide_following_declarations(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            path = root / "Strings.lean"
+            path.write_text(
+                "def marker : String := \"/-\"\n"
+                "theorem visible : True := by trivial\n",
+                encoding="utf-8",
+            )
+            chunks = scan_lean_sources(root, source_commit="abc123")
+            self.assertEqual(
+                [chunk.declaration_hint for chunk in chunks],
+                ["marker", "visible"],
+            )
+
+    def test_comment_delimiters_inside_line_comments_do_not_open_block_comments(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            path = root / "LineComment.lean"
+            path.write_text(
+                "def marker : Nat := 0 -- /- not a block comment\n"
+                "theorem visible : True := by trivial\n",
+                encoding="utf-8",
+            )
+            chunks = scan_lean_sources(root, source_commit="abc123")
+            self.assertEqual(
+                [chunk.declaration_hint for chunk in chunks],
+                ["marker", "visible"],
+            )
+
+    def test_nested_block_comments_still_hide_declaration_shaped_text(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            path = root / "Nested.lean"
+            path.write_text(
+                "/- outer\n"
+                "  /- theorem fake_nested : True -/\n"
+                "  lemma fake_outer : True\n"
+                "-/\n"
+                "theorem visible : True := by trivial\n",
+                encoding="utf-8",
+            )
+            chunks = scan_lean_sources(root, source_commit="abc123")
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["visible"])
+
     def test_module_path_disambiguates_same_short_declaration_name(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
