@@ -397,6 +397,9 @@ def load_artifact(
                 raise _integrity(f"partial node source location: {node.id}")
             if source_start_line < 1 or source_end_line < source_start_line:
                 raise _integrity(f"invalid node source range: {node.id}")
+            expected_source_path = f"{node.module.replace('.', '/')}.lean"
+            if source_path != expected_source_path:
+                raise _integrity(f"node source location mismatch: {node.id}")
             if sources:
                 key = (
                     source_path,

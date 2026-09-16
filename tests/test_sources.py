@@ -107,6 +107,29 @@ class SourceChunkTests(unittest.TestCase):
             chunks = scan_lean_sources(root, source_commit="abc123")
             self.assertEqual([chunk.declaration_hint for chunk in chunks], ["visible"])
 
+    def test_declaration_after_closed_block_comment_on_same_line_is_scanned(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            path = root / "CommentSuffix.lean"
+            path.write_text(
+                "/- doc -/ theorem visible : True := by trivial\n",
+                encoding="utf-8",
+            )
+            chunks = scan_lean_sources(root, source_commit="abc123")
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["visible"])
+
+    def test_declaration_after_multiline_block_comment_close_is_scanned(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            path = root / "MultilineCommentSuffix.lean"
+            path.write_text(
+                "/- doc\n"
+                "continued -/ theorem visible : True := by trivial\n",
+                encoding="utf-8",
+            )
+            chunks = scan_lean_sources(root, source_commit="abc123")
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["visible"])
+
     def test_module_path_disambiguates_same_short_declaration_name(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

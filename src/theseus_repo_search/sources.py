@@ -84,6 +84,64 @@ def _comment_lines(lines: list[str]) -> list[bool]:
     return flags
 
 
+def _code_lines(lines: list[str]) -> list[str]:
+    """Return source lines with actual comments blanked for declaration matching."""
+    rendered: list[str] = []
+    block_depth = 0
+
+    for line in lines:
+        out: list[str] = []
+        in_string = False
+        escaped = False
+        index = 0
+
+        while index < len(line):
+            if block_depth > 0:
+                if line.startswith("/-", index):
+                    block_depth += 1
+                    out.extend("  ")
+                    index += 2
+                    continue
+                if line.startswith("-/", index):
+                    block_depth -= 1
+                    out.extend("  ")
+                    index += 2
+                    continue
+                out.append("\n" if line[index] == "\n" else " ")
+                index += 1
+                continue
+
+            char = line[index]
+            if in_string:
+                out.append(char)
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                index += 1
+                continue
+
+            if line.startswith("--", index):
+                out.extend("\n" if value == "\n" else " " for value in line[index:])
+                index = len(line)
+                continue
+            if line.startswith("/-", index):
+                block_depth += 1
+                out.extend("  ")
+                index += 2
+                continue
+            out.append(char)
+            if char == '"':
+                in_string = True
+            index += 1
+
+        rendered.append("".join(out))
+
+    return rendered
+
+
 def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:
     comment_flags = _comment_lines(lines)
     starts: list[int] = []
@@ -149,11 +207,9 @@ def scan_lean_sources(
     for path in files:
         relative_path = path.relative_to(source_root).as_posix()
         lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
-        comment_flags = _comment_lines(lines)
+        code_lines = _code_lines(lines)
         declarations: list[tuple[int, str]] = []
-        for index, line in enumerate(lines):
-            if comment_flags[index]:
-                continue
+        for index, line in enumerate(code_lines):
             match = DECL_RE.match(line)
             if match:
                 declarations.append((index, match.group("name")))

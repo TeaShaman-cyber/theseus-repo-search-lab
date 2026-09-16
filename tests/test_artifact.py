@@ -324,6 +324,61 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("node source location mismatch", str(caught.exception))
 
+    def test_duplicate_short_names_cannot_swap_module_source_locations(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            text_a = "theorem foo : True := by trivial\n"
+            text_b = "theorem foo : True := by trivial\n"
+            sources = [
+                SourceChunk(
+                    id="src:Zeta23/A.lean:1:1",
+                    source_commit=SOURCE_COMMIT,
+                    source_path="Zeta23/A.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="foo",
+                    text=text_a,
+                    content_sha256=sha256(text_a.encode()).hexdigest(),
+                ),
+                SourceChunk(
+                    id="src:Zeta23/B.lean:1:1",
+                    source_commit=SOURCE_COMMIT,
+                    source_path="Zeta23/B.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="foo",
+                    text=text_b,
+                    content_sha256=sha256(text_b.encode()).hexdigest(),
+                ),
+            ]
+            nodes = [
+                Node(
+                    id="lean:Zeta23.A.foo",
+                    name="foo",
+                    kind="thm",
+                    module="Zeta23.A",
+                    source_path="Zeta23/B.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    source_commit=SOURCE_COMMIT,
+                ),
+                Node(
+                    id="lean:Zeta23.B.foo",
+                    name="foo",
+                    kind="thm",
+                    module="Zeta23.B",
+                    source_path="Zeta23/A.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    source_commit=SOURCE_COMMIT,
+                ),
+            ]
+            write_sample_raw(path, nodes=nodes, edges=[], sources=sources)
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node source location mismatch", str(caught.exception))
+
     def test_partial_node_source_location_is_blocked(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
