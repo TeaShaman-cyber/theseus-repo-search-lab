@@ -7,6 +7,7 @@ from pathlib import Path
 
 from theseus_repo_search.graph import dependencies, reverse_dependencies
 from theseus_repo_search.retrieval import search
+from theseus_repo_search.sources import tracked_lean_files
 
 
 TIGHT_QUERY = "tight pairs extremal"
@@ -32,14 +33,15 @@ def _top10_contains(db_path: Path, query: str, declaration_hint: str) -> tuple[b
 
 
 def _baseline_unique_paths(source_root: Path) -> int:
+    root = source_root.resolve()
     matched: set[str] = set()
-    for path in sorted(source_root.rglob("*.lean")):
+    for path in tracked_lean_files(root):
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeError:
             continue
         if BASELINE_RE.search(text):
-            matched.add(path.relative_to(source_root).as_posix())
+            matched.add(path.relative_to(root).as_posix())
     return len(matched)
 
 

@@ -47,7 +47,7 @@ def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:
 
 
 
-def _tracked_lean_files(source_root: Path) -> list[Path]:
+def tracked_lean_files(source_root: Path) -> list[Path]:
     try:
         repo_root_text = subprocess.check_output(
             ["git", "-C", str(source_root), "rev-parse", "--show-toplevel"],
@@ -83,7 +83,7 @@ def scan_lean_sources(
     source_root = source_root.resolve()
     chunks: list[SourceChunk] = []
     if tracked_only:
-        files = _tracked_lean_files(source_root)
+        files = tracked_lean_files(source_root)
     else:
         files = sorted(
             (
