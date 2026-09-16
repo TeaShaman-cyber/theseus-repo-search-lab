@@ -1,4 +1,5 @@
 import tempfile
+import subprocess
 import unittest
 from hashlib import sha256
 from pathlib import Path
@@ -28,7 +29,7 @@ def edge(source: str, target: str) -> Edge:
         target_id=f"lean:{target}",
         relation="value_dependency",
         evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-        producer="LeanDepViz@test",
+        producer="cameronfreer/LeanDepViz@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     )
 
 
@@ -53,6 +54,15 @@ class ReplayZeta23Tests(unittest.TestCase):
             source_root.mkdir()
             (source_root / "one.lean").write_text("trace moment\n", encoding="utf-8")
             (source_root / "two.lean").write_text("certificate\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", source_root], check=True)
+            subprocess.run(["git", "-C", source_root, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", source_root, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", source_root, "add", "one.lean", "two.lean"], check=True)
+            subprocess.run(["git", "-C", source_root, "commit", "-qm", "fixture"], check=True)
+            generated = source_root / ".lake" / "packages" / "Fake.lean"
+            generated.parent.mkdir(parents=True)
+            generated.write_text("certificate trace moment\n", encoding="utf-8")
+            (source_root / "scratch.lean").write_text("certificate trace moment\n", encoding="utf-8")
 
             artifact = root / "artifact"
             db = root / "index.sqlite"
@@ -95,6 +105,7 @@ class ReplayZeta23Tests(unittest.TestCase):
             result = run_replay(db, source_root)
             self.assertEqual(result["status"], "PASS")
             self.assertEqual(result["lexical"]["tight_query"], "tight pairs extremal")
+            self.assertEqual(result["metrics"]["baseline_unique_paths"], 2)
             self.assertGreater(
                 result["metrics"]["baseline_unique_paths"],
                 result["metrics"]["fts_unique_paths"],

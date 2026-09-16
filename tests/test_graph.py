@@ -29,12 +29,15 @@ def edge(source: str, target: str) -> Edge:
         target_id=f"lean:{target}",
         relation="value_dependency",
         evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-        producer="LeanDepViz@deadbeef",
+        producer="cameronfreer/LeanDepViz@deadbeef",
     )
 
 
 class GraphTests(unittest.TestCase):
-    def build_db(self, root: Path, *, ambiguous_a: bool = False, lexical_only: bool = False) -> Path:
+    def build_db(
+        self, root: Path, *, ambiguous_a: bool = False, exact_suffix_shadow: bool = False,
+        lexical_only: bool = False, authoritative: bool = True,
+    ) -> Path:
         artifact = root / "artifact"
         db = root / "projection.db"
         if lexical_only:
@@ -50,6 +53,8 @@ class GraphTests(unittest.TestCase):
             nodes = [node(f"Zeta23.G.{name}") for name in ("A", "B", "C", "D")]
             if ambiguous_a:
                 nodes.append(node("Zeta23.Other.A"))
+            if exact_suffix_shadow:
+                nodes.append(node("Zeta23.Other.Zeta23.G.A"))
             edges = [
                 edge("Zeta23.G.A", "Zeta23.G.B"),
                 edge("Zeta23.G.A", "Zeta23.G.D"),
@@ -73,7 +78,7 @@ class GraphTests(unittest.TestCase):
             source_subdir="",
             producer=producer,
             scope=SCOPE,
-            created_from_authoritative_commit=True,
+            created_from_authoritative_commit=authoritative,
         )
         build_projection(artifact, db)
         return db
@@ -122,6 +127,16 @@ class GraphTests(unittest.TestCase):
                 ],
             )
 
+    def test_path_distinguishes_bounded_miss_from_zero_length_success(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d))
+            missing = path(db, "B", "D", max_depth=1)
+            self.assertFalse(missing.found)
+            self.assertEqual(missing.edges, ())
+            same = path(db, "A", "A", max_depth=1)
+            self.assertTrue(same.found)
+            self.assertEqual(same.edges, ())
+
     def test_scope_metadata_is_explicit(self):
         with tempfile.TemporaryDirectory() as d:
             db = self.build_db(Path(d))
@@ -129,6 +144,12 @@ class GraphTests(unittest.TestCase):
             self.assertEqual(result.scope_root_modules, ("Zeta23",))
             self.assertEqual(result.dependency_boundary, "internal_only")
             self.assertTrue(result.complete_within_scope)
+
+    def test_graph_results_preserve_authoritative_readback_attestation(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d), authoritative=False)
+            result = dependencies(db, "B")
+            self.assertFalse(result.created_from_authoritative_commit)
 
     def test_depth_above_v1_limit_is_unknown(self):
         with tempfile.TemporaryDirectory() as d:
@@ -146,6 +167,18 @@ class GraphTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "UNKNOWN")
             self.assertIn("lean:Zeta23.G.A", str(caught.exception))
             self.assertIn("lean:Zeta23.Other.A", str(caught.exception))
+
+    def test_exact_full_name_wins_before_suffix_candidates(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d), exact_suffix_shadow=True)
+            result = dependencies(db, "Zeta23.G.A", depth=1)
+            self.assertEqual(
+                [(e["source_id"], e["target_id"]) for e in result.edges],
+                [
+                    ("lean:Zeta23.G.A", "lean:Zeta23.G.B"),
+                    ("lean:Zeta23.G.A", "lean:Zeta23.G.D"),
+                ],
+            )
 
     def test_exact_graph_query_rejects_lexical_only_projection(self):
         with tempfile.TemporaryDirectory() as d:

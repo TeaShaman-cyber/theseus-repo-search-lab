@@ -19,6 +19,8 @@ class GraphResult:
     scope_root_modules: tuple[str, ...]
     dependency_boundary: str
     complete_within_scope: bool
+    created_from_authoritative_commit: bool
+    found: bool
 
 
 def _validate_depth(depth: int) -> None:
@@ -26,10 +28,21 @@ def _validate_depth(depth: int) -> None:
         raise RepoSearchError("UNKNOWN", "depth exceeds v1 maximum of 5")
 
 
-def _metadata(conn: sqlite3.Connection) -> tuple[tuple[str, ...], str, str]:
+def _metadata(conn: sqlite3.Connection) -> tuple[tuple[str, ...], str, str, bool]:
     meta = dict(conn.execute("SELECT key, value FROM meta"))
     root_modules = tuple(str(item) for item in json.loads(meta["root_modules"]))
-    return root_modules, meta["dependency_boundary"], meta["producer.kind"]
+    authoritative = json.loads(meta["created_from_authoritative_commit"])
+    if not isinstance(authoritative, bool):
+        raise RepoSearchError(
+            "BLOCKED_PROJECTION_INTEGRITY",
+            "invalid created_from_authoritative_commit projection metadata",
+        )
+    return (
+        root_modules,
+        meta["dependency_boundary"],
+        meta["producer.kind"],
+        authoritative,
+    )
 
 
 def _require_elaborated_graph(producer_kind: str) -> None:
@@ -48,9 +61,13 @@ def _resolve_name(conn: sqlite3.Connection, name: str) -> str:
         return str(row[0])
 
     exact_id = f"lean:{name}"
+    exact = conn.execute("SELECT id FROM nodes WHERE id = ?", (exact_id,)).fetchone()
+    if exact is not None:
+        return str(exact[0])
+
     rows = conn.execute(
-        "SELECT id FROM nodes WHERE id = ? OR name = ? OR id LIKE ? ORDER BY id",
-        (exact_id, name, f"%.{name}"),
+        "SELECT id FROM nodes WHERE name = ? OR id LIKE ? ORDER BY id",
+        (name, f"%.{name}"),
     ).fetchall()
     candidates = sorted({str(row[0]) for row in rows})
     if not candidates:
@@ -100,7 +117,7 @@ def _edge_record(
 def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphResult:
     _validate_depth(depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind = _metadata(conn)
+        roots, boundary, producer_kind, authoritative = _metadata(conn)
         _require_elaborated_graph(producer_kind)
         start = _resolve_name(conn, name)
 
@@ -134,6 +151,8 @@ def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphRe
         scope_root_modules=roots,
         dependency_boundary=boundary,
         complete_within_scope=True,
+        created_from_authoritative_commit=authoritative,
+        found=True,
     )
 
 
@@ -154,20 +173,21 @@ def path(
 ) -> GraphResult:
     _validate_depth(max_depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind = _metadata(conn)
+        roots, boundary, producer_kind, authoritative = _metadata(conn)
         _require_elaborated_graph(producer_kind)
         source_id = _resolve_name(conn, source)
         target_id = _resolve_name(conn, target)
 
         if source_id == target_id:
             path_edges: list[dict[str, object]] = []
+            path_found = True
         else:
             path_edges = []
             queue = deque([(source_id, tuple(), 0)])
             visited = {source_id}
-            found: tuple[dict[str, object], ...] | None = None
+            found_path: tuple[dict[str, object], ...] | None = None
 
-            while queue and found is None:
+            while queue and found_path is None:
                 current, prior_edges, current_depth = queue.popleft()
                 if current_depth >= max_depth:
                     continue
@@ -177,14 +197,15 @@ def path(
                     edge_record = _edge_record(row, depth=current_depth + 1)
                     next_path = prior_edges + (edge_record,)
                     if neighbor == target_id:
-                        found = next_path
+                        found_path = next_path
                         break
                     if neighbor not in visited:
                         visited.add(neighbor)
                         queue.append((neighbor, next_path, current_depth + 1))
 
-            if found is not None:
-                path_edges = list(found)
+            path_found = found_path is not None
+            if found_path is not None:
+                path_edges = list(found_path)
 
     return GraphResult(
         query=f"path:{source}->{target}",
@@ -192,4 +213,6 @@ def path(
         scope_root_modules=roots,
         dependency_boundary=boundary,
         complete_within_scope=True,
+        created_from_authoritative_commit=authoritative,
+        found=path_found,
     )

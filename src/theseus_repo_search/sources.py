@@ -19,17 +19,127 @@ DECL_RE = re.compile(
 
 
 def _comment_lines(lines: list[str]) -> list[bool]:
+    """Return whether each line begins in comment context.
+
+    This is intentionally only the lexical state needed by the chunker, not a
+    full Lean parser. Block comments are nested; comment delimiters inside
+    strings and line comments do not affect block depth.
+    """
     flags: list[bool] = []
     block_depth = 0
+
     for line in lines:
-        stripped = line.strip()
-        is_comment = block_depth > 0 or stripped.startswith("--") or stripped.startswith("/-")
-        flags.append(is_comment)
-        block_depth += line.count("/-")
-        block_depth -= line.count("-/")
-        if block_depth < 0:
-            block_depth = 0
+        line_starts_in_block = block_depth > 0
+        first_token_is_comment = False
+        code_seen = False
+        in_string = False
+        escaped = False
+        index = 0
+
+        while index < len(line):
+            if block_depth > 0:
+                if line.startswith("/-", index):
+                    block_depth += 1
+                    index += 2
+                    continue
+                if line.startswith("-/", index):
+                    block_depth -= 1
+                    index += 2
+                    continue
+                index += 1
+                continue
+
+            char = line[index]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                index += 1
+                continue
+
+            if line.startswith("--", index):
+                if not code_seen:
+                    first_token_is_comment = True
+                break
+            if line.startswith("/-", index):
+                if not code_seen:
+                    first_token_is_comment = True
+                block_depth += 1
+                index += 2
+                continue
+            if char == '"':
+                code_seen = True
+                in_string = True
+                index += 1
+                continue
+            if not char.isspace():
+                code_seen = True
+            index += 1
+
+        flags.append(line_starts_in_block or first_token_is_comment)
+
     return flags
+
+
+def _code_lines(lines: list[str]) -> list[str]:
+    """Return source lines with actual comments blanked for declaration matching."""
+    rendered: list[str] = []
+    block_depth = 0
+
+    for line in lines:
+        out: list[str] = []
+        in_string = False
+        escaped = False
+        index = 0
+
+        while index < len(line):
+            if block_depth > 0:
+                if line.startswith("/-", index):
+                    block_depth += 1
+                    out.extend("  ")
+                    index += 2
+                    continue
+                if line.startswith("-/", index):
+                    block_depth -= 1
+                    out.extend("  ")
+                    index += 2
+                    continue
+                out.append("\n" if line[index] == "\n" else " ")
+                index += 1
+                continue
+
+            char = line[index]
+            if in_string:
+                out.append(char)
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                index += 1
+                continue
+
+            if line.startswith("--", index):
+                out.extend("\n" if value == "\n" else " " for value in line[index:])
+                index = len(line)
+                continue
+            if line.startswith("/-", index):
+                block_depth += 1
+                out.extend("  ")
+                index += 2
+                continue
+            out.append(char)
+            if char == '"':
+                in_string = True
+            index += 1
+
+        rendered.append("".join(out))
+
+    return rendered
 
 
 def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:
@@ -47,7 +157,7 @@ def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:
 
 
 
-def _tracked_lean_files(source_root: Path) -> list[Path]:
+def tracked_lean_files(source_root: Path) -> list[Path]:
     try:
         repo_root_text = subprocess.check_output(
             ["git", "-C", str(source_root), "rev-parse", "--show-toplevel"],
@@ -83,7 +193,7 @@ def scan_lean_sources(
     source_root = source_root.resolve()
     chunks: list[SourceChunk] = []
     if tracked_only:
-        files = _tracked_lean_files(source_root)
+        files = tracked_lean_files(source_root)
     else:
         files = sorted(
             (
@@ -97,11 +207,9 @@ def scan_lean_sources(
     for path in files:
         relative_path = path.relative_to(source_root).as_posix()
         lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
-        comment_flags = _comment_lines(lines)
+        code_lines = _code_lines(lines)
         declarations: list[tuple[int, str]] = []
-        for index, line in enumerate(lines):
-            if comment_flags[index]:
-                continue
+        for index, line in enumerate(code_lines):
             match = DECL_RE.match(line)
             if match:
                 declarations.append((index, match.group("name")))

@@ -1,4 +1,5 @@
 import tempfile
+from dataclasses import replace
 import unittest
 from hashlib import sha256
 from math import ceil
@@ -21,7 +22,9 @@ COMMIT = "abc123"
 
 
 class RetrievalTests(unittest.TestCase):
-    def build_db(self, root: Path) -> tuple[Path, str]:
+    def build_db(
+        self, root: Path, *, authoritative: bool = True
+    ) -> tuple[Path, str]:
         artifact = root / "artifact"
         db = root / "projection.db"
         target_text = (
@@ -54,7 +57,7 @@ class RetrievalTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.N0star_lower_moment",
                 relation="value_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
         ]
         sources = [
@@ -97,7 +100,7 @@ class RetrievalTests(unittest.TestCase):
                 root_modules=("Zeta23",),
                 dependency_boundary="internal_only",
             ),
-            created_from_authoritative_commit=True,
+            created_from_authoritative_commit=authoritative,
         )
         build_projection(artifact, db)
         return db, target_text
@@ -110,6 +113,14 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(hits[0].declaration_hint, "lemmaR_tight_two")
             self.assertEqual(hits[0].source_path, "Zeta23/Tiny.lean")
             self.assertEqual(hits[0].evidence_grade, EvidenceGrade.LEXICAL_HIT)
+
+    def test_query_results_preserve_authoritative_readback_attestation(self):
+        with tempfile.TemporaryDirectory() as d:
+            db, _ = self.build_db(Path(d), authoritative=False)
+            hits = search(db, "lemmaR_tight_two")
+            self.assertFalse(hits[0].created_from_authoritative_commit)
+            result = context(db, "lemmaR_tight_two", depth=1, token_budget=30)
+            self.assertFalse(result["created_from_authoritative_commit"])
 
     def test_lexical_query_finds_role_description(self):
         with tempfile.TemporaryDirectory() as d:
@@ -125,6 +136,73 @@ class RetrievalTests(unittest.TestCase):
             hits = search(db, "ξ")
             self.assertTrue(hits)
             self.assertEqual(hits[0].declaration_hint, "lemmaR_tight_two")
+
+    def test_lexical_hit_uses_source_location_to_resolve_duplicate_short_name(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = root / "artifact"
+            db = root / "projection.db"
+            text_a = "theorem foo : True := by trivial -- alphaunique\n"
+            text_b = "theorem foo : True := by trivial -- betaunique\n"
+            sources = [
+                SourceChunk(
+                    id="src:Zeta23/A.lean:1:1",
+                    source_commit=COMMIT,
+                    source_path="Zeta23/A.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="foo",
+                    text=text_a,
+                    content_sha256=sha256(text_a.encode()).hexdigest(),
+                ),
+                SourceChunk(
+                    id="src:Zeta23/B.lean:1:1",
+                    source_commit=COMMIT,
+                    source_path="Zeta23/B.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="foo",
+                    text=text_b,
+                    content_sha256=sha256(text_b.encode()).hexdigest(),
+                ),
+            ]
+            nodes = [
+                replace(
+                    Node.from_lean(
+                        full_name="Zeta23.A.foo", name="foo", kind="thm",
+                        module="Zeta23.A", source_commit=COMMIT,
+                    ),
+                    source_path="Zeta23/A.lean", source_start_line=1, source_end_line=1,
+                ),
+                replace(
+                    Node.from_lean(
+                        full_name="Zeta23.B.foo", name="foo", kind="thm",
+                        module="Zeta23.B", source_commit=COMMIT,
+                    ),
+                    source_path="Zeta23/B.lean", source_start_line=1, source_end_line=1,
+                ),
+            ]
+            write_artifact(
+                artifact,
+                nodes=nodes,
+                edges=[],
+                sources=sources,
+                source_repo="example/repo",
+                source_commit=COMMIT,
+                source_subdir="",
+                producer=ProducerPin(
+                    kind="lean-dep-viz",
+                    tool_repo="cameronfreer/LeanDepViz",
+                    tool_commit="deadbeef",
+                    tool_hash="f" * 64,
+                ),
+                scope=ArtifactScope(root_modules=("Zeta23",), dependency_boundary="internal_only"),
+                created_from_authoritative_commit=True,
+            )
+            build_projection(artifact, db)
+            hits = search(db, "alphaunique")
+            self.assertEqual(len(hits), 1)
+            self.assertEqual(hits[0].declaration_id, "lean:Zeta23.A.foo")
 
     def test_no_hit_returns_empty_list(self):
         with tempfile.TemporaryDirectory() as d:

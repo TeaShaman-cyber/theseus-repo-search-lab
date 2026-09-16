@@ -4,7 +4,6 @@ import json
 import os
 import shutil
 import tempfile
-import uuid
 from hashlib import sha256
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -22,6 +21,11 @@ from .model import (
 
 
 SCHEMA = "theseus.repo-index.v1"
+
+_DEPENDENCY_GRADE_BY_RELATION = {
+    "type_dependency": EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
+    "value_dependency": EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+}
 
 
 def _json_line(data: dict[str, object]) -> bytes:
@@ -143,19 +147,16 @@ def _write_artifact_contents(
 
 
 def _publish_artifact_directory(staged: Path, out_dir: Path) -> None:
-    backup: Path | None = None
-    try:
-        if out_dir.exists():
-            backup = out_dir.parent / f".{out_dir.name}.backup-{uuid.uuid4().hex}"
-            os.replace(out_dir, backup)
-        os.replace(staged, out_dir)
-    except Exception:
-        if backup is not None and backup.exists() and not out_dir.exists():
-            os.replace(backup, out_dir)
-        raise
-    else:
-        if backup is not None and backup.exists():
-            shutil.rmtree(backup)
+    if out_dir.exists():
+        try:
+            has_entries = any(out_dir.iterdir())
+        except OSError as exc:
+            raise _integrity(f"cannot inspect artifact output path: {out_dir}") from exc
+        if has_entries:
+            raise _integrity(
+                "published artifacts are immutable; choose a new output path"
+            )
+    os.replace(staged, out_dir)
 
 
 def write_artifact(
@@ -250,6 +251,7 @@ def _optional_int(data: dict[str, object], key: str) -> int | None:
 def _node_from_dict(data: dict[str, object]) -> Node:
     return Node(
         id=_require_str(data, "id"),
+        full_name=_require_str(data, "full_name"),
         name=_require_str(data, "name"),
         kind=_require_str(data, "kind"),
         module=_require_str(data, "module"),
@@ -343,6 +345,15 @@ def load_artifact(
     node_id_list = [node.id for node in nodes]
     if len(set(node_id_list)) != len(node_id_list):
         raise _integrity("duplicate node id")
+    for node in nodes:
+        if not node.id.startswith("lean:") or not node.id.removeprefix("lean:"):
+            raise _integrity(f"non-canonical Lean node id: {node.id}")
+        if not node.full_name:
+            raise _integrity(f"non-canonical Lean full name: {node.id}")
+        if node.id != f"lean:{node.full_name}":
+            raise _integrity(f"node id/full-name mismatch: {node.id}")
+        if node.full_name != node.name and not node.full_name.endswith(f".{node.name}"):
+            raise _integrity(f"node full-name/short-name mismatch: {node.id}")
     edge_keys = [
         (edge.source_id, edge.target_id, edge.relation, edge.producer)
         for edge in edges
@@ -355,6 +366,14 @@ def load_artifact(
 
     if any(node.source_commit != manifest.source_commit for node in nodes):
         raise _integrity("node source commit mismatch")
+    for node in nodes:
+        if not any(
+            node.module == root or node.module.startswith(f"{root}.")
+            for root in manifest.scope.root_modules
+        ):
+            raise _integrity(
+                f"node outside declared root-module scope: {node.id} ({node.module})"
+            )
     if any(chunk.source_commit != manifest.source_commit for chunk in sources):
         raise _integrity("source chunk commit mismatch")
     for chunk in sources:
@@ -363,8 +382,63 @@ def load_artifact(
         if _sha256(chunk.text.encode("utf-8")) != chunk.content_sha256:
             raise _integrity(f"source chunk content hash mismatch: {chunk.id}")
 
+    source_binding_counts: dict[tuple[str, int, int, str], int] = {}
+    for chunk in sources:
+        if chunk.declaration_hint is None:
+            continue
+        key = (
+            chunk.source_path,
+            chunk.source_start_line,
+            chunk.source_end_line,
+            chunk.declaration_hint,
+        )
+        source_binding_counts[key] = source_binding_counts.get(key, 0) + 1
+
+    for node in nodes:
+        location = (node.source_path, node.source_start_line, node.source_end_line)
+        present = tuple(value is not None for value in location)
+        if any(present) and not all(present):
+            raise _integrity(f"partial node source location: {node.id}")
+        if all(present):
+            source_path = node.source_path
+            source_start_line = node.source_start_line
+            source_end_line = node.source_end_line
+            if source_path is None or source_start_line is None or source_end_line is None:
+                raise _integrity(f"partial node source location: {node.id}")
+            if source_start_line < 1 or source_end_line < source_start_line:
+                raise _integrity(f"invalid node source range: {node.id}")
+            expected_source_path = f"{node.module.replace('.', '/')}.lean"
+            if source_path != expected_source_path:
+                raise _integrity(f"node source location mismatch: {node.id}")
+            if sources:
+                key = (
+                    source_path,
+                    source_start_line,
+                    source_end_line,
+                    node.name,
+                )
+                if source_binding_counts.get(key, 0) != 1:
+                    raise _integrity(f"node source location mismatch: {node.id}")
+
     node_ids = set(node_id_list)
+    expected_edge_producer = (
+        f"{manifest.producer.tool_repo}@{manifest.producer.tool_commit}"
+    )
     for edge in edges:
+        if edge.producer != expected_edge_producer:
+            raise _integrity(
+                "edge producer mismatch: "
+                f"expected {expected_edge_producer}, observed {edge.producer}"
+            )
+        expected_grade = _DEPENDENCY_GRADE_BY_RELATION.get(edge.relation)
+        if expected_grade is None:
+            raise _integrity(f"unsupported dependency relation: {edge.relation}")
+        if edge.evidence_grade is not expected_grade:
+            raise _integrity(
+                "relation/evidence mismatch: "
+                f"{edge.relation} requires {expected_grade.value}, "
+                f"observed {edge.evidence_grade.value}"
+            )
         if edge.source_id not in node_ids or edge.target_id not in node_ids:
             raise _integrity("edge endpoint outside node set")
 

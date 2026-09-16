@@ -1,8 +1,8 @@
+from dataclasses import replace
 import hashlib
 import json
 import tempfile
 import unittest
-from unittest import mock
 from pathlib import Path
 from hashlib import sha256
 
@@ -59,7 +59,7 @@ def sample_edges():
             target_id="lean:Zeta23.Tiny.a",
             relation="value_dependency",
             evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-            producer="LeanDepViz@deadbeef",
+            producer="cameronfreer/LeanDepViz@deadbeef",
         )
     ]
 
@@ -129,18 +129,11 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual((p1 / "sources.jsonl").read_bytes(), (p2 / "sources.jsonl").read_bytes())
             self.assertEqual(artifact_identity(m1), artifact_identity(m2))
 
-    def test_failed_rewrite_preserves_last_valid_artifact(self):
+    def test_published_artifact_is_immutable_and_preserved(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "artifact"
             old_manifest = write_sample(path)
             old_identity = artifact_identity(old_manifest)
-            old_writer = __import__("theseus_repo_search.artifact", fromlist=["_write_jsonl"])._write_jsonl
-
-            def flaky_writer(member_path, rows):
-                if member_path.name == "edges.jsonl":
-                    raise OSError("synthetic member write failure")
-                return old_writer(member_path, rows)
-
             extra = Node.from_lean(
                 full_name="Zeta23.Tiny.c",
                 name="c",
@@ -148,9 +141,11 @@ class ArtifactTests(unittest.TestCase):
                 module="Zeta23.Tiny",
                 source_commit=SOURCE_COMMIT,
             )
-            with mock.patch("theseus_repo_search.artifact._write_jsonl", side_effect=flaky_writer):
-                with self.assertRaises(OSError):
-                    write_sample(path, nodes=sample_nodes() + [extra])
+
+            with self.assertRaises(RepoSearchError) as caught:
+                write_sample(path, nodes=sample_nodes() + [extra])
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("immutable", str(caught.exception))
 
             manifest, _, _, _ = load_artifact(path)
             self.assertEqual(artifact_identity(manifest), old_identity)
@@ -182,7 +177,7 @@ class ArtifactTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.missing",
                 relation="value_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
             write_sample_raw(path, edges=[edge])
             with self.assertRaises(RepoSearchError) as caught:
@@ -282,6 +277,182 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("duplicate node id", str(caught.exception))
 
+    def test_out_of_scope_node_is_blocked_for_internal_only_artifact(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes() + [
+                Node.from_lean(
+                    full_name="Mathlib.Algebra.outside",
+                    name="outside",
+                    kind="thm",
+                    module="Mathlib.Algebra",
+                    source_commit=SOURCE_COMMIT,
+                )
+            ]
+            edges = sample_edges() + [
+                Edge(
+                    source_id="lean:Zeta23.Tiny.b",
+                    target_id="lean:Mathlib.Algebra.outside",
+                    relation="value_dependency",
+                    evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+                    producer="cameronfreer/LeanDepViz@deadbeef",
+                )
+            ]
+            write_sample_raw(path, nodes=nodes, edges=edges)
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node outside declared root-module scope", str(caught.exception))
+
+
+    def test_node_source_location_must_match_unique_source_chunk(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = Node(
+                id=nodes[0].id,
+                full_name=nodes[0].full_name,
+                name=nodes[0].name,
+                kind=nodes[0].kind,
+                module=nodes[0].module,
+                source_path="Zeta23/Tiny.lean",
+                source_start_line=1,
+                source_end_line=1,
+                source_commit=nodes[0].source_commit,
+            )
+            write_sample_raw(path, nodes=[bad, nodes[1]])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node source location mismatch", str(caught.exception))
+
+    def test_duplicate_short_names_cannot_swap_module_source_locations(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            text_a = "theorem foo : True := by trivial\n"
+            text_b = "theorem foo : True := by trivial\n"
+            sources = [
+                SourceChunk(
+                    id="src:Zeta23/A.lean:1:1",
+                    source_commit=SOURCE_COMMIT,
+                    source_path="Zeta23/A.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="foo",
+                    text=text_a,
+                    content_sha256=sha256(text_a.encode()).hexdigest(),
+                ),
+                SourceChunk(
+                    id="src:Zeta23/B.lean:1:1",
+                    source_commit=SOURCE_COMMIT,
+                    source_path="Zeta23/B.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="foo",
+                    text=text_b,
+                    content_sha256=sha256(text_b.encode()).hexdigest(),
+                ),
+            ]
+            nodes = [
+                Node(
+                    id="lean:Zeta23.A.foo",
+                    full_name="Zeta23.A.foo",
+                    name="foo",
+                    kind="thm",
+                    module="Zeta23.A",
+                    source_path="Zeta23/B.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    source_commit=SOURCE_COMMIT,
+                ),
+                Node(
+                    id="lean:Zeta23.B.foo",
+                    full_name="Zeta23.B.foo",
+                    name="foo",
+                    kind="thm",
+                    module="Zeta23.B",
+                    source_path="Zeta23/A.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    source_commit=SOURCE_COMMIT,
+                ),
+            ]
+            write_sample_raw(path, nodes=nodes, edges=[], sources=sources)
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node source location mismatch", str(caught.exception))
+
+    def test_partial_node_source_location_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = Node(
+                id=nodes[0].id,
+                full_name=nodes[0].full_name,
+                name=nodes[0].name,
+                kind=nodes[0].kind,
+                module=nodes[0].module,
+                source_path="Zeta23/Tiny.lean",
+                source_start_line=None,
+                source_end_line=None,
+                source_commit=nodes[0].source_commit,
+            )
+            write_sample_raw(path, nodes=[bad, nodes[1]])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("partial node source location", str(caught.exception))
+
+    def test_noncanonical_lean_node_id_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = Node(
+                id="python:Zeta23.Tiny.b",
+                full_name=nodes[0].full_name,
+                name=nodes[0].name,
+                kind=nodes[0].kind,
+                module=nodes[0].module,
+                source_path=nodes[0].source_path,
+                source_start_line=nodes[0].source_start_line,
+                source_end_line=nodes[0].source_end_line,
+                source_commit=nodes[0].source_commit,
+            )
+            write_sample_raw(path, nodes=[bad, nodes[1]], edges=[])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("non-canonical Lean node id", str(caught.exception))
+
+    def test_lean_node_id_must_match_full_declaration_identity(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = replace(nodes[0], id="lean:Zeta23.Forged.not_b")
+            write_sample_raw(path, nodes=[bad, nodes[1]], edges=[])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node id/full-name mismatch", str(caught.exception))
+
+    def test_edge_producer_must_match_manifest_pin(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = sample_edges()[0]
+            bad = Edge(
+                source_id=edge.source_id,
+                target_id=edge.target_id,
+                relation=edge.relation,
+                evidence_grade=edge.evidence_grade,
+                producer="other/extractor@badc0de",
+            )
+            write_sample_raw(path, edges=[bad])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("edge producer mismatch", str(caught.exception))
+
     def test_duplicate_edge_rows_are_blocked_before_projection(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
@@ -301,6 +472,38 @@ class StructuralIntegrityTests(unittest.TestCase):
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("duplicate source id", str(caught.exception))
+
+    def test_dependency_relation_must_match_evidence_grade(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = Edge(
+                source_id="lean:Zeta23.Tiny.b",
+                target_id="lean:Zeta23.Tiny.a",
+                relation="value_dependency",
+                evidence_grade=EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
+                producer="cameronfreer/LeanDepViz@deadbeef",
+            )
+            write_sample_raw(path, edges=[edge])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("relation/evidence mismatch", str(caught.exception))
+
+    def test_unknown_dependency_relation_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = Edge(
+                source_id="lean:Zeta23.Tiny.b",
+                target_id="lean:Zeta23.Tiny.a",
+                relation="mystery_dependency",
+                evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+                producer="cameronfreer/LeanDepViz@deadbeef",
+            )
+            write_sample_raw(path, edges=[edge])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("unsupported dependency relation", str(caught.exception))
 
     def test_invalid_source_line_range_is_blocked(self):
         with tempfile.TemporaryDirectory() as d:

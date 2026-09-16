@@ -10,6 +10,30 @@ RELATION_BY_KIND = {
 }
 
 
+def _integrity(message: str) -> RepoSearchError:
+    return RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", message)
+
+
+def _require_list(raw: dict[str, object], key: str) -> list[object]:
+    value = raw.get(key)
+    if not isinstance(value, list):
+        raise _integrity(f"LeanDepViz {key} must be an array")
+    return value
+
+
+def _require_object(value: object, label: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise _integrity(f"LeanDepViz {label} must be an object")
+    return value
+
+
+def _require_string(row: dict[str, object], key: str, label: str) -> str:
+    value = row.get(key)
+    if not isinstance(value, str) or not value:
+        raise _integrity(f"LeanDepViz {label}.{key} must be a non-empty string")
+    return value
+
+
 def _module_in_scope(module: str, root_modules: tuple[str, ...]) -> bool:
     return any(module == root or module.startswith(f"{root}.") for root in root_modules)
 
@@ -21,40 +45,68 @@ def normalize_leandepviz(
     root_modules: tuple[str, ...],
     producer_ref: str,
 ) -> tuple[list[Node], list[Edge]]:
-    raw_nodes = raw["nodes"]
-    raw_edges = raw["edges"]
-    assert isinstance(raw_nodes, list)
-    assert isinstance(raw_edges, list)
+    raw_nodes = _require_list(raw, "nodes")
+    raw_edges = _require_list(raw, "edges")
 
     nodes_by_full_name: dict[str, Node] = {}
-    for item in raw_nodes:
-        assert isinstance(item, dict)
-        module = str(item["module"])
+    raw_modules_by_full_name: dict[str, str] = {}
+    raw_full_names_by_short_name: dict[str, set[str]] = {}
+    seen_full_names: set[str] = set()
+    for index, item in enumerate(raw_nodes):
+        row = _require_object(item, f"node[{index}]")
+        module = _require_string(row, "module", f"node[{index}]")
+        full_name = _require_string(row, "fullName", f"node[{index}]")
+        name = _require_string(row, "name", f"node[{index}]")
+        kind = _require_string(row, "kind", f"node[{index}]")
+        if full_name in seen_full_names:
+            raise _integrity(f"duplicate LeanDepViz fullName: {full_name}")
+        seen_full_names.add(full_name)
+        raw_modules_by_full_name[full_name] = module
+        raw_full_names_by_short_name.setdefault(name, set()).add(full_name)
         if not _module_in_scope(module, root_modules):
             continue
-        full_name = str(item["fullName"])
         nodes_by_full_name[full_name] = Node.from_lean(
             full_name=full_name,
-            name=str(item["name"]),
-            kind=str(item["kind"]),
+            name=name,
+            kind=kind,
             module=module,
             source_commit=source_commit,
         )
 
-    edges: set[Edge] = set()
-    for item in raw_edges:
-        assert isinstance(item, dict)
-        kind = str(item["kind"])
-        if kind not in RELATION_BY_KIND:
-            raise RepoSearchError(
-                "BLOCKED_ARTIFACT_INTEGRITY",
-                f"unknown LeanDepViz edge kind: {kind}",
-            )
+    def resolve_endpoint(endpoint: str) -> str:
+        if endpoint in raw_modules_by_full_name:
+            return endpoint
+        candidates = raw_full_names_by_short_name.get(endpoint, set())
+        if not candidates:
+            raise _integrity(f"unknown LeanDepViz edge endpoint: {endpoint}")
+        if len(candidates) == 1:
+            return next(iter(candidates))
+        synthetic_top_level = {
+            candidate
+            for candidate in candidates
+            if candidate == f"{raw_modules_by_full_name[candidate]}.{endpoint}"
+        }
+        if len(synthetic_top_level) == 1:
+            return next(iter(synthetic_top_level))
+        raise _integrity(f"ambiguous LeanDepViz edge endpoint: {endpoint}")
 
-        dependency = str(item["source"])
-        dependent = str(item["target"])
-        if dependency not in nodes_by_full_name or dependent not in nodes_by_full_name:
+    edges: set[Edge] = set()
+    for index, item in enumerate(raw_edges):
+        row = _require_object(item, f"edge[{index}]")
+        kind = _require_string(row, "kind", f"edge[{index}]")
+        dependency = _require_string(row, "source", f"edge[{index}]")
+        dependent = _require_string(row, "target", f"edge[{index}]")
+        if kind not in RELATION_BY_KIND:
+            raise _integrity(f"unknown LeanDepViz edge kind: {kind}")
+        dependency = resolve_endpoint(dependency)
+        dependent = resolve_endpoint(dependent)
+        if (
+            not _module_in_scope(raw_modules_by_full_name[dependency], root_modules)
+            or not _module_in_scope(raw_modules_by_full_name[dependent], root_modules)
+        ):
             continue
+        if dependency not in nodes_by_full_name or dependent not in nodes_by_full_name:
+            raise _integrity("in-scope LeanDepViz edge endpoint missing normalized node")
 
         relation, evidence_grade = RELATION_BY_KIND[kind]
         edges.add(

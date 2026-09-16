@@ -41,7 +41,7 @@ class ProjectionTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.a",
                 relation="value_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
         ]
         text = "/-- Equality-family witness for rank trace tightness. -/\nlemma a : True := by trivial\n"
@@ -96,6 +96,7 @@ class ProjectionTests(unittest.TestCase):
             self.assertEqual(meta["root_modules"], '["Zeta23"]')
             self.assertEqual(meta["dependency_boundary"], "internal_only")
             self.assertEqual(meta["producer.kind"], "lean-dep-viz")
+            self.assertEqual(meta["created_from_authoritative_commit"], "true")
 
     def test_projection_contains_expected_rows_and_working_fts(self):
         with tempfile.TemporaryDirectory() as d:

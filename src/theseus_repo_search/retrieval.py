@@ -22,6 +22,28 @@ class SearchHit:
     evidence_grade: EvidenceGrade
     score: float
     text: str | None
+    created_from_authoritative_commit: bool
+
+
+def _authoritative_attestation(conn: sqlite3.Connection) -> bool:
+    row = conn.execute(
+        "SELECT value FROM meta WHERE key = ?",
+        ("created_from_authoritative_commit",),
+    ).fetchone()
+    if row is None:
+        raise RepoSearchError(
+            "BLOCKED_PROJECTION_INTEGRITY",
+            "missing created_from_authoritative_commit projection metadata",
+        )
+    import json
+
+    value = json.loads(str(row[0]))
+    if not isinstance(value, bool):
+        raise RepoSearchError(
+            "BLOCKED_PROJECTION_INTEGRITY",
+            "invalid created_from_authoritative_commit projection metadata",
+        )
+    return value
 
 
 def _node_row_by_id(conn: sqlite3.Connection, node_id: str):
@@ -109,7 +131,9 @@ def _source_row_for_node(conn: sqlite3.Connection, node_row):
     return rows[0] if len(rows) == 1 else None
 
 
-def _exact_hit(conn: sqlite3.Connection, query: str) -> SearchHit | None:
+def _exact_hit(
+    conn: sqlite3.Connection, query: str, *, authoritative: bool
+) -> SearchHit | None:
     node_id = _unique_node_id(conn, query)
     if node_id is None:
         return None
@@ -127,6 +151,7 @@ def _exact_hit(conn: sqlite3.Connection, query: str) -> SearchHit | None:
             evidence_grade=EvidenceGrade.LEXICAL_HIT,
             score=0.0,
             text=None,
+            created_from_authoritative_commit=authoritative,
         )
     return SearchHit(
         declaration_id=node_id,
@@ -138,16 +163,52 @@ def _exact_hit(conn: sqlite3.Connection, query: str) -> SearchHit | None:
         evidence_grade=EvidenceGrade.LEXICAL_HIT,
         score=0.0,
         text=str(source_row[6]),
+        created_from_authoritative_commit=authoritative,
     )
 
 
-def _declaration_id_for_hint(conn: sqlite3.Connection, hint: str | None) -> str | None:
+def _declaration_id_for_hit(
+    conn: sqlite3.Connection,
+    hint: str | None,
+    *,
+    source_path: str,
+    source_start_line: int,
+    source_end_line: int,
+) -> str | None:
     if hint is None:
         return None
     rows = conn.execute(
-        "SELECT id FROM nodes WHERE name = ? ORDER BY id",
+        "SELECT id, source_path, source_start_line, source_end_line "
+        "FROM nodes WHERE name = ? ORDER BY id",
         (hint,),
     ).fetchall()
+    if not rows:
+        return None
+
+    exact = [
+        str(row[0])
+        for row in rows
+        if row[1] == source_path
+        and row[2] == source_start_line
+        and row[3] == source_end_line
+    ]
+    if len(exact) == 1:
+        return exact[0]
+
+    containing = [
+        str(row[0])
+        for row in rows
+        if row[1] == source_path
+        and row[2] is not None
+        and source_start_line <= int(row[2]) <= source_end_line
+    ]
+    if len(containing) == 1:
+        return containing[0]
+
+    path_ids = sorted({str(row[0]) for row in rows if row[1] == source_path})
+    if len(path_ids) == 1:
+        return path_ids[0]
+
     ids = sorted({str(row[0]) for row in rows})
     return ids[0] if len(ids) == 1 else None
 
@@ -156,7 +217,8 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
     if limit <= 0:
         return []
     with sqlite3.connect(db_path) as conn:
-        exact = _exact_hit(conn, query)
+        authoritative = _authoritative_attestation(conn)
+        exact = _exact_hit(conn, query, authoritative=authoritative)
         if exact is not None:
             return [exact]
 
@@ -174,7 +236,13 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
         ).fetchall()
         return [
             SearchHit(
-                declaration_id=_declaration_id_for_hint(conn, row[5]),
+                declaration_id=_declaration_id_for_hit(
+                    conn,
+                    row[5],
+                    source_path=str(row[2]),
+                    source_start_line=int(row[3]),
+                    source_end_line=int(row[4]),
+                ),
                 declaration_hint=None if row[5] is None else str(row[5]),
                 source_commit=str(row[1]),
                 source_path=str(row[2]),
@@ -183,6 +251,7 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
                 evidence_grade=EvidenceGrade.LEXICAL_HIT,
                 score=float(row[7]),
                 text=str(row[6]),
+                created_from_authoritative_commit=authoritative,
             )
             for row in rows
         ]
@@ -259,4 +328,5 @@ def context(
         "scope_root_modules": list(graph_result.scope_root_modules),
         "dependency_boundary": graph_result.dependency_boundary,
         "complete_within_scope": graph_result.complete_within_scope,
+        "created_from_authoritative_commit": graph_result.created_from_authoritative_commit,
     }
