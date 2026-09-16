@@ -112,17 +112,21 @@ producer.kind
 producer.tool_version
 producer.tool_hash
 scope.root_modules
-files.sha256
+members.nodes.sha256
+members.edges.sha256
+members.sources.sha256
 counts.nodes
 counts.edges
 created_from_authoritative_commit
 ```
 
-`created_from_authoritative_commit` is `true` only when the producer independently read back the checked-out commit before extraction.
+`created_from_authoritative_commit` is `true` only when the producer independently read back the checked-out commit before extraction. `members.sources.sha256` is null when `sources.jsonl` is absent; null means absent, not unchecked.
+
+Artifact identity is not the source commit alone. A v1 artifact identity is derived from the artifact schema, source repository/commit/subdir, extraction scope, producer kind/version/hash, and member hashes. Changing the extractor or scope at the same source commit therefore produces a different artifact identity.
 
 ### `nodes.jsonl`
 
-One declaration/entity per row:
+One declaration/entity per row. Within one artifact, Lean declaration IDs use the canonical full declaration name prefixed by the language (`lean:<fullName>`); the artifact manifest supplies the source/scope identity. Other languages may define their own deterministic ID scheme in a later schema revision.
 
 ```text
 id
@@ -150,6 +154,8 @@ producer
 ```
 
 For the initial Lean exact graph, `relation` is `type_dependency` or `value_dependency` and the evidence grade is the corresponding elaborated grade.
+
+The normalized edge orientation is always **dependent declaration -> dependency**: `source_id` is the declaration whose type/value is being described, and `target_id` is the declaration it depends on. Extractors with the opposite native orientation are inverted during normalization. Therefore `dependencies(name)` follows outgoing edges and `reverse_dependencies(name)` follows incoming edges.
 
 ### `sources.jsonl`
 
@@ -185,7 +191,7 @@ Defaults must be bounded. No unbounded recursive traversal is exposed by the nor
 
 ## Incremental lifecycle
 
-The artifact identity is source-commit based. A new source commit produces a new immutable artifact identity.
+The source commit is a mandatory component of artifact identity, but not the whole identity. Schema, extraction scope, producer identity, and member hashes are also bound. A new source commit always produces a new immutable artifact identity, and a changed producer/scope at the same commit does too.
 
 Local projections may use content-addressed reuse inspired by Continue, but incremental optimization is secondary to deterministic rebuild correctness.
 
