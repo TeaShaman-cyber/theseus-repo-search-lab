@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Generalize the existing Zeta23 producer into one descriptor-driven Lean Git source path, prove it against `openai/LongGapsBetweenPrimes`, and preserve the current normalized artifact/query contracts.
+**Goal:** Generalize the existing Zeta23 producer into one descriptor-driven Lean Git source path, prove it against `openai/LongGapsBetweenPrimes` and a third different-toolchain corpus, and preserve the current normalized artifact/query contracts.
 
-**Architecture:** A strict `LeanGitSource` descriptor identifies one exact Git snapshot plus Lake build/extraction scope. Producer bootstrap pins remain separate. Both Anthropic Zeta23 and OpenAI LongGaps flow through the same checkout/build/LeanDepViz/normalize/index path, while research-specific replay assertions remain separate scripts. One source snapshot still produces one artifact and one disposable SQLite projection.
+**Architecture:** A strict `LeanGitSource` descriptor identifies one exact Git snapshot plus Lake build/extraction scope. Producer bootstrap pins remain separate. Every descriptor becomes one isolated GitHub Actions matrix job/runner that reads the exact checkout's own `lean-toolchain`, builds/extracts independently, and uploads one separately addressable artifact. Zeta23, OpenAI LongGaps, and a third different-toolchain corpus flow through the same checkout/build/LeanDepViz/normalize/index path; research-specific replay assertions remain separate fixtures. One source snapshot still produces one artifact and one disposable SQLite projection.
 
 **Tech Stack:** Python 3.11+, stdlib `dataclasses/json/pathlib/subprocess`, Git, Lake/Lean via source-owned `lean-toolchain`, pinned Elan bootstrap, pinned standalone LeanDepViz, SQLite FTS5, GitHub Actions.
 
@@ -19,6 +19,9 @@
 - Publisher is not an adapter boundary; no Anthropic/OpenAI branches in retrieval, graph, projection, or artifact code.
 - Preserve the existing normalized artifact schema and evidence grades.
 - One source snapshot -> one artifact -> one disposable SQLite projection.
+- One exact source descriptor -> one isolated producer matrix job/runner; do not serialize unrelated source builds in one runner for toolchain reuse.
+- Do not set `strategy.max-parallel` initially. Let GitHub use available repository concurrency; add a cap only after observed runner quota/contention evidence.
+- Adding another Lean source must require only a new descriptor + source-specific replay fixture/matrix row; production artifact/retrieval/graph code must remain unchanged.
 - No registry service, combined corpus database, embeddings, federated ranking, hosted service, ACL/security layer, or background indexing.
 - `RULES.md` integration is **not part of this plan**. After Tasks 1-5 pass, create a separate cookbook issue/PR for the thin `/workspace/tools/repo-search/` route.
 - All code changes use TDD: observe RED before production changes, then GREEN, then full suite.
@@ -33,12 +36,15 @@
 - `tests/test_producer_config.py` — fail-closed descriptor/runner validation and source-root resolution tests.
 - `producer/sources/zeta23.json` — Zeta23 `LeanGitSource` descriptor.
 - `producer/sources/openai-long-gaps.json` — OpenAI LongGaps `LeanGitSource` descriptor.
+- `producer/sources/openai-prime-gaps-186.json` — third proving descriptor with a different source-owned Lean toolchain.
 - `producer/runner.json` — extractor + Elan bootstrap pins shared by sources.
 - `scripts/load_producer_env.py` — converts one source descriptor plus runner pins to deterministic GitHub Actions environment values.
 - `tests/test_load_producer_env.py` — deterministic env mapping tests.
 - `scripts/replay_long_gaps.py` — source-specific acceptance replay for OpenAI LongGaps.
 - `tests/test_replay_long_gaps.py` — synthetic replay contract test.
-- `.github/workflows/lean-source-producer-smoke.yml` — generic two-source producer smoke.
+- `scripts/replay_prime_gaps_186.py` — minimal third-corpus genericity replay.
+- `tests/test_replay_prime_gaps_186.py` — synthetic third-corpus replay contract test.
+- `.github/workflows/lean-source-producer-smoke.yml` — generic descriptor-matrix producer smoke.
 
 ### Modified/removed files
 
@@ -374,6 +380,7 @@ git commit -m "feat: define strict Lean Git source descriptors"
 **Files:**
 - Create: `producer/sources/zeta23.json`
 - Create: `producer/sources/openai-long-gaps.json`
+- Create: `producer/sources/openai-prime-gaps-186.json`
 - Create: `producer/runner.json`
 - Create: `scripts/load_producer_env.py`
 - Create: `tests/test_load_producer_env.py`
@@ -384,7 +391,7 @@ git commit -m "feat: define strict Lean Git source descriptors"
 - Produces: `environment_mapping(source, runner) -> dict[str, str]`.
 - Produces GitHub Actions values: `SOURCE_ID`, `SOURCE_REPO`, `SOURCE_COMMIT`, `SOURCE_SUBDIR`, `ROOT_MODULES_CSV`, `BUILD_TARGET`, plus extractor/Elan pins.
 
-- [ ] **Step 1: Add the two exact source descriptors and shared runner pins**
+- [ ] **Step 1: Add the exact proving-source descriptors and shared runner pins**
 
 `producer/sources/zeta23.json`:
 
@@ -413,6 +420,22 @@ git commit -m "feat: define strict Lean Git source descriptors"
   "build_target": "LongGapsBetweenPrimes"
 }
 ```
+
+`producer/sources/openai-prime-gaps-186.json`:
+
+```json
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "openai-prime-gaps-186",
+  "source_repo": "openai/PrimeGaps186",
+  "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+  "source_subdir": "",
+  "root_modules": ["PrimeGaps186"],
+  "build_target": "PrimeGaps186"
+}
+```
+
+Observed at that exact snapshot: `lean-toolchain = leanprover/lean4:v4.34.0-rc2`; `lakefile.toml` declares `defaultTargets = ["PrimeGaps186"]` and root `PrimeGaps186`. The descriptor intentionally does not duplicate the Lean version.
 
 `producer/runner.json`:
 
@@ -578,13 +601,13 @@ if __name__ == "__main__":
 
 Run `tests.test_load_producer_env` again and require GREEN before continuing.
 
-- [ ] **Step 7: Validate both committed descriptors through the production loader**
+- [ ] **Step 7: Validate all committed descriptors through the production loader**
 
 ```bash
 PYTHONPATH=src:. python3 - <<'PY'
 from pathlib import Path
 from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
-for name in ("zeta23", "openai-long-gaps"):
+for name in ("zeta23", "openai-long-gaps", "openai-prime-gaps-186"):
     source = load_lean_git_source(Path("producer/sources") / f"{name}.json")
     print(source.source_id, source.source_repo, source.source_commit)
 print(load_runner_pins(Path("producer/runner.json")).extractor_commit)
@@ -609,7 +632,7 @@ git commit -m "refactor: split Lean source descriptors from runner pins"
 
 ---
 
-### Task 3: Generic Two-Source Producer Workflow
+### Task 3: Generic Descriptor-Matrix Producer Workflow
 
 **Files:**
 - Create: `.github/workflows/lean-source-producer-smoke.yml`
@@ -618,11 +641,11 @@ git commit -m "refactor: split Lean source descriptors from runner pins"
 - Modify: `tests/test_replay_zeta23.py`
 
 **Interfaces:**
-- Consumes descriptor path, replay script, and artifact name from a two-row Actions matrix.
-- Uses the exact same checkout/build/extract/normalize/index sequence for both sources.
+- Consumes descriptor path, replay script, and artifact name from a descriptor-driven Actions matrix with one isolated job per row.
+- Uses the exact same checkout/build/extract/normalize/index sequence for every source; row count is not publisher-bound.
 - Reads `lean-toolchain` from the selected exact source root after checkout and logs it; it does not inject a Lean version from descriptor data.
 
-- [ ] **Step 1: Replace source-specific workflow setup with a two-row matrix**
+- [ ] **Step 1: Replace source-specific workflow setup with an independently parallel descriptor matrix**
 
 Use this matrix shape:
 
@@ -637,9 +660,12 @@ strategy:
       - source_descriptor: producer/sources/openai-long-gaps.json
         replay_script: scripts/replay_long_gaps.py
         artifact_name: openai-long-gaps-repo-index-v1
+      - source_descriptor: producer/sources/openai-prime-gaps-186.json
+        replay_script: scripts/replay_prime_gaps_186.py
+        artifact_name: openai-prime-gaps-186-repo-index-v1
 ```
 
-Keep the current pinned `actions/checkout` and `actions/upload-artifact` SHAs unchanged.
+Keep the current pinned `actions/checkout` and `actions/upload-artifact` SHAs unchanged. Do not add `max-parallel`: each matrix row should be independently schedulable on its own GitHub-hosted runner until observed quota/contention justifies a cap.
 
 - [ ] **Step 2: Load descriptor and runner pins through the tested Python loader**
 
@@ -1088,9 +1114,61 @@ git commit -m "test: add OpenAI LongGaps repository replay"
 
 ---
 
+### Task 4B: PrimeGaps186 Different-Toolchain Genericity Replay
+
+**Observed exact snapshot:** `openai/PrimeGaps186@61340d0b74163003b32756bb16e91d9209a5e330`
+
+```text
+lean-toolchain = leanprover/lean4:v4.34.0-rc2
+default/root target = PrimeGaps186
+main module = PrimeGaps186.lean
+research anchor = PrimeGap186.primeGapLiminf_le_186
+```
+
+The purpose is not to add another publisher adapter. It is to prove that a source with a different source-owned Lean toolchain enters the existing producer solely through a descriptor/matrix row and a replay fixture.
+
+**Files:**
+- Create: `scripts/replay_prime_gaps_186.py`
+- Create: `tests/test_replay_prime_gaps_186.py`
+
+**Interfaces:**
+- Same DB/artifact/descriptor identity checks as Task 4.
+- Uses unchanged public `search()`, `dependencies()`, and `context()` APIs.
+- Production code may not branch on `PrimeGaps186`, OpenAI, or Lean `v4.34.0-rc2`.
+
+- [ ] **Step 1: Write RED replay fixture**
+
+Create a synthetic artifact containing `PrimeGap186.primeGapLiminf_le_186` plus at least one elaborated dependency edge and source chunk in `PrimeGaps186.lean`. Require exact provenance and non-empty bounded context.
+
+- [ ] **Step 2: Run RED before implementation**
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
+```
+
+- [ ] **Step 3: Implement minimal replay using the same identity/provenance guards as LongGaps**
+
+Use exact target `PrimeGap186.primeGapLiminf_le_186`. The real CI smoke must discover its actual elaborated neighborhood; the synthetic test only proves replay mechanics.
+
+- [ ] **Step 4: Run focused GREEN and full suite**
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
+PYTHONPATH=src:. python3 -m unittest discover -v
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add scripts/replay_prime_gaps_186.py tests/test_replay_prime_gaps_186.py
+git commit -m "test: add PrimeGaps186 genericity replay"
+```
+
+---
+
 Before Task 5 commands are considered complete, add an explicit **artifact-only Zeta consumer mode**: the independent consumer receives the uploaded artifact and repository-search package/code only, builds a fresh SQLite projection, then runs the Zeta core replay with `source_root=None`. The old repository-wide grep baseline remains producer-CI evidence and is not required in the Lean-free consumer runtime.
 
-### Task 5: Real Dual-Source Acceptance and Lean-Free Readback
+### Task 5: Real Multi-Source Acceptance and Lean-Free Readback
 
 **Files:**
 - No production code unless a real failure produces a minimal reproducible defect.
@@ -1098,8 +1176,8 @@ Before Task 5 commands are considered complete, add an explicit **artifact-only 
 - Do not modify Issue #1 in this task; the Global Constraints require its corrected bootstrap acceptance to be complete before Task 1 starts.
 
 **Interfaces:**
-- GitHub Actions produces separate `zeta23-repo-index-v1` and `openai-long-gaps-repo-index-v1` artifacts.
-- MarcoPolo consumes each normalized artifact with Lean absent from `PATH` and rebuilds disposable SQLite locally.
+- GitHub Actions produces one separately addressable artifact per descriptor row, initially Zeta23, OpenAI LongGaps, and OpenAI PrimeGaps186.
+- MarcoPolo consumes each normalized artifact with Lean absent from `PATH` and rebuilds disposable SQLite locally; no artifact may stand in for another matrix row.
 
 - [ ] **Step 1: Push implementation branch and open/update its PR**
 
@@ -1113,7 +1191,7 @@ python3 -m py_compile src/theseus_repo_search/*.py scripts/*.py
 
 Record exact branch head SHA before triggering CI.
 
-- [ ] **Step 2: Require both matrix jobs to complete successfully**
+- [ ] **Step 2: Require every matrix job to complete successfully**
 
 For each source, verify GitHub job steps show success for:
 
@@ -1131,11 +1209,11 @@ remove raw graph/SQLite
 artifact upload
 ```
 
-Do not treat one green matrix row as proof for the other.
+Do not treat one green matrix row as proof for any other row. Wall-clock should be bounded by the slowest scheduled row rather than the sum of serialized source builds, subject to GitHub runner availability.
 
 - [ ] **Step 3: Inspect each uploaded artifact metadata**
 
-Verify artifact names are distinct and record GitHub artifact IDs, ZIP digests, sizes, run ID, job IDs, and exact implementation commit.
+Verify artifact names are distinct for every descriptor and record GitHub artifact IDs, ZIP digests, sizes, run ID, job IDs, observed source-owned `lean-toolchain`, and exact implementation commit.
 
 Reject an OpenAI artifact if its manifest provenance does not exactly report:
 
@@ -1145,7 +1223,7 @@ commit = 03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b
 subdir = ""
 ```
 
-Reject Zeta if its existing exact source provenance changes unexpectedly.
+Reject Zeta if its existing exact source provenance changes unexpectedly. Reject PrimeGaps186 unless its manifest reports `openai/PrimeGaps186@61340d0b74163003b32756bb16e91d9209a5e330` with repository-root subdir and the job observes `leanprover/lean4:v4.34.0-rc2` from that checkout.
 
 - [ ] **Step 4: Download each artifact independently into MarcoPolo**
 
@@ -1177,11 +1255,14 @@ python3 scripts/replay_zeta23.py \
 python3 scripts/replay_long_gaps.py \
   --db <long-gaps-db> --artifact <long-gaps-artifact-dir> \
   --descriptor producer/sources/openai-long-gaps.json --out <long-gaps-receipt>
+python3 scripts/replay_prime_gaps_186.py \
+  --db <prime-gaps-db> --artifact <prime-gaps-artifact-dir> \
+  --descriptor producer/sources/openai-prime-gaps-186.json --out <prime-gaps-receipt>
 ```
 
 No source checkout, source build, grep baseline, or Lean invocation is allowed in this consumer step. The producer CI keeps the source-root grep benchmark separately.
 
-- [ ] **Step 6: Run practical research queries on both projections**
+- [ ] **Step 6: Run practical research queries on every proving projection**
 
 Zeta examples:
 
@@ -1199,6 +1280,14 @@ python3 -m theseus_repo_search deps --db <long-gaps-db> --name LongGapsBetweenPr
 python3 -m theseus_repo_search context --db <long-gaps-db> --name LongGapsBetweenPrimes.long_gap_theorem --depth 1 --token-budget 4000
 ```
 
+PrimeGaps186 different-toolchain example:
+
+```bash
+python3 -m theseus_repo_search search --db <prime-gaps-db> --query PrimeGap186.primeGapLiminf_le_186
+python3 -m theseus_repo_search deps --db <prime-gaps-db> --name PrimeGap186.primeGapLiminf_le_186 --depth 1
+python3 -m theseus_repo_search context --db <prime-gaps-db> --name PrimeGap186.primeGapLiminf_le_186 --depth 1 --token-budget 4000
+```
+
 Confirm results carry exact source repo/commit provenance and graph edges carry elaborated evidence grades.
 
 - [ ] **Step 7: Check the publisher-neutrality invariant in code**
@@ -1206,7 +1295,7 @@ Confirm results carry exact source repo/commit provenance and graph edges carry 
 Run:
 
 ```bash
-rg -n "anthropics|openai|Zeta23|LongGapsBetweenPrimes" \
+rg -n "anthropics|openai|Zeta23|LongGapsBetweenPrimes|PrimeGaps186" \
   src/theseus_repo_search/retrieval.py \
   src/theseus_repo_search/graph.py \
   src/theseus_repo_search/projection.py \
@@ -1221,8 +1310,8 @@ Receipt must include:
 
 ```text
 implementation commit
-both exact source commits
-both observed lean-toolchain strings
+all exact source commits
+all observed source-owned lean-toolchain strings
 workflow run + job IDs
 artifact IDs + digests
 manifest source provenance
@@ -1276,10 +1365,13 @@ Before implementation begins, verify this plan against the approved spec:
 - [ ] Corrected Zeta bootstrap Lean-free acceptance is a hard prerequisite.
 - [ ] Descriptor contains source identity/build scope, not duplicated Lean version.
 - [ ] Runner pins are separate from source descriptor.
-- [ ] Zeta and OpenAI use the same producer path.
+- [ ] Every descriptor row, regardless of publisher/toolchain, uses the same producer path and its own isolated runner.
 - [ ] OpenAI replay is source-specific but retrieval/query code remains source-neutral.
 - [ ] Multiple `root_modules` are preserved through comma-separated LeanDepViz roots.
 - [ ] One snapshot produces one artifact and one SQLite projection.
-- [ ] Both real artifacts are independently consumed without Lean.
-- [ ] `RULES.md` remains a separate cookbook change after dual-source acceptance.
+- [ ] All proving artifacts are independently consumed without Lean.
+- [ ] `RULES.md` remains a separate cookbook change after multi-source acceptance.
 - [ ] No registry, combined database, embeddings, federation, hosted service, security/product layer, or background indexing is introduced.
+
+- [ ] Matrix genericity check: adding `openai/PrimeGaps186` requires descriptor + replay fixture/row only; no production source-specific branch.
+- [ ] No `max-parallel` is configured until runner-limit evidence exists.
