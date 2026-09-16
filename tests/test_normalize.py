@@ -113,6 +113,51 @@ class NormalizeLeanDepVizTests(unittest.TestCase):
         self.assertIn("edge[0].source", str(caught.exception))
 
 
+    def test_unique_short_endpoint_alias_resolves_exported_top_level_name(self):
+        raw = {
+            "nodes": [
+                {"module": "Zeta23.Mod", "fullName": "Zeta23.Mod.dep", "name": "dep", "kind": "thm"},
+                {"module": "Zeta23.Mod", "fullName": "Zeta23.Mod.use", "name": "use", "kind": "thm"},
+            ],
+            "edges": [
+                {"source": "dep", "target": "use", "kind": "value"}
+            ],
+        }
+        nodes, edges = normalize_leandepviz(
+            raw,
+            source_commit="abc123",
+            root_modules=("Zeta23",),
+            producer_ref="LeanDepViz@7859d91",
+        )
+        self.assertEqual(
+            [node.id for node in nodes],
+            ["lean:Zeta23.Mod.dep", "lean:Zeta23.Mod.use"],
+        )
+        self.assertEqual(len(edges), 1)
+        self.assertEqual(edges[0].source_id, "lean:Zeta23.Mod.use")
+        self.assertEqual(edges[0].target_id, "lean:Zeta23.Mod.dep")
+
+    def test_ambiguous_short_endpoint_alias_fails_closed(self):
+        raw = {
+            "nodes": [
+                {"module": "Zeta23.A", "fullName": "Zeta23.A.foo", "name": "foo", "kind": "thm"},
+                {"module": "Zeta23.B", "fullName": "Zeta23.B.foo", "name": "foo", "kind": "thm"},
+                {"module": "Zeta23.C", "fullName": "Zeta23.C.use", "name": "use", "kind": "thm"},
+            ],
+            "edges": [
+                {"source": "foo", "target": "use", "kind": "value"}
+            ],
+        }
+        with self.assertRaises(RepoSearchError) as caught:
+            normalize_leandepviz(
+                raw,
+                source_commit="abc123",
+                root_modules=("Zeta23",),
+                producer_ref="LeanDepViz@7859d91",
+            )
+        self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+        self.assertIn("ambiguous LeanDepViz edge endpoint", str(caught.exception))
+
     def test_unknown_endpoint_fails_closed_instead_of_being_filtered(self):
         raw = self.load_fixture()
         raw["edges"] = [

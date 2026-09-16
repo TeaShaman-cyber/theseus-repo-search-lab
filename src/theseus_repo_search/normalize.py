@@ -50,6 +50,7 @@ def normalize_leandepviz(
 
     nodes_by_full_name: dict[str, Node] = {}
     raw_modules_by_full_name: dict[str, str] = {}
+    raw_full_names_by_short_name: dict[str, set[str]] = {}
     seen_full_names: set[str] = set()
     for index, item in enumerate(raw_nodes):
         row = _require_object(item, f"node[{index}]")
@@ -61,6 +62,7 @@ def normalize_leandepviz(
             raise _integrity(f"duplicate LeanDepViz fullName: {full_name}")
         seen_full_names.add(full_name)
         raw_modules_by_full_name[full_name] = module
+        raw_full_names_by_short_name.setdefault(name, set()).add(full_name)
         if not _module_in_scope(module, root_modules):
             continue
         nodes_by_full_name[full_name] = Node.from_lean(
@@ -71,6 +73,16 @@ def normalize_leandepviz(
             source_commit=source_commit,
         )
 
+    def resolve_endpoint(endpoint: str) -> str:
+        if endpoint in raw_modules_by_full_name:
+            return endpoint
+        candidates = raw_full_names_by_short_name.get(endpoint, set())
+        if not candidates:
+            raise _integrity(f"unknown LeanDepViz edge endpoint: {endpoint}")
+        if len(candidates) != 1:
+            raise _integrity(f"ambiguous LeanDepViz edge endpoint: {endpoint}")
+        return next(iter(candidates))
+
     edges: set[Edge] = set()
     for index, item in enumerate(raw_edges):
         row = _require_object(item, f"edge[{index}]")
@@ -79,9 +91,8 @@ def normalize_leandepviz(
         dependent = _require_string(row, "target", f"edge[{index}]")
         if kind not in RELATION_BY_KIND:
             raise _integrity(f"unknown LeanDepViz edge kind: {kind}")
-        for endpoint in (dependency, dependent):
-            if endpoint not in raw_modules_by_full_name:
-                raise _integrity(f"unknown LeanDepViz edge endpoint: {endpoint}")
+        dependency = resolve_endpoint(dependency)
+        dependent = resolve_endpoint(dependent)
         if (
             not _module_in_scope(raw_modules_by_full_name[dependency], root_modules)
             or not _module_in_scope(raw_modules_by_full_name[dependent], root_modules)
