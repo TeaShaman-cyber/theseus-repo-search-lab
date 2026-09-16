@@ -129,18 +129,11 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual((p1 / "sources.jsonl").read_bytes(), (p2 / "sources.jsonl").read_bytes())
             self.assertEqual(artifact_identity(m1), artifact_identity(m2))
 
-    def test_failed_rewrite_preserves_last_valid_artifact(self):
+    def test_published_artifact_is_immutable_and_preserved(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "artifact"
             old_manifest = write_sample(path)
             old_identity = artifact_identity(old_manifest)
-            old_writer = __import__("theseus_repo_search.artifact", fromlist=["_write_jsonl"])._write_jsonl
-
-            def flaky_writer(member_path, rows):
-                if member_path.name == "edges.jsonl":
-                    raise OSError("synthetic member write failure")
-                return old_writer(member_path, rows)
-
             extra = Node.from_lean(
                 full_name="Zeta23.Tiny.c",
                 name="c",
@@ -148,9 +141,11 @@ class ArtifactTests(unittest.TestCase):
                 module="Zeta23.Tiny",
                 source_commit=SOURCE_COMMIT,
             )
-            with mock.patch("theseus_repo_search.artifact._write_jsonl", side_effect=flaky_writer):
-                with self.assertRaises(OSError):
-                    write_sample(path, nodes=sample_nodes() + [extra])
+
+            with self.assertRaises(RepoSearchError) as caught:
+                write_sample(path, nodes=sample_nodes() + [extra])
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("immutable", str(caught.exception))
 
             manifest, _, _, _ = load_artifact(path)
             self.assertEqual(artifact_identity(manifest), old_identity)

@@ -4,7 +4,6 @@ import json
 import os
 import shutil
 import tempfile
-import uuid
 from hashlib import sha256
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -148,19 +147,16 @@ def _write_artifact_contents(
 
 
 def _publish_artifact_directory(staged: Path, out_dir: Path) -> None:
-    backup: Path | None = None
-    try:
-        if out_dir.exists():
-            backup = out_dir.parent / f".{out_dir.name}.backup-{uuid.uuid4().hex}"
-            os.replace(out_dir, backup)
-        os.replace(staged, out_dir)
-    except Exception:
-        if backup is not None and backup.exists() and not out_dir.exists():
-            os.replace(backup, out_dir)
-        raise
-    else:
-        if backup is not None and backup.exists():
-            shutil.rmtree(backup)
+    if out_dir.exists():
+        try:
+            has_entries = any(out_dir.iterdir())
+        except OSError as exc:
+            raise _integrity(f"cannot inspect artifact output path: {out_dir}") from exc
+        if has_entries:
+            raise _integrity(
+                "published artifacts are immutable; choose a new output path"
+            )
+    os.replace(staged, out_dir)
 
 
 def write_artifact(
