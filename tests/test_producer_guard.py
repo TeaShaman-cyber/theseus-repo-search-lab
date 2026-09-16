@@ -49,7 +49,9 @@ class ProducerGuardTests(unittest.TestCase):
                 self.assertFalse(raw.exists())
                 raw.write_bytes(fresh)
 
-            with patch.object(producer_guard, "verify_checked_out_commit", return_value="a" * 40) as verify,                  patch.object(producer_guard, "run_exact_command", side_effect=fake_run):
+            with patch.object(producer_guard, "verify_checked_out_commit", return_value="a" * 40) as verify, \
+                 patch.object(producer_guard, "verify_tracked_source_clean") as clean, \
+                 patch.object(producer_guard, "run_exact_command", side_effect=fake_run):
                 producer_guard.run_bound_extraction(
                     ["lake", "env", "lean"],
                     cwd=root,
@@ -66,9 +68,90 @@ class ProducerGuardTests(unittest.TestCase):
                     producer_tool_hash="c" * 64,
                 )
             self.assertEqual(verify.call_count, 2)
+            self.assertEqual(clean.call_count, 2)
             payload = json.loads(receipt.read_text(encoding="utf-8"))
             self.assertEqual(payload["source"]["commit"], "a" * 40)
             self.assertEqual(payload["raw_depgraph"]["sha256"], sha256(fresh).hexdigest())
+
+    def test_bound_extraction_blocks_dirty_tracked_source_before_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            repo = root / "repo"
+            source = repo / "zeta23"
+            source.mkdir(parents=True)
+            tracked = source / "Tiny.lean"
+            tracked.write_text("theorem a : True := by trivial\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", "fixture"], check=True)
+            commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            tracked.write_text("theorem a : False := by contradiction\n", encoding="utf-8")
+            raw = root / "raw.json"
+            receipt = root / "receipt.json"
+
+            with self.assertRaises(RepoSearchError) as caught:
+                producer_guard.run_bound_extraction(
+                    ["python3", "-c", f"from pathlib import Path; Path({str(raw)!r}).write_text('{{\"nodes\":[],\"edges\":[]}}\\n')"],
+                    cwd=repo,
+                    repo_dir=repo,
+                    expected_commit=commit,
+                    raw_depgraph=raw,
+                    receipt_path=receipt,
+                    source_repo="example/repo",
+                    source_subdir="zeta23",
+                    root_modules=("Zeta23",),
+                    producer_kind="lean-dep-viz",
+                    producer_tool_repo="cameronfreer/LeanDepViz",
+                    producer_tool_commit="b" * 40,
+                    producer_tool_hash="c" * 64,
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertIn("tracked source worktree is dirty", str(caught.exception))
+            self.assertFalse(receipt.exists())
+
+    def test_bound_extraction_blocks_dirty_tracked_source_after_extraction(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            repo = root / "repo"
+            source = repo / "zeta23"
+            source.mkdir(parents=True)
+            tracked = source / "Tiny.lean"
+            tracked.write_text("theorem a : True := by trivial\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", "fixture"], check=True)
+            commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            raw = root / "raw.json"
+            receipt = root / "receipt.json"
+
+            def dirty_run(argv, cwd):
+                tracked.write_text("theorem a : False := by contradiction\n", encoding="utf-8")
+                raw.write_text('{"nodes":[],"edges":[]}\n', encoding="utf-8")
+
+            with patch.object(producer_guard, "run_exact_command", side_effect=dirty_run):
+                with self.assertRaises(RepoSearchError) as caught:
+                    producer_guard.run_bound_extraction(
+                        ["lake", "env", "lean"],
+                        cwd=repo,
+                        repo_dir=repo,
+                        expected_commit=commit,
+                        raw_depgraph=raw,
+                        receipt_path=receipt,
+                        source_repo="example/repo",
+                        source_subdir="zeta23",
+                        root_modules=("Zeta23",),
+                        producer_kind="lean-dep-viz",
+                        producer_tool_repo="cameronfreer/LeanDepViz",
+                        producer_tool_commit="b" * 40,
+                        producer_tool_hash="c" * 64,
+                    )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertIn("tracked source worktree is dirty", str(caught.exception))
+            self.assertFalse(receipt.exists())
 
     @patch("scripts.producer_guard.verify_checked_out_commit")
     def test_cli_emits_one_machine_error_to_stderr(self, verify):

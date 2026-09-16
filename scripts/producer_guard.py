@@ -61,6 +61,30 @@ def run_exact_command(argv: list[str], cwd: Path) -> None:
         ) from exc
 
 
+def verify_tracked_source_clean(repo_dir: Path, source_subdir: str) -> None:
+    pathspec = source_subdir or "."
+    try:
+        result = subprocess.run(
+            [
+                "git", "-C", str(repo_dir), "status", "--porcelain=v1",
+                "--untracked-files=no", "--", pathspec,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"failed to verify tracked source worktree cleanliness: {exc}",
+        ) from exc
+    if result.stdout.strip():
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"tracked source worktree is dirty: {pathspec}",
+        )
+
+
 def run_bound_extraction(
     argv: list[str],
     *,
@@ -78,10 +102,12 @@ def run_bound_extraction(
     producer_tool_hash: str,
 ) -> None:
     verify_checked_out_commit(repo_dir, expected_commit)
+    verify_tracked_source_clean(repo_dir, source_subdir)
     raw_depgraph.parent.mkdir(parents=True, exist_ok=True)
     raw_depgraph.unlink(missing_ok=True)
     run_exact_command(argv, cwd)
     verify_checked_out_commit(repo_dir, expected_commit)
+    verify_tracked_source_clean(repo_dir, source_subdir)
     try:
         raw_bytes = raw_depgraph.read_bytes()
     except OSError as exc:

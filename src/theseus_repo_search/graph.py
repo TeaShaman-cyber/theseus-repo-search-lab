@@ -61,9 +61,13 @@ def _resolve_name(conn: sqlite3.Connection, name: str) -> str:
         return str(row[0])
 
     exact_id = f"lean:{name}"
+    exact = conn.execute("SELECT id FROM nodes WHERE id = ?", (exact_id,)).fetchone()
+    if exact is not None:
+        return str(exact[0])
+
     rows = conn.execute(
-        "SELECT id FROM nodes WHERE id = ? OR name = ? OR id LIKE ? ORDER BY id",
-        (exact_id, name, f"%.{name}"),
+        "SELECT id FROM nodes WHERE name = ? OR id LIKE ? ORDER BY id",
+        (name, f"%.{name}"),
     ).fetchall()
     candidates = sorted({str(row[0]) for row in rows})
     if not candidates:
