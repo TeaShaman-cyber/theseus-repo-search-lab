@@ -2,7 +2,6 @@ import hashlib
 import json
 import tempfile
 import unittest
-from unittest import mock
 from pathlib import Path
 from hashlib import sha256
 

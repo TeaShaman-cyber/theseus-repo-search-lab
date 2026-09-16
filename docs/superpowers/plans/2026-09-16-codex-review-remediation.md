@@ -1,6 +1,6 @@
 # Codex Review Remediation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Close the correctness gaps found by Codex review on PR #4 before bootstrap acceptance without expanding the repository lens into a product/platform.
 
@@ -24,39 +24,39 @@
 
 ### Task 1: Preserve authoritative-readback attestation through projection/query
 
-- [ ] RED: add regression showing an exact artifact built with `created_from_authoritative_commit=false` remains distinguishable after SQLite projection and search/context output.
-- [ ] GREEN: persist the attestation in projection metadata and expose it in query/context result metadata without changing evidence grades.
-- [ ] Verify targeted tests and full suite.
+- [x] RED: add regression showing an exact artifact built with `created_from_authoritative_commit=false` remains distinguishable after SQLite projection and search/context output.
+- [x] GREEN: persist the attestation in projection metadata and expose it in query/context result metadata without changing evidence grades.
+- [x] Verify targeted tests and full suite.
 
 ### Task 2: Enforce declared root-module scope at artifact boundary
 
-- [ ] RED: construct a hash-consistent `internal_only` artifact containing an out-of-scope `Mathlib.*` node and edge; require load to fail `BLOCKED_ARTIFACT_INTEGRITY`.
-- [ ] GREEN: validate every node module against `scope.root_modules` before accepting/publishing an artifact.
-- [ ] Verify targeted tests and full suite.
+- [x] RED: construct a hash-consistent `internal_only` artifact containing an out-of-scope `Mathlib.*` node and edge; require load to fail `BLOCKED_ARTIFACT_INTEGRITY`.
+- [x] GREEN: validate every node module against `scope.root_modules` before accepting/publishing an artifact.
+- [x] Verify targeted tests and full suite.
 
 ### Task 3: Validate dependency relation/evidence-grade pairs
 
-- [ ] RED: construct mismatched pairs such as `value_dependency` + `ELABORATED_TYPE_DEPENDENCY` and unknown v1 relations; require fail-closed load.
-- [ ] GREEN: allow only v1 dependency relations and their corresponding elaborated grades.
-- [ ] Verify targeted tests and full suite.
+- [x] RED: construct mismatched pairs such as `value_dependency` + `ELABORATED_TYPE_DEPENDENCY` and unknown v1 relations; require fail-closed load.
+- [x] GREEN: allow only v1 dependency relations and their corresponding elaborated grades.
+- [x] Verify targeted tests and full suite.
 
 ### Task 4: Fail closed on malformed LeanDepViz payloads
 
-- [ ] RED: cover non-list `nodes`/`edges`, non-object rows, null/non-string required node fields, malformed edge fields, and duplicate `fullName` entries.
-- [ ] GREEN: replace `assert`/`str(...)` coercion with explicit JSON type validation and duplicate rejection; preserve known edge-direction normalization.
-- [ ] Verify with normal Python and `python -O` targeted normalization tests, then full suite.
+- [x] RED: cover non-list `nodes`/`edges`, non-object rows, null/non-string required node fields, malformed edge fields, and duplicate `fullName` entries.
+- [x] GREEN: replace `assert`/`str(...)` coercion with explicit JSON type validation and duplicate rejection; preserve known edge-direction normalization.
+- [x] Verify with normal Python and `python -O` targeted normalization tests, then full suite.
 
 ### Task 5: Make Zeta replay baseline use authoritative tracked source scope
 
-- [ ] RED: add `.lake/packages/.../*.lean` and another untracked Lean file to replay fixture and prove baseline ignores both.
-- [ ] GREEN: enumerate the same Git-tracked Lean files as artifact source scanning rather than `rglob("*.lean")`.
-- [ ] Verify real pinned Zeta replay still passes and baseline metric now measures only authoritative source files.
+- [x] RED: add `.lake/packages/.../*.lean` and another untracked Lean file to replay fixture and prove baseline ignores both.
+- [x] GREEN: enumerate the same Git-tracked Lean files as artifact source scanning rather than `rglob("*.lean")`.
+- [x] Verify real pinned Zeta replay still passes and baseline metric now measures only authoritative source files.
 
 ### Task 6: Keep canonical artifact path continuously reachable during publication
 
-- [ ] RED: reproduce interruption/failure in the publication swap window and assert the old canonical artifact remains reachable and valid.
-- [ ] GREEN: publish with a crash-safe indirection or atomic replacement strategy appropriate to the current local single-consumer workflow; do not introduce a service/database layer.
-- [ ] Verify regression plus full suite; document the exact filesystem atomicity assumption.
+- [x] RED: reproduce interruption/failure in the publication swap window and assert the old canonical artifact remains reachable and valid.
+- [x] GREEN: make published artifacts immutable; stage and verify in the target parent filesystem, then use one `os.replace` only for a new/empty output path. Existing non-empty artifacts fail closed instead of entering a swap window.
+- [x] Verify regression plus full suite; staging is created in `out_dir.parent`, so first publication uses one same-filesystem `os.replace`; published non-empty paths are immutable.
 
 ### Deferred from PR #4
 
@@ -64,9 +64,9 @@
 
 ### Completion Gate
 
-- [ ] `git diff --check` clean.
-- [ ] Full unittest suite PASS from the implementation worktree.
-- [ ] Real pinned Zeta23 rebuild/replay PASS.
+- [x] `git diff --check` clean.
+- [x] Full unittest suite PASS from the implementation worktree.
+- [x] Real pinned Zeta23 rebuild/replay PASS.
 - [ ] One consolidated push to PR #4.
 - [ ] Request Codex exact-head re-review with the same narrow correctness rubric.
 - [ ] Corrected GitHub artifact independently consumed without Lean before Issue #1 bootstrap acceptance.
