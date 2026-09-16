@@ -58,7 +58,7 @@ def sample_edges():
             target_id="lean:Zeta23.Tiny.a",
             relation="value_dependency",
             evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-            producer="LeanDepViz@deadbeef",
+            producer="cameronfreer/LeanDepViz@deadbeef",
         )
     ]
 
@@ -176,7 +176,7 @@ class ArtifactTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.missing",
                 relation="value_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
             write_sample_raw(path, edges=[edge])
             with self.assertRaises(RepoSearchError) as caught:
@@ -294,7 +294,7 @@ class StructuralIntegrityTests(unittest.TestCase):
                     target_id="lean:Mathlib.Algebra.outside",
                     relation="value_dependency",
                     evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                    producer="LeanDepViz@deadbeef",
+                    producer="cameronfreer/LeanDepViz@deadbeef",
                 )
             ]
             write_sample_raw(path, nodes=nodes, edges=edges)
@@ -399,6 +399,43 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("partial node source location", str(caught.exception))
 
+    def test_noncanonical_lean_node_id_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            bad = Node(
+                id="python:Zeta23.Tiny.b",
+                name=nodes[0].name,
+                kind=nodes[0].kind,
+                module=nodes[0].module,
+                source_path=nodes[0].source_path,
+                source_start_line=nodes[0].source_start_line,
+                source_end_line=nodes[0].source_end_line,
+                source_commit=nodes[0].source_commit,
+            )
+            write_sample_raw(path, nodes=[bad, nodes[1]], edges=[])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("non-canonical Lean node id", str(caught.exception))
+
+    def test_edge_producer_must_match_manifest_pin(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = sample_edges()[0]
+            bad = Edge(
+                source_id=edge.source_id,
+                target_id=edge.target_id,
+                relation=edge.relation,
+                evidence_grade=edge.evidence_grade,
+                producer="other/extractor@badc0de",
+            )
+            write_sample_raw(path, edges=[bad])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("edge producer mismatch", str(caught.exception))
+
     def test_duplicate_edge_rows_are_blocked_before_projection(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
@@ -427,7 +464,7 @@ class StructuralIntegrityTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.a",
                 relation="value_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
             write_sample_raw(path, edges=[edge])
             with self.assertRaises(RepoSearchError) as caught:
@@ -443,7 +480,7 @@ class StructuralIntegrityTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.a",
                 relation="mystery_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
             write_sample_raw(path, edges=[edge])
             with self.assertRaises(RepoSearchError) as caught:

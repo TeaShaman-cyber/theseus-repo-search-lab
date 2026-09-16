@@ -57,7 +57,7 @@ class RetrievalTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.N0star_lower_moment",
                 relation="value_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
         ]
         sources = [

@@ -344,6 +344,9 @@ def load_artifact(
     node_id_list = [node.id for node in nodes]
     if len(set(node_id_list)) != len(node_id_list):
         raise _integrity("duplicate node id")
+    for node in nodes:
+        if not node.id.startswith("lean:") or not node.id.removeprefix("lean:"):
+            raise _integrity(f"non-canonical Lean node id: {node.id}")
     edge_keys = [
         (edge.source_id, edge.target_id, edge.relation, edge.producer)
         for edge in edges
@@ -411,7 +414,15 @@ def load_artifact(
                     raise _integrity(f"node source location mismatch: {node.id}")
 
     node_ids = set(node_id_list)
+    expected_edge_producer = (
+        f"{manifest.producer.tool_repo}@{manifest.producer.tool_commit}"
+    )
     for edge in edges:
+        if edge.producer != expected_edge_producer:
+            raise _integrity(
+                "edge producer mismatch: "
+                f"expected {expected_edge_producer}, observed {edge.producer}"
+            )
         expected_grade = _DEPENDENCY_GRADE_BY_RELATION.get(edge.relation)
         if expected_grade is None:
             raise _integrity(f"unsupported dependency relation: {edge.relation}")

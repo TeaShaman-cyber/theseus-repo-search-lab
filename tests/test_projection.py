@@ -41,7 +41,7 @@ class ProjectionTests(unittest.TestCase):
                 target_id="lean:Zeta23.Tiny.a",
                 relation="value_dependency",
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-                producer="LeanDepViz@deadbeef",
+                producer="cameronfreer/LeanDepViz@deadbeef",
             )
         ]
         text = "/-- Equality-family witness for rank trace tightness. -/\nlemma a : True := by trivial\n"

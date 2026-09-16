@@ -29,7 +29,7 @@ def edge(source: str, target: str) -> Edge:
         target_id=f"lean:{target}",
         relation="value_dependency",
         evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-        producer="LeanDepViz@test",
+        producer="cameronfreer/LeanDepViz@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     )
 
 
