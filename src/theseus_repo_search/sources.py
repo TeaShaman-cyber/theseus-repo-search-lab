@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import re
+import subprocess
+from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 
-from .model import SourceChunk
+from .model import Node, SourceChunk
 
 
 DECL_RE = re.compile(
@@ -43,12 +45,53 @@ def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:
     return starts
 
 
-def scan_lean_sources(source_root: Path, *, source_commit: str) -> list[SourceChunk]:
+
+
+def _tracked_lean_files(source_root: Path) -> list[Path]:
+    try:
+        repo_root_text = subprocess.check_output(
+            ["git", "-C", str(source_root), "rev-parse", "--show-toplevel"],
+            text=True,
+        ).strip()
+        repo_root = Path(repo_root_text).resolve()
+        relative_root = source_root.resolve().relative_to(repo_root)
+        pathspec = "." if relative_root == Path(".") else relative_root.as_posix()
+        output = subprocess.check_output(
+            ["git", "-C", str(repo_root), "ls-files", "-z", "--", pathspec],
+        )
+    except (OSError, subprocess.CalledProcessError, ValueError) as exc:
+        raise RuntimeError(f"cannot enumerate tracked source files: {source_root}") from exc
+
+    files: list[Path] = []
+    for raw in output.split(b"\0"):
+        if not raw:
+            continue
+        relative = Path(raw.decode("utf-8"))
+        path = (repo_root / relative).resolve()
+        if path.suffix != ".lean":
+            continue
+        try:
+            path.relative_to(source_root.resolve())
+        except ValueError:
+            continue
+        files.append(path)
+    return sorted(files, key=lambda path: path.relative_to(source_root).as_posix())
+
+def scan_lean_sources(
+    source_root: Path, *, source_commit: str, tracked_only: bool = False
+) -> list[SourceChunk]:
     chunks: list[SourceChunk] = []
-    files = sorted(
-        source_root.rglob("*.lean"),
-        key=lambda path: path.relative_to(source_root).as_posix(),
-    )
+    if tracked_only:
+        files = _tracked_lean_files(source_root)
+    else:
+        files = sorted(
+            (
+                path
+                for path in source_root.rglob("*.lean")
+                if ".lake" not in path.relative_to(source_root).parts
+            ),
+            key=lambda path: path.relative_to(source_root).as_posix(),
+        )
 
     for path in files:
         relative_path = path.relative_to(source_root).as_posix()
@@ -85,3 +128,34 @@ def scan_lean_sources(source_root: Path, *, source_commit: str) -> list[SourceCh
             )
 
     return sorted(chunks, key=lambda chunk: (chunk.source_path, chunk.source_start_line, chunk.id))
+
+
+def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Node]:
+    by_path_and_name: dict[tuple[str, str], list[SourceChunk]] = {}
+    for chunk in sources:
+        if chunk.declaration_hint is None:
+            continue
+        by_path_and_name.setdefault(
+            (chunk.source_path, chunk.declaration_hint), []
+        ).append(chunk)
+
+    bound: list[Node] = []
+    for node in nodes:
+        if node.source_path is not None:
+            bound.append(node)
+            continue
+        expected_path = f"{node.module.replace('.', '/')}.lean"
+        matches = by_path_and_name.get((expected_path, node.name), [])
+        if len(matches) != 1:
+            bound.append(node)
+            continue
+        chunk = matches[0]
+        bound.append(
+            replace(
+                node,
+                source_path=chunk.source_path,
+                source_start_line=chunk.source_start_line,
+                source_end_line=chunk.source_end_line,
+            )
+        )
+    return bound

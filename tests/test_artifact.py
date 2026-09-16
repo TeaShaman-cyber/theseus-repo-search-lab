@@ -1,10 +1,17 @@
+import hashlib
 import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 from hashlib import sha256
 
-from theseus_repo_search.artifact import artifact_identity, load_artifact, write_artifact
+from theseus_repo_search.artifact import (
+    _write_artifact_contents,
+    artifact_identity,
+    load_artifact,
+    write_artifact,
+)
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.model import (
     ArtifactScope,
@@ -76,6 +83,21 @@ def sample_sources():
 _DEFAULT = object()
 
 
+def write_sample_raw(path: Path, *, nodes=None, edges=None, sources=_DEFAULT, scope=SCOPE):
+    return _write_artifact_contents(
+        path,
+        nodes=sample_nodes() if nodes is None else nodes,
+        edges=sample_edges() if edges is None else edges,
+        sources=sample_sources() if sources is _DEFAULT else sources,
+        source_repo="anthropics/formal-math",
+        source_commit=SOURCE_COMMIT,
+        source_subdir="zeta23",
+        producer=PRODUCER,
+        scope=scope,
+        created_from_authoritative_commit=True,
+    )
+
+
 def write_sample(path: Path, *, nodes=None, edges=None, sources=_DEFAULT, scope=SCOPE):
     return write_artifact(
         path,
@@ -107,6 +129,32 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual((p1 / "sources.jsonl").read_bytes(), (p2 / "sources.jsonl").read_bytes())
             self.assertEqual(artifact_identity(m1), artifact_identity(m2))
 
+    def test_failed_rewrite_preserves_last_valid_artifact(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "artifact"
+            old_manifest = write_sample(path)
+            old_identity = artifact_identity(old_manifest)
+            old_writer = __import__("theseus_repo_search.artifact", fromlist=["_write_jsonl"])._write_jsonl
+
+            def flaky_writer(member_path, rows):
+                if member_path.name == "edges.jsonl":
+                    raise OSError("synthetic member write failure")
+                return old_writer(member_path, rows)
+
+            extra = Node.from_lean(
+                full_name="Zeta23.Tiny.c",
+                name="c",
+                kind="thm",
+                module="Zeta23.Tiny",
+                source_commit=SOURCE_COMMIT,
+            )
+            with mock.patch("theseus_repo_search.artifact._write_jsonl", side_effect=flaky_writer):
+                with self.assertRaises(OSError):
+                    write_sample(path, nodes=sample_nodes() + [extra])
+
+            manifest, _, _, _ = load_artifact(path)
+            self.assertEqual(artifact_identity(manifest), old_identity)
+
     def test_load_round_trips_written_artifact(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
@@ -136,7 +184,7 @@ class ArtifactTests(unittest.TestCase):
                 evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
                 producer="LeanDepViz@deadbeef",
             )
-            write_sample(path, edges=[edge])
+            write_sample_raw(path, edges=[edge])
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
@@ -152,7 +200,7 @@ class ArtifactTests(unittest.TestCase):
                 module="Zeta23.Tiny",
                 source_commit="wrong",
             )
-            write_sample(path, nodes=nodes)
+            write_sample_raw(path, nodes=nodes)
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
@@ -197,7 +245,7 @@ class SourceIntegrityTests(unittest.TestCase):
                 text=original.text,
                 content_sha256=original.content_sha256,
             )
-            write_sample(path, sources=[bad])
+            write_sample_raw(path, sources=[bad])
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
@@ -217,7 +265,7 @@ class SourceIntegrityTests(unittest.TestCase):
                 text=original.text,
                 content_sha256="0" * 64,
             )
-            write_sample(path, sources=[bad])
+            write_sample_raw(path, sources=[bad])
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
@@ -228,7 +276,7 @@ class StructuralIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
             nodes = sample_nodes()
-            write_sample(path, nodes=[nodes[0], nodes[0], nodes[1]])
+            write_sample_raw(path, nodes=[nodes[0], nodes[0], nodes[1]])
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
@@ -238,7 +286,7 @@ class StructuralIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
             edge = sample_edges()[0]
-            write_sample(path, edges=[edge, edge])
+            write_sample_raw(path, edges=[edge, edge])
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
@@ -248,7 +296,7 @@ class StructuralIntegrityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
             source = sample_sources()[0]
-            write_sample(path, sources=[source, source])
+            write_sample_raw(path, sources=[source, source])
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
@@ -268,8 +316,26 @@ class StructuralIntegrityTests(unittest.TestCase):
                 text=original.text,
                 content_sha256=original.content_sha256,
             )
-            write_sample(path, sources=[bad])
+            write_sample_raw(path, sources=[bad])
             with self.assertRaises(RepoSearchError) as caught:
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("invalid source range", str(caught.exception))
+
+    def test_null_node_id_is_blocked_instead_of_coerced_to_string(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_sample(path)
+            nodes_path = path / "nodes.jsonl"
+            rows = [json.loads(line) for line in nodes_path.read_text(encoding="utf-8").splitlines()]
+            rows[0]["id"] = None
+            data = "".join(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in rows)
+            nodes_path.write_text(data, encoding="utf-8")
+            manifest_path = path / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["members"]["nodes"]["sha256"] = hashlib.sha256(data.encode()).hexdigest()
+            manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("invalid artifact record", str(caught.exception))

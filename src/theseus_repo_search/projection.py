@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 import sqlite3
 from hashlib import sha256
 from pathlib import Path
@@ -74,7 +76,11 @@ def _canonical_json(value: object) -> bytes:
 
 
 def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
+    fts_schema = conn.execute(
+        "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'sources_fts'"
+    ).fetchone()
     return {
+        "fts_schema": None if fts_schema is None else fts_schema[0],
         "meta": conn.execute(
             "SELECT key, value FROM meta ORDER BY key"
         ).fetchall(),
@@ -100,13 +106,8 @@ def projection_fingerprint(db_path: Path) -> str:
     return sha256(_canonical_json(payload)).hexdigest()
 
 
-def build_projection(artifact_dir: Path, db_path: Path) -> str:
+def _populate_projection(artifact_dir: Path, db_path: Path) -> None:
     manifest, nodes, edges, sources = load_artifact(artifact_dir)
-
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    if db_path.exists():
-        db_path.unlink()
-
     conn = sqlite3.connect(db_path)
     try:
         with conn:
@@ -137,21 +138,14 @@ def build_projection(artifact_dir: Path, db_path: Path) -> str:
                 ("producer.kind", manifest.producer.kind),
             )
             conn.executemany("INSERT INTO meta(key, value) VALUES (?, ?)", meta_rows)
-
             conn.executemany(
                 "INSERT INTO nodes(id, name, kind, module, source_path, "
                 "source_start_line, source_end_line, source_commit) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     (
-                        node.id,
-                        node.name,
-                        node.kind,
-                        node.module,
-                        node.source_path,
-                        node.source_start_line,
-                        node.source_end_line,
-                        node.source_commit,
+                        node.id, node.name, node.kind, node.module, node.source_path,
+                        node.source_start_line, node.source_end_line, node.source_commit,
                     )
                     for node in nodes
                 ],
@@ -161,11 +155,8 @@ def build_projection(artifact_dir: Path, db_path: Path) -> str:
                 "VALUES (?, ?, ?, ?, ?)",
                 [
                     (
-                        edge.source_id,
-                        edge.target_id,
-                        edge.relation,
-                        edge.evidence_grade.value,
-                        edge.producer,
+                        edge.source_id, edge.target_id, edge.relation,
+                        edge.evidence_grade.value, edge.producer,
                     )
                     for edge in edges
                 ],
@@ -176,20 +167,38 @@ def build_projection(artifact_dir: Path, db_path: Path) -> str:
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     (
-                        chunk.id,
-                        chunk.source_commit,
-                        chunk.source_path,
-                        chunk.source_start_line,
-                        chunk.source_end_line,
-                        chunk.declaration_hint,
-                        chunk.text,
-                        chunk.content_sha256,
+                        chunk.id, chunk.source_commit, chunk.source_path,
+                        chunk.source_start_line, chunk.source_end_line,
+                        chunk.declaration_hint, chunk.text, chunk.content_sha256,
                     )
                     for chunk in sources
                 ],
             )
             conn.execute("INSERT INTO sources_fts(sources_fts) VALUES('rebuild')")
+            conn.execute("INSERT INTO sources_fts(sources_fts) VALUES('integrity-check')")
     finally:
         conn.close()
 
-    return projection_fingerprint(db_path)
+
+def build_projection(artifact_dir: Path, db_path: Path) -> str:
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(
+        prefix=f".{db_path.name}.tmp-", suffix=".sqlite", dir=db_path.parent
+    )
+    os.close(fd)
+    staged = Path(temp_name)
+    try:
+        _populate_projection(artifact_dir, staged)
+        with sqlite3.connect(staged) as conn:
+            quick = conn.execute("PRAGMA quick_check").fetchone()
+            if quick is None or quick[0] != "ok":
+                raise RepoSearchError(
+                    "BLOCKED_PROJECTION_INTEGRITY",
+                    f"SQLite quick_check failed: {None if quick is None else quick[0]}",
+                )
+        fingerprint = projection_fingerprint(staged)
+        os.replace(staged, db_path)
+        return fingerprint
+    finally:
+        if staged.exists():
+            staged.unlink()

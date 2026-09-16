@@ -41,7 +41,6 @@ class CliTests(unittest.TestCase):
             "--producer-tool-repo", "cameronfreer/LeanDepViz",
             "--producer-tool-commit", TOOL_COMMIT,
             "--producer-tool-hash", TOOL_HASH,
-            "--authoritative-readback",
             "--raw-depgraph", RAW,
             "--out", out,
         )
@@ -65,6 +64,93 @@ class CliTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)
+
+
+    def test_authoritative_readback_rejects_non_git_source_root(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source = root / "zeta23"
+            source.mkdir()
+            (source / "Tiny.lean").write_text("theorem a : True := by trivial\n", encoding="utf-8")
+            out = root / "artifact"
+            result = self.run_cli(
+                "build-artifact",
+                "--source-root", source,
+                "--source-repo", "anthropics/formal-math",
+                "--source-commit", SOURCE_COMMIT,
+                "--source-subdir", "zeta23",
+                "--root-module", "Zeta23",
+                "--producer-kind", "lean-dep-viz",
+                "--producer-tool-repo", "cameronfreer/LeanDepViz",
+                "--producer-tool-commit", TOOL_COMMIT,
+                "--producer-tool-hash", TOOL_HASH,
+                "--authoritative-readback",
+                "--raw-depgraph", RAW,
+                "--out", out,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stderr)
+            self.assertEqual(payload["code"], "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(out.exists())
+
+    def test_authoritative_readback_requires_clean_checkout_at_exact_commit(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            repo = root / "repo"
+            source = repo / "zeta23"
+            source.mkdir(parents=True)
+            (source / "Tiny.lean").write_text("theorem a : True := by trivial\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", repo, "remote", "add", "origin", "https://github.com/example/repo.git"], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", "fixture"], check=True)
+            commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            generated = source / ".lake" / "packages" / "Fake" / "Fake.lean"
+            generated.parent.mkdir(parents=True)
+            generated.write_text("theorem generated : True := by trivial\n", encoding="utf-8")
+            out = root / "artifact"
+            result = self.run_cli(
+                "build-artifact",
+                "--source-root", source,
+                "--source-repo", "example/repo",
+                "--source-commit", commit,
+                "--source-subdir", "zeta23",
+                "--root-module", "Zeta23",
+                "--producer-kind", "lexical-only",
+                "--producer-tool-repo", "TeaShaman-cyber/theseus-repo-search-lab",
+                "--producer-tool-commit", TOOL_COMMIT,
+                "--producer-tool-hash", TOOL_HASH,
+                "--authoritative-readback",
+                "--lexical-only",
+                "--out", out,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["sources"], 1)
+            manifest, _, _, _ = load_artifact(out)
+            self.assertTrue(manifest.created_from_authoritative_commit)
+
+            (source / "Tiny.lean").write_text("theorem a : False := by trivial\n", encoding="utf-8")
+            dirty_out = root / "dirty-artifact"
+            dirty = self.run_cli(
+                "build-artifact",
+                "--source-root", source,
+                "--source-repo", "example/repo",
+                "--source-commit", commit,
+                "--source-subdir", "zeta23",
+                "--root-module", "Zeta23",
+                "--producer-kind", "lexical-only",
+                "--producer-tool-repo", "TeaShaman-cyber/theseus-repo-search-lab",
+                "--producer-tool-commit", TOOL_COMMIT,
+                "--producer-tool-hash", TOOL_HASH,
+                "--authoritative-readback",
+                "--lexical-only",
+                "--out", dirty_out,
+            )
+            self.assertNotEqual(dirty.returncode, 0)
+            self.assertEqual(json.loads(dirty.stderr)["code"], "BLOCKED_SOURCE_MISMATCH")
+            self.assertFalse(dirty_out.exists())
 
     def test_exact_build_writes_four_members_and_verify_returns_verified(self):
         with tempfile.TemporaryDirectory() as d:
@@ -93,6 +179,16 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["dependency_boundary"], "internal_only")
             self.assertEqual(payload["scope_root_modules"], ["Zeta23"])
 
+    def test_missing_projection_emits_machine_readable_error_without_traceback(self):
+        with tempfile.TemporaryDirectory() as d:
+            missing = Path(d) / "missing.sqlite"
+            result = self.run_cli("search", "--db", missing, "--query", "zeta")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, "")
+            payload = json.loads(result.stderr)
+            self.assertEqual(payload["code"], "UNAVAILABLE_PROJECTION")
+            self.assertNotIn("Traceback", result.stderr)
+
     def test_search_no_hit_is_unknown_but_successful_process(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -114,7 +210,7 @@ class CliTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(result.stdout, "")
             payload = json.loads(result.stderr)
-            self.assertEqual(payload["status"], "ERROR")
+            self.assertEqual(payload["status"], "BLOCKED")
             self.assertEqual(payload["code"], "BLOCKED_ARTIFACT_INTEGRITY")
 
     def test_lexical_only_artifact_is_searchable_and_has_zero_graph(self):

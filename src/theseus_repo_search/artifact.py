@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import tempfile
+import uuid
 from hashlib import sha256
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -73,7 +77,7 @@ def artifact_identity(manifest: ArtifactManifest) -> str:
     return _sha256(_canonical_json(payload))
 
 
-def write_artifact(
+def _write_artifact_contents(
     out_dir: Path,
     *,
     nodes: Sequence[Node],
@@ -114,8 +118,6 @@ def write_artifact(
 
     sources_path = out_dir / "sources.jsonl"
     if sorted_sources is None:
-        if sources_path.exists():
-            sources_path.unlink()
         sources_sha256 = None
     else:
         sources_sha256 = _write_jsonl(
@@ -140,6 +142,60 @@ def write_artifact(
     return manifest
 
 
+def _publish_artifact_directory(staged: Path, out_dir: Path) -> None:
+    backup: Path | None = None
+    try:
+        if out_dir.exists():
+            backup = out_dir.parent / f".{out_dir.name}.backup-{uuid.uuid4().hex}"
+            os.replace(out_dir, backup)
+        os.replace(staged, out_dir)
+    except Exception:
+        if backup is not None and backup.exists() and not out_dir.exists():
+            os.replace(backup, out_dir)
+        raise
+    else:
+        if backup is not None and backup.exists():
+            shutil.rmtree(backup)
+
+
+def write_artifact(
+    out_dir: Path,
+    *,
+    nodes: Sequence[Node],
+    edges: Sequence[Edge],
+    sources: Sequence[SourceChunk] | None,
+    source_repo: str,
+    source_commit: str,
+    source_subdir: str,
+    producer: ProducerPin,
+    scope: ArtifactScope,
+    created_from_authoritative_commit: bool,
+) -> ArtifactManifest:
+    out_dir.parent.mkdir(parents=True, exist_ok=True)
+    staged = Path(
+        tempfile.mkdtemp(prefix=f".{out_dir.name}.tmp-", dir=out_dir.parent)
+    )
+    try:
+        manifest = _write_artifact_contents(
+            staged,
+            nodes=nodes,
+            edges=edges,
+            sources=sources,
+            source_repo=source_repo,
+            source_commit=source_commit,
+            source_subdir=source_subdir,
+            producer=producer,
+            scope=scope,
+            created_from_authoritative_commit=created_from_authoritative_commit,
+        )
+        load_artifact(staged)
+        _publish_artifact_directory(staged, out_dir)
+        return manifest
+    finally:
+        if staged.exists():
+            shutil.rmtree(staged, ignore_errors=True)
+
+
 def _integrity(message: str) -> RepoSearchError:
     return RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", message)
 
@@ -159,45 +215,71 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
     return rows
 
 
+def _require_str(data: dict[str, object], key: str) -> str:
+    value = data[key]
+    if not isinstance(value, str):
+        raise TypeError(f"{key} must be a string")
+    return value
+
+
+def _require_int(data: dict[str, object], key: str) -> int:
+    value = data[key]
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{key} must be an integer")
+    return value
+
+
+def _optional_str(data: dict[str, object], key: str) -> str | None:
+    value = data[key]
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise TypeError(f"{key} must be a string or null")
+    return value
+
+
+def _optional_int(data: dict[str, object], key: str) -> int | None:
+    value = data[key]
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{key} must be an integer or null")
+    return value
+
+
 def _node_from_dict(data: dict[str, object]) -> Node:
     return Node(
-        id=str(data["id"]),
-        name=str(data["name"]),
-        kind=str(data["kind"]),
-        module=str(data["module"]),
-        source_path=(None if data["source_path"] is None else str(data["source_path"])),
-        source_start_line=(
-            None if data["source_start_line"] is None else int(data["source_start_line"])
-        ),
-        source_end_line=(
-            None if data["source_end_line"] is None else int(data["source_end_line"])
-        ),
-        source_commit=str(data["source_commit"]),
+        id=_require_str(data, "id"),
+        name=_require_str(data, "name"),
+        kind=_require_str(data, "kind"),
+        module=_require_str(data, "module"),
+        source_path=_optional_str(data, "source_path"),
+        source_start_line=_optional_int(data, "source_start_line"),
+        source_end_line=_optional_int(data, "source_end_line"),
+        source_commit=_require_str(data, "source_commit"),
     )
 
 
 def _edge_from_dict(data: dict[str, object]) -> Edge:
     return Edge(
-        source_id=str(data["source_id"]),
-        target_id=str(data["target_id"]),
-        relation=str(data["relation"]),
-        evidence_grade=EvidenceGrade(str(data["evidence_grade"])),
-        producer=str(data["producer"]),
+        source_id=_require_str(data, "source_id"),
+        target_id=_require_str(data, "target_id"),
+        relation=_require_str(data, "relation"),
+        evidence_grade=EvidenceGrade(_require_str(data, "evidence_grade")),
+        producer=_require_str(data, "producer"),
     )
 
 
 def _source_from_dict(data: dict[str, object]) -> SourceChunk:
     return SourceChunk(
-        id=str(data["id"]),
-        source_commit=str(data["source_commit"]),
-        source_path=str(data["source_path"]),
-        source_start_line=int(data["source_start_line"]),
-        source_end_line=int(data["source_end_line"]),
-        declaration_hint=(
-            None if data["declaration_hint"] is None else str(data["declaration_hint"])
-        ),
-        text=str(data["text"]),
-        content_sha256=str(data["content_sha256"]),
+        id=_require_str(data, "id"),
+        source_commit=_require_str(data, "source_commit"),
+        source_path=_require_str(data, "source_path"),
+        source_start_line=_require_int(data, "source_start_line"),
+        source_end_line=_require_int(data, "source_end_line"),
+        declaration_hint=_optional_str(data, "declaration_hint"),
+        text=_require_str(data, "text"),
+        content_sha256=_require_str(data, "content_sha256"),
     )
 
 

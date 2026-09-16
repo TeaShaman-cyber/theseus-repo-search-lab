@@ -160,7 +160,7 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
         if exact is not None:
             return [exact]
 
-        terms = re.findall(r"[A-Za-z0-9_]+", query)
+        terms = re.findall(r"\w+", query, flags=re.UNICODE)
         if not terms:
             return []
         fts_query = " OR ".join(f'"{term}"' for term in terms)

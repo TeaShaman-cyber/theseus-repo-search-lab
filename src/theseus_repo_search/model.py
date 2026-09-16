@@ -4,6 +4,36 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+def _require_dict(value: object, field: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise TypeError(f"{field} must be an object")
+    return value
+
+
+def _require_str(value: object, field: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field} must be a string")
+    return value
+
+
+def _require_int(value: object, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{field} must be an integer")
+    return value
+
+
+def _require_bool(value: object, field: str) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{field} must be a boolean")
+    return value
+
+
+def _require_optional_str(value: object, field: str) -> str | None:
+    if value is None:
+        return None
+    return _require_str(value, field)
+
+
 class EvidenceGrade(str, Enum):
     ELABORATED_VALUE_DEPENDENCY = "ELABORATED_VALUE_DEPENDENCY"
     ELABORATED_TYPE_DEPENDENCY = "ELABORATED_TYPE_DEPENDENCY"
@@ -159,49 +189,47 @@ class ArtifactManifest:
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> "ArtifactManifest":
-        source = data["source"]
-        producer = data["producer"]
-        scope = data["scope"]
-        members = data["members"]
-        counts = data["counts"]
-        assert isinstance(source, dict)
-        assert isinstance(producer, dict)
-        assert isinstance(scope, dict)
-        assert isinstance(members, dict)
-        assert isinstance(counts, dict)
-        nodes_member = members["nodes"]
-        edges_member = members["edges"]
-        sources_member = members["sources"]
-        assert isinstance(nodes_member, dict)
-        assert isinstance(edges_member, dict)
-        assert isinstance(sources_member, dict)
+        source = _require_dict(data["source"], "source")
+        producer = _require_dict(data["producer"], "producer")
+        scope = _require_dict(data["scope"], "scope")
+        members = _require_dict(data["members"], "members")
+        counts = _require_dict(data["counts"], "counts")
+        nodes_member = _require_dict(members["nodes"], "members.nodes")
+        edges_member = _require_dict(members["edges"], "members.edges")
+        sources_member = _require_dict(members["sources"], "members.sources")
         roots = scope["root_modules"]
-        assert isinstance(roots, list)
+        if not isinstance(roots, list) or not all(isinstance(item, str) for item in roots):
+            raise TypeError("scope.root_modules must be an array of strings")
+        nodes_count = _require_int(counts["nodes"], "counts.nodes")
+        edges_count = _require_int(counts["edges"], "counts.edges")
+        if nodes_count < 0 or edges_count < 0:
+            raise ValueError("artifact counts must be non-negative")
         return cls(
-            schema=str(data["schema"]),
-            source_repo=str(source["repo"]),
-            source_commit=str(source["commit"]),
-            source_subdir=str(source["subdir"]),
+            schema=_require_str(data["schema"], "schema"),
+            source_repo=_require_str(source["repo"], "source.repo"),
+            source_commit=_require_str(source["commit"], "source.commit"),
+            source_subdir=_require_str(source["subdir"], "source.subdir"),
             producer=ProducerPin(
-                kind=str(producer["kind"]),
-                tool_repo=str(producer["tool_repo"]),
-                tool_commit=str(producer["tool_commit"]),
-                tool_hash=str(producer["tool_hash"]),
+                kind=_require_str(producer["kind"], "producer.kind"),
+                tool_repo=_require_str(producer["tool_repo"], "producer.tool_repo"),
+                tool_commit=_require_str(producer["tool_commit"], "producer.tool_commit"),
+                tool_hash=_require_str(producer["tool_hash"], "producer.tool_hash"),
             ),
             scope=ArtifactScope(
-                root_modules=tuple(str(item) for item in roots),
-                dependency_boundary=str(scope["dependency_boundary"]),
+                root_modules=tuple(roots),
+                dependency_boundary=_require_str(
+                    scope["dependency_boundary"], "scope.dependency_boundary"
+                ),
             ),
-            nodes_sha256=str(nodes_member["sha256"]),
-            edges_sha256=str(edges_member["sha256"]),
-            sources_sha256=(
-                None
-                if sources_member["sha256"] is None
-                else str(sources_member["sha256"])
+            nodes_sha256=_require_str(nodes_member["sha256"], "members.nodes.sha256"),
+            edges_sha256=_require_str(edges_member["sha256"], "members.edges.sha256"),
+            sources_sha256=_require_optional_str(
+                sources_member["sha256"], "members.sources.sha256"
             ),
-            nodes_count=int(counts["nodes"]),
-            edges_count=int(counts["edges"]),
-            created_from_authoritative_commit=bool(
-                data["created_from_authoritative_commit"]
+            nodes_count=nodes_count,
+            edges_count=edges_count,
+            created_from_authoritative_commit=_require_bool(
+                data["created_from_authoritative_commit"],
+                "created_from_authoritative_commit",
             ),
         )

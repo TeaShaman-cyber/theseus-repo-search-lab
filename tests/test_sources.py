@@ -1,9 +1,11 @@
 import tempfile
+import subprocess
 import unittest
 from hashlib import sha256
 from pathlib import Path
 
-from theseus_repo_search.sources import scan_lean_sources
+from theseus_repo_search.model import Node
+from theseus_repo_search.sources import bind_node_sources, scan_lean_sources
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "lean_src"
@@ -58,3 +60,47 @@ class SourceChunkTests(unittest.TestCase):
             )
             chunks = scan_lean_sources(root, source_commit="abc123")
             self.assertEqual([chunk.declaration_hint for chunk in chunks], ["real_one"])
+
+    def test_module_path_disambiguates_same_short_declaration_name(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "Zeta23").mkdir()
+            (root / "Zeta23" / "A.lean").write_text(
+                "theorem shared : True := by trivial\n", encoding="utf-8"
+            )
+            (root / "Zeta23" / "B.lean").write_text(
+                "theorem shared : True := by trivial\n", encoding="utf-8"
+            )
+            chunks = scan_lean_sources(root, source_commit="abc123")
+            node = Node.from_lean(
+                full_name="Zeta23.A.shared",
+                name="shared",
+                kind="thm",
+                module="Zeta23.A",
+                source_commit="abc123",
+            )
+            bound = bind_node_sources([node], chunks)[0]
+            self.assertEqual(bound.source_path, "Zeta23/A.lean")
+            self.assertEqual((bound.source_start_line, bound.source_end_line), (1, 1))
+
+    def test_tracked_only_scan_excludes_lake_and_untracked_lean_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            repo = Path(d) / "repo"
+            source = repo / "zeta23"
+            tracked = source / "Zeta23" / "Main.lean"
+            tracked.parent.mkdir(parents=True)
+            tracked.write_text("theorem tracked_decl : True := by trivial\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", "fixture"], check=True)
+            generated = source / ".lake" / "packages" / "Fake" / "Fake.lean"
+            generated.parent.mkdir(parents=True)
+            generated.write_text("theorem generated_decl : True := by trivial\n", encoding="utf-8")
+            untracked = source / "Zeta23" / "Scratch.lean"
+            untracked.write_text("theorem scratch_decl : True := by trivial\n", encoding="utf-8")
+
+            chunks = scan_lean_sources(source, source_commit="abc123", tracked_only=True)
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["tracked_decl"])
+            self.assertEqual([chunk.source_path for chunk in chunks], ["Zeta23/Main.lean"])

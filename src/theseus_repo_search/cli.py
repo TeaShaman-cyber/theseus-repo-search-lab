@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import sys
+import subprocess
 from dataclasses import asdict
 from pathlib import Path
 
@@ -13,7 +15,7 @@ from .model import ArtifactScope, EvidenceGrade, ProducerPin
 from .normalize import normalize_leandepviz
 from .projection import build_projection
 from .retrieval import SearchHit, context as build_context, search as search_repo
-from .sources import scan_lean_sources
+from .sources import bind_node_sources, scan_lean_sources
 
 
 def _emit(payload: dict[str, object], *, stream=sys.stdout) -> None:
@@ -21,11 +23,99 @@ def _emit(payload: dict[str, object], *, stream=sys.stdout) -> None:
 
 
 def _error(exc: RepoSearchError) -> int:
+    if exc.code.startswith("BLOCKED_"):
+        status = "BLOCKED"
+    elif exc.code.startswith("UNAVAILABLE_"):
+        status = "UNAVAILABLE"
+    elif exc.code.startswith("DEGRADED_"):
+        status = "DEGRADED"
+    else:
+        status = "ERROR"
     _emit(
-        {"status": "ERROR", "code": exc.code, "message": str(exc)},
+        {"status": status, "code": exc.code, "message": str(exc)},
         stream=sys.stderr,
     )
     return 2
+
+
+
+
+def _normalized_github_repo(value: str) -> str | None:
+    text = value.strip().removesuffix(".git")
+    if text.startswith("https://github.com/"):
+        return text[len("https://github.com/"):]
+    if text.startswith("git@github.com:"):
+        return text[len("git@github.com:"):]
+    if text.startswith("ssh://git@github.com/"):
+        return text[len("ssh://git@github.com/"):]
+    if "/" in text and "://" not in text and "@" not in text:
+        return text
+    return None
+
+
+def _git_read(source_root: Path, *args: str) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(source_root), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"source root is not a readable Git checkout: {source_root}",
+        ) from exc
+    return result.stdout.strip()
+
+
+def _verify_authoritative_source(
+    source_root: Path, *, source_repo: str, source_commit: str, source_subdir: str
+) -> None:
+    repo_root = Path(_git_read(source_root, "rev-parse", "--show-toplevel")).resolve()
+    actual_commit = _git_read(source_root, "rev-parse", "HEAD")
+    if actual_commit != source_commit:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            f"source commit mismatch: expected {source_commit}, observed {actual_commit}",
+        )
+
+    subdir_path = Path(source_subdir) if source_subdir else Path(".")
+    if subdir_path.is_absolute() or ".." in subdir_path.parts:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            f"invalid source subdir for authoritative binding: {source_subdir}",
+        )
+    expected_root = (repo_root / subdir_path).resolve()
+    if source_root.resolve() != expected_root:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            f"source root does not match source subdir: expected {expected_root}, observed {source_root.resolve()}",
+        )
+
+    origin = _git_read(repo_root, "remote", "get-url", "origin")
+    observed_repo = _normalized_github_repo(origin)
+    expected_repo = _normalized_github_repo(source_repo)
+    if expected_repo is None or observed_repo != expected_repo:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            f"source repository mismatch: expected {source_repo}, observed {origin}",
+        )
+
+    relative = source_root.resolve().relative_to(repo_root).as_posix() or "."
+    status = _git_read(
+        repo_root,
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=no",
+        "--",
+        relative,
+    )
+    if status:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "source checkout is dirty inside the authoritative source scope",
+        )
 
 
 def _search_hit_dict(hit: SearchHit) -> dict[str, object]:
@@ -64,6 +154,13 @@ def _load_raw_depgraph(path: Path) -> dict[str, object]:
 
 
 def _cmd_build_artifact(args: argparse.Namespace) -> int:
+    if args.authoritative_readback:
+        _verify_authoritative_source(
+            args.source_root,
+            source_repo=args.source_repo,
+            source_commit=args.source_commit,
+            source_subdir=args.source_subdir,
+        )
     root_modules = tuple(args.root_module)
     if args.lexical_only:
         nodes = []
@@ -79,7 +176,13 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
         )
         producer_kind = args.producer_kind
 
-    sources = scan_lean_sources(args.source_root, source_commit=args.source_commit)
+    sources = scan_lean_sources(
+        args.source_root,
+        source_commit=args.source_commit,
+        tracked_only=args.authoritative_readback,
+    )
+    if nodes:
+        nodes = bind_node_sources(nodes, sources)
     manifest = write_artifact(
         args.out,
         nodes=nodes,
@@ -245,3 +348,10 @@ def main(argv: list[str] | None = None) -> int:
         return int(args.func(args))
     except RepoSearchError as exc:
         return _error(exc)
+    except sqlite3.Error as exc:
+        return _error(
+            RepoSearchError(
+                "UNAVAILABLE_PROJECTION",
+                f"SQLite projection unavailable: {exc}",
+            )
+        )

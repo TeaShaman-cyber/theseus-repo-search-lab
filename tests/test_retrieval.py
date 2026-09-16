@@ -25,7 +25,7 @@ class RetrievalTests(unittest.TestCase):
         artifact = root / "artifact"
         db = root / "projection.db"
         target_text = (
-            "/-- Equality-family witness for rank trace tightness. -/\n"
+            "/-- Equality-family witness for rank trace tightness and ξ symmetry. -/\n"
             "lemma lemmaR_tight_two : True := by trivial\n"
         )
         neighbor_text = (
@@ -118,6 +118,13 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(hits[0].declaration_hint, "lemmaR_tight_two")
             self.assertEqual(hits[0].evidence_grade, EvidenceGrade.LEXICAL_HIT)
             self.assertIn("rank trace tightness", hits[0].text)
+
+    def test_unicode_query_reaches_fts5_unicode61(self):
+        with tempfile.TemporaryDirectory() as d:
+            db, _ = self.build_db(Path(d))
+            hits = search(db, "ξ")
+            self.assertTrue(hits)
+            self.assertEqual(hits[0].declaration_hint, "lemmaR_tight_two")
 
     def test_no_hit_returns_empty_list(self):
         with tempfile.TemporaryDirectory() as d:

@@ -69,6 +69,36 @@ class ManifestTests(unittest.TestCase):
 
         self.assertEqual(ArtifactManifest.from_dict(manifest.to_dict()), manifest)
 
+    def test_manifest_rejects_string_boolean_authority_attestation(self):
+        from theseus_repo_search.model import ArtifactManifest, ArtifactScope, ProducerPin
+
+        manifest = ArtifactManifest(
+            schema="theseus.repo-index.v1",
+            source_repo="anthropics/formal-math",
+            source_commit="abc123",
+            source_subdir="zeta23",
+            producer=ProducerPin(
+                kind="lean-dep-viz",
+                tool_repo="cameronfreer/LeanDepViz",
+                tool_commit="deadbeef",
+                tool_hash="012345",
+            ),
+            scope=ArtifactScope(
+                root_modules=("Zeta23",),
+                dependency_boundary="internal_only",
+            ),
+            nodes_sha256="n" * 64,
+            edges_sha256="e" * 64,
+            sources_sha256=None,
+            nodes_count=1,
+            edges_count=2,
+            created_from_authoritative_commit=True,
+        )
+        payload = manifest.to_dict()
+        payload["created_from_authoritative_commit"] = "false"
+        with self.assertRaises(TypeError):
+            ArtifactManifest.from_dict(payload)
+
 class SerializationTests(unittest.TestCase):
     def test_node_to_dict_preserves_null_source_range(self):
         node = Node.from_lean(
