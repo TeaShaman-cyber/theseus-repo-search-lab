@@ -282,6 +282,33 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("duplicate node id", str(caught.exception))
 
+    def test_out_of_scope_node_is_blocked_for_internal_only_artifact(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes() + [
+                Node.from_lean(
+                    full_name="Mathlib.Algebra.outside",
+                    name="outside",
+                    kind="thm",
+                    module="Mathlib.Algebra",
+                    source_commit=SOURCE_COMMIT,
+                )
+            ]
+            edges = sample_edges() + [
+                Edge(
+                    source_id="lean:Zeta23.Tiny.b",
+                    target_id="lean:Mathlib.Algebra.outside",
+                    relation="value_dependency",
+                    evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+                    producer="LeanDepViz@deadbeef",
+                )
+            ]
+            write_sample_raw(path, nodes=nodes, edges=edges)
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("node outside declared root-module scope", str(caught.exception))
+
     def test_duplicate_edge_rows_are_blocked_before_projection(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)

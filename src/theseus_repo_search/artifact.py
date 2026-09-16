@@ -355,6 +355,14 @@ def load_artifact(
 
     if any(node.source_commit != manifest.source_commit for node in nodes):
         raise _integrity("node source commit mismatch")
+    for node in nodes:
+        if not any(
+            node.module == root or node.module.startswith(f"{root}.")
+            for root in manifest.scope.root_modules
+        ):
+            raise _integrity(
+                f"node outside declared root-module scope: {node.id} ({node.module})"
+            )
     if any(chunk.source_commit != manifest.source_commit for chunk in sources):
         raise _integrity("source chunk commit mismatch")
     for chunk in sources:
