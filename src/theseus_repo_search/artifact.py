@@ -259,6 +259,11 @@ def load_artifact(
         raise _integrity("edge count mismatch")
     if any(node.source_commit != manifest.source_commit for node in nodes):
         raise _integrity("node source commit mismatch")
+    if any(chunk.source_commit != manifest.source_commit for chunk in sources):
+        raise _integrity("source chunk commit mismatch")
+    for chunk in sources:
+        if _sha256(chunk.text.encode("utf-8")) != chunk.content_sha256:
+            raise _integrity(f"source chunk content hash mismatch: {chunk.id}")
 
     node_ids = {node.id for node in nodes}
     for edge in edges:

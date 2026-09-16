@@ -181,3 +181,44 @@ class ArtifactTests(unittest.TestCase):
             self.assertIsNone(manifest.sources_sha256)
             _, _, _, sources = load_artifact(path)
             self.assertEqual(sources, [])
+
+class SourceIntegrityTests(unittest.TestCase):
+    def test_source_commit_must_match_manifest_commit(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            original = sample_sources()[0]
+            bad = SourceChunk(
+                id=original.id,
+                source_commit="wrong",
+                source_path=original.source_path,
+                source_start_line=original.source_start_line,
+                source_end_line=original.source_end_line,
+                declaration_hint=original.declaration_hint,
+                text=original.text,
+                content_sha256=original.content_sha256,
+            )
+            write_sample(path, sources=[bad])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("source chunk commit mismatch", str(caught.exception))
+
+    def test_source_content_hash_must_match_text(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            original = sample_sources()[0]
+            bad = SourceChunk(
+                id=original.id,
+                source_commit=original.source_commit,
+                source_path=original.source_path,
+                source_start_line=original.source_start_line,
+                source_end_line=original.source_end_line,
+                declaration_hint=original.declaration_hint,
+                text=original.text,
+                content_sha256="0" * 64,
+            )
+            write_sample(path, sources=[bad])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("source chunk content hash mismatch", str(caught.exception))
