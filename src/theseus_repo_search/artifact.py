@@ -257,15 +257,31 @@ def load_artifact(
         raise _integrity("node count mismatch")
     if len(edges) != manifest.edges_count:
         raise _integrity("edge count mismatch")
+
+    node_id_list = [node.id for node in nodes]
+    if len(set(node_id_list)) != len(node_id_list):
+        raise _integrity("duplicate node id")
+    edge_keys = [
+        (edge.source_id, edge.target_id, edge.relation, edge.producer)
+        for edge in edges
+    ]
+    if len(set(edge_keys)) != len(edge_keys):
+        raise _integrity("duplicate edge")
+    source_ids = [chunk.id for chunk in sources]
+    if len(set(source_ids)) != len(source_ids):
+        raise _integrity("duplicate source id")
+
     if any(node.source_commit != manifest.source_commit for node in nodes):
         raise _integrity("node source commit mismatch")
     if any(chunk.source_commit != manifest.source_commit for chunk in sources):
         raise _integrity("source chunk commit mismatch")
     for chunk in sources:
+        if chunk.source_start_line < 1 or chunk.source_end_line < chunk.source_start_line:
+            raise _integrity(f"invalid source range: {chunk.id}")
         if _sha256(chunk.text.encode("utf-8")) != chunk.content_sha256:
             raise _integrity(f"source chunk content hash mismatch: {chunk.id}")
 
-    node_ids = {node.id for node in nodes}
+    node_ids = set(node_id_list)
     for edge in edges:
         if edge.source_id not in node_ids or edge.target_id not in node_ids:
             raise _integrity("edge endpoint outside node set")

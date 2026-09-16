@@ -222,3 +222,54 @@ class SourceIntegrityTests(unittest.TestCase):
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("source chunk content hash mismatch", str(caught.exception))
+
+class StructuralIntegrityTests(unittest.TestCase):
+    def test_duplicate_node_ids_are_blocked_before_projection(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            nodes = sample_nodes()
+            write_sample(path, nodes=[nodes[0], nodes[0], nodes[1]])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("duplicate node id", str(caught.exception))
+
+    def test_duplicate_edge_rows_are_blocked_before_projection(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = sample_edges()[0]
+            write_sample(path, edges=[edge, edge])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("duplicate edge", str(caught.exception))
+
+    def test_duplicate_source_ids_are_blocked_before_projection(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            source = sample_sources()[0]
+            write_sample(path, sources=[source, source])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("duplicate source id", str(caught.exception))
+
+    def test_invalid_source_line_range_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            original = sample_sources()[0]
+            bad = SourceChunk(
+                id="src:Zeta23/Tiny.lean:2:1",
+                source_commit=original.source_commit,
+                source_path=original.source_path,
+                source_start_line=2,
+                source_end_line=1,
+                declaration_hint=original.declaration_hint,
+                text=original.text,
+                content_sha256=original.content_sha256,
+            )
+            write_sample(path, sources=[bad])
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("invalid source range", str(caught.exception))
