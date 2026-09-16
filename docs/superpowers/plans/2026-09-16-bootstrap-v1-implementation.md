@@ -44,6 +44,7 @@ src/theseus_repo_search/
     retrieval.py         exact-name, lexical search, and bounded context assembly
     cli.py               JSON-first CLI surface
 scripts/
+    producer_guard.py    source binding + exact-command failure-state wrapper
     replay_zeta23.py     pinned acceptance replay and baseline measurements
     consume_artifact_smoke.py
 producer/
@@ -769,6 +770,8 @@ git commit -m "feat: add lexical retrieval and bounded context assembly"
 
 **Interfaces:**
 
+`build-artifact` has two explicit modes: exact (`--raw-depgraph`) and degraded lexical-only (`--lexical-only`). The degraded mode writes zero graph nodes/edges plus `sources.jsonl`, sets `producer.kind=lexical_only`, and remains searchable. Exact graph commands against it must return `UNAVAILABLE_EVIDENCE_GRADE`. v1 does not emit `STATIC_REFERENCE`; that grade remains reserved for a later parser-derived reference extractor.
+
 ```text
 repo-search build-artifact
 repo-search verify-artifact
@@ -796,7 +799,9 @@ Assert:
 - `build-index` returns a fingerprint;
 - `deps` returns boundary metadata;
 - search no-hit exits `0` with `status=UNKNOWN` and empty hits;
-- tampered artifact exits non-zero with `BLOCKED_ARTIFACT_INTEGRITY`.
+- tampered artifact exits non-zero with `BLOCKED_ARTIFACT_INTEGRITY`;
+- `build-artifact --lexical-only` produces a searchable zero-edge artifact;
+- `deps` against that lexical-only projection exits non-zero with `UNAVAILABLE_EVIDENCE_GRADE`.
 
 - [ ] **Step 2: Verify failure**
 
@@ -806,23 +811,25 @@ PYTHONPATH=src python -m unittest tests.test_cli -v
 
 - [ ] **Step 3: Implement parser and orchestration**
 
-`build-artifact` requires:
+`build-artifact` common arguments:
 
 ```text
---raw-depgraph PATH
 --source-root PATH
 --source-repo OWNER/REPO
 --source-commit 40_HEX_SHA
 --source-subdir PATH
 --root-module MODULE        repeatable
---extractor-repo OWNER/REPO
---extractor-commit 40_HEX_SHA
---extractor-hash 64_HEX_SHA256
+--producer-kind KIND
+--producer-tool-repo OWNER/REPO
+--producer-tool-commit 40_HEX_SHA
+--producer-tool-hash 64_HEX_SHA256
 --authoritative-readback
 --out PATH
 ```
 
-It performs only `read raw graph -> normalize -> scan lexical sources -> write artifact`; it never invokes Lean, Git clone, or network fetch.
+Exact mode additionally requires `--raw-depgraph PATH`. Degraded mode uses `--lexical-only` and forbids `--raw-depgraph`; it scans sources, writes zero nodes/edges, and remains lexical-searchable.
+
+The command performs only `read/normalize graph when present -> scan lexical sources -> write artifact`; it never invokes Lean, Git clone, or network fetch.
 
 Graph depth defaults `1` and rejects `>5`.
 
@@ -855,6 +862,8 @@ git commit -m "feat: expose repository lens CLI"
 
 **Files:**
 - Create: `producer/zeta23.json`
+- Create: `scripts/producer_guard.py`
+- Create: `tests/test_producer_guard.py`
 - Create: `.github/workflows/zeta23-producer-smoke.yml`
 - Create: `scripts/replay_zeta23.py`
 
@@ -877,7 +886,19 @@ git commit -m "feat: expose repository lens CLI"
 }
 ```
 
-- [ ] **Step 2: Write replay script before workflow**
+- [ ] **Step 2: Write and test the producer guard before workflow**
+
+`scripts/producer_guard.py` exposes `checkout_exact(repo_url, commit, dest)`, `verify_checked_out_commit(repo_dir, expected)`, and `run_exact_command(argv, cwd)`. Checkout/fetch failures raise `BLOCKED_SOURCE_BINDING`; SHA mismatch raises `BLOCKED_SOURCE_MISMATCH`; nonzero Lean/cache/build/extractor commands raise `DEGRADED_EXACT_EXTRACTION_UNAVAILABLE`. Its CLI emits one JSON error object to stderr and exits non-zero.
+
+`tests/test_producer_guard.py` uses `unittest.mock.patch("subprocess.run")` to force each failure and assert the three exact codes.
+
+Run:
+
+```bash
+PYTHONPATH=src python -m unittest tests.test_producer_guard -v
+```
+
+- [ ] **Step 3: Write replay script before workflow**
 
 Registered graph assertions:
 
@@ -903,7 +924,7 @@ assert baseline_unique_paths > fts_unique_paths
 
 Do not hardcode historical `152` as correctness.
 
-- [ ] **Step 3: Add producer workflow**
+- [ ] **Step 4: Add producer workflow**
 
 Triggers:
 
@@ -937,7 +958,7 @@ Job:
 
 Permissions: `contents: read`. No secrets.
 
-- [ ] **Step 4: Run local non-Lean checks**
+- [ ] **Step 5: Run local non-Lean checks**
 
 ```bash
 python -m unittest discover -s tests -v
@@ -947,14 +968,14 @@ ruby -e 'require "yaml"; YAML.load_file(".github/workflows/zeta23-producer-smoke
 
 GitHub Actions remains authoritative for workflow semantics.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add producer/zeta23.json .github/workflows/zeta23-producer-smoke.yml scripts/replay_zeta23.py
+git add producer/zeta23.json scripts/producer_guard.py tests/test_producer_guard.py .github/workflows/zeta23-producer-smoke.yml scripts/replay_zeta23.py
 git commit -m "feat: add pinned Zeta23 artifact producer"
 ```
 
-- [ ] **Step 6: Require green producer smoke before merge**
+- [ ] **Step 7: Require green producer smoke before merge**
 
 Observed evidence must include exact source readback, exact extractor hash, `verify-artifact=VERIFIED`, replay PASS, and artifact upload. Add workflow failure-path tests by invoking the guarded source/readback helper with a nonexistent commit and a forced mismatched expected SHA; assert the emitted codes are `BLOCKED_SOURCE_BINDING` and `BLOCKED_SOURCE_MISMATCH`. Unit-test the build/extractor wrapper with a failing command and assert `DEGRADED_EXACT_EXTRACTION_UNAVAILABLE`. Green CI alone does not satisfy Task 10.
 
