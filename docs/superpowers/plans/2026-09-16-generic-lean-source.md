@@ -79,6 +79,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.producer_config import (
     LeanGitSource,
     RunnerPins,
@@ -116,9 +117,22 @@ class LeanGitSourceTests(unittest.TestCase):
                 "build_target": "Zeta23",
             }), encoding="utf-8")
             self.assertEqual(load_lean_git_source(path).source_id, "zeta23")
+
+
+class RunnerPinsTests(unittest.TestCase):
+    def test_loads_valid_runner_pins(self):
+        runner = RunnerPins.from_dict({
+            "schema": "theseus.lean-producer-runner.v1",
+            "extractor_repo": "cameronfreer/LeanDepViz",
+            "extractor_commit": "b" * 40,
+            "extractor_main_sha256": "c" * 64,
+            "elan_version": "v4.2.3",
+            "elan_sha256": "d" * 64,
+        })
+        self.assertEqual(runner.extractor_commit, "b" * 40)
 ```
 
-- [ ] **Step 2: Run RED**
+- [ ] **Step 2: Run initial import RED**
 
 Run:
 
@@ -128,7 +142,58 @@ PYTHONPATH=src python3 -m unittest -v tests.test_producer_config
 
 Expected: import failure because `theseus_repo_search.producer_config` does not exist.
 
-- [ ] **Step 3: Add fail-closed validation tests and observe RED before implementation**
+- [ ] **Step 3: Add an importable happy-path skeleton, then add validation RED tests**
+
+After the module-missing RED, add only enough production code for the valid descriptor and valid runner fixtures to import and construct objects. This skeleton must not reject malformed values yet. Run only the valid cases and require GREEN before adding validation expectations.
+
+```python
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class LeanGitSource:
+    schema: str; source_id: str; source_repo: str; source_commit: str
+    source_subdir: str; root_modules: tuple[str, ...]; build_target: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> "LeanGitSource":
+        return cls(str(data["schema"]), str(data["source_id"]), str(data["source_repo"]),
+                   str(data["source_commit"]), str(data["source_subdir"]),
+                   tuple(data["root_modules"]), str(data["build_target"]))
+
+@dataclass(frozen=True)
+class RunnerPins:
+    schema: str; extractor_repo: str; extractor_commit: str
+    extractor_main_sha256: str; elan_version: str; elan_sha256: str
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> "RunnerPins":
+        return cls(**{k: str(v) for k, v in data.items()})
+
+def _load_json_object(path: Path) -> dict[str, object]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(value, dict)
+    return value
+
+
+def load_lean_git_source(path: Path) -> LeanGitSource:
+    return LeanGitSource.from_dict(_load_json_object(path))
+
+
+def load_runner_pins(path: Path) -> RunnerPins:
+    return RunnerPins.from_dict(_load_json_object(path))
+```
+
+Run the valid cases and require GREEN before adding validation expectations:
+
+```bash
+PYTHONPATH=src python3 -m unittest -v \
+  tests.test_producer_config.LeanGitSourceTests.test_loads_valid_descriptor \
+  tests.test_producer_config.LeanGitSourceTests.test_load_file_uses_same_contract \
+  tests.test_producer_config.RunnerPinsTests.test_loads_valid_runner_pins
+```
 
 Add tests that each assert `RepoSearchError.code == "BLOCKED_SOURCE_BINDING"` for:
 
@@ -144,6 +209,19 @@ bad_cases = [
     {"build_target": ""},
 ]
 ```
+Add runner-specific RED cases before strict `RunnerPins.from_dict` exists:
+
+```python
+bad_runner_cases = [
+    {"schema": "wrong.runner.schema"},
+    {"extractor_commit": "main"},
+    {"extractor_main_sha256": "g" * 64},
+    {"elan_sha256": "g" * 64},
+]
+```
+
+Also add an unknown runner key such as `publisher` and require `BLOCKED_SOURCE_BINDING`.
+
 
 Also test unknown keys fail closed:
 
@@ -705,23 +783,31 @@ Do **not** concatenate `SOURCE_SUBDIR` in shell. Extend the tested loader with a
 
 Example workflow shape after that test is GREEN:
 
-```bash
-python3 scripts/load_producer_env.py \
-  --source "${{ matrix.source_descriptor }}" \
-  --runner producer/runner.json \
-  --checkout-root "$GITHUB_WORKSPACE/_target/source" \
-  --github-env "$GITHUB_ENV"
+```yaml
+- name: Resolve canonical source root
+  shell: bash
+  run: |
+    set -euo pipefail
+    python3 scripts/load_producer_env.py \
+      --source "${{ matrix.source_descriptor }}" \
+      --runner producer/runner.json \
+      --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+      --github-env "$GITHUB_ENV"
 
-test -n "$SOURCE_ROOT"
-test -f "$SOURCE_ROOT/lean-toolchain"
-printf 'observed_lean_toolchain=%s\n' "$(cat "$SOURCE_ROOT/lean-toolchain")"
+- name: Observe source-owned Lean toolchain
+  shell: bash
+  run: |
+    set -euo pipefail
+    test -n "$SOURCE_ROOT"
+    test -f "$SOURCE_ROOT/lean-toolchain"
+    printf "observed_lean_toolchain=%s\n" "$(cat "$SOURCE_ROOT/lean-toolchain")"
 ```
 
 `SOURCE_ROOT` must be the exact value returned by `resolve_source_root`; Lake/Lean/any source-owned executable is forbidden before this containment check succeeds. Do not compare the observed toolchain to a descriptor copy; the exact Git commit is the authority binding the file.
 
 - [ ] **Step 5: Install the pinned generic runner prerequisites, then keep one generic Lake build path**
 
-Carry forward the exact bootstrap operations from the corrected Zeta producer before invoking Lake or LeanDepViz:
+Put the following bootstrap operations in a dedicated Actions step before invoking Lake or LeanDepViz:
 
 ```bash
 curl --fail --location --proto '=https' --tlsv1.2 \
@@ -739,13 +825,18 @@ curl --fail --location --proto '=https' --tlsv1.2 \
 echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
 ```
 
-These are generic runner prerequisites, not source-specific branches. Do not replace the hash checks with floating installs.
+These are generic runner prerequisites, not source-specific branches. Do not replace the hash checks with floating installs. Because `$GITHUB_PATH` takes effect only for subsequent Actions steps, Lake must not run in the installer step.
 
-Then run the source-owned Lake commands:
+Run the source-owned Lake commands in the next workflow step:
 
-```bash
-python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
-python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+```yaml
+- name: Restore source cache and build
+  shell: bash
+  run: |
+    set -euo pipefail
+    command -v lake
+    python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+    python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
 ```
 
 - [ ] **Step 6: Keep one generic bound LeanDepViz extraction path after verified bootstrap**
@@ -825,7 +916,16 @@ python3 "${{ matrix.replay_script }}" \
 
 Before any replay assertion, bind the disposable projection back to the supplied artifact: read `meta.artifact_identity` from SQLite and require exact equality with `artifact_identity(load_artifact(...).manifest)`. A mismatched DB/artifact pair is a replay failure, never a PASS receipt. Add the mismatch as a RED regression first.
 
-The replay also loads the selected `LeanGitSource` descriptor and requires exact equality of manifest `source_repo`, `source_commit`, and `source_subdir` to the descriptor. This makes the OpenAI smoke prove the pinned `openai/LongGapsBetweenPrimes@03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b` repository-root snapshot rather than any artifact from that repository.
+Every replay loads the selected `LeanGitSource` descriptor and requires exact equality of manifest `source_repo`, `source_commit`, `source_subdir`, and `scope.root_modules` to that descriptor. This prevents a same-repository/same-commit artifact produced from a different extraction scope from receiving a PASS receipt.
+
+
+Apply the Zeta replay changes in three observable TDD slices; do **not** add all new expectations before the first production edit:
+
+1. **Signature/provenance happy path:** add only the valid artifact+descriptor call, observe RED against the old two-argument signature, then make the valid producer-CI path GREEN.
+2. **Identity/scope guards:** add DB/artifact mismatch, descriptor repo/commit/subdir mismatch, and same-source-but-different-`root_modules` mismatch cases. Observe those guards RED while the valid case stays GREEN, then add the exact guards below.
+3. **Artifact-only consumer:** add the `source_root=None` baseline assertions, observe RED against the still-unconditional grep baseline, then add the conditional baseline branch below.
+
+For the scope RED case, keep repo/commit/subdir identical and change only descriptor `root_modules`; it must fail with `artifact provenance/scope does not match selected source descriptor`.
 
 Before changing `replay_zeta23.py`, add this RED change to `tests/test_replay_zeta23.py`:
 
@@ -840,8 +940,18 @@ self.assertEqual(result["provenance"], {
     "subdir": "zeta23",
 })
 ```
+Also add an artifact-only RED call before implementation:
 
-Make four exact incremental edits to `scripts/replay_zeta23.py` without replacing its existing replay body:
+```python
+artifact_only = run_replay(db, artifact, descriptor, None)
+self.assertFalse(artifact_only["metrics"]["baseline_checked"])
+self.assertIsNone(artifact_only["metrics"]["baseline_unique_paths"])
+```
+
+The existing producer-CI call with a real `source_root` must continue to assert the grep-vs-FTS scanning reduction.
+
+
+Make five exact incremental edits to `scripts/replay_zeta23.py` without replacing its existing replay body:
 
 1. Add `import sqlite3`, `artifact_identity`/`load_artifact`, and `load_lean_git_source` imports.
 2. Change the signature to `run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path, source_root: Path | None = None)`. Core graph/lexical assertions are artifact-only; repository-wide grep comparison runs only when `source_root` is provided by producer CI.
@@ -854,10 +964,12 @@ with sqlite3.connect(db_path) as conn:
     projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
 if projected_identity != artifact_identity(manifest):
     raise AssertionError("projection/artifact identity mismatch")
-if (manifest.source_repo, manifest.source_commit, manifest.source_subdir) != (
-    source.source_repo, source.source_commit, source.source_subdir,
+if (
+    manifest.source_repo, manifest.source_commit, manifest.source_subdir, manifest.scope.root_modules,
+) != (
+    source.source_repo, source.source_commit, source.source_subdir, source.root_modules,
 ):
-    raise AssertionError("artifact provenance does not match selected source descriptor")
+    raise AssertionError("artifact provenance/scope does not match selected source descriptor")
 ```
 
 Then insert this key into the existing return dictionary immediately after `"status": "PASS",`:
@@ -870,7 +982,26 @@ Then insert this key into the existing return dictionary immediately after `"sta
 },
 ```
 
-Replace the parser/main tail with the explicit additional artifact argument:
+
+4. Replace the existing unconditional baseline block with an explicit producer-only branch:
+
+```python
+fts_paths_count, fts_paths = _fts_unique_paths(db_path)
+if fts_paths_count > 10:
+    raise AssertionError(f"FTS top-10 returned too many unique paths: {fts_paths_count}")
+
+baseline_paths: int | None = None
+if source_root is not None:
+    baseline_paths = _baseline_unique_paths(source_root)
+    if baseline_paths <= fts_paths_count:
+        raise AssertionError(
+            f"FTS did not reduce path scanning: baseline={baseline_paths}, fts={fts_paths_count}"
+        )
+```
+
+Return `"baseline_checked": source_root is not None` beside `"baseline_unique_paths": baseline_paths` in `metrics`. This preserves producer scanning evidence while making the independent artifact consumer source-checkout-free.
+
+5. Replace the parser/main tail with the explicit additional artifact argument:
 
 ```python
 def build_parser() -> argparse.ArgumentParser:
@@ -987,11 +1118,6 @@ self.assertGreater(result["graph"]["edge_count"], 0)
 self.assertGreater(len(result["context"]["chunks"]), 0)
 ```
 
-Also add two fail-closed RED cases before implementation:
-
-- projection DB built from artifact A paired with artifact B -> replay rejects `projection/artifact identity mismatch`;
-- descriptor commit/subdir differs from the artifact manifest -> replay rejects provenance mismatch.
-
 The committed OpenAI descriptor is the source of the expected exact pin; do not duplicate a second hard-coded commit constant inside replay code.
 
 - [ ] **Step 2: Run RED**
@@ -1002,7 +1128,21 @@ PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps
 
 Expected: import failure because `scripts.replay_long_gaps` does not exist.
 
-- [ ] **Step 3: Implement the source-grounded replay**
+- [ ] **Step 3: Implement only the happy-path replay shell**
+
+After the missing-module RED, add the smallest replay that can load the artifact/descriptor, run the grounded exact/graph/lexical/context checks, and return the PASS receipt for the valid synthetic fixture. Do not add DB/artifact or descriptor provenance/scope rejection yet. Run only the valid fixture and require GREEN.
+
+- [ ] **Step 4: Add identity, provenance, and scope guard RED cases**
+
+Now add three fail-closed cases and run them against the happy-path shell before adding guard code:
+
+- projection DB from artifact A paired with artifact B -> `projection/artifact identity mismatch`;
+- descriptor repo/commit/subdir differs from the manifest -> provenance mismatch;
+- descriptor `root_modules` differs while repo/commit/subdir remain identical -> provenance/scope mismatch.
+
+Run `PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps` and require the valid fixture to stay GREEN while these three guard cases are RED for the intended missing checks.
+
+- [ ] **Step 5: Add the replay identity/provenance/scope guards**
 
 Core checks:
 
@@ -1025,10 +1165,12 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
     if projected_identity != artifact_identity(manifest):
         raise AssertionError("projection/artifact identity mismatch")
-    if (manifest.source_repo, manifest.source_commit, manifest.source_subdir) != (
-        source.source_repo, source.source_commit, source.source_subdir,
+    if (
+        manifest.source_repo, manifest.source_commit, manifest.source_subdir, manifest.scope.root_modules,
+    ) != (
+        source.source_repo, source.source_commit, source.source_subdir, source.root_modules,
     ):
-        raise AssertionError("artifact provenance does not match selected source descriptor")
+        raise AssertionError("artifact provenance/scope does not match selected source descriptor")
 
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1 or exact_hits[0].source_path != "LongGapsBetweenPrimes.lean":
@@ -1098,14 +1240,14 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 ```
 
-- [ ] **Step 4: Run GREEN and full suite**
+- [ ] **Step 6: Run GREEN and full suite**
 
 ```bash
 PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps
 PYTHONPATH=src:. python3 -m unittest discover -v
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add scripts/replay_long_gaps.py tests/test_replay_long_gaps.py
@@ -1132,7 +1274,7 @@ The purpose is not to add another publisher adapter. It is to prove that a sourc
 - Create: `tests/test_replay_prime_gaps_186.py`
 
 **Interfaces:**
-- Same DB/artifact/descriptor identity checks as Task 4.
+- Requires exact SQLite `meta.artifact_identity` == supplied artifact identity and exact descriptor binding for repo, commit, subdir, and `root_modules`.
 - Uses unchanged public `search()`, `dependencies()`, and `context()` APIs.
 - Production code may not branch on `PrimeGaps186`, OpenAI, or Lean `v4.34.0-rc2`.
 
@@ -1146,18 +1288,47 @@ Create a synthetic artifact containing `PrimeGap186.primeGapLiminf_le_186` plus 
 PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
 ```
 
-- [ ] **Step 3: Implement minimal replay using the same identity/provenance guards as LongGaps**
+- [ ] **Step 3: Implement only the happy-path PrimeGaps replay shell**
 
-Use exact target `PrimeGap186.primeGapLiminf_le_186`. The real CI smoke must discover its actual elaborated neighborhood; the synthetic test only proves replay mechanics.
+After the missing-module RED, implement enough exact-search, elaborated-dependency, lexical/context, and receipt behavior for the valid synthetic fixture to pass. Do not yet reject DB/artifact or descriptor provenance/scope mismatch. Run the valid fixture alone and require GREEN.
 
-- [ ] **Step 4: Run focused GREEN and full suite**
+- [ ] **Step 4: Add PrimeGaps identity/provenance/scope behavioral RED cases**
+
+Add and run three fail-closed cases against that shell:
+
+- DB built from artifact A paired with artifact B;
+- descriptor repo/commit/subdir differs from the artifact manifest;
+- descriptor `root_modules` differs while repo/commit/subdir are identical.
+
+Require the valid fixture to stay GREEN while those three cases are RED for the intended absent guards.
+
+- [ ] **Step 5: Add the exact PrimeGaps replay guards**
+
+```python
+manifest, _, _, _ = load_artifact(artifact_path)
+source = load_lean_git_source(descriptor_path)
+with sqlite3.connect(db_path) as conn:
+    projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
+if projected_identity != artifact_identity(manifest):
+    raise AssertionError("projection/artifact identity mismatch")
+if (
+    manifest.source_repo, manifest.source_commit, manifest.source_subdir, manifest.scope.root_modules,
+) != (
+    source.source_repo, source.source_commit, source.source_subdir, source.root_modules,
+):
+    raise AssertionError("artifact provenance/scope does not match selected source descriptor")
+```
+
+Then run the real target `PrimeGap186.primeGapLiminf_le_186` through unchanged `search()`, `dependencies()`, and `context()` APIs. The real CI smoke discovers its actual elaborated neighborhood; the synthetic test only proves replay mechanics.
+
+- [ ] **Step 6: Run focused GREEN and full suite**
 
 ```bash
 PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
 PYTHONPATH=src:. python3 -m unittest discover -v
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add scripts/replay_prime_gaps_186.py tests/test_replay_prime_gaps_186.py
