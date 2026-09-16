@@ -19,6 +19,7 @@ class GraphResult:
     scope_root_modules: tuple[str, ...]
     dependency_boundary: str
     complete_within_scope: bool
+    created_from_authoritative_commit: bool
 
 
 def _validate_depth(depth: int) -> None:
@@ -26,10 +27,21 @@ def _validate_depth(depth: int) -> None:
         raise RepoSearchError("UNKNOWN", "depth exceeds v1 maximum of 5")
 
 
-def _metadata(conn: sqlite3.Connection) -> tuple[tuple[str, ...], str, str]:
+def _metadata(conn: sqlite3.Connection) -> tuple[tuple[str, ...], str, str, bool]:
     meta = dict(conn.execute("SELECT key, value FROM meta"))
     root_modules = tuple(str(item) for item in json.loads(meta["root_modules"]))
-    return root_modules, meta["dependency_boundary"], meta["producer.kind"]
+    authoritative = json.loads(meta["created_from_authoritative_commit"])
+    if not isinstance(authoritative, bool):
+        raise RepoSearchError(
+            "BLOCKED_PROJECTION_INTEGRITY",
+            "invalid created_from_authoritative_commit projection metadata",
+        )
+    return (
+        root_modules,
+        meta["dependency_boundary"],
+        meta["producer.kind"],
+        authoritative,
+    )
 
 
 def _require_elaborated_graph(producer_kind: str) -> None:
@@ -100,7 +112,7 @@ def _edge_record(
 def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphResult:
     _validate_depth(depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind = _metadata(conn)
+        roots, boundary, producer_kind, authoritative = _metadata(conn)
         _require_elaborated_graph(producer_kind)
         start = _resolve_name(conn, name)
 
@@ -134,6 +146,7 @@ def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphRe
         scope_root_modules=roots,
         dependency_boundary=boundary,
         complete_within_scope=True,
+        created_from_authoritative_commit=authoritative,
     )
 
 
@@ -154,7 +167,7 @@ def path(
 ) -> GraphResult:
     _validate_depth(max_depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind = _metadata(conn)
+        roots, boundary, producer_kind, authoritative = _metadata(conn)
         _require_elaborated_graph(producer_kind)
         source_id = _resolve_name(conn, source)
         target_id = _resolve_name(conn, target)
@@ -192,4 +205,5 @@ def path(
         scope_root_modules=roots,
         dependency_boundary=boundary,
         complete_within_scope=True,
+        created_from_authoritative_commit=authoritative,
     )

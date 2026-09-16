@@ -34,7 +34,10 @@ def edge(source: str, target: str) -> Edge:
 
 
 class GraphTests(unittest.TestCase):
-    def build_db(self, root: Path, *, ambiguous_a: bool = False, lexical_only: bool = False) -> Path:
+    def build_db(
+        self, root: Path, *, ambiguous_a: bool = False, lexical_only: bool = False,
+        authoritative: bool = True,
+    ) -> Path:
         artifact = root / "artifact"
         db = root / "projection.db"
         if lexical_only:
@@ -73,7 +76,7 @@ class GraphTests(unittest.TestCase):
             source_subdir="",
             producer=producer,
             scope=SCOPE,
-            created_from_authoritative_commit=True,
+            created_from_authoritative_commit=authoritative,
         )
         build_projection(artifact, db)
         return db
@@ -129,6 +132,12 @@ class GraphTests(unittest.TestCase):
             self.assertEqual(result.scope_root_modules, ("Zeta23",))
             self.assertEqual(result.dependency_boundary, "internal_only")
             self.assertTrue(result.complete_within_scope)
+
+    def test_graph_results_preserve_authoritative_readback_attestation(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d), authoritative=False)
+            result = dependencies(db, "B")
+            self.assertFalse(result.created_from_authoritative_commit)
 
     def test_depth_above_v1_limit_is_unknown(self):
         with tempfile.TemporaryDirectory() as d:

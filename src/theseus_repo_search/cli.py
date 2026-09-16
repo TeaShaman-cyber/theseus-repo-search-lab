@@ -134,6 +134,7 @@ def _graph_payload(result) -> dict[str, object]:
         "scope_root_modules": list(result.scope_root_modules),
         "dependency_boundary": result.dependency_boundary,
         "complete_within_scope": result.complete_within_scope,
+        "created_from_authoritative_commit": result.created_from_authoritative_commit,
     }
 
 

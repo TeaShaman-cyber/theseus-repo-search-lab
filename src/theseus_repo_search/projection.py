@@ -136,6 +136,10 @@ def _populate_projection(artifact_dir: Path, db_path: Path) -> None:
                 ),
                 ("dependency_boundary", manifest.scope.dependency_boundary),
                 ("producer.kind", manifest.producer.kind),
+                (
+                    "created_from_authoritative_commit",
+                    json.dumps(manifest.created_from_authoritative_commit),
+                ),
             )
             conn.executemany("INSERT INTO meta(key, value) VALUES (?, ?)", meta_rows)
             conn.executemany(

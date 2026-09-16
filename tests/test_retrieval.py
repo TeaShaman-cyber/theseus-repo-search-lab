@@ -21,7 +21,9 @@ COMMIT = "abc123"
 
 
 class RetrievalTests(unittest.TestCase):
-    def build_db(self, root: Path) -> tuple[Path, str]:
+    def build_db(
+        self, root: Path, *, authoritative: bool = True
+    ) -> tuple[Path, str]:
         artifact = root / "artifact"
         db = root / "projection.db"
         target_text = (
@@ -97,7 +99,7 @@ class RetrievalTests(unittest.TestCase):
                 root_modules=("Zeta23",),
                 dependency_boundary="internal_only",
             ),
-            created_from_authoritative_commit=True,
+            created_from_authoritative_commit=authoritative,
         )
         build_projection(artifact, db)
         return db, target_text
@@ -110,6 +112,14 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(hits[0].declaration_hint, "lemmaR_tight_two")
             self.assertEqual(hits[0].source_path, "Zeta23/Tiny.lean")
             self.assertEqual(hits[0].evidence_grade, EvidenceGrade.LEXICAL_HIT)
+
+    def test_query_results_preserve_authoritative_readback_attestation(self):
+        with tempfile.TemporaryDirectory() as d:
+            db, _ = self.build_db(Path(d), authoritative=False)
+            hits = search(db, "lemmaR_tight_two")
+            self.assertFalse(hits[0].created_from_authoritative_commit)
+            result = context(db, "lemmaR_tight_two", depth=1, token_budget=30)
+            self.assertFalse(result["created_from_authoritative_commit"])
 
     def test_lexical_query_finds_role_description(self):
         with tempfile.TemporaryDirectory() as d:

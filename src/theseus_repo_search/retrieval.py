@@ -22,6 +22,28 @@ class SearchHit:
     evidence_grade: EvidenceGrade
     score: float
     text: str | None
+    created_from_authoritative_commit: bool
+
+
+def _authoritative_attestation(conn: sqlite3.Connection) -> bool:
+    row = conn.execute(
+        "SELECT value FROM meta WHERE key = ?",
+        ("created_from_authoritative_commit",),
+    ).fetchone()
+    if row is None:
+        raise RepoSearchError(
+            "BLOCKED_PROJECTION_INTEGRITY",
+            "missing created_from_authoritative_commit projection metadata",
+        )
+    import json
+
+    value = json.loads(str(row[0]))
+    if not isinstance(value, bool):
+        raise RepoSearchError(
+            "BLOCKED_PROJECTION_INTEGRITY",
+            "invalid created_from_authoritative_commit projection metadata",
+        )
+    return value
 
 
 def _node_row_by_id(conn: sqlite3.Connection, node_id: str):
@@ -109,7 +131,9 @@ def _source_row_for_node(conn: sqlite3.Connection, node_row):
     return rows[0] if len(rows) == 1 else None
 
 
-def _exact_hit(conn: sqlite3.Connection, query: str) -> SearchHit | None:
+def _exact_hit(
+    conn: sqlite3.Connection, query: str, *, authoritative: bool
+) -> SearchHit | None:
     node_id = _unique_node_id(conn, query)
     if node_id is None:
         return None
@@ -127,6 +151,7 @@ def _exact_hit(conn: sqlite3.Connection, query: str) -> SearchHit | None:
             evidence_grade=EvidenceGrade.LEXICAL_HIT,
             score=0.0,
             text=None,
+            created_from_authoritative_commit=authoritative,
         )
     return SearchHit(
         declaration_id=node_id,
@@ -138,6 +163,7 @@ def _exact_hit(conn: sqlite3.Connection, query: str) -> SearchHit | None:
         evidence_grade=EvidenceGrade.LEXICAL_HIT,
         score=0.0,
         text=str(source_row[6]),
+        created_from_authoritative_commit=authoritative,
     )
 
 
@@ -156,7 +182,8 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
     if limit <= 0:
         return []
     with sqlite3.connect(db_path) as conn:
-        exact = _exact_hit(conn, query)
+        authoritative = _authoritative_attestation(conn)
+        exact = _exact_hit(conn, query, authoritative=authoritative)
         if exact is not None:
             return [exact]
 
@@ -183,6 +210,7 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
                 evidence_grade=EvidenceGrade.LEXICAL_HIT,
                 score=float(row[7]),
                 text=str(row[6]),
+                created_from_authoritative_commit=authoritative,
             )
             for row in rows
         ]
@@ -259,4 +287,5 @@ def context(
         "scope_root_modules": list(graph_result.scope_root_modules),
         "dependency_boundary": graph_result.dependency_boundary,
         "complete_within_scope": graph_result.complete_within_scope,
+        "created_from_authoritative_commit": graph_result.created_from_authoritative_commit,
     }

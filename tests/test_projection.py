@@ -96,6 +96,7 @@ class ProjectionTests(unittest.TestCase):
             self.assertEqual(meta["root_modules"], '["Zeta23"]')
             self.assertEqual(meta["dependency_boundary"], "internal_only")
             self.assertEqual(meta["producer.kind"], "lean-dep-viz")
+            self.assertEqual(meta["created_from_authoritative_commit"], "true")
 
     def test_projection_contains_expected_rows_and_working_fts(self):
         with tempfile.TemporaryDirectory() as d:
