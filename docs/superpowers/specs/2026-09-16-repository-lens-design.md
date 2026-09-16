@@ -109,9 +109,11 @@ source.repo
 source.commit
 source.subdir
 producer.kind
-producer.tool_version
+producer.tool_repo
+producer.tool_commit
 producer.tool_hash
 scope.root_modules
+scope.dependency_boundary
 members.nodes.sha256
 members.edges.sha256
 members.sources.sha256
@@ -122,7 +124,7 @@ created_from_authoritative_commit
 
 `created_from_authoritative_commit` is `true` only when the producer independently read back the checked-out commit before extraction. `members.sources.sha256` is null when `sources.jsonl` is absent; null means absent, not unchecked.
 
-Artifact identity is not the source commit alone. A v1 artifact identity is derived from the artifact schema, source repository/commit/subdir, extraction scope, producer kind/version/hash, and member hashes. Changing the extractor or scope at the same source commit therefore produces a different artifact identity.
+Artifact identity is not the source commit alone. A v1 artifact identity is derived from the artifact schema, source repository/commit/subdir, extraction scope, producer kind/repository/commit/hash, and member hashes. Changing the extractor or scope at the same source commit therefore produces a different artifact identity.
 
 ### `nodes.jsonl`
 
@@ -155,6 +157,8 @@ producer
 
 For the initial Lean exact graph, `relation` is `type_dependency` or `value_dependency` and the evidence grade is the corresponding elaborated grade.
 
+The v1 Lean artifact uses `scope.dependency_boundary = internal_only`: only declarations inside the declared root-module scope become normalized nodes/edges. A dropped Mathlib/Lean/external edge is therefore **outside scope**, not evidence of absence. Graph-query responses must return the artifact scope/boundary and may claim completeness only *within that declared boundary*. A future schema may add external stubs or a full-environment artifact, but v1 does not silently pretend to contain them.
+
 The normalized edge orientation is always **dependent declaration -> dependency**: `source_id` is the declaration whose type/value is being described, and `target_id` is the declaration it depends on. Extractors with the opposite native orientation are inverted during normalization. Therefore `dependencies(name)` follows outgoing edges and `reverse_dependencies(name)` follows incoming edges.
 
 ### `sources.jsonl`
@@ -185,13 +189,13 @@ path(source, target, max_depth=N)
 context(name, depth=N, token_budget=M)
 ```
 
-Defaults must be bounded. No unbounded recursive traversal is exposed by the normal LLM-facing command.
+Defaults must be bounded. No unbounded recursive traversal is exposed by the normal LLM-facing command. Every graph result also reports the artifact's `scope.root_modules` and `scope.dependency_boundary`; `complete_within_scope=true` never implies completeness outside that boundary.
 
 `context` may later borrow ranking ideas from Aider RepoMap, but v1 does not require PageRank. The first version can rank exact graph distance before adding another algorithmic dependency.
 
 ## Incremental lifecycle
 
-The source commit is a mandatory component of artifact identity, but not the whole identity. Schema, extraction scope, producer identity, and member hashes are also bound. A new source commit always produces a new immutable artifact identity, and a changed producer/scope at the same commit does too.
+The source commit is a mandatory component of artifact identity, but not the whole identity. Schema, extraction scope/boundary, producer repository/commit/hash, and member hashes are also bound. A new source commit always produces a new immutable artifact identity, and a changed producer/scope at the same commit does too.
 
 Local projections may use content-addressed reuse inspired by Continue, but incremental optimization is secondary to deterministic rebuild correctness.
 
@@ -233,7 +237,7 @@ The bootstrap implementation passes when:
 - MarcoPolo consumes a previously built artifact without Lean installed in the query path;
 - lexical replay reduces unrelated file scanning for meaning/role queries;
 - exact graph replay answers the three registered dependency questions from elaborated edges;
-- all returned evidence includes provenance and evidence grade;
+- all returned evidence includes provenance, evidence grade, and declared scope/boundary;
 - rebuilding the projection from the same artifact is deterministic for all contract-relevant fields;
 - no hosted credential is required for public-repository baseline operation.
 
@@ -246,7 +250,8 @@ Failures are explicit states rather than silent fallbacks:
 - exact producer cannot build target environment -> `DEGRADED_EXACT_EXTRACTION_UNAVAILABLE`;
 - artifact hash/manifest mismatch -> `BLOCKED_ARTIFACT_INTEGRITY`;
 - requested exact graph operation on a static-only artifact -> `UNAVAILABLE_EVIDENCE_GRADE`;
-- lexical search miss -> `UNKNOWN`, unless scope completeness is independently established.
+- lexical search miss -> `UNKNOWN`, unless scope completeness is independently established;
+- graph lookup crossing an omitted external boundary -> bounded result with explicit `internal_only` scope, never a global absence claim.
 
 ## Testing
 
