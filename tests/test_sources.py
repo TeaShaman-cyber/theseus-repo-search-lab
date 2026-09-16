@@ -1,3 +1,4 @@
+import os
 import tempfile
 import subprocess
 import unittest
@@ -102,5 +103,31 @@ class SourceChunkTests(unittest.TestCase):
             untracked.write_text("theorem scratch_decl : True := by trivial\n", encoding="utf-8")
 
             chunks = scan_lean_sources(source, source_commit="abc123", tracked_only=True)
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["tracked_decl"])
+            self.assertEqual([chunk.source_path for chunk in chunks], ["Zeta23/Main.lean"])
+
+    def test_tracked_only_scan_accepts_relative_source_root(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            repo = root / "repo"
+            source = repo / "zeta23"
+            tracked = source / "Zeta23" / "Main.lean"
+            tracked.parent.mkdir(parents=True)
+            tracked.write_text("theorem tracked_decl : True := by trivial\n", encoding="utf-8")
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", "fixture"], check=True)
+
+            original_cwd = Path.cwd()
+            try:
+                os.chdir(root)
+                chunks = scan_lean_sources(
+                    Path("repo/zeta23"), source_commit="abc123", tracked_only=True
+                )
+            finally:
+                os.chdir(original_cwd)
+
             self.assertEqual([chunk.declaration_hint for chunk in chunks], ["tracked_decl"])
             self.assertEqual([chunk.source_path for chunk in chunks], ["Zeta23/Main.lean"])

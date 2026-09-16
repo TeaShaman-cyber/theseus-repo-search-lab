@@ -80,6 +80,7 @@ def _tracked_lean_files(source_root: Path) -> list[Path]:
 def scan_lean_sources(
     source_root: Path, *, source_commit: str, tracked_only: bool = False
 ) -> list[SourceChunk]:
+    source_root = source_root.resolve()
     chunks: list[SourceChunk] = []
     if tracked_only:
         files = _tracked_lean_files(source_root)
