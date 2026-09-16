@@ -70,3 +70,42 @@
 - [ ] One consolidated push to PR #4.
 - [ ] Request Codex exact-head re-review with the same narrow correctness rubric.
 - [ ] Corrected GitHub artifact independently consumed without Lean before Issue #1 bootstrap acceptance.
+
+## Second Codex Review Addendum
+
+### Task 7: Bind authoritative raw dependency graphs to the verified source snapshot
+
+- [ ] RED: prove an authoritative build can currently stamp a raw graph from commit A as commit B.
+- [ ] GREEN: require a producer receipt for authoritative exact-mode builds that binds the raw graph SHA-256, source repository/commit/subdir, root modules, and producer pin to the guarded extraction operation.
+- [ ] Update the producer workflow to generate and consume the receipt; direct authoritative exact mode without a valid receipt must fail closed.
+- [ ] Verify receipt tampering, commit mismatch, graph hash mismatch, and happy path.
+
+### Task 8: Distinguish bounded no-path from a valid zero-length graph path
+
+- [ ] RED: disconnected declarations within `max_depth` must not serialize as `FOUND` with an empty edge list.
+- [ ] GREEN: return an explicit path-found outcome; CLI reports `UNKNOWN` for no bounded path while source==target remains a valid zero-edge `FOUND` path.
+- [ ] Verify graph library and JSON CLI behavior.
+
+### Task 9: Resolve lexical hits using source location when declaration names collide
+
+- [ ] RED: two in-scope declarations with the same short name but different source paths must resolve each FTS hit to the correct declaration ID.
+- [ ] GREEN: use source path/range binding before falling back to globally unique short-name resolution.
+- [ ] Verify duplicate-name lexical provenance and preserve existing exact-name ambiguity behavior.
+
+### Task 10: Make Lean comment detection lexical-state aware
+
+- [ ] RED: block-comment delimiters inside strings or line comments must not hide following declarations.
+- [ ] GREEN: track Lean string, line-comment, and nested block-comment state so only real block delimiters affect declaration visibility.
+- [ ] Verify nested comments, delimiter strings, line comments, and the existing theorem-shaped block-comment regression.
+
+### Task 11: Reject unknown LeanDepViz dependency endpoints
+
+- [ ] RED: a raw edge referencing a declaration absent from the raw `nodes` table must fail closed, while an edge to a known external node remains intentionally filtered.
+- [ ] GREEN: retain raw full-name/module membership separately from the in-scope normalized node map; reject truly unknown endpoints before scope filtering.
+- [ ] Verify the new regression, existing external-node filtering, and the full suite.
+
+### Task 12: Validate node source locations against source chunks
+
+- [ ] RED: a node bound to another declaration's source range must fail artifact loading; partial source location fields must also fail closed.
+- [ ] GREEN: when a node carries source location metadata, require a complete path/start/end triple and, when source chunks are present, exactly one chunk with the same path/range and declaration hint.
+- [ ] Verify malformed bindings are blocked while legitimately unbound/generated nodes remain accepted.
