@@ -204,6 +204,56 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(len(hits), 1)
             self.assertEqual(hits[0].declaration_id, "lean:Zeta23.A.foo")
 
+    def test_unlocated_node_does_not_bind_global_short_name_source(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = root / "artifact"
+            db = root / "projection.db"
+            foreign_text = "theorem foo : True := by trivial -- belongs to B\n"
+            write_artifact(
+                artifact,
+                nodes=[
+                    Node.from_lean(
+                        full_name="Zeta23.A.foo",
+                        name="foo",
+                        kind="thm",
+                        module="Zeta23.A",
+                        source_commit=COMMIT,
+                    )
+                ],
+                edges=[],
+                sources=[
+                    SourceChunk(
+                        id="src:Zeta23/B.lean:1:1",
+                        source_commit=COMMIT,
+                        source_path="Zeta23/B.lean",
+                        source_start_line=1,
+                        source_end_line=1,
+                        declaration_hint="foo",
+                        text=foreign_text,
+                        content_sha256=sha256(foreign_text.encode()).hexdigest(),
+                    )
+                ],
+                source_repo="example/repo",
+                source_commit=COMMIT,
+                source_subdir="",
+                producer=ProducerPin(
+                    kind="lean-dep-viz",
+                    tool_repo="cameronfreer/LeanDepViz",
+                    tool_commit="deadbeef",
+                    tool_hash="f" * 64,
+                ),
+                scope=ArtifactScope(
+                    root_modules=("Zeta23",), dependency_boundary="internal_only"
+                ),
+                created_from_authoritative_commit=True,
+            )
+            build_projection(artifact, db)
+            hit = search(db, "Zeta23.A.foo")[0]
+            self.assertEqual(hit.declaration_id, "lean:Zeta23.A.foo")
+            self.assertIsNone(hit.source_path)
+            self.assertIsNone(hit.text)
+
     def test_no_hit_returns_empty_list(self):
         with tempfile.TemporaryDirectory() as d:
             db, _ = self.build_db(Path(d))
