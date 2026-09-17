@@ -11,31 +11,56 @@ CACHE=${THESEUS_REPO_SEARCH_DEV_CACHE:-/tmp/theseus-repo-search-dev}
 export PYTHONPYCACHEPREFIX="$CACHE/pycache"
 mkdir -p "$PYTHONPYCACHEPREFIX"
 
-printf '%s\n' '== plan unittest discovery =='
+printf '%s\n' '== plan guards =='
 python3 - <<'PY_CHECK'
 from pathlib import Path
 import re
 import sys
 
 root = Path("docs/superpowers/plans")
-start = re.compile(r"^\s*```(?:python|python3|py)\s*$", re.IGNORECASE)
-end = re.compile(r"^\s*```\s*$")
+python_start = re.compile(r"^\s*```(?:python|python3|py)\s*$", re.IGNORECASE)
+exec_start = re.compile(r"^\s*```(?:sh|bash|shell|yaml|yml)\s*$", re.IGNORECASE)
+fence_end = re.compile(r"^\s*```\s*$")
 bad_test = re.compile(r"^(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\([^)]*\bself\b")
+create_path = re.compile(r"^\s*-\s*Create:\s*`?(scripts/[A-Za-z0-9_./-]+)`?\s*$", re.IGNORECASE)
+python_script = re.compile(r"(?:python3?|python)\s+(scripts/[A-Za-z0-9_./-]+\.py)")
+direct_script = re.compile(r"(?:^|[\s:])(?:\./)?(scripts/[A-Za-z0-9_./-]+\.(?:py|sh))")
 failures = []
 
 if root.is_dir():
     for path in sorted(root.rglob("*.md")):
-        in_python = False
-        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            if not in_python:
-                if start.match(line):
-                    in_python = True
+        lines = path.read_text(encoding="utf-8").splitlines()
+        creates = {}
+        for lineno, line in enumerate(lines, 1):
+            match = create_path.match(line)
+            if match and match.group(1) not in creates:
+                creates[match.group(1)] = lineno
+
+        mode = None
+        for lineno, line in enumerate(lines, 1):
+            if mode is None:
+                if python_start.match(line):
+                    mode = "python"
+                elif exec_start.match(line):
+                    mode = "exec"
                 continue
-            if end.match(line):
-                in_python = False
+            if fence_end.match(line):
+                mode = None
                 continue
-            if line == line.lstrip() and bad_test.match(line):
+            if mode == "python" and line == line.lstrip() and bad_test.match(line):
                 failures.append(f"{path}:{lineno}: undiscoverable module-level unittest snippet")
+            if mode != "exec":
+                continue
+            invoked = set(match.group(1) for match in python_script.finditer(line))
+            invoked.update(match.group(1) for match in direct_script.finditer(line))
+            for script in sorted(invoked):
+                if Path(script).is_file():
+                    continue
+                create_line = creates.get(script)
+                if create_line is None or create_line > lineno:
+                    failures.append(
+                        f"{path}:{lineno}: repo-local script {script} invoked before creation"
+                    )
 
 if failures:
     for failure in failures:

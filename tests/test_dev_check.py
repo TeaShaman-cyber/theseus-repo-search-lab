@@ -58,5 +58,19 @@ class DevCheckContractTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
+    def test_dev_check_rejects_script_invoked_before_plan_creation(self):
+        result = self._run_copied_check_with_plan(
+            """# Task 1\n\n```yaml\n- run: python3 scripts/replay_future.py --artifact out\n```\n\n# Task 2\n- Create: `scripts/replay_future.py`\n"""
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("invoked before creation", result.stderr)
+
+    def test_dev_check_accepts_script_created_before_plan_invocation(self):
+        result = self._run_copied_check_with_plan(
+            """# Task 1\n- Create: `scripts/replay_future.py`\n\n# Task 2\n```yaml\n- run: python3 scripts/replay_future.py --artifact out\n```\n"""
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
