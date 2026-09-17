@@ -1413,20 +1413,20 @@ Construct a query environment that removes Elan from `PATH` and verify:
 
 ```bash
 command -v lean >/dev/null 2>&1 && exit 1 || true
-PYTHONPATH=src python3 -m theseus_repo_search verify-artifact --artifact <artifact-dir>
-PYTHONPATH=src python3 -m theseus_repo_search build-index --artifact <artifact-dir> --db <fresh-db>
+PYTHONPATH=src:. python3 -m theseus_repo_search verify-artifact --artifact <artifact-dir>
+PYTHONPATH=src:. python3 -m theseus_repo_search build-index --artifact <artifact-dir> --db <fresh-db>
 ```
 
 Then run the corresponding replay against the fresh SQLite projection **without `--source-root`**, using the committed descriptor only to state the expected exact source identity:
 
 ```bash
-python3 scripts/replay_zeta23.py \
+PYTHONPATH=src:. python3 scripts/replay_zeta23.py \
   --db <zeta-db> --artifact <zeta-artifact-dir> \
   --descriptor producer/sources/zeta23.json --out <zeta-receipt>
-python3 scripts/replay_long_gaps.py \
+PYTHONPATH=src:. python3 scripts/replay_long_gaps.py \
   --db <long-gaps-db> --artifact <long-gaps-artifact-dir> \
   --descriptor producer/sources/openai-long-gaps.json --out <long-gaps-receipt>
-python3 scripts/replay_prime_gaps_186.py \
+PYTHONPATH=src:. python3 scripts/replay_prime_gaps_186.py \
   --db <prime-gaps-db> --artifact <prime-gaps-artifact-dir> \
   --descriptor producer/sources/openai-prime-gaps-186.json --out <prime-gaps-receipt>
 ```
@@ -1438,25 +1438,25 @@ No source checkout, source build, grep baseline, or Lean invocation is allowed i
 Zeta examples:
 
 ```bash
-python3 -m theseus_repo_search search --db <zeta-db> --query lemmaR_tight_two
-python3 -m theseus_repo_search deps --db <zeta-db> --name count_certificate --depth 2
-python3 -m theseus_repo_search context --db <zeta-db> --name count_certificate --depth 2 --token-budget 4000
+PYTHONPATH=src:. python3 -m theseus_repo_search search --db <zeta-db> --query lemmaR_tight_two
+PYTHONPATH=src:. python3 -m theseus_repo_search deps --db <zeta-db> --name count_certificate --depth 2
+PYTHONPATH=src:. python3 -m theseus_repo_search context --db <zeta-db> --name count_certificate --depth 2 --token-budget 4000
 ```
 
 OpenAI examples:
 
 ```bash
-python3 -m theseus_repo_search search --db <long-gaps-db> --query LongGapsBetweenPrimes.long_gap_theorem
-python3 -m theseus_repo_search deps --db <long-gaps-db> --name LongGapsBetweenPrimes.long_gap_theorem --depth 1
-python3 -m theseus_repo_search context --db <long-gaps-db> --name LongGapsBetweenPrimes.long_gap_theorem --depth 1 --token-budget 4000
+PYTHONPATH=src:. python3 -m theseus_repo_search search --db <long-gaps-db> --query LongGapsBetweenPrimes.long_gap_theorem
+PYTHONPATH=src:. python3 -m theseus_repo_search deps --db <long-gaps-db> --name LongGapsBetweenPrimes.long_gap_theorem --depth 1
+PYTHONPATH=src:. python3 -m theseus_repo_search context --db <long-gaps-db> --name LongGapsBetweenPrimes.long_gap_theorem --depth 1 --token-budget 4000
 ```
 
 PrimeGaps186 different-toolchain example:
 
 ```bash
-python3 -m theseus_repo_search search --db <prime-gaps-db> --query PrimeGap186.primeGapLiminf_le_186
-python3 -m theseus_repo_search deps --db <prime-gaps-db> --name PrimeGap186.primeGapLiminf_le_186 --depth 1
-python3 -m theseus_repo_search context --db <prime-gaps-db> --name PrimeGap186.primeGapLiminf_le_186 --depth 1 --token-budget 4000
+PYTHONPATH=src:. python3 -m theseus_repo_search search --db <prime-gaps-db> --query PrimeGap186.primeGapLiminf_le_186
+PYTHONPATH=src:. python3 -m theseus_repo_search deps --db <prime-gaps-db> --name PrimeGap186.primeGapLiminf_le_186 --depth 1
+PYTHONPATH=src:. python3 -m theseus_repo_search context --db <prime-gaps-db> --name PrimeGap186.primeGapLiminf_le_186 --depth 1 --token-budget 4000
 ```
 
 Confirm results carry exact source repo/commit provenance and graph edges carry elaborated evidence grades.
@@ -1541,6 +1541,7 @@ Before implementation begins, verify this plan against the approved spec:
 - [ ] Multiple `root_modules` are preserved through comma-separated LeanDepViz roots.
 - [ ] One snapshot produces one artifact and one SQLite projection.
 - [ ] All proving artifacts are independently consumed without Lean.
+- [ ] Every fresh-consumer replay/query command that imports repository code explicitly sets `PYTHONPATH=src:.`; compile-only `py_compile` checks are exempt.
 - [ ] `RULES.md` remains a separate cookbook change after multi-source acceptance.
 - [ ] No registry, combined database, embeddings, federation, hosted service, security/product layer, or background indexing is introduced.
 
