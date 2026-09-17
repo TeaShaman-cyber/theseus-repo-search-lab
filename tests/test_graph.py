@@ -159,6 +159,21 @@ class GraphTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "UNKNOWN")
             self.assertEqual(str(caught.exception), "depth exceeds v1 maximum of 5")
 
+    def test_negative_depth_is_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d))
+            cases = (
+                ("dependencies", lambda: dependencies(db, "A", depth=-1)),
+                ("reverse_dependencies", lambda: reverse_dependencies(db, "A", depth=-1)),
+                ("path", lambda: path(db, "A", "B", max_depth=-1)),
+            )
+            for label, call in cases:
+                with self.subTest(label=label):
+                    with self.assertRaises(RepoSearchError) as caught:
+                        call()
+                    self.assertEqual(caught.exception.code, "UNKNOWN")
+                    self.assertEqual(str(caught.exception), "depth must be non-negative")
+
     def test_ambiguous_short_name_is_unknown_with_candidates(self):
         with tempfile.TemporaryDirectory() as d:
             db = self.build_db(Path(d), ambiguous_a=True)
@@ -178,6 +193,40 @@ class GraphTests(unittest.TestCase):
                     ("lean:Zeta23.G.A", "lean:Zeta23.G.B"),
                     ("lean:Zeta23.G.A", "lean:Zeta23.G.D"),
                 ],
+            )
+
+    def test_short_name_underscore_is_literal_not_like_wildcard(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = root / "artifact"
+            db = root / "projection.db"
+            nodes = [
+                node("Zeta23.G.foo_bar"),
+                node("Zeta23.G.fooXbar"),
+                node("Zeta23.G.Target"),
+            ]
+            write_artifact(
+                artifact,
+                nodes=nodes,
+                edges=[edge("Zeta23.G.foo_bar", "Zeta23.G.Target")],
+                sources=None,
+                source_repo="example/repo",
+                source_commit=COMMIT,
+                source_subdir="",
+                producer=ProducerPin(
+                    kind="lean-dep-viz",
+                    tool_repo="cameronfreer/LeanDepViz",
+                    tool_commit="deadbeef",
+                    tool_hash="f" * 64,
+                ),
+                scope=SCOPE,
+                created_from_authoritative_commit=True,
+            )
+            build_projection(artifact, db)
+            result = dependencies(db, "foo_bar", depth=1)
+            self.assertEqual(
+                [(item["source_id"], item["target_id"]) for item in result.edges],
+                [("lean:Zeta23.G.foo_bar", "lean:Zeta23.G.Target")],
             )
 
     def test_exact_graph_query_rejects_lexical_only_projection(self):

@@ -48,7 +48,7 @@ def _authoritative_attestation(conn: sqlite3.Connection) -> bool:
 
 def _node_row_by_id(conn: sqlite3.Connection, node_id: str):
     return conn.execute(
-        "SELECT id, name, source_path, source_start_line, source_end_line, source_commit "
+        "SELECT id, name, source_path, source_start_line, source_end_line, source_commit, module "
         "FROM nodes WHERE id = ?",
         (node_id,),
     ).fetchone()
@@ -103,7 +103,7 @@ def _required_node_id(conn: sqlite3.Connection, query: str) -> str:
 
 
 def _source_row_for_node(conn: sqlite3.Connection, node_row):
-    _, name, source_path, source_start_line, source_end_line, _ = node_row
+    _, name, source_path, source_start_line, source_end_line, _, module = node_row
     if source_path is not None:
         rows = conn.execute(
             "SELECT id, source_commit, source_path, source_start_line, source_end_line, "
@@ -122,11 +122,14 @@ def _source_row_for_node(conn: sqlite3.Connection, node_row):
         if len(rows) == 1:
             return rows[0]
 
+    fallback_path = (
+        source_path if source_path is not None else f"{str(module).replace('.', '/')}.lean"
+    )
     rows = conn.execute(
         "SELECT id, source_commit, source_path, source_start_line, source_end_line, "
-        "declaration_hint, text FROM sources WHERE declaration_hint = ? "
-        "ORDER BY source_path, source_start_line, id",
-        (name,),
+        "declaration_hint, text FROM sources WHERE source_path = ? AND declaration_hint = ? "
+        "ORDER BY source_start_line, id",
+        (fallback_path, name),
     ).fetchall()
     return rows[0] if len(rows) == 1 else None
 
