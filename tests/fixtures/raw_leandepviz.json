@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    {"name":"a","module":"Zeta23.Tiny","kind":"thm","fullName":"Zeta23.Tiny.a"},
+    {"name":"b","module":"Zeta23.Tiny","kind":"thm","fullName":"Zeta23.Tiny.b"},
+    {"name":"external","module":"Mathlib.Tiny","kind":"thm","fullName":"Mathlib.Tiny.external"}
+  ],
+  "edges": [
+    {"source":"Zeta23.Tiny.a","target":"Zeta23.Tiny.b","kind":"value"},
+    {"source":"Mathlib.Tiny.external","target":"Zeta23.Tiny.b","kind":"type"}
+  ]
+}
