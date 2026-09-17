@@ -1,0 +1,206 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '%s\n' 'dev-check: not inside a Git worktree' >&2
+    exit 2
+}
+cd "$ROOT"
+
+PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+
+CACHE=${THESEUS_REPO_SEARCH_DEV_CACHE:-/tmp/theseus-repo-search-dev}
+export PYTHONPYCACHEPREFIX="$CACHE/pycache"
+mkdir -p "$PYTHONPYCACHEPREFIX"
+
+printf '%s\n' '== plan guards =='
+python3 - <<'PY_CHECK'
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+root = Path("docs/superpowers/plans")
+python_start = re.compile(r"^\s*```(?:python|python3|py)\s*$", re.IGNORECASE)
+exec_start = re.compile(r"^\s*```(?:sh|bash|shell|yaml|yml)\s*$", re.IGNORECASE)
+fence_end = re.compile(r"^\s*```\s*$")
+bad_test = re.compile(r"^(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\([^)]*\bself\b")
+create_path = re.compile(r"^\s*-\s*Create:\s*`?(scripts/[A-Za-z0-9_./-]+)`?\s*$", re.IGNORECASE)
+python_script = re.compile(r"(?:python3?|python)\s+(scripts/[A-Za-z0-9_./-]+\.py)")
+direct_script = re.compile(r"(?:^|[\s:])(?:\./)?(scripts/[A-Za-z0-9_./-]+\.(?:py|sh))")
+path_event = re.compile(
+    r"^\s*-\s*(Modify|Delete):\s*`?([A-Za-z0-9_./-]+)`?\s*$", re.IGNORECASE
+)
+failures = []
+
+yaml_fence_start = re.compile(r"^\s*```(?:yaml|yml)\s*$", re.IGNORECASE)
+run_block_start = re.compile(r"^(\s*)run:\s*[|>]\s*$")
+direct_env_write = re.compile(
+    r"(?:echo|printf)\b.*?[\"']?([A-Z_][A-Z0-9_]*)=.*?GITHUB_ENV"
+)
+loader_env_write = re.compile(
+    r"\bload_producer_env\.py\b.*--github-env\b.*GITHUB_ENV"
+)
+source_root_ref = re.compile(r"\$(?:SOURCE_ROOT\b|\{SOURCE_ROOT\})")
+
+
+def indent_width(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def iter_run_blocks(lines: list[str], *, fenced: bool):
+    in_yaml = not fenced
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if fenced and not in_yaml:
+            if yaml_fence_start.match(line):
+                in_yaml = True
+            index += 1
+            continue
+        if fenced and in_yaml and fence_end.match(line):
+            in_yaml = False
+            index += 1
+            continue
+        if not in_yaml:
+            index += 1
+            continue
+        match = run_block_start.match(line)
+        if not match:
+            index += 1
+            continue
+        base_indent = len(match.group(1))
+        block = []
+        cursor = index + 1
+        while cursor < len(lines):
+            candidate = lines[cursor]
+            if fenced and fence_end.match(candidate):
+                break
+            if candidate.strip() and indent_width(candidate) <= base_indent:
+                break
+            block.append((cursor + 1, candidate))
+            cursor += 1
+        yield block
+        index = cursor
+
+
+def check_github_env_blocks(path: Path, lines: list[str], *, fenced: bool) -> None:
+    for block in iter_run_blocks(lines, fenced=fenced):
+        written = set()
+        loader_wrote_env = False
+        for lineno, line in block:
+            for key in sorted(written):
+                if re.search(rf"\$(?:{re.escape(key)}\b|\{{{re.escape(key)}\}})", line):
+                    failures.append(
+                        f"{path}:{lineno}: GITHUB_ENV value read in same step: {key}"
+                    )
+            if loader_wrote_env and source_root_ref.search(line):
+                failures.append(
+                    f"{path}:{lineno}: SOURCE_ROOT read in same GITHUB_ENV step"
+                )
+            direct = direct_env_write.search(line)
+            if direct:
+                written.add(direct.group(1))
+            if loader_env_write.search(line):
+                loader_wrote_env = True
+
+
+for workflow in sorted(Path('.github/workflows').glob('*.y*ml')):
+    check_github_env_blocks(
+        workflow, workflow.read_text(encoding='utf-8').splitlines(), fenced=False
+    )
+
+tracked = [
+    Path(item)
+    for item in subprocess.check_output(["git", "ls-files", "-z"]).decode("utf-8").split("\0")
+    if item
+]
+
+if root.is_dir():
+    for path in sorted(root.rglob("*.md")):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        check_github_env_blocks(path, lines, fenced=True)
+        creates = {}
+        events = {}
+        for lineno, line in enumerate(lines, 1):
+            match = create_path.match(line)
+            if match and match.group(1) not in creates:
+                creates[match.group(1)] = lineno
+            event = path_event.match(line)
+            if event:
+                action, target = event.group(1).lower(), event.group(2)
+                events.setdefault(target, []).append((lineno, action))
+
+        for target, target_events in events.items():
+            for delete_line, action in target_events:
+                if action != "delete" or Path(target) not in tracked:
+                    continue
+                for consumer in tracked:
+                    if consumer == Path(target) or consumer.suffix.lower() == ".md":
+                        continue
+                    try:
+                        text = consumer.read_text(encoding="utf-8")
+                    except (UnicodeError, OSError):
+                        continue
+                    if target not in text:
+                        continue
+                    prior = [
+                        (event_line, event_action)
+                        for event_line, event_action in events.get(consumer.as_posix(), [])
+                        if event_line < delete_line
+                    ]
+                    if prior:
+                        continue
+                    failures.append(
+                        f"{path}:{delete_line}: {target} deleted before live consumer replacement: {consumer}"
+                    )
+
+        mode = None
+        for lineno, line in enumerate(lines, 1):
+            if mode is None:
+                if python_start.match(line):
+                    mode = "python"
+                elif exec_start.match(line):
+                    mode = "exec"
+                continue
+            if fence_end.match(line):
+                mode = None
+                continue
+            if mode == "python" and line == line.lstrip() and bad_test.match(line):
+                failures.append(f"{path}:{lineno}: undiscoverable module-level unittest snippet")
+            if mode != "exec":
+                continue
+            invoked = set(match.group(1) for match in python_script.finditer(line))
+            invoked.update(match.group(1) for match in direct_script.finditer(line))
+            for script in sorted(invoked):
+                if Path(script).is_file():
+                    continue
+                create_line = creates.get(script)
+                if create_line is None or create_line > lineno:
+                    failures.append(
+                        f"{path}:{lineno}: repo-local script {script} invoked before creation"
+                    )
+
+if failures:
+    for failure in failures:
+        print(failure, file=sys.stderr)
+    raise SystemExit(1)
+PY_CHECK
+
+printf '%s\n' '== unit tests =='
+python3 -m unittest discover -s tests -p 'test_*.py'
+
+printf '%s\n' '== python syntax =='
+python3 -m compileall -q src scripts tests
+
+printf '%s\n' '== json fixtures =='
+find tests -type f -name '*.json' -print | sort | while IFS= read -r path; do
+    python3 -m json.tool "$path" >/dev/null
+done
+
+printf '%s\n' '== whitespace =='
+git diff --check
+git diff --cached --check
+
+printf '%s\n' 'DEV_CHECK_PASS'
