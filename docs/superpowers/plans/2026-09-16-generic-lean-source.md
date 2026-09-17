@@ -509,7 +509,7 @@ git commit -m "feat: define strict Lean Git source descriptors"
 - Create: `producer/runner.json`
 - Create: `scripts/load_producer_env.py`
 - Create: `tests/test_load_producer_env.py`
-- Remove: `producer/zeta23.json`
+- Keep temporarily: `producer/zeta23.json` until Task 5 replaces the legacy workflow that still consumes it.
 
 **Interfaces:**
 - Consumes: `load_lean_git_source()` and `load_runner_pins()` from Task 1.
@@ -652,39 +652,40 @@ from pathlib import Path
 from scripts.load_producer_env import main
 
 
-def test_cli_writes_sorted_environment_once(self):
-    with tempfile.TemporaryDirectory() as d:
-        root = Path(d)
-        source_path = root / "source.json"
-        runner_path = root / "runner.json"
-        env_path = root / "github-env"
-        source_path.write_text(json.dumps({
-            "schema": "theseus.lean-git-source.v1",
-            "source_id": "fixture",
-            "source_repo": "example/repo",
-            "source_commit": "a" * 40,
-            "source_subdir": "formal",
-            "root_modules": ["Fixture.A", "Fixture.B"],
-            "build_target": "Fixture",
-        }), encoding="utf-8")
-        runner_path.write_text(json.dumps({
-            "schema": "theseus.lean-producer-runner.v1",
-            "extractor_repo": "cameronfreer/LeanDepViz",
-            "extractor_commit": "b" * 40,
-            "extractor_main_sha256": "c" * 64,
-            "elan_version": "v4.2.3",
-            "elan_sha256": "d" * 64,
-        }), encoding="utf-8")
-        rc = main([
-            "--source", str(source_path),
-            "--runner", str(runner_path),
-            "--github-env", str(env_path),
-        ])
-        self.assertEqual(rc, 0)
-        lines = env_path.read_text(encoding="utf-8").splitlines()
-        self.assertEqual(lines, sorted(lines))
-        keys = [line.split("=", 1)[0] for line in lines]
-        self.assertEqual(len(keys), len(set(keys)))
+class ProducerEnvCliTests(unittest.TestCase):
+    def test_cli_writes_sorted_environment_once(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source_path = root / "source.json"
+            runner_path = root / "runner.json"
+            env_path = root / "github-env"
+            source_path.write_text(json.dumps({
+                "schema": "theseus.lean-git-source.v1",
+                "source_id": "fixture",
+                "source_repo": "example/repo",
+                "source_commit": "a" * 40,
+                "source_subdir": "formal",
+                "root_modules": ["Fixture.A", "Fixture.B"],
+                "build_target": "Fixture",
+            }), encoding="utf-8")
+            runner_path.write_text(json.dumps({
+                "schema": "theseus.lean-producer-runner.v1",
+                "extractor_repo": "cameronfreer/LeanDepViz",
+                "extractor_commit": "b" * 40,
+                "extractor_main_sha256": "c" * 64,
+                "elan_version": "v4.2.3",
+                "elan_sha256": "d" * 64,
+            }), encoding="utf-8")
+            rc = main([
+                "--source", str(source_path),
+                "--runner", str(runner_path),
+                "--github-env", str(env_path),
+            ])
+            self.assertEqual(rc, 0)
+            lines = env_path.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(lines, sorted(lines))
+            keys = [line.split("=", 1)[0] for line in lines]
+            self.assertEqual(len(keys), len(set(keys)))
 ```
 
 Run the new CLI test before implementing any CLI-specific production behavior and confirm RED:
@@ -741,10 +742,12 @@ PY
 
 Expected exact source IDs/repos/commits and the pinned LeanDepViz commit.
 
-- [ ] **Step 8: Remove the mixed legacy producer file and run full suite**
+- [ ] **Step 8: Keep the legacy compatibility file and run full suite**
+
+The old `.github/workflows/zeta23-producer-smoke.yml` still consumes `producer/zeta23.json`, so Task 2 must leave that file intact. The new split descriptors may coexist with it temporarily; deletion belongs to the Task 5 workflow-replacement commit.
 
 ```bash
-rm producer/zeta23.json
+test -f producer/zeta23.json
 PYTHONPATH=src:. python3 -m unittest discover -v
 ```
 
@@ -1087,6 +1090,7 @@ git commit -m "test: add PrimeGaps186 genericity replay"
 - Create: `tests/test_workflow_structure.py` — stdlib RED/GREEN guard for trigger paths, matrix replay existence, and legacy workflow removal.
 - Create: `.github/workflows/lean-source-producer-smoke.yml`
 - Remove: `.github/workflows/zeta23-producer-smoke.yml`
+- Remove: `producer/zeta23.json` only in this same replacement commit, after its legacy workflow consumer is removed.
 - Modify: `scripts/producer_guard.py`
 - Modify: `tests/test_producer_guard.py`
 - Modify: `src/theseus_repo_search/cli.py`
@@ -1113,6 +1117,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GENERIC = ROOT / ".github/workflows/lean-source-producer-smoke.yml"
 LEGACY = ROOT / ".github/workflows/zeta23-producer-smoke.yml"
+LEGACY_CONFIG = ROOT / "producer/zeta23.json"
 REPLAYS = (
     "scripts/replay_zeta23.py",
     "scripts/replay_long_gaps.py",
@@ -1139,6 +1144,7 @@ class WorkflowStructureTests(unittest.TestCase):
                 self.assertTrue((ROOT / replay).is_file())
                 self.assertIn(replay, text)
         self.assertFalse(LEGACY.exists())
+        self.assertFalse(LEGACY_CONFIG.exists())
         self.assertNotIn("producer/zeta23.json", text)
 ```
 
@@ -1148,9 +1154,9 @@ Run it against the untouched legacy workflow:
 PYTHONPATH=src:. python3 -m unittest -v tests.test_workflow_structure
 ```
 
-Expected RED: the old trigger/matrix shape lacks the generic paths and `LEGACY.exists()` is still true. Replay-file existence must already be GREEN because Tasks 3 and 4 committed those scripts before Task 5 starts.
+Expected RED: the old trigger/matrix shape lacks the generic paths, `LEGACY.exists()` is still true, and the still-required legacy config exists. Replay-file existence must already be GREEN because Tasks 3 and 4 committed those scripts before Task 5 starts.
 
-Only after that observed RED, create `.github/workflows/lean-source-producer-smoke.yml`, remove `.github/workflows/zeta23-producer-smoke.yml`, and make the generic smoke trigger when any producer input, descriptor, matrix replay, query/runtime code, or the generic workflow itself changes:
+Only after that observed RED, create `.github/workflows/lean-source-producer-smoke.yml`, remove `.github/workflows/zeta23-producer-smoke.yml` **and** its now-orphaned `producer/zeta23.json` in the same change, and make the generic smoke trigger when any producer input, descriptor, matrix replay, query/runtime code, or the generic workflow itself changes:
 
 ```yaml
 on:
@@ -1529,6 +1535,7 @@ The cleanup immediately before this step may remove `_out/raw-depgraph.json` and
 
 ```bash
 test ! -e .github/workflows/zeta23-producer-smoke.yml
+test ! -e producer/zeta23.json
 PYTHONPATH=src:. python3 -m unittest discover -v
 python3 -m py_compile src/theseus_repo_search/*.py scripts/*.py
 ```
@@ -1745,6 +1752,8 @@ Before implementation begins, verify this plan against the approved spec:
 - [ ] Runner pins are separate from source descriptor.
 - [ ] Every descriptor row, regardless of publisher/toolchain, uses the same producer path and its own isolated runner.
 - [ ] Generic workflow path filters cover descriptors, runner pins, loader, every proving replay, runtime/tests, and the generic workflow itself; legacy Zeta-only paths are removed.
+- [ ] Legacy `producer/zeta23.json` remains present through Tasks 2-4 and is deleted only in the same Task 5 commit that removes its legacy workflow consumer.
+- [ ] Every shown `def test_*(self)` is a method of a `unittest.TestCase` subclass; no module-level self-tests can be silently skipped.
 - [ ] LongGaps and PrimeGaps replay scripts are committed and their executable tests are GREEN before Task 5 enables the corresponding matrix rows; no task commit intentionally references a missing replay file.
 - [ ] The same `tests.test_workflow_structure` assertion is observed RED against the untouched legacy workflow and GREEN after replacement; the assertion is not weakened between phases.
 - [ ] Invalid UTF-8 in either source descriptor or runner config is observed RED first and then normalized to `RepoSearchError.code == "BLOCKED_SOURCE_BINDING"`, never leaked as `UnicodeDecodeError`.
