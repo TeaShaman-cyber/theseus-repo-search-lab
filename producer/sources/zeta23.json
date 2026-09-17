@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "zeta23",
+  "source_repo": "anthropics/formal-math",
+  "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+  "source_subdir": "zeta23",
+  "root_modules": ["Zeta23"],
+  "build_target": "Zeta23"
+}

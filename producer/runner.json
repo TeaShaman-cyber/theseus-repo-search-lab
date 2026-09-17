@@ -1,0 +1,8 @@
+{
+  "schema": "theseus.lean-producer-runner.v1",
+  "extractor_repo": "cameronfreer/LeanDepViz",
+  "extractor_commit": "7859d91f89b37c9193d9a09709a58be6d98f94d6",
+  "extractor_main_sha256": "7051af16c579dc425859442bbe7b647eaea78a581ddf685c5951c2b7bf28ceed",
+  "elan_version": "v4.2.3",
+  "elan_sha256": "df0b2b3a439961ffcbb3985214365ffe40f49bc871df04dff268c7d8e21ca8b2"
+}

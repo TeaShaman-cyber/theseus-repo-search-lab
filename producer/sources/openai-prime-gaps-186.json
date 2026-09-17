@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "openai-prime-gaps-186",
+  "source_repo": "openai/PrimeGaps186",
+  "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+  "source_subdir": "",
+  "root_modules": ["PrimeGaps186"],
+  "build_target": "PrimeGaps186"
+}
