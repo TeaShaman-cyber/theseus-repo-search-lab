@@ -31,6 +31,83 @@ path_event = re.compile(
 )
 failures = []
 
+yaml_fence_start = re.compile(r"^\s*```(?:yaml|yml)\s*$", re.IGNORECASE)
+run_block_start = re.compile(r"^(\s*)run:\s*[|>]\s*$")
+direct_env_write = re.compile(
+    r"(?:echo|printf)\b.*?[\"']?([A-Z_][A-Z0-9_]*)=.*?GITHUB_ENV"
+)
+loader_env_write = re.compile(
+    r"\bload_producer_env\.py\b.*--github-env\b.*GITHUB_ENV"
+)
+source_root_ref = re.compile(r"\$(?:SOURCE_ROOT\b|\{SOURCE_ROOT\})")
+
+
+def indent_width(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def iter_run_blocks(lines: list[str], *, fenced: bool):
+    in_yaml = not fenced
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if fenced and not in_yaml:
+            if yaml_fence_start.match(line):
+                in_yaml = True
+            index += 1
+            continue
+        if fenced and in_yaml and fence_end.match(line):
+            in_yaml = False
+            index += 1
+            continue
+        if not in_yaml:
+            index += 1
+            continue
+        match = run_block_start.match(line)
+        if not match:
+            index += 1
+            continue
+        base_indent = len(match.group(1))
+        block = []
+        cursor = index + 1
+        while cursor < len(lines):
+            candidate = lines[cursor]
+            if fenced and fence_end.match(candidate):
+                break
+            if candidate.strip() and indent_width(candidate) <= base_indent:
+                break
+            block.append((cursor + 1, candidate))
+            cursor += 1
+        yield block
+        index = cursor
+
+
+def check_github_env_blocks(path: Path, lines: list[str], *, fenced: bool) -> None:
+    for block in iter_run_blocks(lines, fenced=fenced):
+        written = set()
+        loader_wrote_env = False
+        for lineno, line in block:
+            for key in sorted(written):
+                if re.search(rf"\$(?:{re.escape(key)}\b|\{{{re.escape(key)}\}})", line):
+                    failures.append(
+                        f"{path}:{lineno}: GITHUB_ENV value read in same step: {key}"
+                    )
+            if loader_wrote_env and source_root_ref.search(line):
+                failures.append(
+                    f"{path}:{lineno}: SOURCE_ROOT read in same GITHUB_ENV step"
+                )
+            direct = direct_env_write.search(line)
+            if direct:
+                written.add(direct.group(1))
+            if loader_env_write.search(line):
+                loader_wrote_env = True
+
+
+for workflow in sorted(Path('.github/workflows').glob('*.y*ml')):
+    check_github_env_blocks(
+        workflow, workflow.read_text(encoding='utf-8').splitlines(), fenced=False
+    )
+
 tracked = [
     Path(item)
     for item in subprocess.check_output(["git", "ls-files", "-z"]).decode("utf-8").split("\0")
@@ -40,6 +117,7 @@ tracked = [
 if root.is_dir():
     for path in sorted(root.rglob("*.md")):
         lines = path.read_text(encoding="utf-8").splitlines()
+        check_github_env_blocks(path, lines, fenced=True)
         creates = {}
         events = {}
         for lineno, line in enumerate(lines, 1):

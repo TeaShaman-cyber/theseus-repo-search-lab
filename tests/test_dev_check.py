@@ -106,5 +106,28 @@ class DevCheckContractTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
+    def test_dev_check_rejects_same_step_github_env_read_after_write(self):
+        result = self._run_copied_check_with_plan(
+            """# Bad phase\n\n```yaml\n- name: Export and consume\n  shell: bash\n  run: |\n    printf 'SOURCE_ROOT=%s\\n' \"$PWD/source\" >> \"$GITHUB_ENV\"\n    test -f \"$SOURCE_ROOT/lean-toolchain\"\n```\n"""
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("GITHUB_ENV value read in same step", result.stderr)
+
+    def test_dev_check_rejects_loader_source_root_read_in_same_step(self):
+        loader = "scripts/load_producer_env.py"
+        result = self._run_copied_check_with_plan(
+            f"""# Historical phase bug\n\n```yaml\n- name: Resolve and consume\n  shell: bash\n  run: |\n    python3 {loader} --github-env \"$GITHUB_ENV\"\n    test -n \"$SOURCE_ROOT\"\n```\n""",
+            repo_files={loader: "print('fixture')\n"},
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("SOURCE_ROOT read in same GITHUB_ENV step", result.stderr)
+
+    def test_dev_check_accepts_github_env_value_in_next_step(self):
+        result = self._run_copied_check_with_plan(
+            """# Good phase boundary\n\n```yaml\n- name: Export\n  shell: bash\n  run: |\n    printf 'SOURCE_ROOT=%s\\n' \"$PWD/source\" >> \"$GITHUB_ENV\"\n- name: Consume\n  shell: bash\n  run: |\n    test -f \"$SOURCE_ROOT/lean-toolchain\"\n```\n"""
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
