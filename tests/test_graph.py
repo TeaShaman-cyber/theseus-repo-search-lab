@@ -159,6 +159,21 @@ class GraphTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "UNKNOWN")
             self.assertEqual(str(caught.exception), "depth exceeds v1 maximum of 5")
 
+    def test_negative_depth_is_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d))
+            cases = (
+                ("dependencies", lambda: dependencies(db, "A", depth=-1)),
+                ("reverse_dependencies", lambda: reverse_dependencies(db, "A", depth=-1)),
+                ("path", lambda: path(db, "A", "B", max_depth=-1)),
+            )
+            for label, call in cases:
+                with self.subTest(label=label):
+                    with self.assertRaises(RepoSearchError) as caught:
+                        call()
+                    self.assertEqual(caught.exception.code, "UNKNOWN")
+                    self.assertEqual(str(caught.exception), "depth must be non-negative")
+
     def test_ambiguous_short_name_is_unknown_with_candidates(self):
         with tempfile.TemporaryDirectory() as d:
             db = self.build_db(Path(d), ambiguous_a=True)

@@ -24,6 +24,8 @@ class GraphResult:
 
 
 def _validate_depth(depth: int) -> None:
+    if depth < 0:
+        raise RepoSearchError("UNKNOWN", "depth must be non-negative")
     if depth > MAX_DEPTH:
         raise RepoSearchError("UNKNOWN", "depth exceeds v1 maximum of 5")
 
