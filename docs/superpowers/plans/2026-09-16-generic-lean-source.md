@@ -86,6 +86,7 @@ from theseus_repo_search.producer_config import (
     LeanGitSource,
     RunnerPins,
     load_lean_git_source,
+    load_runner_pins,
 )
 
 
@@ -246,6 +247,24 @@ with self.assertRaises(RepoSearchError) as cm:
 self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
 ```
 
+Also add a shared-loader malformed-encoding RED before strict loader error handling exists:
+
+```python
+class ConfigFileLoadTests(unittest.TestCase):
+    def test_invalid_utf8_configs_fail_closed(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for name, loader in (("source.json", load_lean_git_source), ("runner.json", load_runner_pins)):
+                with self.subTest(name=name):
+                    path = root / name
+                    path.write_bytes(b"{\xff}")
+                    with self.assertRaises(RepoSearchError) as cm:
+                        loader(path)
+                    self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+```
+
+The happy-path skeleton currently leaks `UnicodeDecodeError`, so this case must be observed RED for the intended fail-closed behavior before changing `_load_json_object()`.
+
 Add source-root behavior tests **before** replacing the skeleton resolver. Keep the repository-root/nested happy path, then add two semantic RED cases:
 
 - a missing selected subdirectory must raise `BLOCKED_SOURCE_BINDING`;
@@ -303,7 +322,7 @@ Run the full new validation/root-resolution batch now:
 PYTHONPATH=src python3 -m unittest -v tests.test_producer_config
 ```
 
-Expected: malformed descriptor/runner validation, transport-unsafe root-module values, plus missing/escaping source-root cases are RED for their intended absent checks, not because the module or method is missing.
+Expected: malformed descriptor/runner validation, invalid UTF-8 loader input, transport-unsafe exported values, plus missing/escaping source-root cases are RED for their intended absent checks, not because the module or method is missing.
 
 The transport-safety cases are required because producer configuration is written to `$GITHUB_ENV`; any exported string must reject CR/LF and NUL before environment export. `root_modules` has one extra boundary because `ROOT_MODULES_CSV` is split on commas, so each root must reject commas too. This is a transport invariant only; do not unnecessarily restrict ordinary Unicode Lean module names.
 
@@ -448,7 +467,7 @@ class RunnerPins:
 def _load_json_object(path: Path) -> dict[str, object]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise _blocked(f"cannot load producer config {path}: {exc}") from exc
     if not isinstance(value, dict):
         raise _blocked(f"producer config must be a JSON object: {path}")
@@ -738,9 +757,334 @@ git commit -m "refactor: split Lean source descriptors from runner pins"
 
 ---
 
-### Task 3: Generic Descriptor-Matrix Producer Workflow
+### Task 3: OpenAI LongGaps Acceptance Replay
+
+**Observed pinned-source anchors (verified at `openai/LongGapsBetweenPrimes@03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b`):**
+
+```text
+lean-toolchain = leanprover/lean4:v4.33.0
+default target = LongGapsBetweenPrimes
+LongGapsBetweenPrimes.lean:25   def iteratedLog
+LongGapsBetweenPrimes.lean:41   def ShortTranslates
+LongGapsBetweenPrimes.lean:3672 lemma short_translates : ShortTranslates
+LongGapsBetweenPrimes.lean:4468 theorem long_gap_theorem : LongGapTheorem
+LongGapsBetweenPrimes.lean:4502 theorem long_prime_gaps
+```
+
+The source comment on `long_gap_theorem` is `Theorem 1.1: the unconditional long-gap bound in the paper.` These are observed fixtures for the real smoke, not invented placeholder declarations. `Challenge.lean` is a separate comparator library and is not part of the v1 `LongGapsBetweenPrimes` root-module smoke.
 
 **Files:**
+- Create: `scripts/replay_long_gaps.py`
+- Create: `tests/test_replay_long_gaps.py`
+
+**Interfaces:**
+- Consumes: one built SQLite projection, one normalized artifact, and the selected `LeanGitSource` descriptor; producer CI may also pass source root for a common workflow signature.
+- Uses existing `search()`, `dependencies()`, and `context()` APIs unchanged.
+- Produces one JSON receipt with exact source provenance plus graph/lexical/context assertions.
+
+- [ ] **Step 1: Write the synthetic RED replay test**
+
+Build a tiny artifact with these declaration IDs:
+
+```python
+names = [
+    "LongGapsBetweenPrimes.long_gap_theorem",
+    "LongGapsBetweenPrimes.short_translates",
+    "LongGapsBetweenPrimes.iteratedLog",
+]
+```
+
+Use source chunks containing grounded source phrases:
+
+```python
+chunk(
+    "long_gap_theorem",
+    "LongGapsBetweenPrimes.lean",
+    "/-- Theorem 1.1: the unconditional long-gap bound in the paper. -/\n"
+    "theorem long_gap_theorem : True := by trivial\n",
+    100,
+)
+```
+
+Add at least one elaborated value dependency from `long_gap_theorem` to `short_translates` in the synthetic fixture. The fixture tests replay mechanics only; the real corpus smoke must discover its actual graph edges independently.
+
+Assertions:
+
+```python
+result = run_replay(db, artifact, descriptor)
+self.assertEqual(result["status"], "PASS")
+self.assertEqual(result["provenance"]["repo"], "openai/LongGapsBetweenPrimes")
+self.assertEqual(result["provenance"]["commit"], COMMIT)
+self.assertEqual(result["exact"]["target"], "LongGapsBetweenPrimes.long_gap_theorem")
+self.assertGreater(result["graph"]["edge_count"], 0)
+self.assertGreater(len(result["context"]["chunks"]), 0)
+```
+
+The committed OpenAI descriptor is the source of the expected exact pin; do not duplicate a second hard-coded commit constant inside replay code.
+
+In the same RED fixture, invoke `scripts/replay_long_gaps.py` through `subprocess.run([sys.executable, ...])` with the full matrix signature (`--db`, `--source-root`, `--artifact`, `--descriptor`, `--out`). Require exit code `0`, require the requested output file to exist, and parse it back with `status == "PASS"`. This tests the real script entrypoint, not only a callable `main()`.
+
+- [ ] **Step 2: Run RED**
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps
+```
+
+Expected: import failure because `scripts.replay_long_gaps` does not exist.
+
+- [ ] **Step 3: Implement only the happy-path replay shell**
+
+After the missing-module RED, add the smallest replay that can load the artifact/descriptor, run the grounded exact/graph/lexical/context checks, and return the PASS receipt for the valid synthetic fixture. Do not add DB/artifact or descriptor provenance/scope rejection yet. Implement the executable interface in this same slice because the RED fixture invokes the real script:
+
+Include `argparse`, `json`, and `Path` imports plus the existing replay imports. Add this exact argparse/output tail. `--source-root` is intentionally accepted for a common workflow signature even though this replay does not run a grep baseline:
+
+```python
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--db", type=Path, required=True)
+    parser.add_argument("--artifact", type=Path, required=True)
+    parser.add_argument("--descriptor", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path)
+    parser.add_argument("--out", type=Path, required=True)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    result = run_replay(args.db, args.artifact, args.descriptor)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(
+        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
+The subprocess fixture must remain GREEN here; defining `main()` without the `__main__` guard is not sufficient for the matrix's `python3 script.py ...` invocation.
+
+
+Run only the valid callable and subprocess receipt fixture and require GREEN before adding guard cases.
+
+- [ ] **Step 4: Add identity, provenance, and scope guard RED cases**
+
+Now add three fail-closed cases and run them against the happy-path shell before adding guard code:
+
+- projection DB from artifact A paired with artifact B -> `projection/artifact identity mismatch`;
+- descriptor repo/commit/subdir differs from the manifest -> provenance mismatch;
+- descriptor `root_modules` differs while repo/commit/subdir remain identical -> provenance/scope mismatch.
+
+Run `PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps` and require the valid fixture to stay GREEN while these three guard cases are RED for the intended missing checks.
+
+- [ ] **Step 5: Add the replay identity/provenance/scope guards**
+
+Core checks:
+
+```python
+import sqlite3
+
+from theseus_repo_search.artifact import artifact_identity, load_artifact
+from theseus_repo_search.graph import dependencies
+from theseus_repo_search.producer_config import load_lean_git_source
+from theseus_repo_search.retrieval import context, search
+
+TARGET = "LongGapsBetweenPrimes.long_gap_theorem"
+LEXICAL_QUERY = "unconditional long gap bound"
+
+
+def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
+    manifest, _, _, _ = load_artifact(artifact_path)
+    source = load_lean_git_source(descriptor_path)
+    with sqlite3.connect(db_path) as conn:
+        projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
+    if projected_identity != artifact_identity(manifest):
+        raise AssertionError("projection/artifact identity mismatch")
+    if (
+        manifest.source_repo, manifest.source_commit, manifest.source_subdir, manifest.scope.root_modules,
+    ) != (
+        source.source_repo, source.source_commit, source.source_subdir, source.root_modules,
+    ):
+        raise AssertionError("artifact provenance/scope does not match selected source descriptor")
+
+    exact_hits = search(db_path, TARGET, limit=1)
+    if len(exact_hits) != 1 or exact_hits[0].source_path != "LongGapsBetweenPrimes.lean":
+        raise AssertionError("main theorem did not resolve to exact source provenance")
+
+    graph = dependencies(db_path, TARGET, depth=1)
+    if not graph.edges:
+        raise AssertionError("main theorem has no in-scope elaborated dependency edges")
+    if not all(str(edge["evidence_grade"]).startswith("ELABORATED_") for edge in graph.edges):
+        raise AssertionError("graph replay returned non-elaborated dependency evidence")
+
+    lexical = search(db_path, LEXICAL_QUERY, limit=10)
+    if not any(hit.declaration_hint == "long_gap_theorem" for hit in lexical):
+        raise AssertionError("grounded long-gap lexical query missed long_gap_theorem")
+
+    ctx = context(db_path, TARGET, depth=1, token_budget=4000)
+    if not any(chunk["declaration_hint"] == "long_gap_theorem" for chunk in ctx["chunks"]):
+        raise AssertionError("bounded context omitted target theorem source")
+
+    return {
+        "status": "PASS",
+        "provenance": {
+            "repo": manifest.source_repo,
+            "commit": manifest.source_commit,
+            "subdir": manifest.source_subdir,
+        },
+        "exact": {
+            "target": TARGET,
+            "source_path": exact_hits[0].source_path,
+            "source_start_line": exact_hits[0].source_start_line,
+            "source_end_line": exact_hits[0].source_end_line,
+        },
+        "graph": {"edge_count": len(graph.edges), "edges": list(graph.edges)},
+        "lexical": {
+            "query": LEXICAL_QUERY,
+            "hits": [hit.declaration_hint for hit in lexical],
+        },
+        "context": {
+            "estimated_tokens": ctx["estimated_tokens"],
+            "chunks": ctx["chunks"],
+        },
+    }
+```
+
+
+- [ ] **Step 6: Run GREEN and full suite**
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps
+PYTHONPATH=src:. python3 -m unittest discover -v
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add scripts/replay_long_gaps.py tests/test_replay_long_gaps.py
+git commit -m "test: add OpenAI LongGaps repository replay"
+```
+
+---
+
+### Task 4: PrimeGaps186 Different-Toolchain Genericity Replay
+
+**Observed exact snapshot:** `openai/PrimeGaps186@61340d0b74163003b32756bb16e91d9209a5e330`
+
+```text
+lean-toolchain = leanprover/lean4:v4.34.0-rc2
+default/root target = PrimeGaps186
+main module = PrimeGaps186.lean
+research anchor = PrimeGap186.primeGapLiminf_le_186
+```
+
+The purpose is not to add another publisher adapter. It is to prove that a source with a different source-owned Lean toolchain enters the existing producer solely through a descriptor/matrix row and a replay fixture.
+
+**Files:**
+- Create: `scripts/replay_prime_gaps_186.py`
+- Create: `tests/test_replay_prime_gaps_186.py`
+
+**Interfaces:**
+- Requires exact SQLite `meta.artifact_identity` == supplied artifact identity and exact descriptor binding for repo, commit, subdir, and `root_modules`.
+- Uses unchanged public `search()`, `dependencies()`, and `context()` APIs.
+- Exposes the same executable matrix contract as the other replays: `--db`, optional `--source-root`, `--artifact`, `--descriptor`, and required `--out`; writes one JSON receipt and returns zero on success.
+- Production code may not branch on `PrimeGaps186`, OpenAI, or Lean `v4.34.0-rc2`.
+
+- [ ] **Step 1: Write RED replay fixture**
+
+Create a synthetic artifact containing `PrimeGap186.primeGapLiminf_le_186` plus at least one elaborated dependency edge and source chunk in `PrimeGaps186.lean`. Require exact provenance and non-empty bounded context. Import `run_replay` for the callable assertions. In the same fixture, invoke `scripts/replay_prime_gaps_186.py` through `subprocess.run([sys.executable, ...])` with the full matrix signature, including a harmless `--source-root`; require exit code `0`, require the JSON file at `--out`, and parse it back with `status == "PASS"`. This keeps the actual script entrypoint under the initial missing-module RED instead of merely testing a callable `main()`.
+
+- [ ] **Step 2: Run RED before implementation**
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
+```
+
+- [ ] **Step 3: Implement only the happy-path PrimeGaps replay shell**
+
+After the missing-module RED, implement enough exact-search, elaborated-dependency, lexical/context, and receipt behavior for the valid synthetic fixture to pass. Do not yet reject DB/artifact or descriptor provenance/scope mismatch. Include `argparse`, `json`, and `Path` imports required by the executable tail. Add the executable CLI at the same time because the RED fixture already requires it:
+
+```python
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--db", type=Path, required=True)
+    parser.add_argument("--artifact", type=Path, required=True)
+    parser.add_argument("--descriptor", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path)
+    parser.add_argument("--out", type=Path, required=True)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    result = run_replay(args.db, args.artifact, args.descriptor)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(
+        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
+`--source-root` is intentionally accepted for the common matrix invocation but is not used by this replay. The subprocess fixture must remain GREEN, proving that the `__main__` guard writes the requested receipt under the same invocation shape used by the matrix. Run the valid callable and CLI receipt fixture alone and require GREEN before adding identity/provenance guard cases.
+
+- [ ] **Step 4: Add PrimeGaps identity/provenance/scope behavioral RED cases**
+
+Add and run three fail-closed cases against that shell:
+
+- DB built from artifact A paired with artifact B;
+- descriptor repo/commit/subdir differs from the artifact manifest;
+- descriptor `root_modules` differs while repo/commit/subdir are identical.
+
+Require the valid fixture to stay GREEN while those three cases are RED for the intended absent guards.
+
+- [ ] **Step 5: Add the exact PrimeGaps replay guards**
+
+```python
+manifest, _, _, _ = load_artifact(artifact_path)
+source = load_lean_git_source(descriptor_path)
+with sqlite3.connect(db_path) as conn:
+    projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
+if projected_identity != artifact_identity(manifest):
+    raise AssertionError("projection/artifact identity mismatch")
+if (
+    manifest.source_repo, manifest.source_commit, manifest.source_subdir, manifest.scope.root_modules,
+) != (
+    source.source_repo, source.source_commit, source.source_subdir, source.root_modules,
+):
+    raise AssertionError("artifact provenance/scope does not match selected source descriptor")
+```
+
+Then run the real target `PrimeGap186.primeGapLiminf_le_186` through unchanged `search()`, `dependencies()`, and `context()` APIs. The real CI smoke discovers its actual elaborated neighborhood; the synthetic test only proves replay mechanics.
+
+- [ ] **Step 6: Run focused GREEN and full suite**
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
+PYTHONPATH=src:. python3 -m unittest discover -v
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add scripts/replay_prime_gaps_186.py tests/test_replay_prime_gaps_186.py
+git commit -m "test: add PrimeGaps186 genericity replay"
+```
+
+---
+
+### Task 5: Generic Descriptor-Matrix Producer Workflow
+
+**Files:**
+- Create: `tests/test_workflow_structure.py` — stdlib RED/GREEN guard for trigger paths, matrix replay existence, and legacy workflow removal.
 - Create: `.github/workflows/lean-source-producer-smoke.yml`
 - Remove: `.github/workflows/zeta23-producer-smoke.yml`
 - Modify: `scripts/producer_guard.py`
@@ -750,14 +1094,63 @@ git commit -m "refactor: split Lean source descriptors from runner pins"
 - Modify: `scripts/replay_zeta23.py`
 - Modify: `tests/test_replay_zeta23.py`
 
+**Execution prerequisite:** Tasks 3 and 4 have already committed both replay scripts and their executable contract tests. Task 5 must never enable a matrix row whose replay file is absent at the current commit.
+
 **Interfaces:**
 - Consumes descriptor path, replay script, and artifact name from a descriptor-driven Actions matrix with one isolated job per row.
 - Uses the exact same checkout/build/extract/normalize/index sequence for every source; row count is not publisher-bound.
 - Reads `lean-toolchain` from the selected exact source root after checkout and records the observed string in the producer receipt; it does not inject a Lean version from descriptor data.
 
-- [ ] **Step 1: Replace source-specific workflow setup with an independently parallel descriptor matrix**
+- [ ] **Step 1: Prove the legacy workflow shape is RED, then replace it with the generic matrix**
 
-Replace the legacy Zeta-only pull-request path filters at the same time. The generic smoke must trigger when any producer input, descriptor, matrix replay, query/runtime code, or the generic workflow itself changes:
+Before changing any workflow YAML, create this stdlib-only structure regression. It deliberately falls back to the legacy file for the first run, so the same test is RED before replacement and GREEN after replacement without changing the assertion between phases:
+
+```python
+# tests/test_workflow_structure.py
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+GENERIC = ROOT / ".github/workflows/lean-source-producer-smoke.yml"
+LEGACY = ROOT / ".github/workflows/zeta23-producer-smoke.yml"
+REPLAYS = (
+    "scripts/replay_zeta23.py",
+    "scripts/replay_long_gaps.py",
+    "scripts/replay_prime_gaps_186.py",
+)
+REQUIRED = (
+    "src/**", "tests/**", "scripts/producer_guard.py",
+    "scripts/load_producer_env.py", *REPLAYS,
+    "producer/sources/**", "producer/runner.json", "pyproject.toml",
+    ".github/workflows/lean-source-producer-smoke.yml",
+)
+
+
+class WorkflowStructureTests(unittest.TestCase):
+    def test_generic_workflow_contract(self):
+        candidate = GENERIC if GENERIC.exists() else LEGACY
+        self.assertTrue(candidate.is_file())
+        text = candidate.read_text(encoding="utf-8")
+        for required in REQUIRED:
+            with self.subTest(required=required):
+                self.assertIn(required, text)
+        for replay in REPLAYS:
+            with self.subTest(replay=replay):
+                self.assertTrue((ROOT / replay).is_file())
+                self.assertIn(replay, text)
+        self.assertFalse(LEGACY.exists())
+        self.assertNotIn("producer/zeta23.json", text)
+```
+
+Run it against the untouched legacy workflow:
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_workflow_structure
+```
+
+Expected RED: the old trigger/matrix shape lacks the generic paths and `LEGACY.exists()` is still true. Replay-file existence must already be GREEN because Tasks 3 and 4 committed those scripts before Task 5 starts.
+
+Only after that observed RED, create `.github/workflows/lean-source-producer-smoke.yml`, remove `.github/workflows/zeta23-producer-smoke.yml`, and make the generic smoke trigger when any producer input, descriptor, matrix replay, query/runtime code, or the generic workflow itself changes:
 
 ```yaml
 on:
@@ -777,7 +1170,7 @@ on:
   workflow_dispatch:
 ```
 
-Add a workflow-structure test or parser assertion that these generic paths are present and that removed legacy paths (`producer/zeta23.json`, `.github/workflows/zeta23-producer-smoke.yml`) are absent.
+Rerun `PYTHONPATH=src:. python3 -m unittest -v tests.test_workflow_structure` and require GREEN: all generic paths are present, the legacy workflow/path are absent, and every matrix replay path exists in the current checkout before the workflow is committed.
 
 Use this matrix shape:
 
@@ -1132,10 +1525,10 @@ Upload the normalized artifact directory, `raw-depgraph-receipt.json`, and the s
 
 The cleanup immediately before this step may remove `_out/raw-depgraph.json` and `_out/${SOURCE_ID}.sqlite`, but MUST NOT remove `_out/raw-depgraph-receipt.json`.
 
-- [ ] **Step 10: Delete the old Zeta-only workflow and run local non-Lean verification**
+- [ ] **Step 10: Run local non-Lean verification and prove the legacy workflow stays absent**
 
 ```bash
-rm .github/workflows/zeta23-producer-smoke.yml
+test ! -e .github/workflows/zeta23-producer-smoke.yml
 PYTHONPATH=src:. python3 -m unittest discover -v
 python3 -m py_compile src/theseus_repo_search/*.py scripts/*.py
 ```
@@ -1151,333 +1544,9 @@ git commit -m "ci: drive Lean producer smokes from source descriptors"
 
 ---
 
-### Task 4: OpenAI LongGaps Acceptance Replay
+Before Task 6 commands are considered complete, add an explicit **artifact-only Zeta consumer mode**: the independent consumer receives the uploaded artifact and repository-search package/code only, builds a fresh SQLite projection, then runs the Zeta core replay with `source_root=None`. The old repository-wide grep baseline remains producer-CI evidence and is not required in the Lean-free consumer runtime.
 
-**Observed pinned-source anchors (verified at `openai/LongGapsBetweenPrimes@03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b`):**
-
-```text
-lean-toolchain = leanprover/lean4:v4.33.0
-default target = LongGapsBetweenPrimes
-LongGapsBetweenPrimes.lean:25   def iteratedLog
-LongGapsBetweenPrimes.lean:41   def ShortTranslates
-LongGapsBetweenPrimes.lean:3672 lemma short_translates : ShortTranslates
-LongGapsBetweenPrimes.lean:4468 theorem long_gap_theorem : LongGapTheorem
-LongGapsBetweenPrimes.lean:4502 theorem long_prime_gaps
-```
-
-The source comment on `long_gap_theorem` is `Theorem 1.1: the unconditional long-gap bound in the paper.` These are observed fixtures for the real smoke, not invented placeholder declarations. `Challenge.lean` is a separate comparator library and is not part of the v1 `LongGapsBetweenPrimes` root-module smoke.
-
-**Files:**
-- Create: `scripts/replay_long_gaps.py`
-- Create: `tests/test_replay_long_gaps.py`
-
-**Interfaces:**
-- Consumes: one built SQLite projection, one normalized artifact, and the selected `LeanGitSource` descriptor; producer CI may also pass source root for a common workflow signature.
-- Uses existing `search()`, `dependencies()`, and `context()` APIs unchanged.
-- Produces one JSON receipt with exact source provenance plus graph/lexical/context assertions.
-
-- [ ] **Step 1: Write the synthetic RED replay test**
-
-Build a tiny artifact with these declaration IDs:
-
-```python
-names = [
-    "LongGapsBetweenPrimes.long_gap_theorem",
-    "LongGapsBetweenPrimes.short_translates",
-    "LongGapsBetweenPrimes.iteratedLog",
-]
-```
-
-Use source chunks containing grounded source phrases:
-
-```python
-chunk(
-    "long_gap_theorem",
-    "LongGapsBetweenPrimes.lean",
-    "/-- Theorem 1.1: the unconditional long-gap bound in the paper. -/\n"
-    "theorem long_gap_theorem : True := by trivial\n",
-    100,
-)
-```
-
-Add at least one elaborated value dependency from `long_gap_theorem` to `short_translates` in the synthetic fixture. The fixture tests replay mechanics only; the real corpus smoke must discover its actual graph edges independently.
-
-Assertions:
-
-```python
-result = run_replay(db, artifact, descriptor)
-self.assertEqual(result["status"], "PASS")
-self.assertEqual(result["provenance"]["repo"], "openai/LongGapsBetweenPrimes")
-self.assertEqual(result["provenance"]["commit"], COMMIT)
-self.assertEqual(result["exact"]["target"], "LongGapsBetweenPrimes.long_gap_theorem")
-self.assertGreater(result["graph"]["edge_count"], 0)
-self.assertGreater(len(result["context"]["chunks"]), 0)
-```
-
-The committed OpenAI descriptor is the source of the expected exact pin; do not duplicate a second hard-coded commit constant inside replay code.
-
-In the same RED fixture, invoke `scripts/replay_long_gaps.py` through `subprocess.run([sys.executable, ...])` with the full matrix signature (`--db`, `--source-root`, `--artifact`, `--descriptor`, `--out`). Require exit code `0`, require the requested output file to exist, and parse it back with `status == "PASS"`. This tests the real script entrypoint, not only a callable `main()`.
-
-- [ ] **Step 2: Run RED**
-
-```bash
-PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps
-```
-
-Expected: import failure because `scripts.replay_long_gaps` does not exist.
-
-- [ ] **Step 3: Implement only the happy-path replay shell**
-
-After the missing-module RED, add the smallest replay that can load the artifact/descriptor, run the grounded exact/graph/lexical/context checks, and return the PASS receipt for the valid synthetic fixture. Do not add DB/artifact or descriptor provenance/scope rejection yet. Implement the executable interface in this same slice because the RED fixture invokes the real script:
-
-Include `argparse`, `json`, and `Path` imports plus the existing replay imports. Add this exact argparse/output tail. `--source-root` is intentionally accepted for a common workflow signature even though this replay does not run a grep baseline:
-
-```python
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--db", type=Path, required=True)
-    parser.add_argument("--artifact", type=Path, required=True)
-    parser.add_argument("--descriptor", type=Path, required=True)
-    parser.add_argument("--source-root", type=Path)
-    parser.add_argument("--out", type=Path, required=True)
-    return parser
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    result = run_replay(args.db, args.artifact, args.descriptor)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    print(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-The subprocess fixture must remain GREEN here; defining `main()` without the `__main__` guard is not sufficient for the matrix's `python3 script.py ...` invocation.
-
-
-Run only the valid callable and subprocess receipt fixture and require GREEN before adding guard cases.
-
-- [ ] **Step 4: Add identity, provenance, and scope guard RED cases**
-
-Now add three fail-closed cases and run them against the happy-path shell before adding guard code:
-
-- projection DB from artifact A paired with artifact B -> `projection/artifact identity mismatch`;
-- descriptor repo/commit/subdir differs from the manifest -> provenance mismatch;
-- descriptor `root_modules` differs while repo/commit/subdir remain identical -> provenance/scope mismatch.
-
-Run `PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps` and require the valid fixture to stay GREEN while these three guard cases are RED for the intended missing checks.
-
-- [ ] **Step 5: Add the replay identity/provenance/scope guards**
-
-Core checks:
-
-```python
-import sqlite3
-
-from theseus_repo_search.artifact import artifact_identity, load_artifact
-from theseus_repo_search.graph import dependencies
-from theseus_repo_search.producer_config import load_lean_git_source
-from theseus_repo_search.retrieval import context, search
-
-TARGET = "LongGapsBetweenPrimes.long_gap_theorem"
-LEXICAL_QUERY = "unconditional long gap bound"
-
-
-def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
-    manifest, _, _, _ = load_artifact(artifact_path)
-    source = load_lean_git_source(descriptor_path)
-    with sqlite3.connect(db_path) as conn:
-        projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
-    if projected_identity != artifact_identity(manifest):
-        raise AssertionError("projection/artifact identity mismatch")
-    if (
-        manifest.source_repo, manifest.source_commit, manifest.source_subdir, manifest.scope.root_modules,
-    ) != (
-        source.source_repo, source.source_commit, source.source_subdir, source.root_modules,
-    ):
-        raise AssertionError("artifact provenance/scope does not match selected source descriptor")
-
-    exact_hits = search(db_path, TARGET, limit=1)
-    if len(exact_hits) != 1 or exact_hits[0].source_path != "LongGapsBetweenPrimes.lean":
-        raise AssertionError("main theorem did not resolve to exact source provenance")
-
-    graph = dependencies(db_path, TARGET, depth=1)
-    if not graph.edges:
-        raise AssertionError("main theorem has no in-scope elaborated dependency edges")
-    if not all(str(edge["evidence_grade"]).startswith("ELABORATED_") for edge in graph.edges):
-        raise AssertionError("graph replay returned non-elaborated dependency evidence")
-
-    lexical = search(db_path, LEXICAL_QUERY, limit=10)
-    if not any(hit.declaration_hint == "long_gap_theorem" for hit in lexical):
-        raise AssertionError("grounded long-gap lexical query missed long_gap_theorem")
-
-    ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "long_gap_theorem" for chunk in ctx["chunks"]):
-        raise AssertionError("bounded context omitted target theorem source")
-
-    return {
-        "status": "PASS",
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
-        "exact": {
-            "target": TARGET,
-            "source_path": exact_hits[0].source_path,
-            "source_start_line": exact_hits[0].source_start_line,
-            "source_end_line": exact_hits[0].source_end_line,
-        },
-        "graph": {"edge_count": len(graph.edges), "edges": list(graph.edges)},
-        "lexical": {
-            "query": LEXICAL_QUERY,
-            "hits": [hit.declaration_hint for hit in lexical],
-        },
-        "context": {
-            "estimated_tokens": ctx["estimated_tokens"],
-            "chunks": ctx["chunks"],
-        },
-    }
-```
-
-
-- [ ] **Step 6: Run GREEN and full suite**
-
-```bash
-PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_long_gaps
-PYTHONPATH=src:. python3 -m unittest discover -v
-```
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add scripts/replay_long_gaps.py tests/test_replay_long_gaps.py
-git commit -m "test: add OpenAI LongGaps repository replay"
-```
-
----
-
-### Task 4B: PrimeGaps186 Different-Toolchain Genericity Replay
-
-**Observed exact snapshot:** `openai/PrimeGaps186@61340d0b74163003b32756bb16e91d9209a5e330`
-
-```text
-lean-toolchain = leanprover/lean4:v4.34.0-rc2
-default/root target = PrimeGaps186
-main module = PrimeGaps186.lean
-research anchor = PrimeGap186.primeGapLiminf_le_186
-```
-
-The purpose is not to add another publisher adapter. It is to prove that a source with a different source-owned Lean toolchain enters the existing producer solely through a descriptor/matrix row and a replay fixture.
-
-**Files:**
-- Create: `scripts/replay_prime_gaps_186.py`
-- Create: `tests/test_replay_prime_gaps_186.py`
-
-**Interfaces:**
-- Requires exact SQLite `meta.artifact_identity` == supplied artifact identity and exact descriptor binding for repo, commit, subdir, and `root_modules`.
-- Uses unchanged public `search()`, `dependencies()`, and `context()` APIs.
-- Exposes the same executable matrix contract as the other replays: `--db`, optional `--source-root`, `--artifact`, `--descriptor`, and required `--out`; writes one JSON receipt and returns zero on success.
-- Production code may not branch on `PrimeGaps186`, OpenAI, or Lean `v4.34.0-rc2`.
-
-- [ ] **Step 1: Write RED replay fixture**
-
-Create a synthetic artifact containing `PrimeGap186.primeGapLiminf_le_186` plus at least one elaborated dependency edge and source chunk in `PrimeGaps186.lean`. Require exact provenance and non-empty bounded context. Import `run_replay` for the callable assertions. In the same fixture, invoke `scripts/replay_prime_gaps_186.py` through `subprocess.run([sys.executable, ...])` with the full matrix signature, including a harmless `--source-root`; require exit code `0`, require the JSON file at `--out`, and parse it back with `status == "PASS"`. This keeps the actual script entrypoint under the initial missing-module RED instead of merely testing a callable `main()`.
-
-- [ ] **Step 2: Run RED before implementation**
-
-```bash
-PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
-```
-
-- [ ] **Step 3: Implement only the happy-path PrimeGaps replay shell**
-
-After the missing-module RED, implement enough exact-search, elaborated-dependency, lexical/context, and receipt behavior for the valid synthetic fixture to pass. Do not yet reject DB/artifact or descriptor provenance/scope mismatch. Include `argparse`, `json`, and `Path` imports required by the executable tail. Add the executable CLI at the same time because the RED fixture already requires it:
-
-```python
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--db", type=Path, required=True)
-    parser.add_argument("--artifact", type=Path, required=True)
-    parser.add_argument("--descriptor", type=Path, required=True)
-    parser.add_argument("--source-root", type=Path)
-    parser.add_argument("--out", type=Path, required=True)
-    return parser
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    result = run_replay(args.db, args.artifact, args.descriptor)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    print(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
-```
-
-`--source-root` is intentionally accepted for the common matrix invocation but is not used by this replay. The subprocess fixture must remain GREEN, proving that the `__main__` guard writes the requested receipt under the same invocation shape used by the matrix. Run the valid callable and CLI receipt fixture alone and require GREEN before adding identity/provenance guard cases.
-
-- [ ] **Step 4: Add PrimeGaps identity/provenance/scope behavioral RED cases**
-
-Add and run three fail-closed cases against that shell:
-
-- DB built from artifact A paired with artifact B;
-- descriptor repo/commit/subdir differs from the artifact manifest;
-- descriptor `root_modules` differs while repo/commit/subdir are identical.
-
-Require the valid fixture to stay GREEN while those three cases are RED for the intended absent guards.
-
-- [ ] **Step 5: Add the exact PrimeGaps replay guards**
-
-```python
-manifest, _, _, _ = load_artifact(artifact_path)
-source = load_lean_git_source(descriptor_path)
-with sqlite3.connect(db_path) as conn:
-    projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
-if projected_identity != artifact_identity(manifest):
-    raise AssertionError("projection/artifact identity mismatch")
-if (
-    manifest.source_repo, manifest.source_commit, manifest.source_subdir, manifest.scope.root_modules,
-) != (
-    source.source_repo, source.source_commit, source.source_subdir, source.root_modules,
-):
-    raise AssertionError("artifact provenance/scope does not match selected source descriptor")
-```
-
-Then run the real target `PrimeGap186.primeGapLiminf_le_186` through unchanged `search()`, `dependencies()`, and `context()` APIs. The real CI smoke discovers its actual elaborated neighborhood; the synthetic test only proves replay mechanics.
-
-- [ ] **Step 6: Run focused GREEN and full suite**
-
-```bash
-PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
-PYTHONPATH=src:. python3 -m unittest discover -v
-```
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add scripts/replay_prime_gaps_186.py tests/test_replay_prime_gaps_186.py
-git commit -m "test: add PrimeGaps186 genericity replay"
-```
-
----
-
-Before Task 5 commands are considered complete, add an explicit **artifact-only Zeta consumer mode**: the independent consumer receives the uploaded artifact and repository-search package/code only, builds a fresh SQLite projection, then runs the Zeta core replay with `source_root=None`. The old repository-wide grep baseline remains producer-CI evidence and is not required in the Lean-free consumer runtime.
-
-### Task 5: Real Multi-Source Acceptance and Lean-Free Readback
+### Task 6: Real Multi-Source Acceptance and Lean-Free Readback
 
 **Files:**
 - No production code unless a real failure produces a minimal reproducible defect.
@@ -1676,6 +1745,9 @@ Before implementation begins, verify this plan against the approved spec:
 - [ ] Runner pins are separate from source descriptor.
 - [ ] Every descriptor row, regardless of publisher/toolchain, uses the same producer path and its own isolated runner.
 - [ ] Generic workflow path filters cover descriptors, runner pins, loader, every proving replay, runtime/tests, and the generic workflow itself; legacy Zeta-only paths are removed.
+- [ ] LongGaps and PrimeGaps replay scripts are committed and their executable tests are GREEN before Task 5 enables the corresponding matrix rows; no task commit intentionally references a missing replay file.
+- [ ] The same `tests.test_workflow_structure` assertion is observed RED against the untouched legacy workflow and GREEN after replacement; the assertion is not weakened between phases.
+- [ ] Invalid UTF-8 in either source descriptor or runner config is observed RED first and then normalized to `RepoSearchError.code == "BLOCKED_SOURCE_BINDING"`, never leaked as `UnicodeDecodeError`.
 - [ ] Source-root missing-directory and symlink-escape tests are methods on a `unittest.TestCase` subclass and are observed RED before strict containment/existence guards are implemented.
 - [ ] Every GitHub-environment-mapped config string rejects CR/LF and NUL before export; `root_modules` additionally rejects commas before `ROOT_MODULES_CSV` splitting, while ordinary Unicode module names remain allowed.
 - [ ] LongGaps and PrimeGaps replay subprocess tests exercise the full matrix CLI (`--db`, `--source-root`, `--artifact`, `--descriptor`, `--out`), including `__main__` guards, and verify the requested JSON receipt.
