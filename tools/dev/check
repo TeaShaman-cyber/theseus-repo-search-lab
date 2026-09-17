@@ -11,6 +11,38 @@ CACHE=${THESEUS_REPO_SEARCH_DEV_CACHE:-/tmp/theseus-repo-search-dev}
 export PYTHONPYCACHEPREFIX="$CACHE/pycache"
 mkdir -p "$PYTHONPYCACHEPREFIX"
 
+printf '%s\n' '== plan unittest discovery =='
+python3 - <<'PY_CHECK'
+from pathlib import Path
+import re
+import sys
+
+root = Path("docs/superpowers/plans")
+start = re.compile(r"^\s*```(?:python|python3|py)\s*$", re.IGNORECASE)
+end = re.compile(r"^\s*```\s*$")
+bad_test = re.compile(r"^(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\([^)]*\bself\b")
+failures = []
+
+if root.is_dir():
+    for path in sorted(root.rglob("*.md")):
+        in_python = False
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if not in_python:
+                if start.match(line):
+                    in_python = True
+                continue
+            if end.match(line):
+                in_python = False
+                continue
+            if line == line.lstrip() and bad_test.match(line):
+                failures.append(f"{path}:{lineno}: undiscoverable module-level unittest snippet")
+
+if failures:
+    for failure in failures:
+        print(failure, file=sys.stderr)
+    raise SystemExit(1)
+PY_CHECK
+
 printf '%s\n' '== unit tests =='
 python3 -m unittest discover -s tests -p 'test_*.py'
 
