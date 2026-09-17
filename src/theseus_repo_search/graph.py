@@ -67,9 +67,10 @@ def _resolve_name(conn: sqlite3.Connection, name: str) -> str:
     if exact is not None:
         return str(exact[0])
 
+    escaped_name = name.replace("^", "^^").replace("%", "^%").replace("_", "^_")
     rows = conn.execute(
-        "SELECT id FROM nodes WHERE name = ? OR id LIKE ? ORDER BY id",
-        (name, f"%.{name}"),
+        "SELECT id FROM nodes WHERE name = ? OR id LIKE ? ESCAPE '^' ORDER BY id",
+        (name, f"%.{escaped_name}"),
     ).fetchall()
     candidates = sorted({str(row[0]) for row in rows})
     if not candidates:

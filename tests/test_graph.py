@@ -195,6 +195,40 @@ class GraphTests(unittest.TestCase):
                 ],
             )
 
+    def test_short_name_underscore_is_literal_not_like_wildcard(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = root / "artifact"
+            db = root / "projection.db"
+            nodes = [
+                node("Zeta23.G.foo_bar"),
+                node("Zeta23.G.fooXbar"),
+                node("Zeta23.G.Target"),
+            ]
+            write_artifact(
+                artifact,
+                nodes=nodes,
+                edges=[edge("Zeta23.G.foo_bar", "Zeta23.G.Target")],
+                sources=None,
+                source_repo="example/repo",
+                source_commit=COMMIT,
+                source_subdir="",
+                producer=ProducerPin(
+                    kind="lean-dep-viz",
+                    tool_repo="cameronfreer/LeanDepViz",
+                    tool_commit="deadbeef",
+                    tool_hash="f" * 64,
+                ),
+                scope=SCOPE,
+                created_from_authoritative_commit=True,
+            )
+            build_projection(artifact, db)
+            result = dependencies(db, "foo_bar", depth=1)
+            self.assertEqual(
+                [(item["source_id"], item["target_id"]) for item in result.edges],
+                [("lean:Zeta23.G.foo_bar", "lean:Zeta23.G.Target")],
+            )
+
     def test_exact_graph_query_rejects_lexical_only_projection(self):
         with tempfile.TemporaryDirectory() as d:
             db = self.build_db(Path(d), lexical_only=True)
