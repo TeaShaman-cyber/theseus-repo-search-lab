@@ -208,10 +208,16 @@ bad_cases = [
     {"schema": "wrong.schema"},
     {"source_commit": "main"},
     {"source_repo": "missing-owner"},
+    {"source_repo": "example/repo\nINJECTED=value"},
     {"source_subdir": "/absolute"},
+    {"source_subdir": "formal\nINJECTED=value"},
     {"source_subdir": ".." + "/escape"},
     {"root_modules": []},
     {"root_modules": ["Zeta23", "Zeta23"]},
+    {"root_modules": ["Fixture,Injected"]},
+    {"root_modules": ["Fixture\nINJECTED=value"]},
+    {"root_modules": ["Fixture\rInjected"]},
+    {"root_modules": ["Fixture\x00Injected"]},
     {"build_target": ""},
 ]
 ```
@@ -221,6 +227,8 @@ Add runner-specific RED cases before strict `RunnerPins.from_dict` exists:
 bad_runner_cases = [
     {"schema": "wrong.runner.schema"},
     {"extractor_commit": "main"},
+    {"extractor_repo": "cameronfreer/LeanDepViz\nINJECTED=value"},
+    {"elan_version": "v4.2.3\nINJECTED=value"},
     {"extractor_main_sha256": "g" * 64},
     {"elan_sha256": "g" * 64},
 ]
@@ -245,7 +253,7 @@ Add source-root behavior tests **before** replacing the skeleton resolver. Keep 
 
 The skeleton resolver intentionally follows both paths without those guards, so the happy path stays GREEN while the missing-directory and symlink-escape cases are RED for the intended missing behavior.
 
-Use one helper fixture and make the intended behavior explicit:
+Use one helper fixture and put every discovery target inside a `unittest.TestCase` subclass so the RED command cannot silently skip them:
 
 ```python
 def source_for(subdir: str) -> LeanGitSource:
@@ -260,33 +268,32 @@ def source_for(subdir: str) -> LeanGitSource:
     })
 
 
-def test_resolve_source_root_accepts_nested_subdir(self):
-    with tempfile.TemporaryDirectory() as d:
-        checkout = Path(d) / "repo"
-        nested = checkout / "formal"
-        nested.mkdir(parents=True)
-        self.assertEqual(source_for("formal").resolve_source_root(checkout), nested.resolve())
+class LeanGitSourceRootTests(unittest.TestCase):
+    def test_resolve_source_root_accepts_nested_subdir(self):
+        with tempfile.TemporaryDirectory() as d:
+            checkout = Path(d) / "repo"
+            nested = checkout / "formal"
+            nested.mkdir(parents=True)
+            self.assertEqual(source_for("formal").resolve_source_root(checkout), nested.resolve())
 
+    def test_resolve_source_root_rejects_missing_directory(self):
+        with tempfile.TemporaryDirectory() as d:
+            checkout = Path(d) / "repo"
+            checkout.mkdir()
+            with self.assertRaises(RepoSearchError) as cm:
+                source_for("missing").resolve_source_root(checkout)
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
 
-def test_resolve_source_root_rejects_missing_directory(self):
-    with tempfile.TemporaryDirectory() as d:
-        checkout = Path(d) / "repo"
-        checkout.mkdir()
-        with self.assertRaises(RepoSearchError) as cm:
-            source_for("missing").resolve_source_root(checkout)
-        self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
-
-
-def test_resolve_source_root_rejects_symlink_escape(self):
-    with tempfile.TemporaryDirectory() as d:
-        root = Path(d)
-        checkout = root / "repo"
-        outside = root / "outside"
-        checkout.mkdir(); outside.mkdir()
-        (checkout / "escape").symlink_to(outside, target_is_directory=True)
-        with self.assertRaises(RepoSearchError) as cm:
-            source_for("escape").resolve_source_root(checkout)
-        self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+    def test_resolve_source_root_rejects_symlink_escape(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            checkout = root / "repo"
+            outside = root / "outside"
+            checkout.mkdir(); outside.mkdir()
+            (checkout / "escape").symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(RepoSearchError) as cm:
+                source_for("escape").resolve_source_root(checkout)
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
 ```
 
 
@@ -296,7 +303,9 @@ Run the full new validation/root-resolution batch now:
 PYTHONPATH=src python3 -m unittest -v tests.test_producer_config
 ```
 
-Expected: malformed descriptor/runner validation plus missing/escaping source-root cases are RED for their intended absent checks, not because the module or method is missing.
+Expected: malformed descriptor/runner validation, transport-unsafe root-module values, plus missing/escaping source-root cases are RED for their intended absent checks, not because the module or method is missing.
+
+The transport-safety cases are required because producer configuration is written to `$GITHUB_ENV`; any exported string must reject CR/LF and NUL before environment export. `root_modules` has one extra boundary because `ROOT_MODULES_CSV` is split on commas, so each root must reject commas too. This is a transport invariant only; do not unnecessarily restrict ordinary Unicode Lean module names.
 
 - [ ] **Step 4: Implement the minimal strict config model and source-root guards**
 
@@ -334,6 +343,12 @@ def _require_str(data: dict[str, object], key: str) -> str:
     return value
 
 
+def _require_single_line_transport(value: str, key: str) -> str:
+    if any(ch in value for ch in ("\n", "\r", "\x00")):
+        raise _blocked(f"{key} must be safe for GitHub environment transport")
+    return value
+
+
 @dataclass(frozen=True)
 class LeanGitSource:
     schema: str
@@ -352,11 +367,11 @@ class LeanGitSource:
         }
         _require_exact_keys(data, expected, "source descriptor")
         schema = _require_str(data, "schema")
-        source_id = _require_str(data, "source_id")
-        source_repo = _require_str(data, "source_repo")
-        source_commit = _require_str(data, "source_commit")
-        source_subdir = _require_str(data, "source_subdir")
-        build_target = _require_str(data, "build_target")
+        source_id = _require_single_line_transport(_require_str(data, "source_id"), "source_id")
+        source_repo = _require_single_line_transport(_require_str(data, "source_repo"), "source_repo")
+        source_commit = _require_single_line_transport(_require_str(data, "source_commit"), "source_commit")
+        source_subdir = _require_single_line_transport(_require_str(data, "source_subdir"), "source_subdir")
+        build_target = _require_single_line_transport(_require_str(data, "build_target"), "build_target")
         roots = data.get("root_modules")
 
         if schema != SOURCE_SCHEMA:
@@ -372,8 +387,11 @@ class LeanGitSource:
             raise _blocked("source_subdir must stay inside the Git checkout")
         if not isinstance(roots, list) or not roots or not all(isinstance(x, str) and x for x in roots):
             raise _blocked("root_modules must be a non-empty array of strings")
+        roots = [_require_single_line_transport(root, "root_modules") for root in roots]
         if len(set(roots)) != len(roots):
             raise _blocked("root_modules must be unique")
+        if any(any(ch in root for ch in (",", "\n", "\r", "\x00")) for root in roots):
+            raise _blocked("root_modules must be safe for CSV and GitHub environment transport")
         if not build_target.strip() or any(ch.isspace() for ch in build_target):
             raise _blocked("build_target must be one non-empty Lake target")
 
@@ -415,7 +433,7 @@ class RunnerPins:
             "extractor_main_sha256", "elan_version", "elan_sha256",
         }
         _require_exact_keys(data, expected, "runner config")
-        values = {key: _require_str(data, key) for key in expected}
+        values = {key: _require_single_line_transport(_require_str(data, key), key) for key in expected}
         if values["schema"] != RUNNER_SCHEMA:
             raise _blocked("unsupported runner schema")
         if HEX40.fullmatch(values["extractor_commit"]) is None:
@@ -1198,6 +1216,8 @@ self.assertGreater(len(result["context"]["chunks"]), 0)
 
 The committed OpenAI descriptor is the source of the expected exact pin; do not duplicate a second hard-coded commit constant inside replay code.
 
+In the same RED fixture, invoke `scripts/replay_long_gaps.py` through `subprocess.run([sys.executable, ...])` with the full matrix signature (`--db`, `--source-root`, `--artifact`, `--descriptor`, `--out`). Require exit code `0`, require the requested output file to exist, and parse it back with `status == "PASS"`. This tests the real script entrypoint, not only a callable `main()`.
+
 - [ ] **Step 2: Run RED**
 
 ```bash
@@ -1208,7 +1228,41 @@ Expected: import failure because `scripts.replay_long_gaps` does not exist.
 
 - [ ] **Step 3: Implement only the happy-path replay shell**
 
-After the missing-module RED, add the smallest replay that can load the artifact/descriptor, run the grounded exact/graph/lexical/context checks, and return the PASS receipt for the valid synthetic fixture. Do not add DB/artifact or descriptor provenance/scope rejection yet. Run only the valid fixture and require GREEN.
+After the missing-module RED, add the smallest replay that can load the artifact/descriptor, run the grounded exact/graph/lexical/context checks, and return the PASS receipt for the valid synthetic fixture. Do not add DB/artifact or descriptor provenance/scope rejection yet. Implement the executable interface in this same slice because the RED fixture invokes the real script:
+
+Include `argparse`, `json`, and `Path` imports plus the existing replay imports. Add this exact argparse/output tail. `--source-root` is intentionally accepted for a common workflow signature even though this replay does not run a grep baseline:
+
+```python
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--db", type=Path, required=True)
+    parser.add_argument("--artifact", type=Path, required=True)
+    parser.add_argument("--descriptor", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path)
+    parser.add_argument("--out", type=Path, required=True)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    result = run_replay(args.db, args.artifact, args.descriptor)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(
+        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
+The subprocess fixture must remain GREEN here; defining `main()` without the `__main__` guard is not sufficient for the matrix's `python3 script.py ...` invocation.
+
+
+Run only the valid callable and subprocess receipt fixture and require GREEN before adding guard cases.
 
 - [ ] **Step 4: Add identity, provenance, and scope guard RED cases**
 
@@ -1293,30 +1347,6 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
     }
 ```
 
-Add this exact argparse/output tail. `--source-root` is intentionally accepted for a common workflow signature even though this replay does not run a grep baseline:
-
-```python
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--db", type=Path, required=True)
-    parser.add_argument("--artifact", type=Path, required=True)
-    parser.add_argument("--descriptor", type=Path, required=True)
-    parser.add_argument("--source-root", type=Path)
-    parser.add_argument("--out", type=Path, required=True)
-    return parser
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    result = run_replay(args.db, args.artifact, args.descriptor)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    print(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
-    return 0
-```
 
 - [ ] **Step 6: Run GREEN and full suite**
 
@@ -1354,11 +1384,12 @@ The purpose is not to add another publisher adapter. It is to prove that a sourc
 **Interfaces:**
 - Requires exact SQLite `meta.artifact_identity` == supplied artifact identity and exact descriptor binding for repo, commit, subdir, and `root_modules`.
 - Uses unchanged public `search()`, `dependencies()`, and `context()` APIs.
+- Exposes the same executable matrix contract as the other replays: `--db`, optional `--source-root`, `--artifact`, `--descriptor`, and required `--out`; writes one JSON receipt and returns zero on success.
 - Production code may not branch on `PrimeGaps186`, OpenAI, or Lean `v4.34.0-rc2`.
 
 - [ ] **Step 1: Write RED replay fixture**
 
-Create a synthetic artifact containing `PrimeGap186.primeGapLiminf_le_186` plus at least one elaborated dependency edge and source chunk in `PrimeGaps186.lean`. Require exact provenance and non-empty bounded context.
+Create a synthetic artifact containing `PrimeGap186.primeGapLiminf_le_186` plus at least one elaborated dependency edge and source chunk in `PrimeGaps186.lean`. Require exact provenance and non-empty bounded context. Import `run_replay` for the callable assertions. In the same fixture, invoke `scripts/replay_prime_gaps_186.py` through `subprocess.run([sys.executable, ...])` with the full matrix signature, including a harmless `--source-root`; require exit code `0`, require the JSON file at `--out`, and parse it back with `status == "PASS"`. This keeps the actual script entrypoint under the initial missing-module RED instead of merely testing a callable `main()`.
 
 - [ ] **Step 2: Run RED before implementation**
 
@@ -1368,7 +1399,36 @@ PYTHONPATH=src:. python3 -m unittest -v tests.test_replay_prime_gaps_186
 
 - [ ] **Step 3: Implement only the happy-path PrimeGaps replay shell**
 
-After the missing-module RED, implement enough exact-search, elaborated-dependency, lexical/context, and receipt behavior for the valid synthetic fixture to pass. Do not yet reject DB/artifact or descriptor provenance/scope mismatch. Run the valid fixture alone and require GREEN.
+After the missing-module RED, implement enough exact-search, elaborated-dependency, lexical/context, and receipt behavior for the valid synthetic fixture to pass. Do not yet reject DB/artifact or descriptor provenance/scope mismatch. Include `argparse`, `json`, and `Path` imports required by the executable tail. Add the executable CLI at the same time because the RED fixture already requires it:
+
+```python
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--db", type=Path, required=True)
+    parser.add_argument("--artifact", type=Path, required=True)
+    parser.add_argument("--descriptor", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path)
+    parser.add_argument("--out", type=Path, required=True)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    result = run_replay(args.db, args.artifact, args.descriptor)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(
+        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
+`--source-root` is intentionally accepted for the common matrix invocation but is not used by this replay. The subprocess fixture must remain GREEN, proving that the `__main__` guard writes the requested receipt under the same invocation shape used by the matrix. Run the valid callable and CLI receipt fixture alone and require GREEN before adding identity/provenance guard cases.
 
 - [ ] **Step 4: Add PrimeGaps identity/provenance/scope behavioral RED cases**
 
@@ -1616,7 +1676,9 @@ Before implementation begins, verify this plan against the approved spec:
 - [ ] Runner pins are separate from source descriptor.
 - [ ] Every descriptor row, regardless of publisher/toolchain, uses the same producer path and its own isolated runner.
 - [ ] Generic workflow path filters cover descriptors, runner pins, loader, every proving replay, runtime/tests, and the generic workflow itself; legacy Zeta-only paths are removed.
-- [ ] Source-root missing-directory and symlink-escape tests are observed RED before strict containment/existence guards are implemented.
+- [ ] Source-root missing-directory and symlink-escape tests are methods on a `unittest.TestCase` subclass and are observed RED before strict containment/existence guards are implemented.
+- [ ] Every GitHub-environment-mapped config string rejects CR/LF and NUL before export; `root_modules` additionally rejects commas before `ROOT_MODULES_CSV` splitting, while ordinary Unicode module names remain allowed.
+- [ ] LongGaps and PrimeGaps replay subprocess tests exercise the full matrix CLI (`--db`, `--source-root`, `--artifact`, `--descriptor`, `--out`), including `__main__` guards, and verify the requested JSON receipt.
 - [ ] Every uploaded `theseus.raw-depgraph-receipt.v2` producer receipt carries exactly one non-empty `observed.lean_toolchain`, and acceptance reads that durable receipt rather than relying on logs alone.
 - [ ] OpenAI replay is source-specific but retrieval/query code remains source-neutral.
 - [ ] Multiple `root_modules` are preserved through comma-separated LeanDepViz roots.
