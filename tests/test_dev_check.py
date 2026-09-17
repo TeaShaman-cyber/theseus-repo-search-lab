@@ -26,8 +26,9 @@ class DevCheckContractTest(unittest.TestCase):
         ):
             self.assertIn(marker, text)
 
-
-    def _run_copied_check_with_plan(self, plan_text: str) -> subprocess.CompletedProcess[str]:
+    def _run_copied_check_with_plan(
+        self, plan_text: str, repo_files: dict[str, str] | None = None
+    ) -> subprocess.CompletedProcess[str]:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
@@ -36,6 +37,15 @@ class DevCheckContractTest(unittest.TestCase):
             copied = root / "tools/dev/check"
             shutil.copy2(CHECK, copied)
             (root / "docs/superpowers/plans/example.md").write_text(plan_text, encoding="utf-8")
+            (root / "tests/test_smoke.py").write_text(
+                "import unittest\n\nclass SmokeTest(unittest.TestCase):\n    def test_smoke(self):\n        self.assertTrue(True)\n",
+                encoding="utf-8",
+            )
+            for rel, content in (repo_files or {}).items():
+                target = root / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(content, encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=root, check=True)
             return subprocess.run(
                 [str(copied)],
                 cwd=root,
@@ -57,7 +67,6 @@ class DevCheckContractTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-
     def test_dev_check_rejects_script_invoked_before_plan_creation(self):
         result = self._run_copied_check_with_plan(
             """# Task 1\n\n```yaml\n- run: python3 scripts/replay_future.py --artifact out\n```\n\n# Task 2\n- Create: `scripts/replay_future.py`\n"""
@@ -68,6 +77,31 @@ class DevCheckContractTest(unittest.TestCase):
     def test_dev_check_accepts_script_created_before_plan_invocation(self):
         result = self._run_copied_check_with_plan(
             """# Task 1\n- Create: `scripts/replay_future.py`\n\n# Task 2\n```yaml\n- run: python3 scripts/replay_future.py --artifact out\n```\n"""
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_dev_check_rejects_delete_before_live_consumer_replacement(self):
+        config = "producer/" + "zeta23.json"
+        workflow = ".github/workflows/legacy.yml"
+        result = self._run_copied_check_with_plan(
+            f"# Task 1\n- Delete: `{config}`\n\n# Task 2\n- Modify: `{workflow}`\n",
+            repo_files={
+                config: "{}\n",
+                workflow: f"config: {config}\n",
+            },
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("deleted before live consumer replacement", result.stderr)
+
+    def test_dev_check_accepts_consumer_replacement_before_delete(self):
+        config = "producer/" + "zeta23.json"
+        workflow = ".github/workflows/legacy.yml"
+        result = self._run_copied_check_with_plan(
+            f"# Task 1\n- Modify: `{workflow}`\n\n# Task 2\n- Delete: `{config}`\n",
+            repo_files={
+                config: "{}\n",
+                workflow: f"config: {config}\n",
+            },
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

@@ -15,6 +15,7 @@ printf '%s\n' '== plan guards =='
 python3 - <<'PY_CHECK'
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 root = Path("docs/superpowers/plans")
@@ -25,16 +26,54 @@ bad_test = re.compile(r"^(?:async\s+)?def\s+test_[A-Za-z0-9_]*\s*\([^)]*\bself\b
 create_path = re.compile(r"^\s*-\s*Create:\s*`?(scripts/[A-Za-z0-9_./-]+)`?\s*$", re.IGNORECASE)
 python_script = re.compile(r"(?:python3?|python)\s+(scripts/[A-Za-z0-9_./-]+\.py)")
 direct_script = re.compile(r"(?:^|[\s:])(?:\./)?(scripts/[A-Za-z0-9_./-]+\.(?:py|sh))")
+path_event = re.compile(
+    r"^\s*-\s*(Modify|Delete):\s*`?([A-Za-z0-9_./-]+)`?\s*$", re.IGNORECASE
+)
 failures = []
+
+tracked = [
+    Path(item)
+    for item in subprocess.check_output(["git", "ls-files", "-z"]).decode("utf-8").split("\0")
+    if item
+]
 
 if root.is_dir():
     for path in sorted(root.rglob("*.md")):
         lines = path.read_text(encoding="utf-8").splitlines()
         creates = {}
+        events = {}
         for lineno, line in enumerate(lines, 1):
             match = create_path.match(line)
             if match and match.group(1) not in creates:
                 creates[match.group(1)] = lineno
+            event = path_event.match(line)
+            if event:
+                action, target = event.group(1).lower(), event.group(2)
+                events.setdefault(target, []).append((lineno, action))
+
+        for target, target_events in events.items():
+            for delete_line, action in target_events:
+                if action != "delete" or Path(target) not in tracked:
+                    continue
+                for consumer in tracked:
+                    if consumer == Path(target) or consumer.suffix.lower() == ".md":
+                        continue
+                    try:
+                        text = consumer.read_text(encoding="utf-8")
+                    except (UnicodeError, OSError):
+                        continue
+                    if target not in text:
+                        continue
+                    prior = [
+                        (event_line, event_action)
+                        for event_line, event_action in events.get(consumer.as_posix(), [])
+                        if event_line < delete_line
+                    ]
+                    if prior:
+                        continue
+                    failures.append(
+                        f"{path}:{delete_line}: {target} deleted before live consumer replacement: {consumer}"
+                    )
 
         mode = None
         for lineno, line in enumerate(lines, 1):
