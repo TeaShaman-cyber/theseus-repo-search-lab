@@ -27,7 +27,10 @@ class DevCheckContractTest(unittest.TestCase):
             self.assertIn(marker, text)
 
     def _run_copied_check_with_plan(
-        self, plan_text: str, repo_files: dict[str, str] | None = None
+        self,
+        plan_text: str,
+        repo_files: dict[str, str] | None = None,
+        clean_python: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -46,13 +49,36 @@ class DevCheckContractTest(unittest.TestCase):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(content, encoding="utf-8")
             subprocess.run(["git", "add", "."], cwd=root, check=True)
+            env = os.environ.copy()
+            if clean_python:
+                env.pop("PYTHONPATH", None)
+                env["PYTHONNOUSERSITE"] = "1"
             return subprocess.run(
                 [str(copied)],
                 cwd=root,
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                env=env,
             )
+
+    def test_dev_check_sets_repo_src_for_clean_checkout(self):
+        result = self._run_copied_check_with_plan(
+            "# Clean checkout\n",
+            repo_files={
+                "src/theseus_repo_search/__init__.py": "VALUE = 1\n",
+                "tests/test_package_import.py": (
+                    "import unittest\n"
+                    "import theseus_repo_search\n\n"
+                    "class PackageImportTest(unittest.TestCase):\n"
+                    "    def test_import(self):\n"
+                    "        self.assertEqual(theseus_repo_search.VALUE, 1)\n"
+                ),
+            },
+            clean_python=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
     def test_dev_check_rejects_module_level_unittest_method_snippet(self):
         result = self._run_copied_check_with_plan(

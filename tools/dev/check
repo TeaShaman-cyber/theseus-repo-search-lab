@@ -7,6 +7,9 @@ ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
 }
 cd "$ROOT"
 
+PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+
 CACHE=${THESEUS_REPO_SEARCH_DEV_CACHE:-/tmp/theseus-repo-search-dev}
 export PYTHONPYCACHEPREFIX="$CACHE/pycache"
 mkdir -p "$PYTHONPYCACHEPREFIX"
