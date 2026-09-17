@@ -50,6 +50,8 @@
 
 - Remove `producer/zeta23.json` after its fields are split into source and runner configs.
 - Remove `.github/workflows/zeta23-producer-smoke.yml` after the generic workflow reproduces its Zeta path.
+- Modify `scripts/producer_guard.py` and `tests/test_producer_guard.py` so the raw producer receipt retains the observed source-owned `lean-toolchain` string.
+- Modify `src/theseus_repo_search/cli.py` and `tests/test_cli.py` so raw-receipt verification validates that diagnostic field without duplicating toolchain authority.
 - Modify `scripts/replay_zeta23.py` to accept `--artifact`, load manifest provenance, and keep all existing Zeta graph/lexical assertions unchanged.
 - Modify `tests/test_replay_zeta23.py` to exercise the new artifact argument and provenance receipt.
 - Do **not** modify `retrieval.py`, `graph.py`, `projection.py`, `artifact.py`, or artifact schema unless a failing cross-source test proves a source-neutral defect.
@@ -163,6 +165,10 @@ class LeanGitSource:
                    str(data["source_commit"]), str(data["source_subdir"]),
                    tuple(data["root_modules"]), str(data["build_target"]))
 
+    def resolve_source_root(self, checkout_root: Path) -> Path:
+        # Happy-path skeleton only; containment/existence checks come after RED tests.
+        return (checkout_root.resolve() / self.source_subdir).resolve()
+
 @dataclass(frozen=True)
 class RunnerPins:
     schema: str; extractor_repo: str; extractor_commit: str
@@ -232,15 +238,67 @@ with self.assertRaises(RepoSearchError) as cm:
 self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
 ```
 
-Run the full new validation batch now and confirm it fails for the missing validation behavior before touching production code:
+Add source-root behavior tests **before** replacing the skeleton resolver. Keep the repository-root/nested happy path, then add two semantic RED cases:
+
+- a missing selected subdirectory must raise `BLOCKED_SOURCE_BINDING`;
+- a tracked symlink inside the checkout whose resolved target escapes the checkout must raise `BLOCKED_SOURCE_BINDING`.
+
+The skeleton resolver intentionally follows both paths without those guards, so the happy path stays GREEN while the missing-directory and symlink-escape cases are RED for the intended missing behavior.
+
+Use one helper fixture and make the intended behavior explicit:
+
+```python
+def source_for(subdir: str) -> LeanGitSource:
+    return LeanGitSource.from_dict({
+        "schema": "theseus.lean-git-source.v1",
+        "source_id": "fixture",
+        "source_repo": "example/repo",
+        "source_commit": COMMIT,
+        "source_subdir": subdir,
+        "root_modules": ["Fixture"],
+        "build_target": "Fixture",
+    })
+
+
+def test_resolve_source_root_accepts_nested_subdir(self):
+    with tempfile.TemporaryDirectory() as d:
+        checkout = Path(d) / "repo"
+        nested = checkout / "formal"
+        nested.mkdir(parents=True)
+        self.assertEqual(source_for("formal").resolve_source_root(checkout), nested.resolve())
+
+
+def test_resolve_source_root_rejects_missing_directory(self):
+    with tempfile.TemporaryDirectory() as d:
+        checkout = Path(d) / "repo"
+        checkout.mkdir()
+        with self.assertRaises(RepoSearchError) as cm:
+            source_for("missing").resolve_source_root(checkout)
+        self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+
+
+def test_resolve_source_root_rejects_symlink_escape(self):
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        checkout = root / "repo"
+        outside = root / "outside"
+        checkout.mkdir(); outside.mkdir()
+        (checkout / "escape").symlink_to(outside, target_is_directory=True)
+        with self.assertRaises(RepoSearchError) as cm:
+            source_for("escape").resolve_source_root(checkout)
+        self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+```
+
+
+Run the full new validation/root-resolution batch now:
 
 ```bash
 PYTHONPATH=src python3 -m unittest -v tests.test_producer_config
 ```
 
-Expected: the newly added fail-closed cases are RED for the intended missing behavior, not due to syntax/import mistakes.
+Expected: malformed descriptor/runner validation plus missing/escaping source-root cases are RED for their intended absent checks, not because the module or method is missing.
 
-- [ ] **Step 4: Implement the minimal strict config model**
+- [ ] **Step 4: Implement the minimal strict config model and source-root guards**
 
 ```python
 # src/theseus_repo_search/producer_config.py
@@ -387,64 +445,16 @@ def load_runner_pins(path: Path) -> RunnerPins:
     return RunnerPins.from_dict(_load_json_object(path))
 ```
 
-- [ ] **Step 5: Add source-root containment tests**
-
-```python
-def test_resolve_source_root_accepts_repository_root_and_nested_subdir(self):
-    with tempfile.TemporaryDirectory() as d:
-        checkout = Path(d) / "repo"
-        nested = checkout / "zeta23"
-        nested.mkdir(parents=True)
-        root_source = LeanGitSource.from_dict({
-            "schema": "theseus.lean-git-source.v1",
-            "source_id": "root",
-            "source_repo": "example/repo",
-            "source_commit": COMMIT,
-            "source_subdir": "",
-            "root_modules": ["Example"],
-            "build_target": "Example",
-        })
-        nested_source = LeanGitSource.from_dict({
-            "schema": "theseus.lean-git-source.v1",
-            "source_id": "nested",
-            "source_repo": "example/repo",
-            "source_commit": COMMIT,
-            "source_subdir": "zeta23",
-            "root_modules": ["Zeta23"],
-            "build_target": "Zeta23",
-        })
-        self.assertEqual(root_source.resolve_source_root(checkout), checkout.resolve())
-        self.assertEqual(nested_source.resolve_source_root(checkout), nested.resolve())
-
-
-def test_resolve_source_root_rejects_missing_directory(self):
-    with tempfile.TemporaryDirectory() as d:
-        checkout = Path(d) / "repo"
-        checkout.mkdir()
-        source = LeanGitSource.from_dict({
-            "schema": "theseus.lean-git-source.v1",
-            "source_id": "missing",
-            "source_repo": "example/repo",
-            "source_commit": COMMIT,
-            "source_subdir": "missing",
-            "root_modules": ["Missing"],
-            "build_target": "Missing",
-        })
-        with self.assertRaises(RepoSearchError) as cm:
-            source.resolve_source_root(checkout)
-        self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
-```
-
-- [ ] **Step 6: Run GREEN and full suite**
+- [ ] **Step 5: Run GREEN and full suite**
 
 ```bash
 PYTHONPATH=src python3 -m unittest -v tests.test_producer_config
 PYTHONPATH=src python3 -m unittest discover -v
 ```
 
-Expected: all tests pass; pre-existing 63 tests remain green.
+Expected: focused tests pass and the accepted bootstrap/full pre-existing suite remains green.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/theseus_repo_search/producer_config.py tests/test_producer_config.py
@@ -715,15 +725,41 @@ git commit -m "refactor: split Lean source descriptors from runner pins"
 **Files:**
 - Create: `.github/workflows/lean-source-producer-smoke.yml`
 - Remove: `.github/workflows/zeta23-producer-smoke.yml`
+- Modify: `scripts/producer_guard.py`
+- Modify: `tests/test_producer_guard.py`
+- Modify: `src/theseus_repo_search/cli.py`
+- Modify: `tests/test_cli.py`
 - Modify: `scripts/replay_zeta23.py`
 - Modify: `tests/test_replay_zeta23.py`
 
 **Interfaces:**
 - Consumes descriptor path, replay script, and artifact name from a descriptor-driven Actions matrix with one isolated job per row.
 - Uses the exact same checkout/build/extract/normalize/index sequence for every source; row count is not publisher-bound.
-- Reads `lean-toolchain` from the selected exact source root after checkout and logs it; it does not inject a Lean version from descriptor data.
+- Reads `lean-toolchain` from the selected exact source root after checkout and records the observed string in the producer receipt; it does not inject a Lean version from descriptor data.
 
 - [ ] **Step 1: Replace source-specific workflow setup with an independently parallel descriptor matrix**
+
+Replace the legacy Zeta-only pull-request path filters at the same time. The generic smoke must trigger when any producer input, descriptor, matrix replay, query/runtime code, or the generic workflow itself changes:
+
+```yaml
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/producer_guard.py"
+      - "scripts/load_producer_env.py"
+      - "scripts/replay_zeta23.py"
+      - "scripts/replay_long_gaps.py"
+      - "scripts/replay_prime_gaps_186.py"
+      - "producer/sources/**"
+      - "producer/runner.json"
+      - "pyproject.toml"
+      - ".github/workflows/lean-source-producer-smoke.yml"
+  workflow_dispatch:
+```
+
+Add a workflow-structure test or parser assertion that these generic paths are present and that removed legacy paths (`producer/zeta23.json`, `.github/workflows/zeta23-producer-smoke.yml`) are absent.
 
 Use this matrix shape:
 
@@ -800,12 +836,43 @@ Example workflow shape after that test is GREEN:
     set -euo pipefail
     test -n "$SOURCE_ROOT"
     test -f "$SOURCE_ROOT/lean-toolchain"
-    printf "observed_lean_toolchain=%s\n" "$(cat "$SOURCE_ROOT/lean-toolchain")"
+    observed="$(cat "$SOURCE_ROOT/lean-toolchain")"
+    test -n "$observed"
+    printf "observed_lean_toolchain=%s\n" "$observed"
 ```
 
 `SOURCE_ROOT` must be the exact value returned by `resolve_source_root`; Lake/Lean/any source-owned executable is forbidden before this containment check succeeds. Do not compare the observed toolchain to a descriptor copy; the exact Git commit is the authority binding the file.
 
-- [ ] **Step 5: Install the pinned generic runner prerequisites, then keep one generic Lake build path**
+- [ ] **Step 5: Bind the observed source toolchain into the producer receipt with TDD**
+
+The approved design requires the producer receipt—not only the Actions log—to retain the exact checkout's observed `lean-toolchain` string. Keep this diagnostic separate from descriptor authority.
+
+First extend `tests/test_producer_guard.py` and `tests/test_cli.py` **before** production changes:
+
+- create `lean-toolchain` in the synthetic canonical `cwd`;
+- require `run_bound_extraction()` to emit `{"observed":{"lean_toolchain":"..."}}`;
+- require `_verify_raw_depgraph_receipt()` to accept that exact non-empty observed field;
+- require missing, empty, malformed, or extra `observed` keys to fail closed.
+
+Run focused tests and observe RED against the current receipt contract:
+
+```bash
+PYTHONPATH=src:. python3 -m unittest -v tests.test_producer_guard tests.test_cli.RawDepgraphReceiptTests
+```
+
+Then minimally extend `run_bound_extraction()` to read `(cwd / "lean-toolchain")` itself after exact commit/source-root verification and before extraction, reject a missing/empty value with `BLOCKED_SOURCE_BINDING`, and write:
+
+```python
+"observed": {
+    "lean_toolchain": observed_toolchain,
+},
+```
+
+Adding a required `observed` object changes the exact raw-receipt contract, so bump only this intermediate schema to `theseus.raw-depgraph-receipt.v2`; the normalized repository artifact schema remains unchanged. Keep source/producer/scope/hash equality strict. Update `_verify_raw_depgraph_receipt()` so it separately validates exactly one non-empty `observed.lean_toolchain` field, removes only that diagnostic field for the authority-binding equality comparison, and rejects extra observed keys. It must not compare against a duplicated descriptor/toolchain constant.
+
+Run the same focused tests GREEN, then the full suite before continuing.
+
+- [ ] **Step 6: Install the pinned generic runner prerequisites, then keep one generic Lake build path**
 
 Put the following bootstrap operations in a dedicated Actions step before invoking Lake or LeanDepViz:
 
@@ -839,9 +906,9 @@ Run the source-owned Lake commands in the next workflow step:
     python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
 ```
 
-- [ ] **Step 6: Keep one generic bound LeanDepViz extraction path after verified bootstrap**
+- [ ] **Step 7: Keep one generic bound LeanDepViz extraction path after verified bootstrap**
 
-The generic workflow MUST use the corrected bootstrap's `producer_guard.py extract` path, not a plain `run`. This binds the raw graph hash to exact source commit, source scope, producer pins, and tracked-source cleanliness before/after extraction.
+The generic workflow MUST use the corrected bootstrap's `producer_guard.py extract` path, not a plain `run`. This binds the raw graph hash to exact source commit, source scope, producer pins, observed source-owned toolchain, and tracked-source cleanliness before/after extraction.
 
 ```bash
 mkdir -p _out
@@ -869,9 +936,9 @@ python3 scripts/producer_guard.py extract \
   --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
 ```
 
-The receipt is a required intermediate authority-binding record and is deleted only after normalized artifact verification/replay succeeds.
+The raw producer receipt is a required authority-binding record. Keep it through upload so independent acceptance can inspect `observed.lean_toolchain`; delete only the raw dependency graph and disposable SQLite projection after normalized verification/replay succeeds.
 
-- [ ] **Step 7: Build the existing artifact without source-specific query code**
+- [ ] **Step 8: Build the existing artifact without source-specific query code**
 
 Invoke the existing CLI with matrix-loaded source values:
 
@@ -899,7 +966,7 @@ python3 -m theseus_repo_search build-artifact \
 
 The current CLI already defines `--root-module` with `action="append"`; the Bash array above preserves every descriptor root without changing CLI semantics. Add a workflow-review assertion that no root is collapsed into a single comma-containing CLI value.
 
-- [ ] **Step 8: Verify, project, replay, and upload by source ID**
+- [ ] **Step 9: Verify, project, replay, and upload by source ID**
 
 ```bash
 python3 -m theseus_repo_search verify-artifact --artifact "_out/${SOURCE_ID}-artifact"
@@ -940,22 +1007,19 @@ self.assertEqual(result["provenance"], {
     "subdir": "zeta23",
 })
 ```
-Also add an artifact-only RED call before implementation:
+Apply the replay change in the three slices above, stopping for an observed RED/GREEN boundary between them.
 
-```python
-artifact_only = run_replay(db, artifact, descriptor, None)
-self.assertFalse(artifact_only["metrics"]["baseline_checked"])
-self.assertIsNone(artifact_only["metrics"]["baseline_unique_paths"])
-```
+**Slice 1 — signature/provenance happy path.** After the valid test above is RED against the old signature:
 
-The existing producer-CI call with a real `source_root` must continue to assert the grep-vs-FTS scanning reduction.
+1. Add `load_artifact` and `load_lean_git_source` imports.
+2. Change the signature to `run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path, source_root: Path | None = None)`.
+3. Load `manifest` and `source`, but do not add mismatch rejection yet.
+4. Return the manifest provenance in the PASS receipt.
+5. Replace the parser/main tail with `--artifact`, `--descriptor`, optional `--source-root`, and `--out`.
 
+Run only the valid producer-CI fixture and require GREEN before adding guard cases.
 
-Make five exact incremental edits to `scripts/replay_zeta23.py` without replacing its existing replay body:
-
-1. Add `import sqlite3`, `artifact_identity`/`load_artifact`, and `load_lean_git_source` imports.
-2. Change the signature to `run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path, source_root: Path | None = None)`. Core graph/lexical assertions are artifact-only; repository-wide grep comparison runs only when `source_root` is provided by producer CI.
-3. Immediately inside the function load the descriptor, validate DB↔artifact identity, then validate manifest provenance against that descriptor:
+**Slice 2 — identity/provenance/scope guards.** Add three RED cases while the valid fixture stays GREEN: DB/artifact identity mismatch, descriptor repo/commit/subdir mismatch, and same-source-but-different-`root_modules`. Observe RED, then add `import sqlite3`, `artifact_identity`, and these guards:
 
 ```python
 manifest, _, _, _ = load_artifact(artifact_path)
@@ -972,18 +1036,17 @@ if (
     raise AssertionError("artifact provenance/scope does not match selected source descriptor")
 ```
 
-Then insert this key into the existing return dictionary immediately after `"status": "PASS",`:
+Run the focused replay test and require all slice-2 cases GREEN.
+
+**Slice 3 — artifact-only consumer.** Only now add the artifact-only RED call:
 
 ```python
-"provenance": {
-    "repo": manifest.source_repo,
-    "commit": manifest.source_commit,
-    "subdir": manifest.source_subdir,
-},
+artifact_only = run_replay(db, artifact, descriptor, None)
+self.assertFalse(artifact_only["metrics"]["baseline_checked"])
+self.assertIsNone(artifact_only["metrics"]["baseline_unique_paths"])
 ```
 
-
-4. Replace the existing unconditional baseline block with an explicit producer-only branch:
+Run the focused replay test and confirm this case is RED against the still-unconditional grep baseline. Then replace that baseline block with:
 
 ```python
 fts_paths_count, fts_paths = _fts_unique_paths(db_path)
@@ -999,9 +1062,9 @@ if source_root is not None:
         )
 ```
 
-Return `"baseline_checked": source_root is not None` beside `"baseline_unique_paths": baseline_paths` in `metrics`. This preserves producer scanning evidence while making the independent artifact consumer source-checkout-free.
+Return `"baseline_checked": source_root is not None` beside `"baseline_unique_paths": baseline_paths` in `metrics`. The producer-CI fixture with a real `source_root` must continue to assert the grep-vs-FTS scanning reduction.
 
-5. Replace the parser/main tail with the explicit additional artifact argument:
+The final parser/main shape is:
 
 ```python
 def build_parser() -> argparse.ArgumentParser:
@@ -1032,11 +1095,26 @@ Before upload:
 rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite"
 test ! -e _out/raw-depgraph.json
 test ! -e "_out/${SOURCE_ID}.sqlite"
+test -s _out/raw-depgraph-receipt.json
 ```
 
-Upload only the normalized artifact directory plus source-specific replay receipt.
+Upload the normalized artifact directory, `raw-depgraph-receipt.json`, and the source-specific replay receipt. Do **not** upload the raw dependency graph or disposable SQLite projection. Replace the old Zeta upload shape explicitly:
 
-- [ ] **Step 9: Delete the old Zeta-only workflow and run local non-Lean verification**
+```yaml
+- name: Upload normalized repository lens artifact
+  uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+  with:
+    name: ${{ matrix.artifact_name }}
+    path: |
+      _out/${SOURCE_ID}-artifact/
+      _out/raw-depgraph-receipt.json
+      _out/${SOURCE_ID}-replay.json
+    if-no-files-found: error
+```
+
+The cleanup immediately before this step may remove `_out/raw-depgraph.json` and `_out/${SOURCE_ID}.sqlite`, but MUST NOT remove `_out/raw-depgraph-receipt.json`.
+
+- [ ] **Step 10: Delete the old Zeta-only workflow and run local non-Lean verification**
 
 ```bash
 rm .github/workflows/zeta23-producer-smoke.yml
@@ -1046,7 +1124,7 @@ python3 -m py_compile src/theseus_repo_search/*.py scripts/*.py
 
 Also inspect the workflow diff manually to confirm no `anthropics` or `openai` publisher branch exists in generic steps; publisher-specific values may appear only in descriptor files and matrix artifact/replay labels.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 11: Commit**
 
 ```bash
 git add .github/workflows scripts tests src producer
@@ -1384,7 +1462,7 @@ Do not treat one green matrix row as proof for any other row. Wall-clock should 
 
 - [ ] **Step 3: Inspect each uploaded artifact metadata**
 
-Verify artifact names are distinct for every descriptor and record GitHub artifact IDs, ZIP digests, sizes, run ID, job IDs, observed source-owned `lean-toolchain`, and exact implementation commit.
+Verify artifact names are distinct for every descriptor and record GitHub artifact IDs, ZIP digests, sizes, run ID, job IDs, and exact implementation commit. For every uploaded row, inspect the `theseus.raw-depgraph-receipt.v2` file `raw-depgraph-receipt.json` and require exactly one non-empty `observed.lean_toolchain` value; cross-check it against the job's earlier observed-toolchain log line.
 
 Reject an OpenAI artifact if its manifest provenance does not exactly report:
 
@@ -1394,7 +1472,7 @@ commit = 03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b
 subdir = ""
 ```
 
-Reject Zeta if its existing exact source provenance changes unexpectedly. Reject PrimeGaps186 unless its manifest reports `openai/PrimeGaps186@61340d0b74163003b32756bb16e91d9209a5e330` with repository-root subdir and the job observes `leanprover/lean4:v4.34.0-rc2` from that checkout.
+Reject Zeta if its existing exact source provenance changes unexpectedly. Require LongGaps' raw producer receipt to report `leanprover/lean4:v4.33.0`. Reject PrimeGaps186 unless its manifest reports `openai/PrimeGaps186@61340d0b74163003b32756bb16e91d9209a5e330` with repository-root subdir and its raw producer receipt reports `leanprover/lean4:v4.34.0-rc2`.
 
 - [ ] **Step 4: Download each artifact independently into MarcoPolo**
 
@@ -1405,7 +1483,7 @@ sha256sum <downloaded-zip>
 unzip -q <downloaded-zip> -d <consume-dir>
 ```
 
-Require the local ZIP SHA-256 to match GitHub's artifact digest when GitHub exposes one.
+Require the local ZIP SHA-256 to match GitHub's artifact digest when GitHub exposes one. After extraction, require both `raw-depgraph-receipt.json` and the source-specific replay receipt to be present beside the normalized artifact payload; the raw dependency graph and disposable producer SQLite DB must be absent.
 
 - [ ] **Step 5: Prove Lean-free query-time consumption for each source**
 
@@ -1482,7 +1560,7 @@ Receipt must include:
 ```text
 implementation commit
 all exact source commits
-all observed source-owned lean-toolchain strings
+raw producer receipt v2 validation + all observed source-owned lean-toolchain strings
 workflow run + job IDs
 artifact IDs + digests
 manifest source provenance
@@ -1537,10 +1615,14 @@ Before implementation begins, verify this plan against the approved spec:
 - [ ] Descriptor contains source identity/build scope, not duplicated Lean version.
 - [ ] Runner pins are separate from source descriptor.
 - [ ] Every descriptor row, regardless of publisher/toolchain, uses the same producer path and its own isolated runner.
+- [ ] Generic workflow path filters cover descriptors, runner pins, loader, every proving replay, runtime/tests, and the generic workflow itself; legacy Zeta-only paths are removed.
+- [ ] Source-root missing-directory and symlink-escape tests are observed RED before strict containment/existence guards are implemented.
+- [ ] Every uploaded `theseus.raw-depgraph-receipt.v2` producer receipt carries exactly one non-empty `observed.lean_toolchain`, and acceptance reads that durable receipt rather than relying on logs alone.
 - [ ] OpenAI replay is source-specific but retrieval/query code remains source-neutral.
 - [ ] Multiple `root_modules` are preserved through comma-separated LeanDepViz roots.
 - [ ] One snapshot produces one artifact and one SQLite projection.
 - [ ] All proving artifacts are independently consumed without Lean.
+- [ ] Zeta artifact-only assertions are introduced only in replay slice 3, after signature/provenance and identity/scope slices are GREEN.
 - [ ] Every fresh-consumer replay/query command that imports repository code explicitly sets `PYTHONPATH=src:.`; compile-only `py_compile` checks are exempt.
 - [ ] `RULES.md` remains a separate cookbook change after multi-source acceptance.
 - [ ] No registry, combined database, embeddings, federation, hosted service, security/product layer, or background indexing is introduced.
