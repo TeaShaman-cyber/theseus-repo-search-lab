@@ -90,8 +90,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$SOURCE_ROOT"
-          test -f "$SOURCE_ROOT/lean-toolchain"
-          observed="$(cat "$SOURCE_ROOT/lean-toolchain")"
+          observed="$(python3 scripts/producer_guard.py toolchain --cwd "$SOURCE_ROOT")"
           test -n "$observed"
           printf "observed_lean_toolchain=%s\n" "$observed"
 
@@ -203,7 +202,7 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: |
-            _out/${SOURCE_ID}-artifact/
+            _out/*-artifact/
             _out/raw-depgraph-receipt.json
-            _out/${SOURCE_ID}-replay.json
+            _out/*-replay.json
           if-no-files-found: error

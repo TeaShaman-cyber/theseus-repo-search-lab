@@ -157,6 +157,45 @@ class ProducerGuardTests(unittest.TestCase):
             self.assertIn("tracked source worktree is dirty", str(caught.exception))
             self.assertFalse(receipt.exists())
 
+    def test_bound_extraction_rejects_symlinked_lean_toolchain(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            outside = root.parent / f"{root.name}-outside-toolchain"
+            outside.write_text("leanprover/lean4:v4.33.0\n", encoding="utf-8")
+            (root / "lean-toolchain").symlink_to(outside)
+            raw = root / "raw.json"
+            receipt = root / "receipt.json"
+
+            def fake_run(argv, cwd):
+                raw.write_text('{"nodes":[],"edges":[]}\n', encoding="utf-8")
+
+            try:
+                with patch.object(producer_guard, "verify_checked_out_commit", return_value="a" * 40), \
+                     patch.object(producer_guard, "verify_tracked_source_clean"), \
+                     patch.object(producer_guard, "run_exact_command", side_effect=fake_run):
+                    with self.assertRaises(RepoSearchError) as caught:
+                        producer_guard.run_bound_extraction(
+                            ["lake", "env", "lean"],
+                            cwd=root,
+                            repo_dir=root,
+                            expected_commit="a" * 40,
+                            raw_depgraph=raw,
+                            receipt_path=receipt,
+                            source_repo="example/repo",
+                            source_subdir="",
+                            root_modules=("Root",),
+                            producer_kind="lean-dep-viz",
+                            producer_tool_repo="cameronfreer/LeanDepViz",
+                            producer_tool_commit="b" * 40,
+                            producer_tool_hash="c" * 64,
+                        )
+                self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
+                self.assertIn("lean-toolchain", str(caught.exception))
+                self.assertFalse(raw.exists())
+                self.assertFalse(receipt.exists())
+            finally:
+                outside.unlink(missing_ok=True)
+
     def test_bound_extraction_requires_nonempty_lean_toolchain(self):
         for label, content in (("missing", None), ("empty", "\n")):
             with self.subTest(label=label), tempfile.TemporaryDirectory() as d:

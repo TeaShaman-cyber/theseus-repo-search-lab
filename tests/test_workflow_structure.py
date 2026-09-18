@@ -33,3 +33,7 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertFalse(LEGACY.exists())
         self.assertFalse(LEGACY_CONFIG.exists())
         self.assertNotIn("producer/zeta23.json", text)
+        upload = text.split("- name: Upload normalized repository lens artifact", 1)[1]
+        self.assertNotIn("${SOURCE_ID}", upload)
+        self.assertIn("_out/*-artifact/", upload)
+        self.assertIn("_out/*-replay.json", upload)
