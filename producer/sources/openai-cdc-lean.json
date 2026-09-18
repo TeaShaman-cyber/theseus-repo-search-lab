@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "openai-cdc-lean",
+  "source_repo": "openai/cdc-lean",
+  "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+  "source_subdir": "",
+  "root_modules": ["CDCLean"],
+  "build_target": "CDCLean"
+}
