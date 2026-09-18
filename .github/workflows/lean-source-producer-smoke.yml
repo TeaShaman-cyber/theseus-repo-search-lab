@@ -26,6 +26,9 @@ jobs:
           - source_descriptor: producer/sources/openai-long-gaps.json
             replay_script: scripts/replay_long_gaps.py
             artifact_name: openai-long-gaps-repo-index-v1
+          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
+            replay_script: scripts/replay_flt_regular.py
+            artifact_name: leanprover-community-flt-regular-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

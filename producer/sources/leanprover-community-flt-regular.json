@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "leanprover-community-flt-regular",
+  "source_repo": "leanprover-community/flt-regular",
+  "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+  "source_subdir": "",
+  "root_modules": ["FltRegular"],
+  "build_target": "FltRegular"
+}
