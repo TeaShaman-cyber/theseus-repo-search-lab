@@ -9,10 +9,12 @@ ALL_REPLAYS = (
     "scripts/replay_zeta23.py",
     "scripts/replay_long_gaps.py",
     "scripts/replay_prime_gaps_186.py",
+    "scripts/replay_flt_regular.py",
 )
 ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_zeta23.py",
     "scripts/replay_long_gaps.py",
+    "scripts/replay_flt_regular.py",
 )
 REQUIRED = (
     "scripts/producer_guard.py",
