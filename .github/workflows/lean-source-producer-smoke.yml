@@ -237,6 +237,7 @@ jobs:
             --raw-depgraph _out/raw-depgraph.json \
             --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
             --out "_out/${SOURCE_ID}-artifact"
+          test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
 
       - name: Verify project and replay selected source
         shell: bash
@@ -257,10 +258,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite"
+          rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite" _out/raw-depgraph-receipt.json
           test ! -e _out/raw-depgraph.json
           test ! -e "_out/${SOURCE_ID}.sqlite"
-          test -s _out/raw-depgraph-receipt.json
+          test ! -e _out/raw-depgraph-receipt.json
+          test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
 
       - name: Upload normalized repository lens artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -268,6 +270,5 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: |
             _out/*-artifact/
-            _out/raw-depgraph-receipt.json
             _out/*-replay.json
           if-no-files-found: error

@@ -10,11 +10,12 @@ from pathlib import Path
 from scripts.replay_long_gaps import run_replay
 from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
-from theseus_repo_search.producer_config import load_lean_git_source
+from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
 from theseus_repo_search.projection import build_projection
 
 
 DESCRIPTOR = Path("producer/sources/openai-long-gaps.json")
+RUNNER = load_runner_pins(Path("producer/runner.json"))
 
 
 def node(full_name: str, commit: str) -> Node:
@@ -27,13 +28,13 @@ def node(full_name: str, commit: str) -> Node:
     )
 
 
-def edge(source: str, target: str) -> Edge:
+def edge(source: str, target: str, producer_ref: str | None = None) -> Edge:
     return Edge(
         source_id=f"lean:{source}",
         target_id=f"lean:{target}",
         relation="value_dependency",
         evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-        producer="cameronfreer/LeanDepViz@" + "b" * 40,
+        producer=producer_ref or f"{RUNNER.extractor_repo}@{RUNNER.extractor_commit}",
     )
 
 
@@ -51,17 +52,24 @@ def chunk(hint: str, text: str, line: int, commit: str) -> SourceChunk:
     )
 
 
-def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
+def write_fixture_artifact(root: Path, source, name: str = "artifact", *, authoritative: bool = True, producer: ProducerPin | None = None) -> Path:
     artifact = root / name
     names = [
         "LongGapsBetweenPrimes.long_gap_theorem",
         "LongGapsBetweenPrimes.short_translates",
         "LongGapsBetweenPrimes.iteratedLog",
     ]
+    producer = producer or ProducerPin(
+        kind="lean-dep-viz",
+        tool_repo=RUNNER.extractor_repo,
+        tool_commit=RUNNER.extractor_commit,
+        tool_hash=RUNNER.extractor_main_sha256,
+    )
+    producer_ref = f"{producer.tool_repo}@{producer.tool_commit}"
     write_artifact(
         artifact,
         nodes=[node(full_name, source.source_commit) for full_name in names],
-        edges=[edge(names[0], names[1])],
+        edges=[edge(names[0], names[1], producer_ref)],
         sources=[
             chunk(
                 "long_gap_theorem",
@@ -76,14 +84,9 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         source_repo=source.source_repo,
         source_commit=source.source_commit,
         source_subdir=source.source_subdir,
-        producer=ProducerPin(
-            kind="lean-dep-viz",
-            tool_repo="cameronfreer/LeanDepViz",
-            tool_commit="b" * 40,
-            tool_hash="c" * 64,
-        ),
+        producer=producer,
         scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
-        created_from_authoritative_commit=True,
+        created_from_authoritative_commit=authoritative,
     )
     return artifact
 
@@ -134,6 +137,33 @@ class ReplayLongGapsTests(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertTrue(out.is_file())
             self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["status"], "PASS")
+
+
+    def test_rejects_non_authoritative_artifact(self):
+        source = load_lean_git_source(DESCRIPTOR)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = write_fixture_artifact(root, source, authoritative=False)
+            db = root / "index.sqlite"
+            build_projection(artifact, db)
+            with self.assertRaisesRegex(AssertionError, "authoritative"):
+                run_replay(db, artifact, DESCRIPTOR)
+
+    def test_rejects_wrong_runner_producer_pin(self):
+        source = load_lean_git_source(DESCRIPTOR)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            wrong = ProducerPin(
+                kind="lean-dep-viz",
+                tool_repo=RUNNER.extractor_repo,
+                tool_commit="d" * 40,
+                tool_hash=RUNNER.extractor_main_sha256,
+            )
+            artifact = write_fixture_artifact(root, source, producer=wrong)
+            db = root / "index.sqlite"
+            build_projection(artifact, db)
+            with self.assertRaisesRegex(AssertionError, "producer"):
+                run_replay(db, artifact, DESCRIPTOR)
 
     def test_rejects_projection_artifact_identity_mismatch(self):
         with tempfile.TemporaryDirectory() as d:

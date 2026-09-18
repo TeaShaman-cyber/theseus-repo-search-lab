@@ -7,7 +7,7 @@ from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity, load_artifact
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.producer_config import load_lean_git_source
+from theseus_repo_search.replay_contract import validate_registered_replay_manifest
 from theseus_repo_search.retrieval import context, search
 
 
@@ -17,24 +17,11 @@ LEXICAL_QUERY = "unconditional long gap bound"
 
 def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
     manifest, _, _, _ = load_artifact(artifact_path)
-    source = load_lean_git_source(descriptor_path)
     with sqlite3.connect(db_path) as conn:
         projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
     if projected_identity != artifact_identity(manifest):
         raise AssertionError("projection/artifact identity mismatch")
-    if (
-        manifest.source_repo,
-        manifest.source_commit,
-        manifest.source_subdir,
-        manifest.scope.root_modules,
-    ) != (
-        source.source_repo,
-        source.source_commit,
-        source.source_subdir,
-        source.root_modules,
-    ):
-        raise AssertionError("artifact provenance/scope does not match selected source descriptor")
-
+    source = validate_registered_replay_manifest(manifest, descriptor_path)
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1 or exact_hits[0].source_path != "LongGapsBetweenPrimes.lean":
         raise AssertionError("main theorem did not resolve to exact source provenance")

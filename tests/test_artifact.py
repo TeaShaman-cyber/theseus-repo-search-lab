@@ -160,6 +160,46 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(edges, sample_edges())
             self.assertEqual(sources, sample_sources())
 
+    def test_authority_receipt_must_match_manifest_semantics(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            receipt = {
+                "schema": "theseus.raw-depgraph-receipt.v2",
+                "source": {"repo": "anthropics/formal-math", "commit": SOURCE_COMMIT, "subdir": "zeta23"},
+                "scope": {"root_modules": ["Zeta23"]},
+                "producer": {
+                    "kind": PRODUCER.kind,
+                    "tool_repo": PRODUCER.tool_repo,
+                    "tool_commit": PRODUCER.tool_commit,
+                    "tool_hash": PRODUCER.tool_hash,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
+                "raw_depgraph": {"sha256": "0" * 64},
+            }
+            receipt_bytes = (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            write_artifact(
+                path,
+                nodes=sample_nodes(),
+                edges=sample_edges(),
+                sources=sample_sources(),
+                source_repo="anthropics/formal-math",
+                source_commit=SOURCE_COMMIT,
+                source_subdir="zeta23",
+                producer=PRODUCER,
+                scope=SCOPE,
+                created_from_authoritative_commit=True,
+                authority_receipt=receipt_bytes,
+            )
+            receipt["source"]["commit"] = "wrong-commit"
+            tampered = (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            (path / "authority-receipt.json").write_bytes(tampered)
+            manifest_path = path / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["members"]["authority_receipt"]["sha256"] = hashlib.sha256(tampered).hexdigest()
+            manifest_path.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(RepoSearchError, "authority receipt"):
+                load_artifact(path)
+
     def test_tampered_member_hash_blocks_load(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)

@@ -10,11 +10,12 @@ from pathlib import Path
 from scripts.replay_zeta23 import run_replay
 from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
-from theseus_repo_search.producer_config import load_lean_git_source
+from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
 from theseus_repo_search.projection import build_projection
 
 
 DESCRIPTOR = Path("producer/sources/zeta23.json")
+RUNNER = load_runner_pins(Path("producer/runner.json"))
 COMMIT = "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844"
 
 
@@ -34,7 +35,7 @@ def edge(source: str, target: str) -> Edge:
         target_id=f"lean:{target}",
         relation="value_dependency",
         evidence_grade=EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
-        producer="cameronfreer/LeanDepViz@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        producer=f"{RUNNER.extractor_repo}@{RUNNER.extractor_commit}",
     )
 
 
@@ -114,9 +115,9 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         source_subdir=source.source_subdir,
         producer=ProducerPin(
             kind="lean-dep-viz",
-            tool_repo="cameronfreer/LeanDepViz",
-            tool_commit="b" * 40,
-            tool_hash="c" * 64,
+            tool_repo=RUNNER.extractor_repo,
+            tool_commit=RUNNER.extractor_commit,
+            tool_hash=RUNNER.extractor_main_sha256,
         ),
         scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
         created_from_authoritative_commit=True,
@@ -179,9 +180,9 @@ class ReplayZeta23Tests(unittest.TestCase):
                 source_subdir="zeta23",
                 producer=ProducerPin(
                     kind="lean-dep-viz",
-                    tool_repo="cameronfreer/LeanDepViz",
-                    tool_commit="b" * 40,
-                    tool_hash="c" * 64,
+                    tool_repo=RUNNER.extractor_repo,
+                    tool_commit=RUNNER.extractor_commit,
+                    tool_hash=RUNNER.extractor_main_sha256,
                 ),
                 scope=ArtifactScope(root_modules=("Zeta23",), dependency_boundary="internal_only"),
                 created_from_authoritative_commit=True,

@@ -296,6 +296,60 @@ class CliTests(unittest.TestCase):
             self.assertIn("raw dependency graph receipt", payload["message"])
             self.assertFalse(out.exists())
 
+    def test_authoritative_exact_build_binds_receipt_inside_artifact(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            repo = root / "repo"
+            source = repo / "zeta23"
+            (source / "Zeta23").mkdir(parents=True)
+            (source / "Zeta23" / "Tiny.lean").write_text(
+                (SOURCE_ROOT / "Zeta23" / "Tiny.lean").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", repo, "remote", "add", "origin", "https://github.com/example/repo.git"], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", "fixture"], check=True)
+            commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            receipt = root / "receipt.json"
+            receipt.write_text(json.dumps({
+                "schema": "theseus.raw-depgraph-receipt.v2",
+                "source": {"repo": "example/repo", "commit": commit, "subdir": "zeta23"},
+                "scope": {"root_modules": ["Zeta23"]},
+                "producer": {
+                    "kind": "lean-dep-viz",
+                    "tool_repo": "cameronfreer/LeanDepViz",
+                    "tool_commit": TOOL_COMMIT,
+                    "tool_hash": TOOL_HASH,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
+                "raw_depgraph": {"sha256": sha256(RAW.read_bytes()).hexdigest()},
+            }, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+            artifact = root / "artifact"
+            result = self.run_cli(
+                "build-artifact",
+                "--source-root", source,
+                "--source-repo", "example/repo",
+                "--source-commit", commit,
+                "--source-subdir", "zeta23",
+                "--root-module", "Zeta23",
+                "--producer-kind", "lean-dep-viz",
+                "--producer-tool-repo", "cameronfreer/LeanDepViz",
+                "--producer-tool-commit", TOOL_COMMIT,
+                "--producer-tool-hash", TOOL_HASH,
+                "--authoritative-readback",
+                "--raw-depgraph", RAW,
+                "--raw-depgraph-receipt", receipt,
+                "--out", artifact,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((artifact / "authority-receipt.json").is_file())
+            manifest = json.loads((artifact / "manifest.json").read_text(encoding="utf-8"))
+            expected = sha256((artifact / "authority-receipt.json").read_bytes()).hexdigest()
+            self.assertEqual(manifest["members"]["authority_receipt"]["sha256"], expected)
+
     def test_exact_build_writes_four_members_and_verify_returns_verified(self):
         with tempfile.TemporaryDirectory() as d:
             artifact = Path(d) / "artifact"

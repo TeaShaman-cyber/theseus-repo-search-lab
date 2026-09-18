@@ -37,6 +37,8 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertNotIn("${SOURCE_ID}", upload)
         self.assertIn("_out/*-artifact/", upload)
         self.assertIn("_out/*-replay.json", upload)
+        self.assertNotIn("_out/raw-depgraph-receipt.json", upload)
+        self.assertIn("authority-receipt.json", text)
 
     def test_prime_gaps_is_not_in_default_generic_matrix(self):
         text = GENERIC.read_text(encoding="utf-8")

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity, load_artifact
 from theseus_repo_search.graph import dependencies, reverse_dependencies
-from theseus_repo_search.producer_config import load_lean_git_source
+from theseus_repo_search.replay_contract import validate_registered_replay_manifest
 from theseus_repo_search.retrieval import search
 from theseus_repo_search.sources import tracked_lean_files
 
@@ -61,24 +61,11 @@ def run_replay(
     source_root: Path | None = None,
 ) -> dict[str, object]:
     manifest, _, _, _ = load_artifact(artifact_path)
-    source = load_lean_git_source(descriptor_path)
     with sqlite3.connect(db_path) as conn:
         projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
     if projected_identity != artifact_identity(manifest):
         raise AssertionError("projection/artifact identity mismatch")
-    if (
-        manifest.source_repo,
-        manifest.source_commit,
-        manifest.source_subdir,
-        manifest.scope.root_modules,
-    ) != (
-        source.source_repo,
-        source.source_commit,
-        source.source_subdir,
-        source.root_modules,
-    ):
-        raise AssertionError("artifact provenance/scope does not match selected source descriptor")
-
+    source = validate_registered_replay_manifest(manifest, descriptor_path)
     tight_deps = dependencies(db_path, "lemmaR_tight_two", depth=1)
     tight_targets = {str(edge["target_id"]) for edge in tight_deps.edges}
     required_tight = "lean:Zeta23.ZeroSide.TightMult.lemmaR_tight"
