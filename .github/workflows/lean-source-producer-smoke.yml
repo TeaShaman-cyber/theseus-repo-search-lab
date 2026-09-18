@@ -139,7 +139,46 @@ jobs:
         run: |
           set -euo pipefail
           started="$(date +%s)"
+
+          heartbeat() {
+            local started_epoch="$1"
+            local tick=0
+            while true; do
+              sleep 60
+              tick=$((tick + 1))
+              now="$(date +%s)"
+              elapsed="$((now - started_epoch))"
+              ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              mem_available_kib="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
+              root_free_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
+              printf 'build_heartbeat ts=%s elapsed_seconds=%s source_id=%s build_target=%s mem_available_kib=%s root_free_kib=%s\n' \
+                "$ts" "$elapsed" "$SOURCE_ID" "$BUILD_TARGET" "$mem_available_kib" "$root_free_kib"
+              if (( tick % 5 == 0 )); then
+                if [ -d "$SOURCE_ROOT/.lake/build" ]; then
+                  source_build_kib="$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
+                else
+                  source_build_kib=0
+                fi
+                printf 'build_heartbeat_slow ts=%s elapsed_seconds=%s source_build_kib=%s\n' \
+                  "$ts" "$elapsed" "$source_build_kib"
+              fi
+            done
+          }
+
+          heartbeat "$started" &
+          heartbeat_pid=$!
+          cleanup_heartbeat() {
+            kill "$heartbeat_pid" 2>/dev/null || true
+            wait "$heartbeat_pid" 2>/dev/null || true
+          }
+          trap cleanup_heartbeat EXIT
+          trap 'cleanup_heartbeat; exit 130' INT
+          trap 'cleanup_heartbeat; exit 143' TERM
+
           python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+
+          cleanup_heartbeat
+          trap - EXIT INT TERM
           finished="$(date +%s)"
           printf "source_build_seconds=%s\n" "$((finished - started))"
           if [ -d "$SOURCE_ROOT/.lake/build" ]; then

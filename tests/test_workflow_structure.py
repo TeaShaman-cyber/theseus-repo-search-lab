@@ -47,3 +47,17 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("source_build_seconds=", text)
         self.assertIn("mathlib_cache_files=", text)
         self.assertIn("source_build_kib=", text)
+
+    def test_source_build_emits_bounded_live_heartbeat(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        build = text.split("- name: Build source target", 1)[1].split("- name: Extract exact declaration graph", 1)[0]
+        self.assertIn("sleep 60", build)
+        self.assertIn("build_heartbeat ts=", build)
+        self.assertIn("elapsed_seconds=", build)
+        self.assertIn("mem_available_kib=", build)
+        self.assertIn("root_free_kib=", build)
+        self.assertIn("source_build_kib=", build)
+        self.assertIn("tick % 5", build)
+        self.assertIn("trap", build)
+        self.assertNotIn("GITHUB_TOKEN", build)
+        self.assertNotIn("gh api", build)
