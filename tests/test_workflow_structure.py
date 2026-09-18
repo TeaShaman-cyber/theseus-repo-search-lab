@@ -38,6 +38,11 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("_out/*-artifact/", upload)
         self.assertIn("_out/*-replay.json", upload)
 
+    def test_prime_gaps_is_not_in_default_generic_matrix(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        matrix = text.split("matrix:", 1)[1].split("steps:", 1)[0]
+        self.assertNotIn("producer/sources/openai-prime-gaps-186.json", matrix)
+
     def test_generic_workflow_splits_cache_and_build_timing(self):
         text = GENERIC.read_text(encoding="utf-8")
         self.assertIn("- name: Restore source dependency cache", text)
