@@ -58,6 +58,15 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertNotIn("_out/raw-depgraph-receipt.json", upload)
         self.assertIn("authority-receipt.json", text)
 
+    def test_source_exclusions_are_wired_only_into_artifact_build(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        extract = text.split("- name: Extract exact declaration graph", 1)[1].split("- name: Install repository lens package", 1)[0]
+        build = text.split("- name: Build normalized artifact", 1)[1].split("- name: Verify project and replay selected source", 1)[0]
+        self.assertNotIn("exclude_args", extract)
+        self.assertIn("exclude_args=()", build)
+        self.assertIn("--exclude-source-prefix", build)
+        self.assertIn('"${exclude_args[@]}"', build)
+
     def test_prime_gaps_is_not_in_default_generic_matrix(self):
         text = GENERIC.read_text(encoding="utf-8")
         matrix = text.split("matrix:", 1)[1].split("steps:", 1)[0]

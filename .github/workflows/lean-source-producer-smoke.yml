@@ -199,7 +199,6 @@ jobs:
             --source-repo "$SOURCE_REPO" \
             --source-subdir "$SOURCE_SUBDIR" \
             "${root_args[@]}" \
-            "${exclude_args[@]}" \
             --producer-kind lean-dep-viz \
             --producer-tool-repo "$EXTRACTOR_REPO" \
             --producer-tool-commit "$EXTRACTOR_COMMIT" \
@@ -233,6 +232,7 @@ jobs:
             --source-commit "$SOURCE_COMMIT" \
             --source-subdir "$SOURCE_SUBDIR" \
             "${root_args[@]}" \
+            "${exclude_args[@]}" \
             --producer-kind lean-dep-viz \
             --producer-tool-repo "$EXTRACTOR_REPO" \
             --producer-tool-commit "$EXTRACTOR_COMMIT" \
