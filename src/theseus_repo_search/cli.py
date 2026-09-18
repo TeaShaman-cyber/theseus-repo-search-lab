@@ -165,8 +165,22 @@ def _verify_raw_depgraph_receipt(
             "BLOCKED_SOURCE_BINDING",
             "invalid raw dependency graph receipt: root must be an object",
         )
+    observed = receipt.get("observed")
+    if (
+        not isinstance(observed, dict)
+        or set(observed) != {"lean_toolchain"}
+        or not isinstance(observed.get("lean_toolchain"), str)
+        or not observed["lean_toolchain"].strip()
+    ):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "raw dependency graph receipt must contain exactly one non-empty observed.lean_toolchain field",
+        )
+
+    authority_receipt = dict(receipt)
+    authority_receipt.pop("observed")
     expected = {
-        "schema": "theseus.raw-depgraph-receipt.v1",
+        "schema": "theseus.raw-depgraph-receipt.v2",
         "source": {
             "repo": source_repo,
             "commit": source_commit,
@@ -181,7 +195,7 @@ def _verify_raw_depgraph_receipt(
         },
         "raw_depgraph": {"sha256": raw_hash},
     }
-    if receipt != expected:
+    if authority_receipt != expected:
         raise RepoSearchError(
             "BLOCKED_SOURCE_MISMATCH",
             "raw dependency graph receipt does not match source, producer, scope, or graph hash",

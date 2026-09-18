@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from theseus_repo_search.producer_config import LeanGitSource, RunnerPins
+import argparse
+from pathlib import Path
+
+from theseus_repo_search.producer_config import (
+    LeanGitSource,
+    RunnerPins,
+    load_lean_git_source,
+    load_runner_pins,
+)
 
 
 def environment_mapping(source: LeanGitSource, runner: RunnerPins) -> dict[str, str]:
@@ -18,21 +26,21 @@ def environment_mapping(source: LeanGitSource, runner: RunnerPins) -> dict[str, 
         "ELAN_SHA256": runner.elan_sha256,
     }
 
-import argparse
-from pathlib import Path
-
-from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
-
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--runner", type=Path, required=True)
+    parser.add_argument("--checkout-root", type=Path)
     parser.add_argument("--github-env", type=Path, required=True)
     args = parser.parse_args(argv)
     source = load_lean_git_source(args.source)
     runner = load_runner_pins(args.runner)
-    mapping = environment_mapping(source, runner)
+    if args.checkout_root is None:
+        mapping = environment_mapping(source, runner)
+    else:
+        source_root = source.resolve_source_root(args.checkout_root)
+        mapping = {"SOURCE_ROOT": str(source_root)}
     with args.github_env.open("a", encoding="utf-8") as fh:
         for key in sorted(mapping):
             fh.write(f"{key}={mapping[key]}\n")

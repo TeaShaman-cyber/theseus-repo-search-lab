@@ -1,3 +1,6 @@
+import json
+import os
+import sys
 import tempfile
 import subprocess
 import unittest
@@ -10,7 +13,8 @@ from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, 
 from theseus_repo_search.projection import build_projection
 
 
-COMMIT = "a" * 40
+DESCRIPTOR = Path("producer/sources/zeta23.json")
+COMMIT = "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844"
 
 
 def node(full_name: str) -> Node:
@@ -88,7 +92,7 @@ class ReplayZeta23Tests(unittest.TestCase):
                     chunk("ChebyshevMertens", "Hypotheses.lean", "Chebyshev Mertens arithmetic interface\n", 1),
                     chunk("count_certificate", "Certificate.lean", "certificate trace moment\n", 1),
                 ],
-                source_repo="example/repo",
+                source_repo="anthropics/formal-math",
                 source_commit=COMMIT,
                 source_subdir="zeta23",
                 producer=ProducerPin(
@@ -102,11 +106,33 @@ class ReplayZeta23Tests(unittest.TestCase):
             )
             build_projection(artifact, db)
 
-            result = run_replay(db, source_root)
+            result = run_replay(db, artifact, DESCRIPTOR, source_root)
             self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["provenance"], {
+                "repo": "anthropics/formal-math",
+                "commit": COMMIT,
+                "subdir": "zeta23",
+            })
             self.assertEqual(result["lexical"]["tight_query"], "tight pairs extremal")
             self.assertEqual(result["metrics"]["baseline_unique_paths"], 2)
             self.assertGreater(
                 result["metrics"]["baseline_unique_paths"],
                 result["metrics"]["fts_unique_paths"],
             )
+
+            out = root / "replay.json"
+            env = os.environ.copy()
+            env["PYTHONPATH"] = "src:."
+            proc = subprocess.run(
+                [
+                    sys.executable, "scripts/replay_zeta23.py",
+                    "--db", str(db),
+                    "--artifact", str(artifact),
+                    "--descriptor", str(DESCRIPTOR),
+                    "--source-root", str(source_root),
+                    "--out", str(out),
+                ],
+                cwd=Path.cwd(), env=env, capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["provenance"]["repo"], "anthropics/formal-math")

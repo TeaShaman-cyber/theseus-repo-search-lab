@@ -28,7 +28,7 @@ class RawDepgraphReceiptTests(unittest.TestCase):
             raw.write_bytes(b'{"nodes":[],"edges":[]}\n')
             receipt = root / "receipt.json"
             base = {
-                "schema": "theseus.raw-depgraph-receipt.v1",
+                "schema": "theseus.raw-depgraph-receipt.v2",
                 "source": {"repo": "example/repo", "commit": "a" * 40, "subdir": "zeta23"},
                 "scope": {"root_modules": ["Zeta23"]},
                 "producer": {
@@ -37,6 +37,7 @@ class RawDepgraphReceiptTests(unittest.TestCase):
                     "tool_commit": "b" * 40,
                     "tool_hash": "c" * 64,
                 },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
                 "raw_depgraph": {"sha256": sha256(raw.read_bytes()).hexdigest()},
             }
 
@@ -56,17 +57,21 @@ class RawDepgraphReceiptTests(unittest.TestCase):
                 )
 
             verify(base)
-            for label, mutate in (
-                ("commit", lambda x: x["source"].__setitem__("commit", "d" * 40)),
-                ("producer", lambda x: x["producer"].__setitem__("tool_commit", "d" * 40)),
-                ("hash", lambda x: x["raw_depgraph"].__setitem__("sha256", "0" * 64)),
+            for label, mutate, code in (
+                ("commit", lambda x: x["source"].__setitem__("commit", "d" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("producer", lambda x: x["producer"].__setitem__("tool_commit", "d" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("hash", lambda x: x["raw_depgraph"].__setitem__("sha256", "0" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("observed-missing", lambda x: x.pop("observed"), "BLOCKED_SOURCE_BINDING"),
+                ("observed-empty", lambda x: x.__setitem__("observed", {"lean_toolchain": ""}), "BLOCKED_SOURCE_BINDING"),
+                ("observed-malformed", lambda x: x.__setitem__("observed", "v4.33.0"), "BLOCKED_SOURCE_BINDING"),
+                ("observed-extra", lambda x: x["observed"].__setitem__("publisher", "example"), "BLOCKED_SOURCE_BINDING"),
             ):
                 with self.subTest(label=label):
                     payload = json.loads(json.dumps(base))
                     mutate(payload)
                     with self.assertRaises(RepoSearchError) as caught:
                         verify(payload)
-                    self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+                    self.assertEqual(caught.exception.code, code)
 
 
 class CliTests(unittest.TestCase):
@@ -256,7 +261,7 @@ class CliTests(unittest.TestCase):
             commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
             receipt = root / "receipt.json"
             receipt.write_text(json.dumps({
-                "schema": "theseus.raw-depgraph-receipt.v1",
+                "schema": "theseus.raw-depgraph-receipt.v2",
                 "source": {"repo": "example/repo", "commit": commit, "subdir": "zeta23"},
                 "scope": {"root_modules": ["Zeta23"]},
                 "producer": {
@@ -265,6 +270,7 @@ class CliTests(unittest.TestCase):
                     "tool_commit": TOOL_COMMIT,
                     "tool_hash": TOOL_HASH,
                 },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
                 "raw_depgraph": {"sha256": "0" * 64},
             }), encoding="utf-8")
             out = root / "artifact"

@@ -1,0 +1,209 @@
+name: Lean source repository lens producer smoke
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "scripts/producer_guard.py"
+      - "scripts/load_producer_env.py"
+      - "scripts/replay_zeta23.py"
+      - "scripts/replay_long_gaps.py"
+      - "scripts/replay_prime_gaps_186.py"
+      - "producer/sources/**"
+      - "producer/runner.json"
+      - "pyproject.toml"
+      - ".github/workflows/lean-source-producer-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-source-repo-lens-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  produce-and-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - source_descriptor: producer/sources/zeta23.json
+            replay_script: scripts/replay_zeta23.py
+            artifact_name: zeta23-repo-index-v1
+          - source_descriptor: producer/sources/openai-long-gaps.json
+            replay_script: scripts/replay_long_gaps.py
+            artifact_name: openai-long-gaps-repo-index-v1
+          - source_descriptor: producer/sources/openai-prime-gaps-186.json
+            replay_script: scripts/replay_prime_gaps_186.py
+            artifact_name: openai-prime-gaps-186-repo-index-v1
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "${{ matrix.source_descriptor }}" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+
+      - name: Verify exact source readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+          printf "source_readback=%s\n" "$(git -C _target/source rev-parse HEAD)"
+
+      - name: Resolve canonical source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "${{ matrix.source_descriptor }}" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Observe source-owned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SOURCE_ROOT"
+          test -f "$SOURCE_ROOT/lean-toolchain"
+          observed="$(cat "$SOURCE_ROOT/lean-toolchain")"
+          test -n "$observed"
+          printf "observed_lean_toolchain=%s\n" "$observed"
+
+      - name: Install pinned generic runner prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
+
+      - name: Restore source cache and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v lake
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+
+      - name: Extract exact declaration graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          root_args=()
+          IFS="," read -r -a roots <<< "$ROOT_MODULES_CSV"
+          for root in "${roots[@]}"; do
+            root_args+=(--root-module "$root")
+          done
+          python3 scripts/producer_guard.py extract \
+            --cwd "$SOURCE_ROOT" \
+            --repo-dir "$GITHUB_WORKSPACE/_target/source" \
+            --expected "$SOURCE_COMMIT" \
+            --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
+            --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
+            --source-repo "$SOURCE_REPO" \
+            --source-subdir "$SOURCE_SUBDIR" \
+            "${root_args[@]}" \
+            --producer-kind lean-dep-viz \
+            --producer-tool-repo "$EXTRACTOR_REPO" \
+            --producer-tool-commit "$EXTRACTOR_COMMIT" \
+            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" -- \
+            lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
+            --roots "$ROOT_MODULES_CSV" \
+            --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Build normalized artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          root_args=()
+          IFS="," read -r -a roots <<< "$ROOT_MODULES_CSV"
+          for root in "${roots[@]}"; do
+            root_args+=(--root-module "$root")
+          done
+          python3 -m theseus_repo_search build-artifact \
+            --source-root "$SOURCE_ROOT" \
+            --source-repo "$SOURCE_REPO" \
+            --source-commit "$SOURCE_COMMIT" \
+            --source-subdir "$SOURCE_SUBDIR" \
+            "${root_args[@]}" \
+            --producer-kind lean-dep-viz \
+            --producer-tool-repo "$EXTRACTOR_REPO" \
+            --producer-tool-commit "$EXTRACTOR_COMMIT" \
+            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" \
+            --authoritative-readback \
+            --raw-depgraph _out/raw-depgraph.json \
+            --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
+            --out "_out/${SOURCE_ID}-artifact"
+
+      - name: Verify project and replay selected source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m theseus_repo_search verify-artifact --artifact "_out/${SOURCE_ID}-artifact"
+          python3 -m theseus_repo_search build-index \
+            --artifact "_out/${SOURCE_ID}-artifact" \
+            --db "_out/${SOURCE_ID}.sqlite"
+          python3 "${{ matrix.replay_script }}" \
+            --db "_out/${SOURCE_ID}.sqlite" \
+            --source-root "$SOURCE_ROOT" \
+            --artifact "_out/${SOURCE_ID}-artifact" \
+            --descriptor "${{ matrix.source_descriptor }}" \
+            --out "_out/${SOURCE_ID}-replay.json"
+
+      - name: Remove disposable producer outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite"
+          test ! -e _out/raw-depgraph.json
+          test ! -e "_out/${SOURCE_ID}.sqlite"
+          test -s _out/raw-depgraph-receipt.json
+
+      - name: Upload normalized repository lens artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            _out/${SOURCE_ID}-artifact/
+            _out/raw-depgraph-receipt.json
+            _out/${SOURCE_ID}-replay.json
+          if-no-files-found: error

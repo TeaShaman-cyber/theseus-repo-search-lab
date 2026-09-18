@@ -103,6 +103,19 @@ def run_bound_extraction(
 ) -> None:
     verify_checked_out_commit(repo_dir, expected_commit)
     verify_tracked_source_clean(repo_dir, source_subdir)
+    toolchain_path = cwd / "lean-toolchain"
+    try:
+        observed_toolchain = toolchain_path.read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"cannot read source-owned lean-toolchain: {toolchain_path}: {exc}",
+        ) from exc
+    if not observed_toolchain:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"source-owned lean-toolchain is empty: {toolchain_path}",
+        )
     raw_depgraph.parent.mkdir(parents=True, exist_ok=True)
     raw_depgraph.unlink(missing_ok=True)
     run_exact_command(argv, cwd)
@@ -117,7 +130,7 @@ def run_bound_extraction(
         ) from exc
 
     receipt = {
-        "schema": "theseus.raw-depgraph-receipt.v1",
+        "schema": "theseus.raw-depgraph-receipt.v2",
         "source": {
             "repo": source_repo,
             "commit": expected_commit,
@@ -130,6 +143,7 @@ def run_bound_extraction(
             "tool_commit": producer_tool_commit,
             "tool_hash": producer_tool_hash,
         },
+        "observed": {"lean_toolchain": observed_toolchain},
         "raw_depgraph": {"sha256": sha256(raw_bytes).hexdigest()},
     }
     receipt_path.parent.mkdir(parents=True, exist_ok=True)

@@ -5,7 +5,9 @@ import json
 import re
 from pathlib import Path
 
+from theseus_repo_search.artifact import load_artifact
 from theseus_repo_search.graph import dependencies, reverse_dependencies
+from theseus_repo_search.producer_config import load_lean_git_source
 from theseus_repo_search.retrieval import search
 from theseus_repo_search.sources import tracked_lean_files
 
@@ -51,7 +53,14 @@ def _fts_unique_paths(db_path: Path) -> tuple[int, list[str]]:
     return len(paths), paths
 
 
-def run_replay(db_path: Path, source_root: Path) -> dict[str, object]:
+def run_replay(
+    db_path: Path,
+    artifact_path: Path,
+    descriptor_path: Path,
+    source_root: Path | None = None,
+) -> dict[str, object]:
+    manifest, _, _, _ = load_artifact(artifact_path)
+    source = load_lean_git_source(descriptor_path)
     tight_deps = dependencies(db_path, "lemmaR_tight_two", depth=1)
     tight_targets = {str(edge["target_id"]) for edge in tight_deps.edges}
     required_tight = "lean:Zeta23.ZeroSide.TightMult.lemmaR_tight"
@@ -91,6 +100,11 @@ def run_replay(db_path: Path, source_root: Path) -> dict[str, object]:
 
     return {
         "status": "PASS",
+        "provenance": {
+            "repo": manifest.source_repo,
+            "commit": manifest.source_commit,
+            "subdir": manifest.source_subdir,
+        },
         "graph": {
             "lemmaR_tight_two": {
                 "required_target": required_tight,
@@ -132,14 +146,16 @@ def run_replay(db_path: Path, source_root: Path) -> dict[str, object]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, required=True)
-    parser.add_argument("--source-root", type=Path, required=True)
+    parser.add_argument("--artifact", type=Path, required=True)
+    parser.add_argument("--descriptor", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    result = run_replay(args.db, args.source_root)
+    result = run_replay(args.db, args.artifact, args.descriptor, args.source_root)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
