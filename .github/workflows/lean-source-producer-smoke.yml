@@ -111,13 +111,42 @@ jobs:
             --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
           echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
 
-      - name: Restore source cache and build
+      - name: Restore source dependency cache
         shell: bash
         run: |
           set -euo pipefail
           command -v lake
+          started="$(date +%s)"
           python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+          finished="$(date +%s)"
+          printf "cache_get_seconds=%s\n" "$((finished - started))"
+          cache_dir="${MATHLIB_CACHE_DIR:-$HOME/.cache/mathlib}"
+          if [ -d "$cache_dir" ]; then
+            printf "mathlib_cache_files=%s\n" "$(find "$cache_dir" -type f | wc -l | tr -d ' ')"
+            printf "mathlib_cache_kib=%s\n" "$(du -sk "$cache_dir" | awk '{print $1}')"
+          else
+            printf "mathlib_cache_files=0\n"
+            printf "mathlib_cache_kib=0\n"
+          fi
+          if [ -d "$SOURCE_ROOT/.lake/packages" ]; then
+            printf "source_packages_kib=%s\n" "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
+          else
+            printf "source_packages_kib=0\n"
+          fi
+
+      - name: Build source target
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
           python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+          finished="$(date +%s)"
+          printf "source_build_seconds=%s\n" "$((finished - started))"
+          if [ -d "$SOURCE_ROOT/.lake/build" ]; then
+            printf "source_build_kib=%s\n" "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
+          else
+            printf "source_build_kib=0\n"
+          fi
 
       - name: Extract exact declaration graph
         shell: bash

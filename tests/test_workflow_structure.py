@@ -37,3 +37,13 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertNotIn("${SOURCE_ID}", upload)
         self.assertIn("_out/*-artifact/", upload)
         self.assertIn("_out/*-replay.json", upload)
+
+    def test_generic_workflow_splits_cache_and_build_timing(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        self.assertIn("- name: Restore source dependency cache", text)
+        self.assertIn("- name: Build source target", text)
+        self.assertNotIn("- name: Restore source cache and build", text)
+        self.assertIn("cache_get_seconds=", text)
+        self.assertIn("source_build_seconds=", text)
+        self.assertIn("mathlib_cache_files=", text)
+        self.assertIn("source_build_kib=", text)
