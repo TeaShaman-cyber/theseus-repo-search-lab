@@ -135,6 +135,7 @@ class SourceChunk:
 class ArtifactScope:
     root_modules: tuple[str, ...]
     dependency_boundary: str
+    exclude_source_prefixes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -178,6 +179,7 @@ class ArtifactManifest:
             "scope": {
                 "root_modules": list(self.scope.root_modules),
                 "dependency_boundary": self.scope.dependency_boundary,
+                **({"exclude_source_prefixes": list(self.scope.exclude_source_prefixes)} if self.scope.exclude_source_prefixes else {}),
             },
             "members": {
                 "nodes": {"sha256": self.nodes_sha256},
@@ -209,6 +211,9 @@ class ArtifactManifest:
         roots = scope["root_modules"]
         if not isinstance(roots, list) or not all(isinstance(item, str) for item in roots):
             raise TypeError("scope.root_modules must be an array of strings")
+        exclude_prefixes = scope.get("exclude_source_prefixes", [])
+        if not isinstance(exclude_prefixes, list) or not all(isinstance(item, str) for item in exclude_prefixes):
+            raise TypeError("scope.exclude_source_prefixes must be an array of strings")
         nodes_count = _require_int(counts["nodes"], "counts.nodes")
         edges_count = _require_int(counts["edges"], "counts.edges")
         if nodes_count < 0 or edges_count < 0:
@@ -229,6 +234,7 @@ class ArtifactManifest:
                 dependency_boundary=_require_str(
                     scope["dependency_boundary"], "scope.dependency_boundary"
                 ),
+                exclude_source_prefixes=tuple(exclude_prefixes),
             ),
             nodes_sha256=_require_str(nodes_member["sha256"], "members.nodes.sha256"),
             edges_sha256=_require_str(edges_member["sha256"], "members.edges.sha256"),

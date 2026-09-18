@@ -8,7 +8,8 @@ from pathlib import Path, PurePosixPath
 from .errors import RepoSearchError
 
 
-SOURCE_SCHEMA = "theseus.lean-git-source.v1"
+SOURCE_SCHEMA_V1 = "theseus.lean-git-source.v1"
+SOURCE_SCHEMA_V2 = "theseus.lean-git-source.v2"
 RUNNER_SCHEMA = "theseus.lean-producer-runner.v1"
 HEX40 = re.compile(r"[0-9a-f]{40}")
 SOURCE_ID = re.compile(r"[a-z0-9][a-z0-9-]*")
@@ -45,15 +46,25 @@ class LeanGitSource:
     source_subdir: str
     root_modules: tuple[str, ...]
     build_target: str
+    exclude_source_prefixes: tuple[str, ...] = ()
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> "LeanGitSource":
-        expected = {
-            "schema", "source_id", "source_repo", "source_commit",
-            "source_subdir", "root_modules", "build_target",
-        }
-        _require_exact_keys(data, expected, "source descriptor")
         schema = _require_str(data, "schema")
+        if schema == SOURCE_SCHEMA_V1:
+            expected = {
+                "schema", "source_id", "source_repo", "source_commit",
+                "source_subdir", "root_modules", "build_target",
+            }
+        elif schema == SOURCE_SCHEMA_V2:
+            expected = {
+                "schema", "source_id", "source_repo", "source_commit",
+                "source_subdir", "root_modules", "build_target",
+                "exclude_source_prefixes",
+            }
+        else:
+            raise _blocked(f"unsupported source schema: {schema}")
+        _require_exact_keys(data, expected, "source descriptor")
         source_id = _require_single_line_transport(_require_str(data, "source_id"), "source_id")
         source_repo = _require_single_line_transport(_require_str(data, "source_repo"), "source_repo")
         source_commit = _require_single_line_transport(_require_str(data, "source_commit"), "source_commit")
@@ -61,8 +72,6 @@ class LeanGitSource:
         build_target = _require_single_line_transport(_require_str(data, "build_target"), "build_target")
         roots = data.get("root_modules")
 
-        if schema != SOURCE_SCHEMA:
-            raise _blocked(f"unsupported source schema: {schema}")
         if SOURCE_ID.fullmatch(source_id) is None:
             raise _blocked("source_id must be lowercase letters, digits, and hyphens")
         if source_repo.count("/") != 1 or source_repo.startswith("/") or source_repo.endswith("/"):
@@ -82,6 +91,28 @@ class LeanGitSource:
         if not build_target.strip() or any(ch.isspace() for ch in build_target):
             raise _blocked("build_target must be one non-empty Lake target")
 
+        excludes_raw = data.get("exclude_source_prefixes", [])
+        if not isinstance(excludes_raw, list) or not all(isinstance(x, str) and x for x in excludes_raw):
+            raise _blocked("exclude_source_prefixes must be an array of non-empty strings")
+        excludes = []
+        for value in excludes_raw:
+            value = _require_single_line_transport(value, "exclude_source_prefixes")
+            if "," in value:
+                raise _blocked("exclude_source_prefixes must be safe for CSV transport")
+            posix = PurePosixPath(value)
+            if posix.is_absolute() or ".." in posix.parts:
+                raise _blocked("exclude_source_prefixes must stay inside source root")
+            normalized = posix.as_posix()
+            if not normalized:
+                raise _blocked("exclude_source_prefixes must not exclude the entire source root")
+            if not normalized.endswith("/"):
+                normalized += "/"
+            excludes.append(normalized)
+        if len(set(excludes)) != len(excludes):
+            raise _blocked("exclude_source_prefixes must be unique")
+        if excludes != sorted(excludes):
+            raise _blocked("exclude_source_prefixes must use deterministic sorted order")
+
         return cls(
             schema=schema,
             source_id=source_id,
@@ -90,6 +121,7 @@ class LeanGitSource:
             source_subdir=source_subdir,
             root_modules=tuple(roots),
             build_target=build_target,
+            exclude_source_prefixes=tuple(excludes),
         )
 
     def resolve_source_root(self, checkout_root: Path) -> Path:

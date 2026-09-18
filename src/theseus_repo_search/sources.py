@@ -157,7 +157,9 @@ def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:
 
 
 
-def tracked_lean_files(source_root: Path) -> list[Path]:
+def tracked_lean_files(
+    source_root: Path, *, exclude_prefixes: tuple[str, ...] = ()
+) -> list[Path]:
     try:
         repo_root_text = subprocess.check_output(
             ["git", "-C", str(source_root), "rev-parse", "--show-toplevel"],
@@ -181,25 +183,30 @@ def tracked_lean_files(source_root: Path) -> list[Path]:
         if path.suffix != ".lean":
             continue
         try:
-            path.relative_to(source_root.resolve())
+            relative_to_source = path.relative_to(source_root.resolve())
         except ValueError:
+            continue
+        relative_posix = relative_to_source.as_posix()
+        if any(relative_posix.startswith(prefix) for prefix in exclude_prefixes):
             continue
         files.append(path)
     return sorted(files, key=lambda path: path.relative_to(source_root).as_posix())
 
 def scan_lean_sources(
-    source_root: Path, *, source_commit: str, tracked_only: bool = False
+    source_root: Path, *, source_commit: str, tracked_only: bool = False,
+    exclude_prefixes: tuple[str, ...] = (),
 ) -> list[SourceChunk]:
     source_root = source_root.resolve()
     chunks: list[SourceChunk] = []
     if tracked_only:
-        files = tracked_lean_files(source_root)
+        files = tracked_lean_files(source_root, exclude_prefixes=exclude_prefixes)
     else:
         files = sorted(
             (
                 path
                 for path in source_root.rglob("*.lean")
                 if ".lake" not in path.relative_to(source_root).parts
+                and not any(path.relative_to(source_root).as_posix().startswith(prefix) for prefix in exclude_prefixes)
             ),
             key=lambda path: path.relative_to(source_root).as_posix(),
         )

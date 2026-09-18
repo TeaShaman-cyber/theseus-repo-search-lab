@@ -29,7 +29,10 @@ def chunk(hint: str, text: str, path: str, line: int, commit: str) -> SourceChun
     return SourceChunk(id=f"src:{path}:{line}:{end}", source_commit=commit, source_path=path, source_start_line=line, source_end_line=end, declaration_hint=hint, text=text, content_sha256=sha256(text.encode()).hexdigest())
 
 
-def write_fixture(root: Path, *, authoritative=True, producer=None, deps=("ConNF.subset'", "ConNF.TSet.exists_subset")) -> Path:
+def write_fixture(
+    root: Path, *, authoritative=True, producer=None,
+    deps=("ConNF.subset'", "ConNF.TSet.exists_subset"), include_old=False,
+) -> Path:
     source = load_lean_git_source(DESCRIPTOR)
     producer = producer or ProducerPin(kind="lean-dep-viz", tool_repo=RUNNER.extractor_repo, tool_commit=RUNNER.extractor_commit, tool_hash=RUNNER.extractor_main_sha256)
     producer_ref = f"{producer.tool_repo}@{producer.tool_commit}"
@@ -50,12 +53,17 @@ def write_fixture(root: Path, *, authoritative=True, producer=None, deps=("ConNF
             chunk("subset'_spec", "theorem subset'_spec : True := by trivial\n", "ConNF/Model/Result.lean", 137, source.source_commit),
             chunk("subset'", "def subset' : True := True\n", "ConNF/Model/Result.lean", 134, source.source_commit),
             chunk("exists_subset", "theorem exists_subset : True := by trivial\n", "ConNF/Model/Hailperin.lean", 385, source.source_commit),
+            *([chunk("legacy", "theorem legacy : True := by trivial\n", "Old/ConNF/Legacy.lean", 1, source.source_commit)] if include_old else []),
         ],
         source_repo=source.source_repo,
         source_commit=source.source_commit,
         source_subdir=source.source_subdir,
         producer=producer,
-        scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
+        scope=ArtifactScope(
+            root_modules=source.root_modules,
+            dependency_boundary="internal_only",
+            exclude_source_prefixes=source.exclude_source_prefixes,
+        ),
         created_from_authoritative_commit=authoritative,
         authority_receipt=receipt_bytes(source, producer, raw) if authoritative else None,
         raw_depgraph=raw if authoritative else None,
@@ -85,6 +93,15 @@ class ReplayConNfTests(unittest.TestCase):
             artifact = write_fixture(root, deps=("ConNF.subset'",))
             db = root / "index.sqlite"; build_projection(artifact, db)
             with self.assertRaisesRegex(AssertionError, "required direct dependencies"):
+                run_replay(db, artifact, DESCRIPTOR)
+
+    def test_rejects_artifact_containing_excluded_old_source(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = write_fixture(root, include_old=True)
+            db = root / "index.sqlite"
+            build_projection(artifact, db)
+            with self.assertRaisesRegex(AssertionError, "excluded source paths"):
                 run_replay(db, artifact, DESCRIPTOR)
 
     def test_rejects_non_authoritative_artifact(self):

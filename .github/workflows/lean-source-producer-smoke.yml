@@ -199,6 +199,7 @@ jobs:
             --source-repo "$SOURCE_REPO" \
             --source-subdir "$SOURCE_SUBDIR" \
             "${root_args[@]}" \
+            "${exclude_args[@]}" \
             --producer-kind lean-dep-viz \
             --producer-tool-repo "$EXTRACTOR_REPO" \
             --producer-tool-commit "$EXTRACTOR_COMMIT" \
@@ -219,6 +220,13 @@ jobs:
           for root in "${roots[@]}"; do
             root_args+=(--root-module "$root")
           done
+          exclude_args=()
+          if [ -n "$EXCLUDE_SOURCE_PREFIXES_CSV" ]; then
+            IFS="," read -r -a excludes <<< "$EXCLUDE_SOURCE_PREFIXES_CSV"
+            for prefix in "${excludes[@]}"; do
+              exclude_args+=(--exclude-source-prefix "$prefix")
+            done
+          fi
           python3 -m theseus_repo_search build-artifact \
             --source-root "$SOURCE_ROOT" \
             --source-repo "$SOURCE_REPO" \

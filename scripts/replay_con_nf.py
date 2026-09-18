@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from theseus_repo_search.artifact import load_artifact
 from theseus_repo_search.graph import dependencies
 from theseus_repo_search.replay_contract import prepare_registered_replay
 from theseus_repo_search.retrieval import context, search
@@ -18,6 +19,19 @@ EXPECTED_DEPENDENCIES = {
 
 def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
     manifest, _ = prepare_registered_replay(artifact_path, db_path, descriptor_path)
+    _, _, _, all_sources = load_artifact(artifact_path)
+    excluded = sorted({
+        chunk.source_path
+        for chunk in all_sources
+        if any(
+            chunk.source_path.startswith(prefix)
+            for prefix in manifest.scope.exclude_source_prefixes
+        )
+    })
+    if excluded:
+        raise AssertionError(
+            f"licensed ConNF artifact includes excluded source paths: {excluded[:10]}"
+        )
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1 or exact_hits[0].source_path != "ConNF/Model/Result.lean":
         raise AssertionError("subset'_spec did not resolve to exact documented result provenance")
