@@ -61,6 +61,7 @@ def write_fixture_artifact(
     *,
     authoritative: bool = True,
     producer: ProducerPin | None = None,
+    dependency_targets: tuple[str, ...] = ("FltRegular.caseI", "FltRegular.caseII"),
 ) -> Path:
     artifact = root / name
     producer = producer or ProducerPin(
@@ -76,10 +77,7 @@ def write_fixture_artifact(
         node("FltRegular.caseII", "FltRegular.CaseII.Statement", source.source_commit),
         node("FltRegular.IsRegularPrime", "FltRegular.NumberTheory.RegularPrimes", source.source_commit),
     ]
-    edges = [
-        edge("flt_regular", "FltRegular.caseI", producer_ref),
-        edge("flt_regular", "FltRegular.caseII", producer_ref),
-    ]
+    edges = [edge("flt_regular", target, producer_ref) for target in dependency_targets]
     raw = raw_depgraph_bytes(nodes, edges)
     write_artifact(
         artifact,
@@ -147,6 +145,18 @@ class ReplayFltRegularTests(unittest.TestCase):
             )
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["status"], "PASS")
+
+    def test_rejects_incomplete_direct_dependency_pair(self):
+        source = load_lean_git_source(DESCRIPTOR)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = write_fixture_artifact(
+                root, source, dependency_targets=("FltRegular.caseI",)
+            )
+            db = root / "index.sqlite"
+            build_projection(artifact, db)
+            with self.assertRaisesRegex(AssertionError, "caseI and caseII"):
+                run_replay(db, artifact, DESCRIPTOR)
 
     def test_rejects_non_authoritative_artifact(self):
         source = load_lean_git_source(DESCRIPTOR)

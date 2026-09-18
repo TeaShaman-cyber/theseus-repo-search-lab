@@ -26,8 +26,12 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
     if not all(str(edge["evidence_grade"]).startswith("ELABORATED_") for edge in graph.edges):
         raise AssertionError("graph replay returned non-elaborated dependency evidence")
     direct_targets = {str(edge["target_id"]) for edge in graph.edges}
-    if not EXPECTED_DEPENDENCIES.intersection(direct_targets):
-        raise AssertionError("flt_regular graph missed both caseI and caseII direct dependencies")
+    if not EXPECTED_DEPENDENCIES.issubset(direct_targets):
+        missing = sorted(EXPECTED_DEPENDENCIES - direct_targets)
+        raise AssertionError(
+            "flt_regular graph requires both caseI and caseII direct dependencies; "
+            f"missing={missing}"
+        )
 
     lexical = search(db_path, LEXICAL_QUERY, limit=10)
     if not any(hit.declaration_hint == "flt_regular" for hit in lexical):
