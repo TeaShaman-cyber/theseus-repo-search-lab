@@ -79,8 +79,30 @@ def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
     fts_schema = conn.execute(
         "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'sources_fts'"
     ).fetchone()
+    conn.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS temp.sources_fts_vocab "
+        "USING fts5vocab(main, sources_fts, 'instance')"
+    )
+    fts_postings = conn.execute(
+        """
+        SELECT s.id,v.term,v.col,v.offset
+        FROM temp.sources_fts_vocab v
+        JOIN sources s ON s.rowid=v.doc
+        ORDER BY s.id,v.term,v.col,v.offset
+        """
+    ).fetchall()
+    fts_docsize = conn.execute(
+        """
+        SELECT s.id,hex(d.sz)
+        FROM sources_fts_docsize d
+        JOIN sources s ON s.rowid=d.id
+        ORDER BY s.id
+        """
+    ).fetchall()
     return {
         "fts_schema": None if fts_schema is None else fts_schema[0],
+        "fts_postings": fts_postings,
+        "fts_docsize": fts_docsize,
         "meta": conn.execute(
             "SELECT key, value FROM meta ORDER BY key"
         ).fetchall(),
