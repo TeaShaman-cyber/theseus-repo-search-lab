@@ -79,8 +79,63 @@ def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
     fts_schema = conn.execute(
         "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'sources_fts'"
     ).fetchone()
+    conn.execute(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS temp.sources_fts_vocab "
+        "USING fts5vocab(main, sources_fts, 'instance')"
+    )
+    orphan_posting = conn.execute(
+        """
+        SELECT DISTINCT v.doc
+        FROM temp.sources_fts_vocab v
+        LEFT JOIN sources s ON s.rowid=v.doc
+        WHERE s.rowid IS NULL
+        ORDER BY v.doc
+        LIMIT 1
+        """
+    ).fetchone()
+    orphan_docsize = conn.execute(
+        """
+        SELECT d.id
+        FROM sources_fts_docsize d
+        LEFT JOIN sources s ON s.rowid=d.id
+        WHERE s.rowid IS NULL
+        ORDER BY d.id
+        LIMIT 1
+        """
+    ).fetchone()
+    if orphan_posting is not None or orphan_docsize is not None:
+        orphan_id = (
+            orphan_posting[0]
+            if orphan_posting is not None
+            else orphan_docsize[0]
+        )
+        raise ValueError(f"orphan FTS document without source row: {orphan_id}")
+
+    fts_postings = conn.execute(
+        """
+        SELECT s.id,v.term,v.col,v.offset
+        FROM temp.sources_fts_vocab v
+        JOIN sources s ON s.rowid=v.doc
+        ORDER BY s.id,v.term,v.col,v.offset
+        """
+    ).fetchall()
+    fts_docsize = conn.execute(
+        """
+        SELECT s.id,hex(d.sz)
+        FROM sources_fts_docsize d
+        JOIN sources s ON s.rowid=d.id
+        ORDER BY s.id
+        """
+    ).fetchall()
+    fts_averages_row = conn.execute(
+        "SELECT hex(block) FROM sources_fts_data WHERE id=1"
+    ).fetchone()
+    fts_averages = None if fts_averages_row is None else fts_averages_row[0]
     return {
         "fts_schema": None if fts_schema is None else fts_schema[0],
+        "fts_postings": fts_postings,
+        "fts_docsize": fts_docsize,
+        "fts_averages": fts_averages,
         "meta": conn.execute(
             "SELECT key, value FROM meta ORDER BY key"
         ).fetchall(),

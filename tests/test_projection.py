@@ -140,6 +140,97 @@ class ProjectionTests(unittest.TestCase):
                 ).fetchall()
             self.assertEqual(hits, [("src:Zeta23/Tiny.lean:1:2",)])
 
+    def test_projection_fingerprint_changes_on_fts_posting_drift(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact_dir = root / "artifact"
+            self.build_artifact(artifact_dir)
+            db = root / "projection.db"
+            original = build_projection(artifact_dir, db)
+            with sqlite3.connect(db) as conn:
+                rowid, hint, text = conn.execute(
+                    "SELECT rowid,declaration_hint,text FROM sources ORDER BY rowid LIMIT 1"
+                ).fetchone()
+                conn.execute(
+                    "INSERT INTO sources_fts(sources_fts,rowid,declaration_hint,text) "
+                    "VALUES('delete',?,?,?)",
+                    (rowid, hint, text),
+                )
+                conn.execute(
+                    "INSERT INTO sources_fts(rowid,declaration_hint,text) VALUES (?,?,?)",
+                    (rowid, hint, "completely unrelated token"),
+                )
+                conn.commit()
+                self.assertEqual(conn.execute("PRAGMA quick_check").fetchone()[0], "ok")
+            self.assertNotEqual(projection_fingerprint(db), original)
+
+    def test_projection_fingerprint_changes_on_fts_docsize_drift(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact_dir = root / "artifact"
+            self.build_artifact(artifact_dir)
+            db = root / "projection.db"
+            original = build_projection(artifact_dir, db)
+            with sqlite3.connect(db) as conn:
+                rowid, size_blob = conn.execute(
+                    "SELECT id,sz FROM sources_fts_docsize ORDER BY id LIMIT 1"
+                ).fetchone()
+                conn.execute(
+                    "UPDATE sources_fts_docsize SET sz=? WHERE id=?",
+                    (sqlite3.Binary(b"\\x01" * max(1, len(size_blob))), rowid),
+                )
+                conn.commit()
+                self.assertEqual(conn.execute("PRAGMA quick_check").fetchone()[0], "ok")
+            self.assertNotEqual(projection_fingerprint(db), original)
+
+    def test_projection_fingerprint_changes_on_fts_averages_drift(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact_dir = root / "artifact"
+            self.build_artifact(artifact_dir)
+            db = root / "projection.db"
+            original = build_projection(artifact_dir, db)
+            with sqlite3.connect(db) as conn:
+                averages = bytearray(
+                    conn.execute(
+                        "SELECT block FROM sources_fts_data WHERE id=1"
+                    ).fetchone()[0]
+                )
+                self.assertGreaterEqual(len(averages), 2)
+                averages[-1] = max(1, averages[-1] // 2)
+                conn.execute(
+                    "UPDATE sources_fts_data SET block=? WHERE id=1",
+                    (sqlite3.Binary(bytes(averages)),),
+                )
+                conn.commit()
+                self.assertEqual(conn.execute("PRAGMA quick_check").fetchone()[0], "ok")
+            self.assertNotEqual(projection_fingerprint(db), original)
+
+    def test_projection_fingerprint_rejects_orphan_fts_document(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact_dir = root / "artifact"
+            self.build_artifact(artifact_dir)
+            db = root / "projection.db"
+            build_projection(artifact_dir, db)
+            with sqlite3.connect(db) as conn:
+                averages = conn.execute(
+                    "SELECT block FROM sources_fts_data WHERE id=1"
+                ).fetchone()[0]
+                conn.execute(
+                    "INSERT INTO sources_fts(rowid,declaration_hint,text) VALUES (?,?,?)",
+                    (999999, "orphan", "tightness unrelated"),
+                )
+                # Isolate the orphan-document defect from averages drift.
+                conn.execute(
+                    "UPDATE sources_fts_data SET block=? WHERE id=1",
+                    (sqlite3.Binary(averages),),
+                )
+                conn.commit()
+                self.assertEqual(conn.execute("PRAGMA quick_check").fetchone()[0], "ok")
+            with self.assertRaisesRegex(ValueError, "orphan FTS document"):
+                projection_fingerprint(db)
+
     def test_failed_rebuild_preserves_last_valid_projection(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
