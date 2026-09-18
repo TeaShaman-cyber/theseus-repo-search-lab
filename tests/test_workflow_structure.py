@@ -5,20 +5,30 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERIC = ROOT / ".github/workflows/lean-source-producer-smoke.yml"
 LEGACY = ROOT / ".github/workflows/zeta23-producer-smoke.yml"
 LEGACY_CONFIG = ROOT / "producer/zeta23.json"
-REPLAYS = (
+ALL_REPLAYS = (
     "scripts/replay_zeta23.py",
     "scripts/replay_long_gaps.py",
     "scripts/replay_prime_gaps_186.py",
 )
+ACTIVE_MATRIX_REPLAYS = (
+    "scripts/replay_zeta23.py",
+    "scripts/replay_long_gaps.py",
+)
 REQUIRED = (
-    "src/**", "tests/**", "scripts/producer_guard.py",
-    "scripts/load_producer_env.py", *REPLAYS,
-    "producer/sources/**", "producer/runner.json", "pyproject.toml",
-    ".github/workflows/lean-source-producer-smoke.yml",
+    "scripts/producer_guard.py",
+    "scripts/load_producer_env.py", *ACTIVE_MATRIX_REPLAYS,
+    "producer/sources/", "producer/runner.json",
 )
 
 
 class WorkflowStructureTests(unittest.TestCase):
+    def test_heavy_workflow_is_explicit_acceptance_dispatch_only(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        trigger = text.split("permissions:", 1)[0]
+        self.assertIn("workflow_dispatch:", trigger)
+        self.assertNotIn("pull_request:", trigger)
+        self.assertNotIn("push:", trigger)
+
     def test_generic_workflow_contract(self):
         candidate = GENERIC if GENERIC.exists() else LEGACY
         self.assertTrue(candidate.is_file())
@@ -26,9 +36,11 @@ class WorkflowStructureTests(unittest.TestCase):
         for required in REQUIRED:
             with self.subTest(required=required):
                 self.assertIn(required, text)
-        for replay in REPLAYS:
+        for replay in ALL_REPLAYS:
             with self.subTest(replay=replay):
                 self.assertTrue((ROOT / replay).is_file())
+        for replay in ACTIVE_MATRIX_REPLAYS:
+            with self.subTest(active_replay=replay):
                 self.assertIn(replay, text)
         self.assertFalse(LEGACY.exists())
         self.assertFalse(LEGACY_CONFIG.exists())

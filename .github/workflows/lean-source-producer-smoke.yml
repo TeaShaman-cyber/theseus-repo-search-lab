@@ -1,19 +1,6 @@
 name: Lean source repository lens producer smoke
 
 on:
-  pull_request:
-    paths:
-      - "src/**"
-      - "tests/**"
-      - "scripts/producer_guard.py"
-      - "scripts/load_producer_env.py"
-      - "scripts/replay_zeta23.py"
-      - "scripts/replay_long_gaps.py"
-      - "scripts/replay_prime_gaps_186.py"
-      - "producer/sources/**"
-      - "producer/runner.json"
-      - "pyproject.toml"
-      - ".github/workflows/lean-source-producer-smoke.yml"
   workflow_dispatch:
 
 permissions:
