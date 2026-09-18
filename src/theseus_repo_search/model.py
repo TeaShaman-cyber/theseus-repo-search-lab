@@ -159,6 +159,7 @@ class ArtifactManifest:
     nodes_count: int
     edges_count: int
     created_from_authoritative_commit: bool
+    authority_receipt_sha256: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -182,6 +183,7 @@ class ArtifactManifest:
                 "nodes": {"sha256": self.nodes_sha256},
                 "edges": {"sha256": self.edges_sha256},
                 "sources": {"sha256": self.sources_sha256},
+                "authority_receipt": {"sha256": self.authority_receipt_sha256},
             },
             "counts": {
                 "nodes": self.nodes_count,
@@ -200,6 +202,10 @@ class ArtifactManifest:
         nodes_member = _require_dict(members["nodes"], "members.nodes")
         edges_member = _require_dict(members["edges"], "members.edges")
         sources_member = _require_dict(members["sources"], "members.sources")
+        authority_receipt_member = _require_dict(
+            members.get("authority_receipt", {"sha256": None}),
+            "members.authority_receipt",
+        )
         roots = scope["root_modules"]
         if not isinstance(roots, list) or not all(isinstance(item, str) for item in roots):
             raise TypeError("scope.root_modules must be an array of strings")
@@ -234,5 +240,9 @@ class ArtifactManifest:
             created_from_authoritative_commit=_require_bool(
                 data["created_from_authoritative_commit"],
                 "created_from_authoritative_commit",
+            ),
+            authority_receipt_sha256=_require_optional_str(
+                authority_receipt_member["sha256"],
+                "members.authority_receipt.sha256",
             ),
         )

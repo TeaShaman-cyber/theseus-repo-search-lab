@@ -36,7 +36,7 @@ def edge(source: str, target: str) -> Edge:
 class GraphTests(unittest.TestCase):
     def build_db(
         self, root: Path, *, ambiguous_a: bool = False, exact_suffix_shadow: bool = False,
-        lexical_only: bool = False, authoritative: bool = True,
+        lexical_only: bool = False, authoritative: bool = False,
     ) -> Path:
         artifact = root / "artifact"
         db = root / "projection.db"
@@ -220,7 +220,7 @@ class GraphTests(unittest.TestCase):
                     tool_hash="f" * 64,
                 ),
                 scope=SCOPE,
-                created_from_authoritative_commit=True,
+                created_from_authoritative_commit=False,
             )
             build_projection(artifact, db)
             result = dependencies(db, "foo_bar", depth=1)

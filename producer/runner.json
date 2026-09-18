@@ -1,8 +1,5 @@
 {
-  "source_repo": "anthropics/formal-math",
-  "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
-  "source_subdir": "zeta23",
-  "root_module": "Zeta23",
+  "schema": "theseus.lean-producer-runner.v1",
   "extractor_repo": "cameronfreer/LeanDepViz",
   "extractor_commit": "7859d91f89b37c9193d9a09709a58be6d98f94d6",
   "extractor_main_sha256": "7051af16c579dc425859442bbe7b647eaea78a581ddf685c5951c2b7bf28ceed",

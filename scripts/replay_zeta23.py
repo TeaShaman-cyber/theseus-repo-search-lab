@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 
 from theseus_repo_search.graph import dependencies, reverse_dependencies
+from theseus_repo_search.replay_contract import prepare_registered_replay
 from theseus_repo_search.retrieval import search
 from theseus_repo_search.sources import tracked_lean_files
 
@@ -51,7 +52,13 @@ def _fts_unique_paths(db_path: Path) -> tuple[int, list[str]]:
     return len(paths), paths
 
 
-def run_replay(db_path: Path, source_root: Path) -> dict[str, object]:
+def run_replay(
+    db_path: Path,
+    artifact_path: Path,
+    descriptor_path: Path,
+    source_root: Path | None = None,
+) -> dict[str, object]:
+    manifest, source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
     tight_deps = dependencies(db_path, "lemmaR_tight_two", depth=1)
     tight_targets = {str(edge["target_id"]) for edge in tight_deps.edges}
     required_tight = "lean:Zeta23.ZeroSide.TightMult.lemmaR_tight"
@@ -80,17 +87,25 @@ def run_replay(db_path: Path, source_root: Path) -> dict[str, object]:
     if not chebyshev_found:
         raise AssertionError("ChebyshevMertens missing from top-10 lexical replay")
 
-    baseline_paths = _baseline_unique_paths(source_root)
     fts_paths_count, fts_paths = _fts_unique_paths(db_path)
     if fts_paths_count > 10:
         raise AssertionError(f"FTS top-10 returned too many unique paths: {fts_paths_count}")
-    if baseline_paths <= fts_paths_count:
-        raise AssertionError(
-            f"FTS did not reduce path scanning: baseline={baseline_paths}, fts={fts_paths_count}"
-        )
+
+    baseline_paths: int | None = None
+    if source_root is not None:
+        baseline_paths = _baseline_unique_paths(source_root)
+        if baseline_paths <= fts_paths_count:
+            raise AssertionError(
+                f"FTS did not reduce path scanning: baseline={baseline_paths}, fts={fts_paths_count}"
+            )
 
     return {
         "status": "PASS",
+        "provenance": {
+            "repo": manifest.source_repo,
+            "commit": manifest.source_commit,
+            "subdir": manifest.source_subdir,
+        },
         "graph": {
             "lemmaR_tight_two": {
                 "required_target": required_tight,
@@ -116,6 +131,7 @@ def run_replay(db_path: Path, source_root: Path) -> dict[str, object]:
         },
         "metrics": {
             "baseline_query": "certificate|trace|frobenius|moment",
+            "baseline_checked": source_root is not None,
             "baseline_unique_paths": baseline_paths,
             "fts_query": "certificate trace Frobenius moment",
             "fts_unique_paths": fts_paths_count,
@@ -132,14 +148,16 @@ def run_replay(db_path: Path, source_root: Path) -> dict[str, object]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=Path, required=True)
-    parser.add_argument("--source-root", type=Path, required=True)
+    parser.add_argument("--artifact", type=Path, required=True)
+    parser.add_argument("--descriptor", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    result = run_replay(args.db, args.source_root)
+    result = run_replay(args.db, args.artifact, args.descriptor, args.source_root)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",

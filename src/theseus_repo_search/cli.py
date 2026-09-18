@@ -165,8 +165,22 @@ def _verify_raw_depgraph_receipt(
             "BLOCKED_SOURCE_BINDING",
             "invalid raw dependency graph receipt: root must be an object",
         )
+    observed = receipt.get("observed")
+    if (
+        not isinstance(observed, dict)
+        or set(observed) != {"lean_toolchain"}
+        or not isinstance(observed.get("lean_toolchain"), str)
+        or not observed["lean_toolchain"].strip()
+    ):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "raw dependency graph receipt must contain exactly one non-empty observed.lean_toolchain field",
+        )
+
+    authority_receipt = dict(receipt)
+    authority_receipt.pop("observed")
     expected = {
-        "schema": "theseus.raw-depgraph-receipt.v1",
+        "schema": "theseus.raw-depgraph-receipt.v2",
         "source": {
             "repo": source_repo,
             "commit": source_commit,
@@ -181,7 +195,7 @@ def _verify_raw_depgraph_receipt(
         },
         "raw_depgraph": {"sha256": raw_hash},
     }
-    if receipt != expected:
+    if authority_receipt != expected:
         raise RepoSearchError(
             "BLOCKED_SOURCE_MISMATCH",
             "raw dependency graph receipt does not match source, producer, scope, or graph hash",
@@ -252,6 +266,11 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
     )
     if nodes:
         nodes = bind_node_sources(nodes, sources)
+    authority_receipt = None
+    raw_depgraph_bytes = None
+    if args.authoritative_readback and not args.lexical_only:
+        authority_receipt = args.raw_depgraph_receipt.read_bytes()
+        raw_depgraph_bytes = args.raw_depgraph.read_bytes()
     manifest = write_artifact(
         args.out,
         nodes=nodes,
@@ -271,6 +290,8 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
             dependency_boundary="internal_only",
         ),
         created_from_authoritative_commit=args.authoritative_readback,
+        authority_receipt=authority_receipt,
+        raw_depgraph=raw_depgraph_bytes,
     )
     _emit(
         {

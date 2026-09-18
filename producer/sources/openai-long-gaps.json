@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "openai-long-gaps",
+  "source_repo": "openai/LongGapsBetweenPrimes",
+  "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+  "source_subdir": "",
+  "root_modules": ["LongGapsBetweenPrimes"],
+  "build_target": "LongGapsBetweenPrimes"
+}

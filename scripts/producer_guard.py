@@ -85,6 +85,28 @@ def verify_tracked_source_clean(repo_dir: Path, source_subdir: str) -> None:
         )
 
 
+def read_bound_toolchain(cwd: Path) -> str:
+    toolchain_path = cwd / "lean-toolchain"
+    if toolchain_path.is_symlink() or not toolchain_path.is_file():
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"source-owned lean-toolchain must be a non-symlink regular file: {toolchain_path}",
+        )
+    try:
+        observed_toolchain = toolchain_path.read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"cannot read source-owned lean-toolchain: {toolchain_path}: {exc}",
+        ) from exc
+    if not observed_toolchain:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"source-owned lean-toolchain is empty: {toolchain_path}",
+        )
+    return observed_toolchain
+
+
 def run_bound_extraction(
     argv: list[str],
     *,
@@ -101,8 +123,23 @@ def run_bound_extraction(
     producer_tool_commit: str,
     producer_tool_hash: str,
 ) -> None:
+    repo_root = repo_dir.resolve()
+    expected_source_root = (repo_root / source_subdir).resolve() if source_subdir else repo_root
+    try:
+        expected_source_root.relative_to(repo_root)
+    except ValueError as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"source subdir escapes verified checkout: {source_subdir}",
+        ) from exc
+    if cwd.resolve() != expected_source_root:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"extraction cwd must equal verified source root: expected {expected_source_root}, observed {cwd.resolve()}",
+        )
     verify_checked_out_commit(repo_dir, expected_commit)
     verify_tracked_source_clean(repo_dir, source_subdir)
+    observed_toolchain = read_bound_toolchain(cwd)
     raw_depgraph.parent.mkdir(parents=True, exist_ok=True)
     raw_depgraph.unlink(missing_ok=True)
     run_exact_command(argv, cwd)
@@ -117,7 +154,7 @@ def run_bound_extraction(
         ) from exc
 
     receipt = {
-        "schema": "theseus.raw-depgraph-receipt.v1",
+        "schema": "theseus.raw-depgraph-receipt.v2",
         "source": {
             "repo": source_repo,
             "commit": expected_commit,
@@ -130,6 +167,7 @@ def run_bound_extraction(
             "tool_commit": producer_tool_commit,
             "tool_hash": producer_tool_hash,
         },
+        "observed": {"lean_toolchain": observed_toolchain},
         "raw_depgraph": {"sha256": sha256(raw_bytes).hexdigest()},
     }
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
@@ -177,6 +215,9 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--repo-dir", type=Path, required=True)
     verify.add_argument("--expected", required=True)
 
+    toolchain = subparsers.add_parser("toolchain")
+    toolchain.add_argument("--cwd", type=Path, required=True)
+
     run = subparsers.add_parser("run")
     run.add_argument("--cwd", type=Path, required=True)
     run.add_argument("argv", nargs=argparse.REMAINDER)
@@ -205,6 +246,8 @@ def main(argv: list[str] | None = None) -> int:
             checkout_exact(args.repo_url, args.commit, args.dest)
         elif args.command == "verify":
             verify_checked_out_commit(args.repo_dir, args.expected)
+        elif args.command == "toolchain":
+            sys.stdout.write(read_bound_toolchain(args.cwd) + "\n")
         elif args.command == "run":
             command = list(args.argv)
             if command and command[0] == "--":

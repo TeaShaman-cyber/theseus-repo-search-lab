@@ -28,7 +28,7 @@ class RawDepgraphReceiptTests(unittest.TestCase):
             raw.write_bytes(b'{"nodes":[],"edges":[]}\n')
             receipt = root / "receipt.json"
             base = {
-                "schema": "theseus.raw-depgraph-receipt.v1",
+                "schema": "theseus.raw-depgraph-receipt.v2",
                 "source": {"repo": "example/repo", "commit": "a" * 40, "subdir": "zeta23"},
                 "scope": {"root_modules": ["Zeta23"]},
                 "producer": {
@@ -37,6 +37,7 @@ class RawDepgraphReceiptTests(unittest.TestCase):
                     "tool_commit": "b" * 40,
                     "tool_hash": "c" * 64,
                 },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
                 "raw_depgraph": {"sha256": sha256(raw.read_bytes()).hexdigest()},
             }
 
@@ -56,17 +57,21 @@ class RawDepgraphReceiptTests(unittest.TestCase):
                 )
 
             verify(base)
-            for label, mutate in (
-                ("commit", lambda x: x["source"].__setitem__("commit", "d" * 40)),
-                ("producer", lambda x: x["producer"].__setitem__("tool_commit", "d" * 40)),
-                ("hash", lambda x: x["raw_depgraph"].__setitem__("sha256", "0" * 64)),
+            for label, mutate, code in (
+                ("commit", lambda x: x["source"].__setitem__("commit", "d" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("producer", lambda x: x["producer"].__setitem__("tool_commit", "d" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("hash", lambda x: x["raw_depgraph"].__setitem__("sha256", "0" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("observed-missing", lambda x: x.pop("observed"), "BLOCKED_SOURCE_BINDING"),
+                ("observed-empty", lambda x: x.__setitem__("observed", {"lean_toolchain": ""}), "BLOCKED_SOURCE_BINDING"),
+                ("observed-malformed", lambda x: x.__setitem__("observed", "v4.33.0"), "BLOCKED_SOURCE_BINDING"),
+                ("observed-extra", lambda x: x["observed"].__setitem__("publisher", "example"), "BLOCKED_SOURCE_BINDING"),
             ):
                 with self.subTest(label=label):
                     payload = json.loads(json.dumps(base))
                     mutate(payload)
                     with self.assertRaises(RepoSearchError) as caught:
                         verify(payload)
-                    self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+                    self.assertEqual(caught.exception.code, code)
 
 
 class CliTests(unittest.TestCase):
@@ -256,7 +261,7 @@ class CliTests(unittest.TestCase):
             commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
             receipt = root / "receipt.json"
             receipt.write_text(json.dumps({
-                "schema": "theseus.raw-depgraph-receipt.v1",
+                "schema": "theseus.raw-depgraph-receipt.v2",
                 "source": {"repo": "example/repo", "commit": commit, "subdir": "zeta23"},
                 "scope": {"root_modules": ["Zeta23"]},
                 "producer": {
@@ -265,6 +270,7 @@ class CliTests(unittest.TestCase):
                     "tool_commit": TOOL_COMMIT,
                     "tool_hash": TOOL_HASH,
                 },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
                 "raw_depgraph": {"sha256": "0" * 64},
             }), encoding="utf-8")
             out = root / "artifact"
@@ -289,6 +295,60 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["code"], "BLOCKED_SOURCE_MISMATCH")
             self.assertIn("raw dependency graph receipt", payload["message"])
             self.assertFalse(out.exists())
+
+    def test_authoritative_exact_build_binds_receipt_inside_artifact(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            repo = root / "repo"
+            source = repo / "zeta23"
+            (source / "Zeta23").mkdir(parents=True)
+            (source / "Zeta23" / "Tiny.lean").write_text(
+                (SOURCE_ROOT / "Zeta23" / "Tiny.lean").read_text(encoding="utf-8"),
+                encoding="utf-8",
+            )
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", repo, "config", "user.name", "Repo Search Test"], check=True)
+            subprocess.run(["git", "-C", repo, "remote", "add", "origin", "https://github.com/example/repo.git"], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "commit", "-qm", "fixture"], check=True)
+            commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            receipt = root / "receipt.json"
+            receipt.write_text(json.dumps({
+                "schema": "theseus.raw-depgraph-receipt.v2",
+                "source": {"repo": "example/repo", "commit": commit, "subdir": "zeta23"},
+                "scope": {"root_modules": ["Zeta23"]},
+                "producer": {
+                    "kind": "lean-dep-viz",
+                    "tool_repo": "cameronfreer/LeanDepViz",
+                    "tool_commit": TOOL_COMMIT,
+                    "tool_hash": TOOL_HASH,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
+                "raw_depgraph": {"sha256": sha256(RAW.read_bytes()).hexdigest()},
+            }, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+            artifact = root / "artifact"
+            result = self.run_cli(
+                "build-artifact",
+                "--source-root", source,
+                "--source-repo", "example/repo",
+                "--source-commit", commit,
+                "--source-subdir", "zeta23",
+                "--root-module", "Zeta23",
+                "--producer-kind", "lean-dep-viz",
+                "--producer-tool-repo", "cameronfreer/LeanDepViz",
+                "--producer-tool-commit", TOOL_COMMIT,
+                "--producer-tool-hash", TOOL_HASH,
+                "--authoritative-readback",
+                "--raw-depgraph", RAW,
+                "--raw-depgraph-receipt", receipt,
+                "--out", artifact,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((artifact / "authority-receipt.json").is_file())
+            manifest = json.loads((artifact / "manifest.json").read_text(encoding="utf-8"))
+            expected = sha256((artifact / "authority-receipt.json").read_bytes()).hexdigest()
+            self.assertEqual(manifest["members"]["authority_receipt"]["sha256"], expected)
 
     def test_exact_build_writes_four_members_and_verify_returns_verified(self):
         with tempfile.TemporaryDirectory() as d:
