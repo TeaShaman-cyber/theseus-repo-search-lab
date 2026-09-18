@@ -10,6 +10,7 @@ from pathlib import Path
 from scripts.replay_zeta23 import run_replay
 from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
+from theseus_repo_search.producer_config import load_lean_git_source
 from theseus_repo_search.projection import build_projection
 
 
@@ -48,6 +49,87 @@ def chunk(hint: str, path: str, text: str, line: int) -> SourceChunk:
         text=text,
         content_sha256=sha256(text.encode()).hexdigest(),
     )
+
+
+
+def make_source_root(root: Path) -> Path:
+    source_root = root / "source"
+    source_root.mkdir()
+    (source_root / "one.lean").write_text("trace moment\n", encoding="utf-8")
+    (source_root / "two.lean").write_text("certificate\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", source_root], check=True)
+    subprocess.run(["git", "-C", source_root, "config", "user.email", "test@example.invalid"], check=True)
+    subprocess.run(["git", "-C", source_root, "config", "user.name", "Repo Search Test"], check=True)
+    subprocess.run(["git", "-C", source_root, "add", "one.lean", "two.lean"], check=True)
+    subprocess.run(["git", "-C", source_root, "commit", "-qm", "fixture"], check=True)
+    return source_root
+
+def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
+    artifact = root / name
+    names = [
+        "Zeta23.ZeroSide.TightMult.lemmaR_tight_two",
+        "Zeta23.ZeroSide.TightMult.lemmaR_tight",
+        "Zeta23.ZeroSide.RankTraceMult.rank_trace_mult_k",
+        "Zeta23.ZeroSide.RankTraceMult.rank_trace_mult_k_le",
+        "Zeta23.Assembly.count_certificate",
+        "Zeta23.Assembly.N0star_lower_moment",
+        "Zeta23.Hypotheses.ChebyshevMertens",
+    ]
+    write_artifact(
+        artifact,
+        nodes=[Node.from_lean(
+            full_name=full_name,
+            name=full_name.rsplit(".", 1)[-1],
+            kind="thm",
+            module=full_name.rsplit(".", 1)[0],
+            source_commit=source.source_commit,
+        ) for full_name in names],
+        edges=[
+            edge(names[0], names[1]),
+            edge(names[3], names[2]),
+            edge(names[4], names[5]),
+        ],
+        sources=[
+            SourceChunk(
+                id="src:Tight.lean:1:1", source_commit=source.source_commit, source_path="Tight.lean",
+                source_start_line=1, source_end_line=1, declaration_hint="lemmaR_tight_two",
+                text="simples doubles tight pairs extremal\n",
+                content_sha256=sha256(b"simples doubles tight pairs extremal\n").hexdigest(),
+            ),
+            SourceChunk(
+                id="src:Hypotheses.lean:1:1", source_commit=source.source_commit, source_path="Hypotheses.lean",
+                source_start_line=1, source_end_line=1, declaration_hint="ChebyshevMertens",
+                text="Chebyshev Mertens arithmetic interface\n",
+                content_sha256=sha256(b"Chebyshev Mertens arithmetic interface\n").hexdigest(),
+            ),
+            SourceChunk(
+                id="src:Certificate.lean:1:1", source_commit=source.source_commit, source_path="Certificate.lean",
+                source_start_line=1, source_end_line=1, declaration_hint="count_certificate",
+                text="certificate trace moment\n",
+                content_sha256=sha256(b"certificate trace moment\n").hexdigest(),
+            ),
+        ],
+        source_repo=source.source_repo,
+        source_commit=source.source_commit,
+        source_subdir=source.source_subdir,
+        producer=ProducerPin(
+            kind="lean-dep-viz",
+            tool_repo="cameronfreer/LeanDepViz",
+            tool_commit="b" * 40,
+            tool_hash="c" * 64,
+        ),
+        scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
+        created_from_authoritative_commit=True,
+    )
+    return artifact
+
+
+def build_fixture(root: Path) -> tuple[Path, Path]:
+    source = load_lean_git_source(DESCRIPTOR)
+    artifact = write_fixture_artifact(root, source)
+    db = root / "index.sqlite"
+    build_projection(artifact, db)
+    return artifact, db
 
 
 class ReplayZeta23Tests(unittest.TestCase):
@@ -136,3 +218,38 @@ class ReplayZeta23Tests(unittest.TestCase):
             )
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["provenance"]["repo"], "anthropics/formal-math")
+
+    def test_rejects_projection_artifact_identity_mismatch(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            _, db = build_fixture(root)
+            payload = json.loads(DESCRIPTOR.read_text(encoding="utf-8"))
+            payload["source_commit"] = "d" * 40
+            other_descriptor = root / "other-source.json"
+            other_descriptor.write_text(json.dumps(payload), encoding="utf-8")
+            other_source = load_lean_git_source(other_descriptor)
+            other_artifact = write_fixture_artifact(root, other_source, "other-artifact")
+            with self.assertRaisesRegex(AssertionError, "projection/artifact identity mismatch"):
+                run_replay(db, other_artifact, other_descriptor, make_source_root(root))
+
+    def test_rejects_descriptor_provenance_mismatch(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact, db = build_fixture(root)
+            payload = json.loads(DESCRIPTOR.read_text(encoding="utf-8"))
+            payload["source_repo"] = "example/other-repo"
+            descriptor = root / "mismatch.json"
+            descriptor.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(AssertionError, "artifact provenance/scope"):
+                run_replay(db, artifact, descriptor, make_source_root(root))
+
+    def test_rejects_descriptor_scope_mismatch(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact, db = build_fixture(root)
+            payload = json.loads(DESCRIPTOR.read_text(encoding="utf-8"))
+            payload["root_modules"] = ["DifferentRoot"]
+            descriptor = root / "scope-mismatch.json"
+            descriptor.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaisesRegex(AssertionError, "artifact provenance/scope"):
+                run_replay(db, artifact, descriptor, make_source_root(root))
