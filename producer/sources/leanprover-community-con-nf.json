@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "leanprover-community-con-nf",
+  "source_repo": "leanprover-community/con-nf",
+  "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+  "source_subdir": "",
+  "root_modules": ["ConNF"],
+  "build_target": "ConNF"
+}
