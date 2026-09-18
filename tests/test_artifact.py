@@ -14,6 +14,7 @@ from theseus_repo_search.artifact import (
 )
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.model import (
+    ArtifactManifest,
     ArtifactScope,
     Edge,
     EvidenceGrade,
@@ -94,7 +95,7 @@ def write_sample_raw(path: Path, *, nodes=None, edges=None, sources=_DEFAULT, sc
         source_subdir="zeta23",
         producer=PRODUCER,
         scope=scope,
-        created_from_authoritative_commit=True,
+        created_from_authoritative_commit=False,
     )
 
 
@@ -109,11 +110,47 @@ def write_sample(path: Path, *, nodes=None, edges=None, sources=_DEFAULT, scope=
         source_subdir="zeta23",
         producer=PRODUCER,
         scope=scope,
-        created_from_authoritative_commit=True,
+        created_from_authoritative_commit=False,
     )
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_authoritative_artifact_without_receipt_is_blocked(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "artifact"
+            with self.assertRaisesRegex(RepoSearchError, "authoritative artifact requires authority receipt"):
+                write_artifact(
+                    path,
+                    nodes=sample_nodes(),
+                    edges=sample_edges(),
+                    sources=sample_sources(),
+                    source_repo="anthropics/formal-math",
+                    source_commit=SOURCE_COMMIT,
+                    source_subdir="zeta23",
+                    producer=PRODUCER,
+                    scope=SCOPE,
+                    created_from_authoritative_commit=True,
+                )
+
+    def test_authority_bit_participates_in_artifact_identity(self):
+        manifest = ArtifactManifest(
+            schema="theseus.repo-index.v1",
+            source_repo="anthropics/formal-math",
+            source_commit=SOURCE_COMMIT,
+            source_subdir="zeta23",
+            producer=PRODUCER,
+            scope=SCOPE,
+            nodes_sha256="n" * 64,
+            edges_sha256="e" * 64,
+            sources_sha256=None,
+            nodes_count=1,
+            edges_count=1,
+            created_from_authoritative_commit=False,
+            authority_receipt_sha256=None,
+        )
+        promoted = replace(manifest, created_from_authoritative_commit=True)
+        self.assertNotEqual(artifact_identity(manifest), artifact_identity(promoted))
+
     def test_write_is_deterministic_across_input_order(self):
         with tempfile.TemporaryDirectory() as d1, tempfile.TemporaryDirectory() as d2:
             p1, p2 = Path(d1), Path(d2)

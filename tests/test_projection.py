@@ -17,6 +17,24 @@ from theseus_repo_search.model import (
 from theseus_repo_search.projection import build_projection, projection_fingerprint
 
 
+def authority_receipt_bytes(producer: ProducerPin) -> bytes:
+    import json
+    payload = {
+        "schema": "theseus.raw-depgraph-receipt.v2",
+        "source": {"repo": "anthropics/formal-math", "commit": "abc123", "subdir": "zeta23"},
+        "scope": {"root_modules": ["Zeta23"]},
+        "producer": {
+            "kind": producer.kind,
+            "tool_repo": producer.tool_repo,
+            "tool_commit": producer.tool_commit,
+            "tool_hash": producer.tool_hash,
+        },
+        "observed": {"lean_toolchain": "leanprover/lean4:test"},
+        "raw_depgraph": {"sha256": "0" * 64},
+    }
+    return (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
 class ProjectionTests(unittest.TestCase):
     def build_artifact(self, path: Path):
         nodes = [
@@ -57,6 +75,12 @@ class ProjectionTests(unittest.TestCase):
                 content_sha256=sha256(text.encode()).hexdigest(),
             )
         ]
+        producer = ProducerPin(
+            kind="lean-dep-viz",
+            tool_repo="cameronfreer/LeanDepViz",
+            tool_commit="deadbeef",
+            tool_hash="f" * 64,
+        )
         return write_artifact(
             path,
             nodes=nodes,
@@ -65,17 +89,13 @@ class ProjectionTests(unittest.TestCase):
             source_repo="anthropics/formal-math",
             source_commit="abc123",
             source_subdir="zeta23",
-            producer=ProducerPin(
-                kind="lean-dep-viz",
-                tool_repo="cameronfreer/LeanDepViz",
-                tool_commit="deadbeef",
-                tool_hash="f" * 64,
-            ),
+            producer=producer,
             scope=ArtifactScope(
                 root_modules=("Zeta23",),
                 dependency_boundary="internal_only",
             ),
             created_from_authoritative_commit=True,
+            authority_receipt=authority_receipt_bytes(producer),
         )
 
     def test_projection_fingerprint_is_logically_deterministic(self):

@@ -19,6 +19,27 @@ RUNNER = load_runner_pins(Path("producer/runner.json"))
 COMMIT = "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844"
 
 
+def authority_receipt_bytes(source, producer: ProducerPin) -> bytes:
+    payload = {
+        "schema": "theseus.raw-depgraph-receipt.v2",
+        "source": {
+            "repo": source.source_repo,
+            "commit": source.source_commit,
+            "subdir": source.source_subdir,
+        },
+        "scope": {"root_modules": list(source.root_modules)},
+        "producer": {
+            "kind": producer.kind,
+            "tool_repo": producer.tool_repo,
+            "tool_commit": producer.tool_commit,
+            "tool_hash": producer.tool_hash,
+        },
+        "observed": {"lean_toolchain": "leanprover/lean4:test"},
+        "raw_depgraph": {"sha256": "0" * 64},
+    }
+    return (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
 def node(full_name: str) -> Node:
     return Node.from_lean(
         full_name=full_name,
@@ -67,6 +88,12 @@ def make_source_root(root: Path) -> Path:
 
 def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
     artifact = root / name
+    producer = ProducerPin(
+        kind="lean-dep-viz",
+        tool_repo=RUNNER.extractor_repo,
+        tool_commit=RUNNER.extractor_commit,
+        tool_hash=RUNNER.extractor_main_sha256,
+    )
     names = [
         "Zeta23.ZeroSide.TightMult.lemmaR_tight_two",
         "Zeta23.ZeroSide.TightMult.lemmaR_tight",
@@ -113,14 +140,10 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         source_repo=source.source_repo,
         source_commit=source.source_commit,
         source_subdir=source.source_subdir,
-        producer=ProducerPin(
-            kind="lean-dep-viz",
-            tool_repo=RUNNER.extractor_repo,
-            tool_commit=RUNNER.extractor_commit,
-            tool_hash=RUNNER.extractor_main_sha256,
-        ),
+        producer=producer,
         scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
         created_from_authoritative_commit=True,
+        authority_receipt=authority_receipt_bytes(source, producer),
     )
     return artifact
 
@@ -162,6 +185,13 @@ class ReplayZeta23Tests(unittest.TestCase):
                 "Zeta23.Assembly.N0star_lower_moment",
                 "Zeta23.Hypotheses.ChebyshevMertens",
             ]
+            source = load_lean_git_source(DESCRIPTOR)
+            producer = ProducerPin(
+                kind="lean-dep-viz",
+                tool_repo=RUNNER.extractor_repo,
+                tool_commit=RUNNER.extractor_commit,
+                tool_hash=RUNNER.extractor_main_sha256,
+            )
             write_artifact(
                 artifact,
                 nodes=[node(name) for name in names],
@@ -178,14 +208,10 @@ class ReplayZeta23Tests(unittest.TestCase):
                 source_repo="anthropics/formal-math",
                 source_commit=COMMIT,
                 source_subdir="zeta23",
-                producer=ProducerPin(
-                    kind="lean-dep-viz",
-                    tool_repo=RUNNER.extractor_repo,
-                    tool_commit=RUNNER.extractor_commit,
-                    tool_hash=RUNNER.extractor_main_sha256,
-                ),
+                producer=producer,
                 scope=ArtifactScope(root_modules=("Zeta23",), dependency_boundary="internal_only"),
                 created_from_authoritative_commit=True,
+                authority_receipt=authority_receipt_bytes(source, producer),
             )
             build_projection(artifact, db)
 

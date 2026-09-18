@@ -23,7 +23,7 @@ COMMIT = "abc123"
 
 class RetrievalTests(unittest.TestCase):
     def build_db(
-        self, root: Path, *, authoritative: bool = True
+        self, root: Path, *, authoritative: bool = False
     ) -> tuple[Path, str]:
         artifact = root / "artifact"
         db = root / "projection.db"
@@ -197,7 +197,7 @@ class RetrievalTests(unittest.TestCase):
                     tool_hash="f" * 64,
                 ),
                 scope=ArtifactScope(root_modules=("Zeta23",), dependency_boundary="internal_only"),
-                created_from_authoritative_commit=True,
+                created_from_authoritative_commit=False,
             )
             build_projection(artifact, db)
             hits = search(db, "alphaunique")
@@ -246,7 +246,7 @@ class RetrievalTests(unittest.TestCase):
                 scope=ArtifactScope(
                     root_modules=("Zeta23",), dependency_boundary="internal_only"
                 ),
-                created_from_authoritative_commit=True,
+                created_from_authoritative_commit=False,
             )
             build_projection(artifact, db)
             hit = search(db, "Zeta23.A.foo")[0]

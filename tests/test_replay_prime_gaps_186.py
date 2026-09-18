@@ -19,6 +19,27 @@ RUNNER = load_runner_pins(Path("producer/runner.json"))
 TARGET = "PrimeGap186.primeGapLiminf_le_186"
 
 
+def authority_receipt_bytes(source, producer: ProducerPin) -> bytes:
+    payload = {
+        "schema": "theseus.raw-depgraph-receipt.v2",
+        "source": {
+            "repo": source.source_repo,
+            "commit": source.source_commit,
+            "subdir": source.source_subdir,
+        },
+        "scope": {"root_modules": list(source.root_modules)},
+        "producer": {
+            "kind": producer.kind,
+            "tool_repo": producer.tool_repo,
+            "tool_commit": producer.tool_commit,
+            "tool_hash": producer.tool_hash,
+        },
+        "observed": {"lean_toolchain": "leanprover/lean4:test"},
+        "raw_depgraph": {"sha256": "0" * 64},
+    }
+    return (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
 def node(full_name: str, commit: str, start: int, end: int) -> Node:
     return Node(
         id=f"lean:{full_name}",
@@ -60,6 +81,12 @@ def chunk(hint: str, text: str, line: int, commit: str) -> SourceChunk:
 def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
     artifact = root / name
     dependency = "PrimeGap186.infinite_two_prime_translates_admissibleTuple"
+    producer = ProducerPin(
+        kind="lean-dep-viz",
+        tool_repo=RUNNER.extractor_repo,
+        tool_commit=RUNNER.extractor_commit,
+        tool_hash=RUNNER.extractor_main_sha256,
+    )
     write_artifact(
         artifact,
         nodes=[node(TARGET, source.source_commit, 100, 101), node(dependency, source.source_commit, 120, 120)],
@@ -82,14 +109,10 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         source_repo=source.source_repo,
         source_commit=source.source_commit,
         source_subdir=source.source_subdir,
-        producer=ProducerPin(
-            kind="lean-dep-viz",
-            tool_repo=RUNNER.extractor_repo,
-            tool_commit=RUNNER.extractor_commit,
-            tool_hash=RUNNER.extractor_main_sha256,
-        ),
+        producer=producer,
         scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
         created_from_authoritative_commit=True,
+        authority_receipt=authority_receipt_bytes(source, producer),
     )
     return artifact
 

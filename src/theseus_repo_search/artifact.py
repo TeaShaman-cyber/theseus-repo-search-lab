@@ -72,6 +72,7 @@ def artifact_identity(manifest: ArtifactManifest) -> str:
             "root_modules": list(manifest.scope.root_modules),
             "dependency_boundary": manifest.scope.dependency_boundary,
         },
+        "created_from_authoritative_commit": manifest.created_from_authoritative_commit,
         "members": {
             "nodes": {"sha256": manifest.nodes_sha256},
             "edges": {"sha256": manifest.edges_sha256},
@@ -356,6 +357,12 @@ def load_artifact(
         raise _integrity(
             f"unsupported dependency boundary: {manifest.scope.dependency_boundary}"
         )
+    if (
+        manifest.created_from_authoritative_commit
+        and manifest.producer.kind != "lexical_only"
+        and manifest.authority_receipt_sha256 is None
+    ):
+        raise _integrity("authoritative artifact requires authority receipt")
 
     members = (
         ("nodes.jsonl", manifest.nodes_sha256),
