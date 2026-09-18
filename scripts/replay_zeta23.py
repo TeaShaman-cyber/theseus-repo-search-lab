@@ -107,14 +107,17 @@ def run_replay(
     if not chebyshev_found:
         raise AssertionError("ChebyshevMertens missing from top-10 lexical replay")
 
-    baseline_paths = _baseline_unique_paths(source_root)
     fts_paths_count, fts_paths = _fts_unique_paths(db_path)
     if fts_paths_count > 10:
         raise AssertionError(f"FTS top-10 returned too many unique paths: {fts_paths_count}")
-    if baseline_paths <= fts_paths_count:
-        raise AssertionError(
-            f"FTS did not reduce path scanning: baseline={baseline_paths}, fts={fts_paths_count}"
-        )
+
+    baseline_paths: int | None = None
+    if source_root is not None:
+        baseline_paths = _baseline_unique_paths(source_root)
+        if baseline_paths <= fts_paths_count:
+            raise AssertionError(
+                f"FTS did not reduce path scanning: baseline={baseline_paths}, fts={fts_paths_count}"
+            )
 
     return {
         "status": "PASS",
@@ -148,6 +151,7 @@ def run_replay(
         },
         "metrics": {
             "baseline_query": "certificate|trace|frobenius|moment",
+            "baseline_checked": source_root is not None,
             "baseline_unique_paths": baseline_paths,
             "fts_query": "certificate trace Frobenius moment",
             "fts_unique_paths": fts_paths_count,

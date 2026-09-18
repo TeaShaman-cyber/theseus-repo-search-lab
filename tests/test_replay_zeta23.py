@@ -253,3 +253,10 @@ class ReplayZeta23Tests(unittest.TestCase):
             descriptor.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(AssertionError, "artifact provenance/scope"):
                 run_replay(db, artifact, descriptor, make_source_root(root))
+    def test_artifact_only_replay_skips_source_scan_baseline(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact, db = build_fixture(root)
+            artifact_only = run_replay(db, artifact, DESCRIPTOR, None)
+            self.assertFalse(artifact_only["metrics"]["baseline_checked"])
+            self.assertIsNone(artifact_only["metrics"]["baseline_unique_paths"])
