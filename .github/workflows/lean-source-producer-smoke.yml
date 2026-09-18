@@ -35,6 +35,9 @@ jobs:
           - source_descriptor: producer/sources/leanprover-community-con-nf.json
             replay_script: scripts/replay_con_nf.py
             artifact_name: leanprover-community-con-nf-repo-index-v1
+          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
+            replay_script: scripts/replay_ten_proofs_multicolor.py
+            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
