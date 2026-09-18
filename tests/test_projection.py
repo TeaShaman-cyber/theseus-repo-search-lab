@@ -6,6 +6,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity, write_artifact
+from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.model import (
     ArtifactScope,
     Edge,
@@ -17,7 +18,7 @@ from theseus_repo_search.model import (
 from theseus_repo_search.projection import build_projection, projection_fingerprint
 
 
-def authority_receipt_bytes(producer: ProducerPin) -> bytes:
+def authority_receipt_bytes(producer: ProducerPin, raw: bytes) -> bytes:
     import json
     payload = {
         "schema": "theseus.raw-depgraph-receipt.v2",
@@ -30,7 +31,7 @@ def authority_receipt_bytes(producer: ProducerPin) -> bytes:
             "tool_hash": producer.tool_hash,
         },
         "observed": {"lean_toolchain": "leanprover/lean4:test"},
-        "raw_depgraph": {"sha256": "0" * 64},
+        "raw_depgraph": {"sha256": sha256(raw).hexdigest()},
     }
     return (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
@@ -81,6 +82,7 @@ class ProjectionTests(unittest.TestCase):
             tool_commit="deadbeef",
             tool_hash="f" * 64,
         )
+        raw = raw_depgraph_bytes(nodes, edges)
         return write_artifact(
             path,
             nodes=nodes,
@@ -95,7 +97,8 @@ class ProjectionTests(unittest.TestCase):
                 dependency_boundary="internal_only",
             ),
             created_from_authoritative_commit=True,
-            authority_receipt=authority_receipt_bytes(producer),
+            authority_receipt=authority_receipt_bytes(producer, raw),
+            raw_depgraph=raw,
         )
 
     def test_projection_fingerprint_is_logically_deterministic(self):

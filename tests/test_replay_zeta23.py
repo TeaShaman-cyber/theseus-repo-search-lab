@@ -12,32 +12,12 @@ from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
 from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
 from theseus_repo_search.projection import build_projection
+from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
 
 
 DESCRIPTOR = Path("producer/sources/zeta23.json")
 RUNNER = load_runner_pins(Path("producer/runner.json"))
 COMMIT = "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844"
-
-
-def authority_receipt_bytes(source, producer: ProducerPin) -> bytes:
-    payload = {
-        "schema": "theseus.raw-depgraph-receipt.v2",
-        "source": {
-            "repo": source.source_repo,
-            "commit": source.source_commit,
-            "subdir": source.source_subdir,
-        },
-        "scope": {"root_modules": list(source.root_modules)},
-        "producer": {
-            "kind": producer.kind,
-            "tool_repo": producer.tool_repo,
-            "tool_commit": producer.tool_commit,
-            "tool_hash": producer.tool_hash,
-        },
-        "observed": {"lean_toolchain": "leanprover/lean4:test"},
-        "raw_depgraph": {"sha256": "0" * 64},
-    }
-    return (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
 def node(full_name: str) -> Node:
@@ -103,20 +83,23 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         "Zeta23.Assembly.N0star_lower_moment",
         "Zeta23.Hypotheses.ChebyshevMertens",
     ]
+    nodes = [Node.from_lean(
+        full_name=full_name,
+        name=full_name.rsplit(".", 1)[-1],
+        kind="thm",
+        module=full_name.rsplit(".", 1)[0],
+        source_commit=source.source_commit,
+    ) for full_name in names]
+    edges = [
+        edge(names[0], names[1]),
+        edge(names[3], names[2]),
+        edge(names[4], names[5]),
+    ]
+    raw = raw_depgraph_bytes(nodes, edges)
     write_artifact(
         artifact,
-        nodes=[Node.from_lean(
-            full_name=full_name,
-            name=full_name.rsplit(".", 1)[-1],
-            kind="thm",
-            module=full_name.rsplit(".", 1)[0],
-            source_commit=source.source_commit,
-        ) for full_name in names],
-        edges=[
-            edge(names[0], names[1]),
-            edge(names[3], names[2]),
-            edge(names[4], names[5]),
-        ],
+        nodes=nodes,
+        edges=edges,
         sources=[
             SourceChunk(
                 id="src:Tight.lean:1:1", source_commit=source.source_commit, source_path="Tight.lean",
@@ -143,7 +126,8 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         producer=producer,
         scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
         created_from_authoritative_commit=True,
-        authority_receipt=authority_receipt_bytes(source, producer),
+        authority_receipt=receipt_bytes(source, producer, raw),
+        raw_depgraph=raw,
     )
     return artifact
 
@@ -192,14 +176,17 @@ class ReplayZeta23Tests(unittest.TestCase):
                 tool_commit=RUNNER.extractor_commit,
                 tool_hash=RUNNER.extractor_main_sha256,
             )
+            nodes = [node(name) for name in names]
+            edges = [
+                edge(names[0], names[1]),
+                edge(names[3], names[2]),
+                edge(names[4], names[5]),
+            ]
+            raw = raw_depgraph_bytes(nodes, edges)
             write_artifact(
                 artifact,
-                nodes=[node(name) for name in names],
-                edges=[
-                    edge(names[0], names[1]),
-                    edge(names[3], names[2]),
-                    edge(names[4], names[5]),
-                ],
+                nodes=nodes,
+                edges=edges,
                 sources=[
                     chunk("lemmaR_tight_two", "Tight.lean", "simples doubles tight pairs extremal\n", 1),
                     chunk("ChebyshevMertens", "Hypotheses.lean", "Chebyshev Mertens arithmetic interface\n", 1),
@@ -211,7 +198,8 @@ class ReplayZeta23Tests(unittest.TestCase):
                 producer=producer,
                 scope=ArtifactScope(root_modules=("Zeta23",), dependency_boundary="internal_only"),
                 created_from_authoritative_commit=True,
-                authority_receipt=authority_receipt_bytes(source, producer),
+                authority_receipt=receipt_bytes(source, producer, raw),
+                raw_depgraph=raw,
             )
             build_projection(artifact, db)
 

@@ -12,31 +12,11 @@ from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
 from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
 from theseus_repo_search.projection import build_projection
+from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
 
 
 DESCRIPTOR = Path("producer/sources/openai-long-gaps.json")
 RUNNER = load_runner_pins(Path("producer/runner.json"))
-
-
-def authority_receipt_bytes(source, producer: ProducerPin) -> bytes:
-    payload = {
-        "schema": "theseus.raw-depgraph-receipt.v2",
-        "source": {
-            "repo": source.source_repo,
-            "commit": source.source_commit,
-            "subdir": source.source_subdir,
-        },
-        "scope": {"root_modules": list(source.root_modules)},
-        "producer": {
-            "kind": producer.kind,
-            "tool_repo": producer.tool_repo,
-            "tool_commit": producer.tool_commit,
-            "tool_hash": producer.tool_hash,
-        },
-        "observed": {"lean_toolchain": "leanprover/lean4:test"},
-        "raw_depgraph": {"sha256": "0" * 64},
-    }
-    return (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
 def node(full_name: str, commit: str) -> Node:
@@ -87,10 +67,13 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact", *, author
         tool_hash=RUNNER.extractor_main_sha256,
     )
     producer_ref = f"{producer.tool_repo}@{producer.tool_commit}"
+    nodes = [node(full_name, source.source_commit) for full_name in names]
+    edges = [edge(names[0], names[1], producer_ref)]
+    raw = raw_depgraph_bytes(nodes, edges)
     write_artifact(
         artifact,
-        nodes=[node(full_name, source.source_commit) for full_name in names],
-        edges=[edge(names[0], names[1], producer_ref)],
+        nodes=nodes,
+        edges=edges,
         sources=[
             chunk(
                 "long_gap_theorem",
@@ -108,7 +91,8 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact", *, author
         producer=producer,
         scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
         created_from_authoritative_commit=authoritative,
-        authority_receipt=authority_receipt_bytes(source, producer) if authoritative else None,
+        authority_receipt=receipt_bytes(source, producer, raw) if authoritative else None,
+        raw_depgraph=raw if authoritative else None,
     )
     return artifact
 

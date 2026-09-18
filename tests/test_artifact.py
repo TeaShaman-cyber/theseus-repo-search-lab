@@ -13,6 +13,7 @@ from theseus_repo_search.artifact import (
     write_artifact,
 )
 from theseus_repo_search.errors import RepoSearchError
+from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.model import (
     ArtifactManifest,
     ArtifactScope,
@@ -197,7 +198,7 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(edges, sample_edges())
             self.assertEqual(sources, sample_sources())
 
-    def test_authority_receipt_must_match_manifest_semantics(self):
+    def test_authoritative_exact_artifact_requires_raw_derivation_member(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
             receipt = {
@@ -214,6 +215,82 @@ class ArtifactTests(unittest.TestCase):
                 "raw_depgraph": {"sha256": "0" * 64},
             }
             receipt_bytes = (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            _write_artifact_contents(
+                path,
+                nodes=sample_nodes(),
+                edges=sample_edges(),
+                sources=sample_sources(),
+                source_repo="anthropics/formal-math",
+                source_commit=SOURCE_COMMIT,
+                source_subdir="zeta23",
+                producer=PRODUCER,
+                scope=SCOPE,
+                created_from_authoritative_commit=True,
+                authority_receipt=receipt_bytes,
+            )
+            with self.assertRaisesRegex(RepoSearchError, "raw dependency graph member"):
+                load_artifact(path)
+
+    def test_normalized_graph_must_derive_from_bound_raw_graph(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            raw = raw_depgraph_bytes(sample_nodes(), sample_edges())
+            receipt = {
+                "schema": "theseus.raw-depgraph-receipt.v2",
+                "source": {"repo": "anthropics/formal-math", "commit": SOURCE_COMMIT, "subdir": "zeta23"},
+                "scope": {"root_modules": ["Zeta23"]},
+                "producer": {
+                    "kind": PRODUCER.kind,
+                    "tool_repo": PRODUCER.tool_repo,
+                    "tool_commit": PRODUCER.tool_commit,
+                    "tool_hash": PRODUCER.tool_hash,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
+                "raw_depgraph": {"sha256": hashlib.sha256(raw).hexdigest()},
+            }
+            receipt_bytes = (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            extra = Node.from_lean(
+                full_name="Zeta23.Tiny.extra",
+                name="extra",
+                kind="thm",
+                module="Zeta23.Tiny",
+                source_commit=SOURCE_COMMIT,
+            )
+            _write_artifact_contents(
+                path,
+                nodes=sample_nodes() + [extra],
+                edges=sample_edges(),
+                sources=sample_sources(),
+                source_repo="anthropics/formal-math",
+                source_commit=SOURCE_COMMIT,
+                source_subdir="zeta23",
+                producer=PRODUCER,
+                scope=SCOPE,
+                created_from_authoritative_commit=True,
+                authority_receipt=receipt_bytes,
+                raw_depgraph=raw,
+            )
+            with self.assertRaisesRegex(RepoSearchError, "do not derive from raw dependency graph"):
+                load_artifact(path)
+
+    def test_authority_receipt_must_match_manifest_semantics(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            raw = raw_depgraph_bytes(sample_nodes(), sample_edges())
+            receipt = {
+                "schema": "theseus.raw-depgraph-receipt.v2",
+                "source": {"repo": "anthropics/formal-math", "commit": SOURCE_COMMIT, "subdir": "zeta23"},
+                "scope": {"root_modules": ["Zeta23"]},
+                "producer": {
+                    "kind": PRODUCER.kind,
+                    "tool_repo": PRODUCER.tool_repo,
+                    "tool_commit": PRODUCER.tool_commit,
+                    "tool_hash": PRODUCER.tool_hash,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
+                "raw_depgraph": {"sha256": hashlib.sha256(raw).hexdigest()},
+            }
+            receipt_bytes = (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode()
             write_artifact(
                 path,
                 nodes=sample_nodes(),
@@ -226,6 +303,7 @@ class ArtifactTests(unittest.TestCase):
                 scope=SCOPE,
                 created_from_authoritative_commit=True,
                 authority_receipt=receipt_bytes,
+                raw_depgraph=raw,
             )
             receipt["source"]["commit"] = "wrong-commit"
             tampered = (json.dumps(receipt, sort_keys=True, separators=(",", ":")) + "\n").encode()

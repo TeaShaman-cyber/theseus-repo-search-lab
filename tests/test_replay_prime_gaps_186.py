@@ -12,32 +12,12 @@ from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
 from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
 from theseus_repo_search.projection import build_projection
+from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
 
 
 DESCRIPTOR = Path("producer/sources/openai-prime-gaps-186.json")
 RUNNER = load_runner_pins(Path("producer/runner.json"))
 TARGET = "PrimeGap186.primeGapLiminf_le_186"
-
-
-def authority_receipt_bytes(source, producer: ProducerPin) -> bytes:
-    payload = {
-        "schema": "theseus.raw-depgraph-receipt.v2",
-        "source": {
-            "repo": source.source_repo,
-            "commit": source.source_commit,
-            "subdir": source.source_subdir,
-        },
-        "scope": {"root_modules": list(source.root_modules)},
-        "producer": {
-            "kind": producer.kind,
-            "tool_repo": producer.tool_repo,
-            "tool_commit": producer.tool_commit,
-            "tool_hash": producer.tool_hash,
-        },
-        "observed": {"lean_toolchain": "leanprover/lean4:test"},
-        "raw_depgraph": {"sha256": "0" * 64},
-    }
-    return (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
 def node(full_name: str, commit: str, start: int, end: int) -> Node:
@@ -87,10 +67,13 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         tool_commit=RUNNER.extractor_commit,
         tool_hash=RUNNER.extractor_main_sha256,
     )
+    nodes = [node(TARGET, source.source_commit, 100, 101), node(dependency, source.source_commit, 120, 120)]
+    edges = [edge(TARGET, dependency)]
+    raw = raw_depgraph_bytes(nodes, edges)
     write_artifact(
         artifact,
-        nodes=[node(TARGET, source.source_commit, 100, 101), node(dependency, source.source_commit, 120, 120)],
-        edges=[edge(TARGET, dependency)],
+        nodes=nodes,
+        edges=edges,
         sources=[
             chunk(
                 "primeGapLiminf_le_186",
@@ -112,7 +95,8 @@ def write_fixture_artifact(root: Path, source, name: str = "artifact") -> Path:
         producer=producer,
         scope=ArtifactScope(root_modules=source.root_modules, dependency_boundary="internal_only"),
         created_from_authoritative_commit=True,
-        authority_receipt=authority_receipt_bytes(source, producer),
+        authority_receipt=receipt_bytes(source, producer, raw),
+        raw_depgraph=raw,
     )
     return artifact
 

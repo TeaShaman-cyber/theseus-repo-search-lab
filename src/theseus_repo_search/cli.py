@@ -267,8 +267,10 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
     if nodes:
         nodes = bind_node_sources(nodes, sources)
     authority_receipt = None
+    raw_depgraph_bytes = None
     if args.authoritative_readback and not args.lexical_only:
         authority_receipt = args.raw_depgraph_receipt.read_bytes()
+        raw_depgraph_bytes = args.raw_depgraph.read_bytes()
     manifest = write_artifact(
         args.out,
         nodes=nodes,
@@ -289,6 +291,7 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
         ),
         created_from_authoritative_commit=args.authoritative_readback,
         authority_receipt=authority_receipt,
+        raw_depgraph=raw_depgraph_bytes,
     )
     _emit(
         {

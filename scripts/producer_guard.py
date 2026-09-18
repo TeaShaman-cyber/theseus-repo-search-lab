@@ -123,6 +123,20 @@ def run_bound_extraction(
     producer_tool_commit: str,
     producer_tool_hash: str,
 ) -> None:
+    repo_root = repo_dir.resolve()
+    expected_source_root = (repo_root / source_subdir).resolve() if source_subdir else repo_root
+    try:
+        expected_source_root.relative_to(repo_root)
+    except ValueError as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"source subdir escapes verified checkout: {source_subdir}",
+        ) from exc
+    if cwd.resolve() != expected_source_root:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"extraction cwd must equal verified source root: expected {expected_source_root}, observed {cwd.resolve()}",
+        )
     verify_checked_out_commit(repo_dir, expected_commit)
     verify_tracked_source_clean(repo_dir, source_subdir)
     observed_toolchain = read_bound_toolchain(cwd)
