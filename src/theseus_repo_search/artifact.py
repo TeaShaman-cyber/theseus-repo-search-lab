@@ -72,6 +72,7 @@ def artifact_identity(manifest: ArtifactManifest) -> str:
         "scope": {
             "root_modules": list(manifest.scope.root_modules),
             "dependency_boundary": manifest.scope.dependency_boundary,
+            **({"exclude_source_prefixes": list(manifest.scope.exclude_source_prefixes)} if manifest.scope.exclude_source_prefixes else {}),
         },
         "created_from_authoritative_commit": manifest.created_from_authoritative_commit,
         "members": {

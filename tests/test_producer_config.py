@@ -29,6 +29,10 @@ class LeanGitSourceTests(unittest.TestCase):
         self.assertEqual(source.root_modules, ("LongGapsBetweenPrimes",))
         self.assertEqual(source.source_commit, COMMIT)
 
+    def test_loads_v2_descriptor_with_source_exclusions(self):
+        source = LeanGitSource.from_dict({"schema":"theseus.lean-git-source.v2","source_id":"con-nf","source_repo":"leanprover-community/con-nf","source_commit":COMMIT,"source_subdir":"","root_modules":["ConNF"],"build_target":"ConNF","exclude_source_prefixes":["Old/"]})
+        self.assertEqual(source.exclude_source_prefixes, ("Old/",))
+
     def test_load_file_uses_same_contract(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "source.json"

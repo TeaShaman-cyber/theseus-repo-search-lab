@@ -11,12 +11,14 @@ ALL_REPLAYS = (
     "scripts/replay_prime_gaps_186.py",
     "scripts/replay_flt_regular.py",
     "scripts/replay_cdc_lean.py",
+    "scripts/replay_con_nf.py",
 )
 ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_zeta23.py",
     "scripts/replay_long_gaps.py",
     "scripts/replay_flt_regular.py",
     "scripts/replay_cdc_lean.py",
+    "scripts/replay_con_nf.py",
 )
 REQUIRED = (
     "scripts/producer_guard.py",
@@ -55,6 +57,15 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("_out/*-replay.json", upload)
         self.assertNotIn("_out/raw-depgraph-receipt.json", upload)
         self.assertIn("authority-receipt.json", text)
+
+    def test_source_exclusions_are_wired_only_into_artifact_build(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        extract = text.split("- name: Extract exact declaration graph", 1)[1].split("- name: Install repository lens package", 1)[0]
+        build = text.split("- name: Build normalized artifact", 1)[1].split("- name: Verify project and replay selected source", 1)[0]
+        self.assertNotIn("exclude_args", extract)
+        self.assertIn("exclude_args=()", build)
+        self.assertIn("--exclude-source-prefix", build)
+        self.assertIn('"${exclude_args[@]}"', build)
 
     def test_prime_gaps_is_not_in_default_generic_matrix(self):
         text = GENERIC.read_text(encoding="utf-8")

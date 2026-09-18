@@ -26,11 +26,13 @@ def validate_registered_replay_manifest(
         manifest.source_commit,
         manifest.source_subdir,
         manifest.scope.root_modules,
+        manifest.scope.exclude_source_prefixes,
     ) != (
         source.source_repo,
         source.source_commit,
         source.source_subdir,
         source.root_modules,
+        source.exclude_source_prefixes,
     ):
         raise AssertionError("artifact provenance/scope does not match selected source descriptor")
 

@@ -32,6 +32,9 @@ jobs:
           - source_descriptor: producer/sources/openai-cdc-lean.json
             replay_script: scripts/replay_cdc_lean.py
             artifact_name: openai-cdc-lean-repo-index-v1
+          - source_descriptor: producer/sources/leanprover-community-con-nf.json
+            replay_script: scripts/replay_con_nf.py
+            artifact_name: leanprover-community-con-nf-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -216,12 +219,20 @@ jobs:
           for root in "${roots[@]}"; do
             root_args+=(--root-module "$root")
           done
+          exclude_args=()
+          if [ -n "$EXCLUDE_SOURCE_PREFIXES_CSV" ]; then
+            IFS="," read -r -a excludes <<< "$EXCLUDE_SOURCE_PREFIXES_CSV"
+            for prefix in "${excludes[@]}"; do
+              exclude_args+=(--exclude-source-prefix "$prefix")
+            done
+          fi
           python3 -m theseus_repo_search build-artifact \
             --source-root "$SOURCE_ROOT" \
             --source-repo "$SOURCE_REPO" \
             --source-commit "$SOURCE_COMMIT" \
             --source-subdir "$SOURCE_SUBDIR" \
             "${root_args[@]}" \
+            "${exclude_args[@]}" \
             --producer-kind lean-dep-viz \
             --producer-tool-repo "$EXTRACTOR_REPO" \
             --producer-tool-commit "$EXTRACTOR_COMMIT" \

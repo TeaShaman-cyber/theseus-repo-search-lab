@@ -263,6 +263,7 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
         args.source_root,
         source_commit=args.source_commit,
         tracked_only=args.authoritative_readback,
+        exclude_prefixes=tuple(args.exclude_source_prefix),
     )
     if nodes:
         nodes = bind_node_sources(nodes, sources)
@@ -288,6 +289,7 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
         scope=ArtifactScope(
             root_modules=root_modules,
             dependency_boundary="internal_only",
+            exclude_source_prefixes=tuple(args.exclude_source_prefix),
         ),
         created_from_authoritative_commit=args.authoritative_readback,
         authority_receipt=authority_receipt,
@@ -376,6 +378,7 @@ def _add_build_artifact(subparsers) -> None:
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--source-subdir", required=True)
     parser.add_argument("--root-module", action="append", required=True)
+    parser.add_argument("--exclude-source-prefix", action="append", default=[])
     parser.add_argument("--producer-kind", required=True)
     parser.add_argument("--producer-tool-repo", required=True)
     parser.add_argument("--producer-tool-commit", required=True)
