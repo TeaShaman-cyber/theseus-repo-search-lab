@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import sqlite3
 from pathlib import Path
 
-from theseus_repo_search.artifact import artifact_identity, load_artifact
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.replay_contract import validate_registered_replay_manifest
+from theseus_repo_search.replay_contract import prepare_registered_replay
 from theseus_repo_search.retrieval import context, search
 
 
@@ -16,12 +14,7 @@ LEXICAL_QUERY = "unconditional long gap bound"
 
 
 def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
-    manifest, _, _, _ = load_artifact(artifact_path)
-    with sqlite3.connect(db_path) as conn:
-        projected_identity = dict(conn.execute("SELECT key, value FROM meta"))["artifact_identity"]
-    if projected_identity != artifact_identity(manifest):
-        raise AssertionError("projection/artifact identity mismatch")
-    source = validate_registered_replay_manifest(manifest, descriptor_path)
+    manifest, source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1 or exact_hits[0].source_path != "LongGapsBetweenPrimes.lean":
         raise AssertionError("main theorem did not resolve to exact source provenance")

@@ -187,7 +187,26 @@ class ReplayLongGapsTests(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError, "producer"):
                 run_replay(db, artifact, DESCRIPTOR)
 
-    def test_rejects_projection_artifact_identity_mismatch(self):
+    def test_replay_rebuilds_disposable_projection_from_artifact(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact, db = build_fixture(root)
+            import sqlite3
+            with sqlite3.connect(db) as conn:
+                conn.execute(
+                    "INSERT INTO nodes(id, name, kind, module, source_commit) VALUES (?, ?, ?, ?, ?)",
+                    ("lean:Injected.fake", "fake", "thm", "Injected", "not-from-artifact"),
+                )
+                conn.commit()
+            result = run_replay(db, artifact, DESCRIPTOR)
+            self.assertEqual(result["status"], "PASS")
+            with sqlite3.connect(db) as conn:
+                count = conn.execute(
+                    "SELECT count(*) FROM nodes WHERE id='lean:Injected.fake'"
+                ).fetchone()[0]
+            self.assertEqual(count, 0)
+
+    def test_stale_projection_is_rebuilt_for_selected_artifact(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             _, db = build_fixture(root)
@@ -197,8 +216,12 @@ class ReplayLongGapsTests(unittest.TestCase):
             other_descriptor.write_text(json.dumps(payload), encoding="utf-8")
             other_source = load_lean_git_source(other_descriptor)
             other_artifact = write_fixture_artifact(root, other_source, "other-artifact")
-            with self.assertRaisesRegex(AssertionError, "projection/artifact identity mismatch"):
-                run_replay(db, other_artifact, other_descriptor)
+            result = run_replay(db, other_artifact, other_descriptor)
+            self.assertEqual(result["status"], "PASS")
+            import sqlite3
+            with sqlite3.connect(db) as conn:
+                source_commit = dict(conn.execute("SELECT key, value FROM meta"))["source_commit"]
+            self.assertEqual(source_commit, "d" * 40)
 
     def test_rejects_descriptor_provenance_mismatch(self):
         with tempfile.TemporaryDirectory() as d:

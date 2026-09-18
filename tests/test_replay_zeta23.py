@@ -246,7 +246,7 @@ class ReplayZeta23Tests(unittest.TestCase):
             self.assertEqual(proc.returncode, 0, proc.stderr)
             self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["provenance"]["repo"], "anthropics/formal-math")
 
-    def test_rejects_projection_artifact_identity_mismatch(self):
+    def test_stale_projection_is_rebuilt_for_selected_artifact(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             _, db = build_fixture(root)
@@ -256,8 +256,12 @@ class ReplayZeta23Tests(unittest.TestCase):
             other_descriptor.write_text(json.dumps(payload), encoding="utf-8")
             other_source = load_lean_git_source(other_descriptor)
             other_artifact = write_fixture_artifact(root, other_source, "other-artifact")
-            with self.assertRaisesRegex(AssertionError, "projection/artifact identity mismatch"):
-                run_replay(db, other_artifact, other_descriptor, make_source_root(root))
+            result = run_replay(db, other_artifact, other_descriptor, make_source_root(root))
+            self.assertEqual(result["status"], "PASS")
+            import sqlite3
+            with sqlite3.connect(db) as conn:
+                source_commit = dict(conn.execute("SELECT key, value FROM meta"))["source_commit"]
+            self.assertEqual(source_commit, "d" * 40)
 
     def test_rejects_descriptor_provenance_mismatch(self):
         with tempfile.TemporaryDirectory() as d:
