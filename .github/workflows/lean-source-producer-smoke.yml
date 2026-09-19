@@ -11,7 +11,322 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  produce-ten-proofs-all:
+    if: github.ref == 'refs/heads/corpus/tenproofs-all-52'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/sources/openai-ten-proofs-all.json
+      REPLAY_SCRIPT: scripts/replay_ten_proofs_all.py
+      ARTIFACT_NAME: openai-ten-proofs-all-repo-index-v1
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load full ten-proofs producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+
+      - name: Verify exact source readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+          printf 'source_readback=%s\n' "$(git -C _target/source rev-parse HEAD)"
+
+      - name: Resolve canonical source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Observe source-owned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(python3 scripts/producer_guard.py toolchain --cwd "$SOURCE_ROOT")"
+          printf 'observed_lean_toolchain=%s\n' "$observed"
+
+      - name: Install pinned generic runner prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
+
+      - name: Restore source dependency cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+          finished="$(date +%s)"
+          printf 'cache_get_seconds=%s\n' "$((finished - started))"
+          printf 'source_packages_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
+
+      - name: Build full ten-proofs All target
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          heartbeat() {
+            local tick=0
+            while true; do
+              sleep 60
+              tick=$((tick + 1))
+              now="$(date +%s)"
+              ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              mem_available_kib="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
+              root_free_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
+              printf 'build_heartbeat ts=%s elapsed_seconds=%s mem_available_kib=%s root_free_kib=%s\n' \
+                "$ts" "$((now - started))" "$mem_available_kib" "$root_free_kib"
+              if (( tick % 5 == 0 )); then
+                printf 'build_heartbeat_slow ts=%s source_build_kib=%s\n' \
+                  "$ts" "$(du -sk "$SOURCE_ROOT/.lake/build" 2>/dev/null | awk '{print $1+0}')"
+              fi
+            done
+          }
+          heartbeat & heartbeat_pid=$!
+          cleanup() { kill "$heartbeat_pid" 2>/dev/null || true; wait "$heartbeat_pid" 2>/dev/null || true; }
+          trap cleanup EXIT INT TERM
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+          cleanup
+          trap - EXIT INT TERM
+          finished="$(date +%s)"
+          printf 'source_build_seconds=%s\n' "$((finished - started))"
+          printf 'source_build_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
+
+      - name: Extract exact full declaration graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          root_args=()
+          IFS="," read -r -a roots <<< "$ROOT_MODULES_CSV"
+          for root in "${roots[@]}"; do
+            root_args+=(--root-module "$root")
+          done
+          started="$(date +%s)"
+          extract_heartbeat() {
+            while true; do
+              sleep 60
+              now="$(date +%s)"
+              printf 'extract_heartbeat ts=%s elapsed_seconds=%s mem_available_kib=%s root_free_kib=%s\n' \
+                "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$((now - started))" \
+                "$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)" \
+                "$(df -Pk / | awk 'NR == 2 {print $4}')"
+            done
+          }
+          extract_heartbeat & heartbeat_pid=$!
+          cleanup() { kill "$heartbeat_pid" 2>/dev/null || true; wait "$heartbeat_pid" 2>/dev/null || true; }
+          trap cleanup EXIT INT TERM
+          python3 scripts/producer_guard.py extract \
+            --cwd "$SOURCE_ROOT" \
+            --repo-dir "$GITHUB_WORKSPACE/_target/source" \
+            --expected "$SOURCE_COMMIT" \
+            --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
+            --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
+            --source-repo "$SOURCE_REPO" \
+            --source-subdir "$SOURCE_SUBDIR" \
+            "${root_args[@]}" \
+            --producer-kind lean-dep-viz \
+            --producer-tool-repo "$EXTRACTOR_REPO" \
+            --producer-tool-commit "$EXTRACTOR_COMMIT" \
+            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" -- \
+            lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
+            --roots "$ROOT_MODULES_CSV" \
+            --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          cleanup
+          trap - EXIT INT TERM
+          finished="$(date +%s)"
+          printf 'extract_seconds=%s\n' "$((finished - started))"
+          printf 'raw_depgraph_kib=%s\n' "$(du -k "$GITHUB_WORKSPACE/_out/raw-depgraph.json" | awk '{print $1}')"
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Build normalized full-corpus artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          root_args=()
+          IFS="," read -r -a roots <<< "$ROOT_MODULES_CSV"
+          for root in "${roots[@]}"; do
+            root_args+=(--root-module "$root")
+          done
+          started="$(date +%s)"
+          python3 -m theseus_repo_search build-artifact \
+            --source-root "$SOURCE_ROOT" \
+            --source-repo "$SOURCE_REPO" \
+            --source-commit "$SOURCE_COMMIT" \
+            --source-subdir "$SOURCE_SUBDIR" \
+            "${root_args[@]}" \
+            --producer-kind lean-dep-viz \
+            --producer-tool-repo "$EXTRACTOR_REPO" \
+            --producer-tool-commit "$EXTRACTOR_COMMIT" \
+            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" \
+            --authoritative-readback \
+            --raw-depgraph _out/raw-depgraph.json \
+            --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
+            --out "_out/${SOURCE_ID}-artifact"
+          finished="$(date +%s)"
+          printf 'artifact_build_seconds=%s\n' "$((finished - started))"
+          printf 'artifact_kib=%s\n' "$(du -sk "_out/${SOURCE_ID}-artifact" | awk '{print $1}')"
+          test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
+
+      - name: Verify full artifact and replay representative endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m theseus_repo_search verify-artifact --artifact "_out/${SOURCE_ID}-artifact"
+          python3 -m theseus_repo_search build-index \
+            --artifact "_out/${SOURCE_ID}-artifact" \
+            --db "_out/${SOURCE_ID}.sqlite"
+          python3 "$REPLAY_SCRIPT" \
+            --db "_out/${SOURCE_ID}.sqlite" \
+            --source-root "$SOURCE_ROOT" \
+            --artifact "_out/${SOURCE_ID}-artifact" \
+            --descriptor "$SOURCE_DESCRIPTOR" \
+            --out "_out/${SOURCE_ID}-replay.json"
+
+      - name: Remove disposable producer outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite" _out/raw-depgraph-receipt.json
+          test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
+
+      - name: Upload normalized full ten-proofs artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: openai-ten-proofs-all-repo-index-v1
+          path: |
+            _out/openai-ten-proofs-all-artifact/
+            _out/openai-ten-proofs-all-replay.json
+          if-no-files-found: error
+
+  consume-ten-proofs-all:
+    if: github.ref == 'refs/heads/corpus/tenproofs-all-52'
+    needs: produce-ten-proofs-all
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/sources/openai-ten-proofs-all.json
+      REPLAY_SCRIPT: scripts/replay_ten_proofs_all.py
+      ARTIFACT_NAME: openai-ten-proofs-all-repo-index-v1
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load registered full-corpus identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Download normalized repository lens artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: openai-ten-proofs-all-repo-index-v1
+          path: _consumer/download
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Verify artifact and build disposable projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="_consumer/download/${SOURCE_ID}-artifact"
+          db="_consumer/${SOURCE_ID}.sqlite"
+          test -d "$artifact"
+          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
+          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
+          python3 - "$db" <<'PY_SQLITE'
+          import sqlite3
+          import sys
+          with sqlite3.connect(sys.argv[1]) as conn:
+              observed = conn.execute("PRAGMA quick_check").fetchone()[0]
+          if observed != "ok":
+              raise SystemExit(f"SQLite quick_check failed: {observed}")
+          print(f"sqlite_quick_check={observed}")
+          PY_SQLITE
+
+      - name: Replay full artifact without Lean or source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$REPLAY_SCRIPT" \
+            --db "_consumer/${SOURCE_ID}.sqlite" \
+            --artifact "_consumer/download/${SOURCE_ID}-artifact" \
+            --descriptor "$SOURCE_DESCRIPTOR" \
+            --out "_consumer/${SOURCE_ID}-replay.json"
+
+      - name: Write consumer acceptance receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/write_consumer_receipt.py \
+            --artifact "_consumer/download/${SOURCE_ID}-artifact" \
+            --db "_consumer/${SOURCE_ID}.sqlite" \
+            --replay "_consumer/${SOURCE_ID}-replay.json" \
+            --artifact-name "$ARTIFACT_NAME" \
+            --repository-head "${{ github.sha }}" \
+            --workflow-run-id "${{ github.run_id }}" \
+            --workflow-run-attempt "${{ github.run_attempt }}" \
+            --workflow-ref "${{ github.workflow_ref }}" \
+            --workflow-sha "${{ github.workflow_sha }}" \
+            --out "_consumer/${SOURCE_ID}-consumer-receipt.json"
+
+      - name: Upload full-corpus consumer acceptance receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: openai-ten-proofs-all-repo-index-v1-consumer-receipt
+          path: _consumer/openai-ten-proofs-all-consumer-receipt.json
+          if-no-files-found: error
+
+
   produce-and-replay:
+    if: github.ref != 'refs/heads/corpus/tenproofs-all-52'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -281,6 +596,7 @@ jobs:
           if-no-files-found: error
 
   consume-artifact:
+    if: github.ref != 'refs/heads/corpus/tenproofs-all-52'
     needs: produce-and-replay
     runs-on: ubuntu-latest
     timeout-minutes: 20
