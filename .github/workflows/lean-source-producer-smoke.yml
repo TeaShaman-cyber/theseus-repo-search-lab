@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   produce-and-replay:
+    if: github.ref != 'refs/heads/research/tenproofs-all-ci-53'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -280,7 +281,134 @@ jobs:
             _out/*-replay.json
           if-no-files-found: error
 
+  profile-ten-proofs-all:
+    if: github.ref == 'refs/heads/research/tenproofs-all-ci-53'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned ten-proofs and runner configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source producer/sources/openai-ten-proofs-multicolor.json \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source producer/sources/openai-ten-proofs-multicolor.json \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Record runner baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'profile_runner_nproc=%s\n' "$(nproc)"
+          awk '/MemTotal:|MemAvailable:|SwapTotal:|SwapFree:/ {printf "profile_%s=%s_kib\\n", tolower(substr($1,1,length($1)-1)), $2}' /proc/meminfo
+          df -Pk / | awk 'NR == 2 {printf "profile_root_total_kib=%s\\nprofile_root_free_kib=%s\\n", $2, $4}'
+          if [ -r /proc/pressure/memory ]; then
+            sed 's/^/profile_memory_psi_baseline=/' /proc/pressure/memory
+          fi
+          awk '/^(pgmajfault|workingset_refault_file) / {printf "profile_vmstat_baseline_%s=%s\\n", $1, $2}' /proc/vmstat
+
+      - name: Install pinned generic runner prerequisite
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Restore ten-proofs dependency cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+          finished="$(date +%s)"
+          printf 'profile_cache_get_seconds=%s\n' "$((finished - started))"
+          printf 'profile_source_packages_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
+
+      - name: Profile full ten-proofs All build
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v /usr/bin/time
+          started="$(date +%s)"
+
+          heartbeat() {
+            while true; do
+              sleep 30
+              now="$(date +%s)"
+              ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              mem_available_kib="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
+              root_free_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
+              pgmajfault="$(awk '$1 == "pgmajfault" {print $2}' /proc/vmstat)"
+              refault_file="$(awk '$1 == "workingset_refault_file" {print $2}' /proc/vmstat)"
+              lean_workers="$(pgrep -fc '/bin/lean .*_target/source/' || true)"
+              lean_rss_kib="$(ps -eo rss=,args= | awk '/\/bin\/lean .*_target\/source\// {sum += $1} END {print sum + 0}')"
+              printf 'all_profile_heartbeat ts=%s elapsed_seconds=%s mem_available_kib=%s root_free_kib=%s pgmajfault=%s workingset_refault_file=%s lean_workers=%s lean_rss_kib=%s\n' \
+                "$ts" "$((now - started))" "$mem_available_kib" "$root_free_kib" "$pgmajfault" "$refault_file" "$lean_workers" "$lean_rss_kib"
+              if [ -r /proc/pressure/memory ]; then
+                sed 's/^/all_profile_memory_psi=/' /proc/pressure/memory
+              fi
+            done
+          }
+
+          heartbeat &
+          heartbeat_pid=$!
+          cleanup() {
+            kill "$heartbeat_pid" 2>/dev/null || true
+            wait "$heartbeat_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT INT TERM
+
+          /usr/bin/time -v -o "$RUNNER_TEMP/ten-proofs-all.time" \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build All
+
+          cleanup
+          trap - EXIT INT TERM
+          finished="$(date +%s)"
+          printf 'profile_build_all_seconds=%s\n' "$((finished - started))"
+          printf 'profile_source_build_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
+          cat "$RUNNER_TEMP/ten-proofs-all.time"
+          awk '/^(pgmajfault|workingset_refault_file) / {printf "profile_vmstat_final_%s=%s\\n", $1, $2}' /proc/vmstat
+          if [ -r /proc/pressure/memory ]; then
+            sed 's/^/profile_memory_psi_final=/' /proc/pressure/memory
+          fi
+
   consume-artifact:
+    if: github.ref != 'refs/heads/research/tenproofs-all-ci-53'
     needs: produce-and-replay
     runs-on: ubuntu-latest
     timeout-minutes: 20
