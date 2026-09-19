@@ -12,6 +12,7 @@ ALL_REPLAYS = (
     "scripts/replay_flt_regular.py",
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
+    "scripts/replay_ten_proofs_multicolor.py",
 )
 ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_zeta23.py",

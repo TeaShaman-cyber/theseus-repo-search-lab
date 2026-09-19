@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "openai-ten-proofs-multicolor",
+  "source_repo": "openai/ten-proofs",
+  "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+  "source_subdir": "",
+  "root_modules": ["MulticolorTriangleRamsey"],
+  "build_target": "MulticolorTriangleRamsey"
+}
