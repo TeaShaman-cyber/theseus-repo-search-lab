@@ -1,0 +1,36 @@
+{
+  "schema": "theseus.repo-search-research-smoke.v1",
+  "scenario_id": "flt-bridge-v0",
+  "version": 0,
+  "research_refs": [
+    "TeaShaman-cyber/theseus-math-research-lab#18",
+    "TeaShaman-cyber/theseus-repo-search-lab#32"
+  ],
+  "source_repo": "leanprover-community/flt-regular",
+  "evidence_classes": [
+    "NON_RH_PROVENANCE_BRIDGE",
+    "ELABORATED_CASE_SPLIT"
+  ],
+  "probes": [
+    {
+      "id": "flt-lexical-bridge",
+      "kind": "search",
+      "query": "Fermat last theorem regular primes",
+      "limit": 10,
+      "min_hits": 1,
+      "regression_guard": true
+    },
+    {
+      "id": "flt-case-split",
+      "kind": "deps",
+      "declaration": "flt_regular",
+      "depth": 1,
+      "min_edges": 2,
+      "required_ids": [
+        "lean:FltRegular.caseI",
+        "lean:FltRegular.caseII"
+      ],
+      "regression_guard": true
+    }
+  ]
+}
