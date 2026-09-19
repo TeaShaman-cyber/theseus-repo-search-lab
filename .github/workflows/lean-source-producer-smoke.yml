@@ -384,3 +384,63 @@ jobs:
           name: ${{ matrix.artifact_name }}-consumer-receipt
           path: _consumer/*-consumer-receipt.json
           if-no-files-found: error
+
+  research-smoke:
+    needs: consume-artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario: qa/research-smoke/zeta23-riemann-panel-v0.json
+            source_descriptor: producer/sources/zeta23.json
+            artifact_name: zeta23-repo-index-v1
+            source_id: zeta23
+          - scenario: qa/research-smoke/flt-bridge-v0.json
+            source_descriptor: producer/sources/leanprover-community-flt-regular.json
+            artifact_name: leanprover-community-flt-regular-repo-index-v1
+            source_id: leanprover-community-flt-regular
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Download accepted normalized artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: _smoke/download
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Build disposable smoke projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="_smoke/download/${{ matrix.source_id }}-artifact"
+          db="_smoke/${{ matrix.source_id }}.sqlite"
+          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
+          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
+
+      - name: Run non-blocking live research smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/run_research_smoke.py \
+            --db "_smoke/${{ matrix.source_id }}.sqlite" \
+            --artifact "_smoke/download/${{ matrix.source_id }}-artifact" \
+            --scenario "${{ matrix.scenario }}" \
+            --tool-commit "${{ github.sha }}" \
+            --out "_smoke/${{ matrix.source_id }}-research-smoke-receipt.json"
+
+      - name: Upload research smoke receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ matrix.artifact_name }}-research-smoke-receipt
+          path: _smoke/*-research-smoke-receipt.json
+          if-no-files-found: error

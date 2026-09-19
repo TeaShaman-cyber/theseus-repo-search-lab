@@ -137,3 +137,17 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("-consumer-receipt", consumer)
         self.assertIn("_consumer/*-consumer-receipt.json", consumer)
         self.assertIn("if-no-files-found: error", consumer)
+    def test_research_smoke_job_is_fresh_source_free_and_bounded(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        self.assertIn("  research-smoke:\n", text)
+        smoke = text.split("  research-smoke:\n", 1)[1]
+        self.assertIn("needs: consume-artifact", smoke)
+        self.assertIn("qa/research-smoke/zeta23-riemann-panel-v0.json", smoke)
+        self.assertIn("qa/research-smoke/flt-bridge-v0.json", smoke)
+        self.assertIn("scripts/run_research_smoke.py", smoke)
+        self.assertIn("-research-smoke-receipt", smoke)
+        for token in ("Checkout pinned source", "elan", "lake ", "--source-root", "gh codespace"):
+            with self.subTest(token=token):
+                self.assertNotIn(token, smoke)
+        self.assertIn("source_id: zeta23", smoke)
+        self.assertIn("source_id: leanprover-community-flt-regular", smoke)

@@ -1,0 +1,50 @@
+{
+  "schema": "theseus.repo-search-research-smoke.v1",
+  "scenario_id": "zeta23-riemann-panel-v0",
+  "version": 0,
+  "research_refs": [
+    "TeaShaman-cyber/theseus-math-research-lab#3",
+    "TeaShaman-cyber/theseus-math-research-lab#10",
+    "TeaShaman-cyber/theseus-math-research-lab#11",
+    "TeaShaman-cyber/theseus-math-research-lab#14"
+  ],
+  "source_repo": "anthropics/formal-math",
+  "evidence_classes": [
+    "A0_EXPORTED_MOMENT_SEAM",
+    "A2_LIKE_PRIME_SIDE_INTERNAL_STRUCTURE",
+    "A1_RESOLVENT_INTERFACE",
+    "EXTERNAL_CONNES_CCM_CORPUS_BOUNDARY"
+  ],
+  "probes": [
+    {
+      "id": "coeff-moment-export-seam",
+      "kind": "deps",
+      "declaration": "Zeta23.XiPrime.coeffMoments_atV",
+      "depth": 1,
+      "min_edges": 1,
+      "required_ids": ["lean:Zeta23.XiPrime.CoeffMoments"],
+      "regression_guard": true
+    },
+    {
+      "id": "gz-moment-consumers",
+      "kind": "rdeps",
+      "declaration": "Zeta23.XiPrime.GzMoments",
+      "depth": 1,
+      "min_edges": 1,
+      "regression_guard": true
+    },
+    {
+      "id": "a1-resolvent-search",
+      "kind": "search",
+      "query": "resolvent Feshbach spectral measure",
+      "limit": 10,
+      "regression_guard": false
+    },
+    {
+      "id": "connes-ccm-boundary",
+      "kind": "declared_boundary",
+      "basis": "Current artifact is scoped to anthropics/formal-math:zeta23; Connes/Consani/Marcolli source objects are not represented by this artifact contract.",
+      "regression_guard": false
+    }
+  ]
+}
