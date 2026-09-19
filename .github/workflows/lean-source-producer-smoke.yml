@@ -279,3 +279,108 @@ jobs:
             _out/*-artifact/
             _out/*-replay.json
           if-no-files-found: error
+
+  consume-artifact:
+    needs: produce-and-replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - source_descriptor: producer/sources/zeta23.json
+            replay_script: scripts/replay_zeta23.py
+            artifact_name: zeta23-repo-index-v1
+          - source_descriptor: producer/sources/openai-long-gaps.json
+            replay_script: scripts/replay_long_gaps.py
+            artifact_name: openai-long-gaps-repo-index-v1
+          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
+            replay_script: scripts/replay_flt_regular.py
+            artifact_name: leanprover-community-flt-regular-repo-index-v1
+          - source_descriptor: producer/sources/openai-cdc-lean.json
+            replay_script: scripts/replay_cdc_lean.py
+            artifact_name: openai-cdc-lean-repo-index-v1
+          - source_descriptor: producer/sources/leanprover-community-con-nf.json
+            replay_script: scripts/replay_con_nf.py
+            artifact_name: leanprover-community-con-nf-repo-index-v1
+          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
+            replay_script: scripts/replay_ten_proofs_multicolor.py
+            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load registered source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "${{ matrix.source_descriptor }}" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Download normalized repository lens artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: _consumer/download
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Verify artifact and build disposable projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="_consumer/download/${SOURCE_ID}-artifact"
+          db="_consumer/${SOURCE_ID}.sqlite"
+          test -d "$artifact"
+          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
+          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
+          python3 - "$db" <<'PY_SQLITE'
+          import sqlite3
+          import sys
+
+          with sqlite3.connect(sys.argv[1]) as conn:
+              observed = conn.execute("PRAGMA quick_check").fetchone()[0]
+          if observed != "ok":
+              raise SystemExit(f"SQLite quick_check failed: {observed}")
+          print(f"sqlite_quick_check={observed}")
+          PY_SQLITE
+
+      - name: Replay artifact without source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "${{ matrix.replay_script }}" \
+            --db "_consumer/${SOURCE_ID}.sqlite" \
+            --artifact "_consumer/download/${SOURCE_ID}-artifact" \
+            --descriptor "${{ matrix.source_descriptor }}" \
+            --out "_consumer/${SOURCE_ID}-replay.json"
+
+      - name: Write consumer acceptance receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/write_consumer_receipt.py \
+            --artifact "_consumer/download/${SOURCE_ID}-artifact" \
+            --db "_consumer/${SOURCE_ID}.sqlite" \
+            --replay "_consumer/${SOURCE_ID}-replay.json" \
+            --artifact-name "${{ matrix.artifact_name }}" \
+            --repository-head "${{ github.sha }}" \
+            --workflow-run-id "${{ github.run_id }}" \
+            --workflow-run-attempt "${{ github.run_attempt }}" \
+            --workflow-ref "${{ github.workflow_ref }}" \
+            --workflow-sha "${{ github.workflow_sha }}" \
+            --out "_consumer/${SOURCE_ID}-consumer-receipt.json"
+
+      - name: Upload consumer acceptance receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ matrix.artifact_name }}-consumer-receipt
+          path: _consumer/*-consumer-receipt.json
+          if-no-files-found: error
