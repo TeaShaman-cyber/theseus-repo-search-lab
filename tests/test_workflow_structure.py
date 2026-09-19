@@ -1,3 +1,4 @@
+import re
 import unittest
 from pathlib import Path
 
@@ -20,6 +21,7 @@ ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_flt_regular.py",
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
+    "scripts/replay_ten_proofs_multicolor.py",
 )
 REQUIRED = (
     "scripts/producer_guard.py",
@@ -52,7 +54,7 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertFalse(LEGACY.exists())
         self.assertFalse(LEGACY_CONFIG.exists())
         self.assertNotIn("producer/zeta23.json", text)
-        upload = text.split("- name: Upload normalized repository lens artifact", 1)[1]
+        upload = text.split("- name: Upload normalized repository lens artifact", 1)[1].split("  consume-artifact:\n", 1)[0]
         self.assertNotIn("${SOURCE_ID}", upload)
         self.assertIn("_out/*-artifact/", upload)
         self.assertIn("_out/*-replay.json", upload)
@@ -96,3 +98,42 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("trap", build)
         self.assertNotIn("GITHUB_TOKEN", build)
         self.assertNotIn("gh api", build)
+    def test_fresh_consumer_job_matches_producer_matrix_and_is_source_free(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        self.assertIn("  consume-artifact:\n", text)
+        producer = text.split("  produce-and-replay:\n", 1)[1].split("  consume-artifact:\n", 1)[0]
+        consumer = text.split("  consume-artifact:\n", 1)[1]
+
+        def entries(block: str):
+            return re.findall(
+                r"- source_descriptor:\s*(\S+)\n\s*replay_script:\s*(\S+)\n\s*artifact_name:\s*(\S+)",
+                block,
+            )
+
+        self.assertEqual(entries(producer), entries(consumer))
+        self.assertIn("needs: produce-and-replay", consumer)
+        self.assertIn("actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c", consumer)
+        self.assertIn("scripts/write_consumer_receipt.py", consumer)
+        self.assertIn("PRAGMA quick_check", consumer)
+
+        forbidden = (
+            "Checkout pinned source",
+            "Restore source dependency cache",
+            "Build source target",
+            "LeanDepViz",
+            "elan",
+            "lake ",
+            "_target/source",
+            "--source-root",
+            "gh codespace",
+        )
+        for token in forbidden:
+            with self.subTest(token=token):
+                self.assertNotIn(token, consumer)
+
+    def test_consumer_receipt_is_uploaded_separately(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        consumer = text.split("  consume-artifact:\n", 1)[1]
+        self.assertIn("-consumer-receipt", consumer)
+        self.assertIn("_consumer/*-consumer-receipt.json", consumer)
+        self.assertIn("if-no-files-found: error", consumer)
