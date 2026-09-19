@@ -29,6 +29,7 @@ class ResearchSmokeTests(unittest.TestCase):
                                 "query": "Fermat last theorem regular primes",
                                 "limit": 10,
                                 "min_hits": 1,
+                                "required_declaration_hints": ["flt_regular"],
                                 "regression_guard": True,
                             },
                             {
@@ -71,6 +72,50 @@ class ResearchSmokeTests(unittest.TestCase):
             self.assertIn("CORPUS_BOUNDARY", receipt["observed_states"])
             self.assertEqual(receipt["artifact"]["source_repo"], "leanprover-community/flt-regular")
             self.assertEqual(receipt["scientific_authority"], "NONE")
+
+    def test_search_guard_requires_named_declaration_even_when_other_hits_exist(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact, db = build_flt_fixture(root)
+            scenario_path = root / "scenario.json"
+            scenario_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.repo-search-research-smoke.v1",
+                        "scenario_id": "search-guard-regression-v0",
+                        "version": 0,
+                        "research_refs": ["example#search-guard"],
+                        "source_repo": "leanprover-community/flt-regular",
+                        "evidence_classes": ["REGRESSION_FIXTURE"],
+                        "probes": [
+                            {
+                                "id": "guarded-search",
+                                "kind": "search",
+                                "query": "Fermat last theorem regular primes",
+                                "limit": 10,
+                                "min_hits": 1,
+                                "required_declaration_hints": ["missing_declaration"],
+                                "regression_guard": True,
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            receipt = run_scenario(
+                db=db,
+                artifact=artifact,
+                scenario=load_scenario(scenario_path),
+                tool_commit="d" * 40,
+            )
+            probe = receipt["probes"][0]
+            self.assertGreaterEqual(probe["hit_count"], 1)
+            self.assertEqual(
+                probe["missing_required_declaration_hints"], ["missing_declaration"]
+            )
+            self.assertTrue(probe["regression"])
+            self.assertTrue(receipt["regression_detected"])
+            self.assertEqual(receipt["overall_disposition"], "DEGRADED")
 
     def test_missing_guarded_capability_is_degraded_but_receipt_still_emits(self):
         with tempfile.TemporaryDirectory() as d:

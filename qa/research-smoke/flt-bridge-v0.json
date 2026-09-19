@@ -18,6 +18,7 @@
       "query": "Fermat last theorem regular primes",
       "limit": 10,
       "min_hits": 1,
+      "required_declaration_hints": ["flt_regular"],
       "regression_guard": true
     },
     {

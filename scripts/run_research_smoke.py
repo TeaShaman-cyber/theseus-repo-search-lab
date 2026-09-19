@@ -56,6 +56,11 @@ def load_scenario(path: Path) -> dict[str, Any]:
             raise ValueError("probe.regression_guard must be boolean")
         if kind == "search":
             _require_str(probe.get("query"), "probe.query")
+            if "required_declaration_hints" in probe:
+                _require_str_list(
+                    probe.get("required_declaration_hints"),
+                    "probe.required_declaration_hints",
+                )
         elif kind in {"deps", "rdeps"}:
             _require_str(probe.get("declaration"), "probe.declaration")
         elif kind == "declared_boundary":
@@ -102,8 +107,13 @@ def _search_probe(db: Path, probe: dict[str, Any]) -> dict[str, object]:
         for hit in hits
     ]
     min_hits = int(probe.get("min_hits", 0))
+    required_hints = set(str(item) for item in probe.get("required_declaration_hints", []))
+    observed_hints = {str(hit.declaration_hint) for hit in hits if hit.declaration_hint}
+    missing_hints = sorted(required_hints - observed_hints)
     state = "FOUND_USEFUL_STRUCTURE" if hits else "NO_SIGNAL"
-    regression = bool(probe.get("regression_guard", False)) and len(hits) < min_hits
+    regression = bool(probe.get("regression_guard", False)) and (
+        len(hits) < min_hits or bool(missing_hints)
+    )
     return {
         "state": state,
         "regression": regression,
@@ -111,6 +121,8 @@ def _search_probe(db: Path, probe: dict[str, Any]) -> dict[str, object]:
         "hit_count": len(hits),
         "hits": payload,
         "required_min_hits": min_hits,
+        "required_declaration_hints": sorted(required_hints),
+        "missing_required_declaration_hints": missing_hints,
     }
 
 
