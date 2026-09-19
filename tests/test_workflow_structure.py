@@ -98,6 +98,54 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("trap", build)
         self.assertNotIn("GITHUB_TOKEN", build)
         self.assertNotIn("gh api", build)
+    def test_heavy_ten_proofs_pipeline_has_resumable_stage_boundaries(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        self.assertIn("  build-ten-proofs-all:\n", text)
+        self.assertIn("  extract-ten-proofs-all:\n", text)
+        self.assertIn("  consume-ten-proofs-all:\n", text)
+
+        build = text.split("  build-ten-proofs-all:\n", 1)[1].split(
+            "  extract-ten-proofs-all:\n", 1
+        )[0]
+        extract = text.split("  extract-ten-proofs-all:\n", 1)[1].split(
+            "  consume-ten-proofs-all:\n", 1
+        )[0]
+        consumer = text.split("  consume-ten-proofs-all:\n", 1)[1].split(
+            "  produce-and-replay:\n", 1
+        )[0]
+
+        self.assertIn("Build full ten-proofs All target", build)
+        self.assertIn("Package durable full-build checkpoint", build)
+        self.assertIn("Upload durable full-build checkpoint", build)
+        self.assertNotIn("Extract exact full declaration graph", build)
+        self.assertLess(
+            build.index("Build full ten-proofs All target"),
+            build.index("Upload durable full-build checkpoint"),
+        )
+
+        self.assertIn("needs: build-ten-proofs-all", extract)
+        self.assertIn("Download durable full-build checkpoint", extract)
+        self.assertIn("build_checkpoint_identity=VERIFIED", extract)
+        self.assertIn("Extract exact full declaration graph", extract)
+        self.assertIn("Upload durable raw extraction checkpoint", extract)
+        self.assertIn("Build normalized full-corpus artifact", extract)
+        self.assertLess(
+            extract.index("Download durable full-build checkpoint"),
+            extract.index("Extract exact full declaration graph"),
+        )
+        self.assertLess(
+            extract.index("Extract exact full declaration graph"),
+            extract.index("Upload durable raw extraction checkpoint"),
+        )
+        self.assertLess(
+            extract.index("Upload durable raw extraction checkpoint"),
+            extract.index("Build normalized full-corpus artifact"),
+        )
+
+        self.assertIn("needs: extract-ten-proofs-all", consumer)
+        self.assertNotIn("lake build", consumer)
+        self.assertNotIn("LeanDepViz", consumer)
+
     def test_fresh_consumer_job_matches_producer_matrix_and_is_source_free(self):
         text = GENERIC.read_text(encoding="utf-8")
         self.assertIn("  consume-artifact:\n", text)

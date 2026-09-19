@@ -11,15 +11,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  produce-ten-proofs-all:
+  build-ten-proofs-all:
     if: github.ref == 'refs/heads/corpus/tenproofs-all-52'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 150
     env:
       PYTHONPATH: ${{ github.workspace }}/src
       SOURCE_DESCRIPTOR: producer/sources/openai-ten-proofs-all.json
-      REPLAY_SCRIPT: scripts/replay_ten_proofs_all.py
-      ARTIFACT_NAME: openai-ten-proofs-all-repo-index-v1
+      BUILD_CHECKPOINT_NAME: openai-ten-proofs-all-build-state-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -70,7 +69,7 @@ jobs:
           observed="$(python3 scripts/producer_guard.py toolchain --cwd "$SOURCE_ROOT")"
           printf 'observed_lean_toolchain=%s\n' "$observed"
 
-      - name: Install pinned generic runner prerequisites
+      - name: Install pinned Lean toolchain manager
         shell: bash
         run: |
           set -euo pipefail
@@ -82,10 +81,6 @@ jobs:
           tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
           "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
-          curl --fail --location --proto "=https" --tlsv1.2 \
-            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
-          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
 
       - name: Restore source dependency cache
         shell: bash
@@ -128,6 +123,159 @@ jobs:
           finished="$(date +%s)"
           printf 'source_build_seconds=%s\n' "$((finished - started))"
           printf 'source_build_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
+
+      - name: Package durable full-build checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _checkpoint
+          for module in SpherePacking MetricCodes NonSoficGroup ConnesRigidity Permanent QuantumParallelRepetition GapCVP EhrhartVolumeInequality MulticolorTriangleRamsey CompactnessAndDegeneracy All; do
+            test -s "$SOURCE_ROOT/.lake/build/lib/lean/${module}.olean"
+          done
+          tar -C "$SOURCE_ROOT" -cf _checkpoint/source-build.tar .lake/build
+          sha256sum _checkpoint/source-build.tar > _checkpoint/source-build.tar.sha256
+          python3 - <<'PY_CHECKPOINT'
+          import json
+          import os
+          from pathlib import Path
+          payload = {
+              "schema": "theseus.heavy-build-checkpoint.v1",
+              "source_id": os.environ["SOURCE_ID"],
+              "source_repo": os.environ["SOURCE_REPO"],
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "build_target": os.environ["BUILD_TARGET"],
+              "root_modules_csv": os.environ["ROOT_MODULES_CSV"],
+              "repository_head": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+          }
+          Path("_checkpoint/checkpoint.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          PY_CHECKPOINT
+          printf 'build_checkpoint_kib=%s\n' "$(du -sk _checkpoint | awk '{print $1}')"
+
+      - name: Upload durable full-build checkpoint
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: openai-ten-proofs-all-build-state-v1
+          path: _checkpoint/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  extract-ten-proofs-all:
+    if: github.ref == 'refs/heads/corpus/tenproofs-all-52'
+    needs: build-ten-proofs-all
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/sources/openai-ten-proofs-all.json
+      REPLAY_SCRIPT: scripts/replay_ten_proofs_all.py
+      ARTIFACT_NAME: openai-ten-proofs-all-repo-index-v1
+      BUILD_CHECKPOINT_NAME: openai-ten-proofs-all-build-state-v1
+      RAW_CHECKPOINT_NAME: openai-ten-proofs-all-raw-extraction-v1
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load full ten-proofs producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+
+      - name: Resolve canonical source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Install pinned extraction prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
+
+      - name: Restore source dependency cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+          finished="$(date +%s)"
+          printf 'extract_cache_get_seconds=%s\n' "$((finished - started))"
+
+      - name: Download durable full-build checkpoint
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: openai-ten-proofs-all-build-state-v1
+          path: _checkpoint
+
+      - name: Verify and restore full-build checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum --check _checkpoint/source-build.tar.sha256
+          python3 - <<'PY_CHECKPOINT'
+          import json
+          import os
+          from pathlib import Path
+          observed = json.loads(Path("_checkpoint/checkpoint.json").read_text(encoding="utf-8"))
+          expected = {
+              "schema": "theseus.heavy-build-checkpoint.v1",
+              "source_id": os.environ["SOURCE_ID"],
+              "source_repo": os.environ["SOURCE_REPO"],
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "build_target": os.environ["BUILD_TARGET"],
+              "root_modules_csv": os.environ["ROOT_MODULES_CSV"],
+              "repository_head": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+          }
+          if observed != expected:
+              raise SystemExit(f"build checkpoint identity mismatch: {observed!r} != {expected!r}")
+          print("build_checkpoint_identity=VERIFIED")
+          PY_CHECKPOINT
+          rm -rf "$SOURCE_ROOT/.lake/build"
+          tar -C "$SOURCE_ROOT" -xf _checkpoint/source-build.tar
+          for module in SpherePacking MetricCodes NonSoficGroup ConnesRigidity Permanent QuantumParallelRepetition GapCVP EhrhartVolumeInequality MulticolorTriangleRamsey CompactnessAndDegeneracy All; do
+            test -s "$SOURCE_ROOT/.lake/build/lib/lean/${module}.olean"
+          done
+          printf 'restored_source_build_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
 
       - name: Extract exact full declaration graph
         shell: bash
@@ -174,6 +322,27 @@ jobs:
           finished="$(date +%s)"
           printf 'extract_seconds=%s\n' "$((finished - started))"
           printf 'raw_depgraph_kib=%s\n' "$(du -k "$GITHUB_WORKSPACE/_out/raw-depgraph.json" | awk '{print $1}')"
+
+      - name: Package raw extraction checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s _out/raw-depgraph.json
+          test -s _out/raw-depgraph-receipt.json
+          mkdir -p _raw-checkpoint
+          cp _out/raw-depgraph.json _raw-checkpoint/
+          cp _out/raw-depgraph-receipt.json _raw-checkpoint/
+          sha256sum _raw-checkpoint/raw-depgraph.json _raw-checkpoint/raw-depgraph-receipt.json \
+            > _raw-checkpoint/SHA256SUMS
+
+      - name: Upload durable raw extraction checkpoint
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: openai-ten-proofs-all-raw-extraction-v1
+          path: _raw-checkpoint/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
 
       - name: Install repository lens package
         run: python3 -m pip install -e .
@@ -240,7 +409,7 @@ jobs:
 
   consume-ten-proofs-all:
     if: github.ref == 'refs/heads/corpus/tenproofs-all-52'
-    needs: produce-ten-proofs-all
+    needs: extract-ten-proofs-all
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -323,7 +492,6 @@ jobs:
           name: openai-ten-proofs-all-repo-index-v1-consumer-receipt
           path: _consumer/openai-ten-proofs-all-consumer-receipt.json
           if-no-files-found: error
-
 
   produce-and-replay:
     if: github.ref != 'refs/heads/corpus/tenproofs-all-52'
