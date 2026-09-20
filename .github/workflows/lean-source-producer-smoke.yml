@@ -12,14 +12,16 @@ concurrency:
 
 jobs:
   build-ten-proofs-all:
+    name: build-ten-proofs-all / all-in
     if: github.ref == 'refs/heads/corpus/tenproofs-all-52'
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 350
     env:
       PYTHONPATH: ${{ github.workspace }}/src
       SOURCE_DESCRIPTOR: producer/sources/openai-ten-proofs-all.json
       BUILD_CHECKPOINT_NAME: openai-ten-proofs-all-build-state-v1
       TELEMETRY_INTERVAL_SECONDS: "60"
+      BUILD_PROFILE: all-in
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -93,39 +95,21 @@ jobs:
           printf 'cache_get_seconds=%s\n' "$((finished - started))"
           printf 'source_packages_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
 
-      - name: Build full ten-proofs All target
+      - name: Build full ten-proofs All target with all optimizations
         shell: bash
         run: |
           set -euo pipefail
-          started="$(date +%s)"
-          heartbeat() {
-            while true; do
-              sleep "$TELEMETRY_INTERVAL_SECONDS"
-              now="$(date +%s)"
-              python3 scripts/ci_telemetry.py snapshot \
-                --phase build \
-                --elapsed-seconds "$((now - started))" \
-                --disk-path /
-            done
-          }
-          heartbeat & heartbeat_pid=$!
-          cleanup() { kill "$heartbeat_pid" 2>/dev/null || true; wait "$heartbeat_pid" 2>/dev/null || true; }
-          on_term() {
-            now="$(date +%s)"
-            python3 scripts/ci_telemetry.py snapshot --phase build-term --elapsed-seconds "$((now - started))" --disk-path / || true
-            cleanup
-            exit 143
-          }
-          trap cleanup EXIT INT
-          trap on_term TERM
-          /usr/bin/time -v -o "$RUNNER_TEMP/ten-proofs-all.time" \
-            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
-          cleanup
-          trap - EXIT INT TERM
-          cat "$RUNNER_TEMP/ten-proofs-all.time"
-          finished="$(date +%s)"
-          printf 'source_build_seconds=%s\n' "$((finished - started))"
-          printf 'source_build_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
+          scripts/run_ten_proofs_build_profile.sh
+
+      - name: Upload all-in build telemetry receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ten-proofs-build-profile-all-in
+          path: _build-profile/
+          if-no-files-found: warn
+          compression-level: 6
+          retention-days: 7
 
       - name: Package durable full-build checkpoint
         shell: bash
@@ -151,6 +135,13 @@ jobs:
               "repository_head": os.environ["GITHUB_SHA"],
               "workflow_run_id": os.environ["GITHUB_RUN_ID"],
               "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "build_profile": os.environ["BUILD_PROFILE"],
+              "build_optimizations": [
+                  "sphere-prestage",
+                  "long-roots-prestage",
+                  "lean-j2",
+                  "lean-memory-12288",
+              ],
           }
           Path("_checkpoint/checkpoint.json").write_text(
               json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -165,6 +156,110 @@ jobs:
           path: _checkpoint/
           if-no-files-found: error
           compression-level: 0
+          retention-days: 7
+
+  build-ten-proofs-all-single-factor:
+    name: build-ten-proofs-all / ${{ matrix.profile }}
+    if: github.ref == 'refs/heads/corpus/tenproofs-all-52'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        profile:
+          - sphere-prestage
+          - long-roots-prestage
+          - lean-j2
+          - lean-memory-12288
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/sources/openai-ten-proofs-all.json
+      TELEMETRY_INTERVAL_SECONDS: "60"
+      BUILD_PROFILE: ${{ matrix.profile }}
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load full ten-proofs producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+          printf 'source_readback=%s\n' "$(git -C _target/source rev-parse HEAD)"
+
+      - name: Resolve canonical source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Observe source-owned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(python3 scripts/producer_guard.py toolchain --cwd "$SOURCE_ROOT")"
+          printf 'observed_lean_toolchain=%s\n' "$observed"
+
+      - name: Install pinned Lean toolchain manager
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Restore source dependency cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+          finished="$(date +%s)"
+          printf 'cache_get_seconds=%s\n' "$((finished - started))"
+          printf 'source_packages_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
+
+      - name: Run single-factor build profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/run_ten_proofs_build_profile.sh
+
+      - name: Upload single-factor telemetry receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ten-proofs-build-profile-${{ matrix.profile }}
+          path: _build-profile/
+          if-no-files-found: warn
+          compression-level: 6
           retention-days: 7
 
   extract-ten-proofs-all:
@@ -269,6 +364,13 @@ jobs:
               "repository_head": os.environ["GITHUB_SHA"],
               "workflow_run_id": os.environ["GITHUB_RUN_ID"],
               "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "build_profile": "all-in",
+              "build_optimizations": [
+                  "sphere-prestage",
+                  "long-roots-prestage",
+                  "lean-j2",
+                  "lean-memory-12288",
+              ],
           }
           if observed != expected:
               raise SystemExit(f"build checkpoint identity mismatch: {observed!r} != {expected!r}")

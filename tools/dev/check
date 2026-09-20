@@ -197,6 +197,7 @@ import sys
 
 workflow = Path('.github/workflows/lean-source-producer-smoke.yml')
 collector = Path('scripts/ci_telemetry.py')
+profile_runner = Path('scripts/run_ten_proofs_build_profile.sh')
 failures = []
 
 if workflow.is_file():
@@ -204,6 +205,9 @@ if workflow.is_file():
     if '  build-ten-proofs-all:\n' in text:
         if not collector.is_file():
             failures.append('QA_TELEMETRY_MISSING: scripts/ci_telemetry.py')
+        if not profile_runner.is_file():
+            failures.append('QA_TELEMETRY_MISSING: scripts/run_ten_proofs_build_profile.sh')
+
         build = text.split('  build-ten-proofs-all:\n', 1)[1].split(
             '  extract-ten-proofs-all:\n', 1
         )[0]
@@ -211,10 +215,7 @@ if workflow.is_file():
             '  consume-ten-proofs-all:\n', 1
         )[0]
 
-        for phase, section, fn_name, invoke in (
-            ('build', build, 'heartbeat() {', 'heartbeat &'),
-            ('extract', extract, 'extract_heartbeat() {', 'extract_heartbeat &'),
-        ):
+        for phase, section in (('build', build), ('extract', extract)):
             match = re.search(r'TELEMETRY_INTERVAL_SECONDS:\s*["\']?(\d+)', section)
             if not match:
                 failures.append(f'QA_TELEMETRY_MISSING: {phase} interval')
@@ -222,16 +223,33 @@ if workflow.is_file():
                 failures.append(
                     f'QA_TELEMETRY_INTERVAL_TOO_FAST: {phase} interval={match.group(1)}s minimum=60s'
                 )
-            if 'python3 scripts/ci_telemetry.py snapshot' not in section:
-                failures.append(f'QA_TELEMETRY_MISSING: {phase} snapshot collector')
-            if fn_name not in section or invoke not in section:
-                failures.append(f'QA_TELEMETRY_MISSING: {phase} bounded heartbeat')
-                continue
-            heartbeat = section.split(fn_name, 1)[1].split(invoke, 1)[0]
+
+        if profile_runner.is_file():
+            runner = profile_runner.read_text(encoding='utf-8')
+            if 'python3 scripts/ci_telemetry.py snapshot' not in runner:
+                failures.append('QA_TELEMETRY_MISSING: build snapshot collector')
+            if 'heartbeat() {' not in runner or 'heartbeat & heartbeat_pid=$!' not in runner:
+                failures.append('QA_TELEMETRY_MISSING: build bounded heartbeat')
+            else:
+                heartbeat = runner.split('heartbeat() {', 1)[1].split('heartbeat & heartbeat_pid=$!', 1)[0]
+                for forbidden in ('du -', 'find ', 'git ', 'gh ', 'curl ', 'lake '):
+                    if forbidden in heartbeat:
+                        failures.append(
+                            f'QA_TELEMETRY_HEARTBEAT_HEAVY: build heartbeat contains {forbidden.strip()}'
+                        )
+
+        if 'python3 scripts/ci_telemetry.py snapshot' not in extract:
+            failures.append('QA_TELEMETRY_MISSING: extract snapshot collector')
+        if 'extract_heartbeat() {' not in extract or 'extract_heartbeat & heartbeat_pid=$!' not in extract:
+            failures.append('QA_TELEMETRY_MISSING: extract bounded heartbeat')
+        else:
+            heartbeat = extract.split('extract_heartbeat() {', 1)[1].split(
+                'extract_heartbeat & heartbeat_pid=$!', 1
+            )[0]
             for forbidden in ('du -', 'find ', 'git ', 'gh ', 'curl ', 'lake '):
                 if forbidden in heartbeat:
                     failures.append(
-                        f'QA_TELEMETRY_HEARTBEAT_HEAVY: {phase} heartbeat contains {forbidden.strip()}'
+                        f'QA_TELEMETRY_HEARTBEAT_HEAVY: extract heartbeat contains {forbidden.strip()}'
                     )
 
         if collector.is_file() and not failures:

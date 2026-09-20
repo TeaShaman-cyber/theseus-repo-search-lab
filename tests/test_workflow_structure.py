@@ -154,14 +154,18 @@ class WorkflowStructureTests(unittest.TestCase):
         extract = text.split("  extract-ten-proofs-all:\n", 1)[1].split(
             "  consume-ten-proofs-all:\n", 1
         )[0]
+        runner = (ROOT / "scripts/run_ten_proofs_build_profile.sh").read_text(encoding="utf-8")
         for phase, block in (("build", build), ("extract", extract)):
             with self.subTest(phase=phase):
                 self.assertIn('TELEMETRY_INTERVAL_SECONDS: "60"', block)
-                self.assertIn("scripts/ci_telemetry.py snapshot", block)
-                self.assertIn("--elapsed-seconds", block)
-        build_heartbeat = build.split("heartbeat() {", 1)[1].split("heartbeat &", 1)[0]
+        self.assertIn("scripts/run_ten_proofs_build_profile.sh", build)
+        self.assertIn("scripts/ci_telemetry.py snapshot", runner)
+        self.assertIn("--elapsed-seconds", runner)
+        build_heartbeat = runner.split("heartbeat() {", 1)[1].split(
+            "heartbeat & heartbeat_pid=$!", 1
+        )[0]
         extract_heartbeat = extract.split("extract_heartbeat() {", 1)[1].split(
-            "extract_heartbeat &", 1
+            "extract_heartbeat & heartbeat_pid=$!", 1
         )[0]
         for phase, heartbeat in (("build", build_heartbeat), ("extract", extract_heartbeat)):
             with self.subTest(phase=phase):
@@ -170,7 +174,46 @@ class WorkflowStructureTests(unittest.TestCase):
                 self.assertNotIn("gh ", heartbeat)
                 self.assertNotIn("curl ", heartbeat)
                 self.assertNotIn("lake ", heartbeat)
-        self.assertIn("/usr/bin/time -v", build)
+        self.assertIn("/usr/bin/time -v", runner)
+
+    def test_heavy_build_runs_all_in_plus_four_parallel_single_factors(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        runner_path = ROOT / "scripts/run_ten_proofs_build_profile.sh"
+        self.assertTrue(runner_path.is_file())
+        runner = runner_path.read_text(encoding="utf-8")
+
+        primary = text.split("  build-ten-proofs-all:\n", 1)[1].split(
+            "  build-ten-proofs-all-single-factor:\n", 1
+        )[0]
+        singles = text.split("  build-ten-proofs-all-single-factor:\n", 1)[1].split(
+            "  extract-ten-proofs-all:\n", 1
+        )[0]
+        extract = text.split("  extract-ten-proofs-all:\n", 1)[1].split(
+            "  consume-ten-proofs-all:\n", 1
+        )[0]
+
+        self.assertIn("BUILD_PROFILE: all-in", primary)
+        self.assertIn("timeout-minutes: 350", primary)
+        self.assertIn("max-parallel: 4", singles)
+        for profile in (
+            "sphere-prestage",
+            "long-roots-prestage",
+            "lean-j2",
+            "lean-memory-12288",
+        ):
+            self.assertIn(f"- {profile}", singles)
+            self.assertIn(profile, runner)
+        self.assertIn("continue-on-error: true", singles)
+        self.assertIn("needs: build-ten-proofs-all", extract)
+        self.assertNotIn("build-ten-proofs-all-single-factor", extract.split("needs:", 1)[1].splitlines()[0])
+
+        self.assertIn('lake_args+=("-KweakLeanArgs=-j2")', runner)
+        self.assertIn('lake_args+=("-KmoreLeanArgs=-M12288")', runner)
+        for root in ("GapCVP", "ConnesRigidity", "QuantumParallelRepetition", "MetricCodes"):
+            self.assertIn(root, runner)
+        self.assertIn("prestage-SpherePacking", runner)
+        self.assertIn('run_stage final-All "${BUILD_TARGET:-All}"', runner)
+        self.assertIn('"build_profile": os.environ["BUILD_PROFILE"]', primary)
 
     def test_fresh_consumer_job_matches_producer_matrix_and_is_source_free(self):
         text = GENERIC.read_text(encoding="utf-8")

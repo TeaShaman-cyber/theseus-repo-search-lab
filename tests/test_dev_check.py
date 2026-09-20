@@ -254,11 +254,20 @@ print('telemetry mem_available_kib=1 root_free_kib=1 pgmajfault=1 workingset_ref
         collector = """import sys
 print('telemetry mem_available_kib=1 root_free_kib=1 pgmajfault=1 workingset_refault_file=1 memory_psi_some_avg10=0 memory_psi_full_avg10=0 lean_workers=0 lean_rss_kib=0')
 """
+        runner = """#!/usr/bin/env bash
+heartbeat() {
+  sleep 60
+  du -sk .lake/build
+  python3 scripts/ci_telemetry.py snapshot --phase build --elapsed-seconds 0
+}
+heartbeat & heartbeat_pid=$!
+"""
         result = self._run_copied_check_with_plan(
             "# Telemetry weight fixture\n",
             repo_files={
                 ".github/workflows/lean-source-producer-smoke.yml": workflow,
                 "scripts/ci_telemetry.py": collector,
+                "scripts/run_ten_proofs_build_profile.sh": runner,
             },
         )
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
