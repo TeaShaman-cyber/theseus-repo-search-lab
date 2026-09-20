@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '%s\n' 'property-test: not inside a Git worktree' >&2
+    exit 2
+}
+cd "$ROOT" || exit 2
+
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}src"
+export HYPOTHESIS_STORAGE_DIRECTORY="${RUNNER_TEMP:-/tmp}/hypothesis-storage"
+
+python -m unittest discover -s tests/property -p 'test_*.py' -v
+printf '%s\n' 'PROPERTY_TEST_PASS suite=normalizer max_examples=200 properties=3'
