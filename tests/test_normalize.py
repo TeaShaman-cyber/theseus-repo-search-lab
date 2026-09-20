@@ -85,6 +85,30 @@ class NormalizeLeanDepVizTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
         self.assertIn("node[0].fullName", str(caught.exception))
 
+    def test_required_empty_string_fields_fail_closed(self):
+        baseline = {
+            "module": "Zeta23.Tiny",
+            "fullName": "Zeta23.Tiny.a",
+            "name": "a",
+            "kind": "thm",
+        }
+        for field in ("module", "fullName", "name", "kind"):
+            with self.subTest(field=field):
+                raw = self.load_fixture()
+                node = dict(baseline)
+                node[field] = ""
+                raw["nodes"] = [node]
+                raw["edges"] = []
+                with self.assertRaises(RepoSearchError) as caught:
+                    normalize_leandepviz(
+                        raw,
+                        source_commit="abc123",
+                        root_modules=("Zeta23",),
+                        producer_ref="LeanDepViz@7859d91",
+                    )
+                self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+                self.assertIn(f"node[0].{field}", str(caught.exception))
+
     def test_duplicate_full_name_fails_closed(self):
         raw = self.load_fixture()
         raw["nodes"] = [raw["nodes"][0], dict(raw["nodes"][0])]
