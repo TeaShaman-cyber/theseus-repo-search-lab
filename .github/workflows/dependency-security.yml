@@ -1,0 +1,15 @@
+name: Dependency security
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-security:
+    uses: TeaShaman-cyber/marcopolo-cookbook/.github/workflows/reusable-dependency-security.yml@a6c1a24b642585a6d4dc1a87d2eef6f61aee965a
+    with:
+      python_version: "3.11"
+      inputs_file: config/dependency-security.inputs
