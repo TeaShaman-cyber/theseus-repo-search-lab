@@ -2,3 +2,7 @@ __pycache__/
 *.py[cod]
 
 *.egg-info/
+
+# Local verification/consumer projections are reproducible execution state.
+.consumer-*/
+.verify-run-*/
