@@ -1,0 +1,16 @@
+# Python 3.11 / ubuntu-latest x86_64 heavy-analysis lock.
+# Generated from the versions smoke-tested for issue #54.
+ast_serialize==0.11.2 \
+    --hash=sha256:a7004ba572f09be34342ccb98dcd4bad5707d3d81adc8cb4c3f685d2a2c51bbc
+librt==0.15.0 \
+    --hash=sha256:f779070399f991400fc451719e0ea388eb7de313388bada2c127a35de05f798a
+mypy==2.3.1 \
+    --hash=sha256:b091a455111214cb5c9d54a57b9618e9a49f9fe2a42e4e1ac86e9d104ed96ce8
+mypy_extensions==1.1.0 \
+    --hash=sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505
+pathspec==1.1.1 \
+    --hash=sha256:a00ce642f577bf7f473932318056212bc4f8bfdf53128c78bbd5af0b9b20b189
+ruff==0.16.8 \
+    --hash=sha256:15e7d226246961db9235098333caa13063906d3851136b84c2900b82f5daa1df
+typing_extensions==4.16.0 \
+    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8

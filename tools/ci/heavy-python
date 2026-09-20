@@ -1,0 +1,23 @@
+#!/bin/sh
+set -u
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '%s\n' 'heavy-python: not inside a Git worktree' >&2
+    exit 2
+}
+cd "$ROOT"
+
+printf '%s\n' '== ruff full repository =='
+ruff check --isolated --target-version py311 src scripts tests
+ruff_code=$?
+
+printf '%s\n' '== mypy repository-owned Python =='
+MYPYPATH=src mypy --config-file config/mypy-heavy.ini src scripts
+mypy_code=$?
+
+printf 'HEAVY_PYTHON_RESULT ruff=%s mypy=%s\n' "$ruff_code" "$mypy_code"
+
+if [ "$ruff_code" -ne 0 ] || [ "$mypy_code" -ne 0 ]; then
+    exit 1
+fi
+printf '%s\n' 'HEAVY_PYTHON_PASS'
