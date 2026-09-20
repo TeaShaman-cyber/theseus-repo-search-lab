@@ -1,0 +1,2 @@
+# kind path
+pip-hashed requirements/ci-heavy.txt
