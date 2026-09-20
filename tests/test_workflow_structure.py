@@ -146,6 +146,32 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertNotIn("lake build", consumer)
         self.assertNotIn("LeanDepViz", consumer)
 
+    def test_heavy_pipeline_telemetry_is_lightweight_and_qa_visible(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        build = text.split("  build-ten-proofs-all:\n", 1)[1].split(
+            "  extract-ten-proofs-all:\n", 1
+        )[0]
+        extract = text.split("  extract-ten-proofs-all:\n", 1)[1].split(
+            "  consume-ten-proofs-all:\n", 1
+        )[0]
+        for phase, block in (("build", build), ("extract", extract)):
+            with self.subTest(phase=phase):
+                self.assertIn('TELEMETRY_INTERVAL_SECONDS: "60"', block)
+                self.assertIn("scripts/ci_telemetry.py snapshot", block)
+                self.assertIn("--elapsed-seconds", block)
+        build_heartbeat = build.split("heartbeat() {", 1)[1].split("heartbeat &", 1)[0]
+        extract_heartbeat = extract.split("extract_heartbeat() {", 1)[1].split(
+            "extract_heartbeat &", 1
+        )[0]
+        for phase, heartbeat in (("build", build_heartbeat), ("extract", extract_heartbeat)):
+            with self.subTest(phase=phase):
+                self.assertNotIn("du -", heartbeat)
+                self.assertNotIn("find ", heartbeat)
+                self.assertNotIn("gh ", heartbeat)
+                self.assertNotIn("curl ", heartbeat)
+                self.assertNotIn("lake ", heartbeat)
+        self.assertIn("/usr/bin/time -v", build)
+
     def test_fresh_consumer_job_matches_producer_matrix_and_is_source_free(self):
         text = GENERIC.read_text(encoding="utf-8")
         self.assertIn("  consume-artifact:\n", text)

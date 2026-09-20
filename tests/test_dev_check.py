@@ -18,6 +18,8 @@ class DevCheckContractTest(unittest.TestCase):
         self.assertTrue(text.startswith("#!/bin/sh\n"))
         for marker in (
             "PYTHONPYCACHEPREFIX",
+            "== telemetry contract ==",
+            "QA_TELEMETRY_CONTRACT_PASS",
             "python3 -m unittest discover",
             "python3 -m compileall",
             "python3 -m json.tool",
@@ -153,6 +155,115 @@ class DevCheckContractTest(unittest.TestCase):
             """# Good phase boundary\n\n```yaml\n- name: Export\n  shell: bash\n  run: |\n    printf 'SOURCE_ROOT=%s\\n' \"$PWD/source\" >> \"$GITHUB_ENV\"\n- name: Consume\n  shell: bash\n  run: |\n    test -f \"$SOURCE_ROOT/lean-toolchain\"\n```\n"""
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+    def test_dev_check_rejects_missing_heavy_telemetry(self):
+        workflow = """jobs:
+  build-ten-proofs-all:
+    env:
+      TELEMETRY_INTERVAL_SECONDS: "60"
+    steps:
+      - run: |
+          heartbeat() {
+            sleep "$TELEMETRY_INTERVAL_SECONDS"
+          }
+          heartbeat & heartbeat_pid=$!
+  extract-ten-proofs-all:
+    env:
+      TELEMETRY_INTERVAL_SECONDS: "60"
+    steps:
+      - run: |
+          extract_heartbeat() {
+            sleep "$TELEMETRY_INTERVAL_SECONDS"
+          }
+          extract_heartbeat & heartbeat_pid=$!
+  consume-ten-proofs-all:
+    steps: []
+"""
+        result = self._run_copied_check_with_plan(
+            "# Telemetry contract fixture\n",
+            repo_files={".github/workflows/lean-source-producer-smoke.yml": workflow},
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("QA_TELEMETRY_MISSING", result.stderr)
+
+    def test_dev_check_rejects_too_fast_heavy_telemetry(self):
+        workflow = """jobs:
+  build-ten-proofs-all:
+    env:
+      TELEMETRY_INTERVAL_SECONDS: "5"
+    steps:
+      - run: |
+          heartbeat() {
+            sleep "$TELEMETRY_INTERVAL_SECONDS"
+            python3 scripts/ci_telemetry.py snapshot --phase build --elapsed-seconds 0
+          }
+          heartbeat & heartbeat_pid=$!
+  extract-ten-proofs-all:
+    env:
+      TELEMETRY_INTERVAL_SECONDS: "60"
+    steps:
+      - run: |
+          extract_heartbeat() {
+            sleep "$TELEMETRY_INTERVAL_SECONDS"
+            python3 scripts/ci_telemetry.py snapshot --phase extract --elapsed-seconds 0
+          }
+          extract_heartbeat & heartbeat_pid=$!
+  consume-ten-proofs-all:
+    steps: []
+"""
+        collector = """import sys
+print('telemetry mem_available_kib=1 root_free_kib=1 pgmajfault=1 workingset_refault_file=1 memory_psi_some_avg10=0 memory_psi_full_avg10=0 lean_workers=0 lean_rss_kib=0')
+"""
+        result = self._run_copied_check_with_plan(
+            "# Telemetry cadence fixture\n",
+            repo_files={
+                ".github/workflows/lean-source-producer-smoke.yml": workflow,
+                "scripts/ci_telemetry.py": collector,
+            },
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("QA_TELEMETRY_INTERVAL_TOO_FAST", result.stderr)
+
+    def test_dev_check_rejects_heavy_heartbeat_work(self):
+        workflow = """jobs:
+  build-ten-proofs-all:
+    env:
+      TELEMETRY_INTERVAL_SECONDS: "60"
+    steps:
+      - run: |
+          heartbeat() {
+            sleep "$TELEMETRY_INTERVAL_SECONDS"
+            du -sk .lake/build
+            python3 scripts/ci_telemetry.py snapshot --phase build --elapsed-seconds 0
+          }
+          heartbeat & heartbeat_pid=$!
+  extract-ten-proofs-all:
+    env:
+      TELEMETRY_INTERVAL_SECONDS: "60"
+    steps:
+      - run: |
+          extract_heartbeat() {
+            sleep "$TELEMETRY_INTERVAL_SECONDS"
+            python3 scripts/ci_telemetry.py snapshot --phase extract --elapsed-seconds 0
+          }
+          extract_heartbeat & heartbeat_pid=$!
+  consume-ten-proofs-all:
+    steps: []
+"""
+        collector = """import sys
+print('telemetry mem_available_kib=1 root_free_kib=1 pgmajfault=1 workingset_refault_file=1 memory_psi_some_avg10=0 memory_psi_full_avg10=0 lean_workers=0 lean_rss_kib=0')
+"""
+        result = self._run_copied_check_with_plan(
+            "# Telemetry weight fixture\n",
+            repo_files={
+                ".github/workflows/lean-source-producer-smoke.yml": workflow,
+                "scripts/ci_telemetry.py": collector,
+            },
+        )
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("QA_TELEMETRY_HEARTBEAT_HEAVY", result.stderr)
+
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}/src
       SOURCE_DESCRIPTOR: producer/sources/openai-ten-proofs-all.json
       BUILD_CHECKPOINT_NAME: openai-ten-proofs-all-build-state-v1
+      TELEMETRY_INTERVAL_SECONDS: "60"
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -98,28 +99,30 @@ jobs:
           set -euo pipefail
           started="$(date +%s)"
           heartbeat() {
-            local tick=0
             while true; do
-              sleep 60
-              tick=$((tick + 1))
+              sleep "$TELEMETRY_INTERVAL_SECONDS"
               now="$(date +%s)"
-              ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-              mem_available_kib="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
-              root_free_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
-              printf 'build_heartbeat ts=%s elapsed_seconds=%s mem_available_kib=%s root_free_kib=%s\n' \
-                "$ts" "$((now - started))" "$mem_available_kib" "$root_free_kib"
-              if (( tick % 5 == 0 )); then
-                printf 'build_heartbeat_slow ts=%s source_build_kib=%s\n' \
-                  "$ts" "$(du -sk "$SOURCE_ROOT/.lake/build" 2>/dev/null | awk '{print $1+0}')"
-              fi
+              python3 scripts/ci_telemetry.py snapshot \
+                --phase build \
+                --elapsed-seconds "$((now - started))" \
+                --disk-path /
             done
           }
           heartbeat & heartbeat_pid=$!
           cleanup() { kill "$heartbeat_pid" 2>/dev/null || true; wait "$heartbeat_pid" 2>/dev/null || true; }
-          trap cleanup EXIT INT TERM
-          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+          on_term() {
+            now="$(date +%s)"
+            python3 scripts/ci_telemetry.py snapshot --phase build-term --elapsed-seconds "$((now - started))" --disk-path / || true
+            cleanup
+            exit 143
+          }
+          trap cleanup EXIT INT
+          trap on_term TERM
+          /usr/bin/time -v -o "$RUNNER_TEMP/ten-proofs-all.time" \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
           cleanup
           trap - EXIT INT TERM
+          cat "$RUNNER_TEMP/ten-proofs-all.time"
           finished="$(date +%s)"
           printf 'source_build_seconds=%s\n' "$((finished - started))"
           printf 'source_build_kib=%s\n' "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
@@ -176,6 +179,7 @@ jobs:
       ARTIFACT_NAME: openai-ten-proofs-all-repo-index-v1
       BUILD_CHECKPOINT_NAME: openai-ten-proofs-all-build-state-v1
       RAW_CHECKPOINT_NAME: openai-ten-proofs-all-raw-extraction-v1
+      TELEMETRY_INTERVAL_SECONDS: "60"
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -290,12 +294,12 @@ jobs:
           started="$(date +%s)"
           extract_heartbeat() {
             while true; do
-              sleep 60
+              sleep "$TELEMETRY_INTERVAL_SECONDS"
               now="$(date +%s)"
-              printf 'extract_heartbeat ts=%s elapsed_seconds=%s mem_available_kib=%s root_free_kib=%s\n' \
-                "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$((now - started))" \
-                "$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)" \
-                "$(df -Pk / | awk 'NR == 2 {print $4}')"
+              python3 scripts/ci_telemetry.py snapshot \
+                --phase extract \
+                --elapsed-seconds "$((now - started))" \
+                --disk-path /
             done
           }
           extract_heartbeat & heartbeat_pid=$!
