@@ -126,8 +126,10 @@ class MutationConsumerTests(unittest.TestCase):
 
     def test_workflow_is_immutable_shared_consumer(self):
         text = WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn("pull_request:", text)
-        self.assertIn("workflow_dispatch:", text)
+        trigger = text.split("permissions:", 1)[0]
+        self.assertIn("workflow_dispatch:", trigger)
+        self.assertNotIn("pull_request:", trigger)
+        self.assertNotIn("push:", trigger)
         self.assertIn("permissions:\n  contents: read", text)
         self.assertRegex(
             text,
