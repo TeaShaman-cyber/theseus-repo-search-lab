@@ -1,0 +1,78 @@
+#!/bin/sh
+set -u
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '%s\n' 'mutation-test: not inside a Git worktree' >&2
+    exit 2
+}
+cd "$ROOT" || exit 2
+
+RECEIPT=${MUTATION_TEST_RECEIPT:-/tmp/mutation-test-receipt.json}
+LOCK=requirements/ci-mutation.txt
+STATS=mutants/mutmut-cicd-stats.json
+WRITER=scripts/write_mutation_receipt.py
+EXPECTED_MUTMUT=3.8.0
+SOURCE_COMMIT=$(git rev-parse HEAD) || exit 2
+mkdir -p "$(dirname "$RECEIPT")"
+
+if [ -n "$(git ls-files 'mutants' 'mutants/**')" ]; then
+    printf '%s\n' 'mutation-test: refusing to remove tracked mutants path' >&2
+    exit 2
+fi
+rm -rf mutants
+
+export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
+ACTUAL_MUTMUT=$(python3 -c 'import importlib.metadata as m; print(m.version("mutmut"))' 2>/dev/null || true)
+if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+    python3 "$WRITER" \
+        --receipt "$RECEIPT" \
+        --lock-file "$LOCK" \
+        --source-commit "$SOURCE_COMMIT" \
+        --mutmut-version "${ACTUAL_MUTMUT:-unavailable}" \
+        --runtime-failure "worktree_dirty"
+    exit 2
+fi
+if [ "$ACTUAL_MUTMUT" != "$EXPECTED_MUTMUT" ]; then
+    python3 "$WRITER" \
+        --receipt "$RECEIPT" \
+        --lock-file "$LOCK" \
+        --source-commit "$SOURCE_COMMIT" \
+        --mutmut-version "${ACTUAL_MUTMUT:-unavailable}" \
+        --runtime-failure "unexpected_mutmut_version:${ACTUAL_MUTMUT:-unavailable}"
+    exit 2
+fi
+
+set +e
+mutmut run
+run_code=$?
+set -e
+if [ "$run_code" -ne 0 ]; then
+    python3 "$WRITER" \
+        --receipt "$RECEIPT" \
+        --lock-file "$LOCK" \
+        --source-commit "$SOURCE_COMMIT" \
+        --mutmut-version "$ACTUAL_MUTMUT" \
+        --runtime-failure "mutmut_run_exit:$run_code"
+    exit 2
+fi
+
+set +e
+mutmut export-cicd-stats
+export_code=$?
+set -e
+if [ "$export_code" -ne 0 ] || [ ! -f "$STATS" ]; then
+    python3 "$WRITER" \
+        --receipt "$RECEIPT" \
+        --lock-file "$LOCK" \
+        --source-commit "$SOURCE_COMMIT" \
+        --mutmut-version "$ACTUAL_MUTMUT" \
+        --runtime-failure "mutation_stats_unavailable:$export_code"
+    exit 2
+fi
+
+python3 "$WRITER" \
+    --stats "$STATS" \
+    --receipt "$RECEIPT" \
+    --lock-file "$LOCK" \
+    --source-commit "$SOURCE_COMMIT" \
+    --mutmut-version "$ACTUAL_MUTMUT"
