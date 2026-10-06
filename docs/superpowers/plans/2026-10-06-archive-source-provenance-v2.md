@@ -220,13 +220,13 @@ The remaining work begins at the provenance boundary after verified materializat
 - archive consumer receipt with structured archive authority and no `source_commit` lie;
 - v1 Git consumer receipt compatibility retained.
 
-- [ ] RED: archive artifact validated against Git descriptor rejects.
-- [ ] RED: Git artifact validated against archive descriptor rejects.
-- [ ] RED: archive replay with mismatched URL/SHA/subdir/member evidence rejects.
-- [ ] RED: archive consumer receipt cannot be emitted with Git-shaped provenance fields.
-- [ ] Implement source-kind-aware replay validation and receipt serialization.
-- [ ] Re-run all registered replay tests, including PrimeGaps artifact-identity coverage from #73.
-- [ ] Run `./tools/dev/check` and `git diff --check`.
+- [x] RED: archive artifact validated against Git descriptor rejects.
+- [x] RED: Git artifact validated against archive descriptor rejects.
+- [x] RED: archive replay with mismatched URL/SHA/subdir/member evidence rejects.
+- [x] RED: archive consumer receipt cannot be emitted with Git-shaped provenance fields.
+- [x] Implement source-kind-aware replay validation and receipt serialization.
+- [x] Re-run all registered replay tests, including PrimeGaps artifact-identity coverage from #73.
+- [x] Run `./tools/dev/check` and `git diff --check`.
 
 **Checkpoint:** all downstream consumers required by the workflow understand v2 archive authority. Only now may the archive workflow row be enabled.
 
