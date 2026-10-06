@@ -8,8 +8,12 @@ from pathlib import Path
 from hashlib import sha256
 
 from theseus_repo_search.artifact import load_artifact
-from theseus_repo_search.cli import _verify_raw_depgraph_receipt
+from theseus_repo_search.cli import (
+    _verify_archive_raw_depgraph_receipt,
+    _verify_raw_depgraph_receipt,
+)
 from theseus_repo_search.errors import RepoSearchError
+from theseus_repo_search.producer_config import LeanArchiveSource
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -72,6 +76,79 @@ class RawDepgraphReceiptTests(unittest.TestCase):
                     with self.assertRaises(RepoSearchError) as caught:
                         verify(payload)
                     self.assertEqual(caught.exception.code, code)
+    def test_archive_v3_receipt_binds_structured_authority_and_materialization(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            raw = root / "raw.json"
+            raw.write_bytes(b'{"nodes":[],"edges":[]}\n')
+            receipt = root / "receipt.json"
+            source = LeanArchiveSource.from_dict({
+                "schema": "theseus.lean-archive-source.v1",
+                "source_id": "fixture-archive",
+                "archive_url": "https://example.invalid/source.zip",
+                "archive_sha256": "a" * 64,
+                "archive_format": "zip",
+                "source_subdir": "pkg",
+                "root_modules": ["Main"],
+                "build_target": "Main",
+                "exclude_source_prefixes": [],
+            })
+            base = {
+                "schema": "theseus.raw-depgraph-receipt.v3",
+                "source": {
+                    "kind": "archive",
+                    "url": source.archive_url,
+                    "sha256": source.archive_sha256,
+                    "format": source.archive_format,
+                    "subdir": source.source_subdir,
+                },
+                "materialization": {
+                    "tree_sha256": "d" * 64,
+                    "member_manifest_sha256": "e" * 64,
+                },
+                "scope": {"root_modules": ["Main"]},
+                "producer": {
+                    "kind": "lean-dep-viz",
+                    "tool_repo": "cameronfreer/LeanDepViz",
+                    "tool_commit": "b" * 40,
+                    "tool_hash": "c" * 64,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.30.0"},
+                "raw_depgraph": {"sha256": sha256(raw.read_bytes()).hexdigest()},
+            }
+
+            def verify(payload):
+                receipt.write_text(json.dumps(payload), encoding="utf-8")
+                _verify_archive_raw_depgraph_receipt(
+                    receipt,
+                    raw,
+                    source=source,
+                    tree_sha256="d" * 64,
+                    member_manifest_sha256="e" * 64,
+                    producer_kind="lean-dep-viz",
+                    producer_tool_repo="cameronfreer/LeanDepViz",
+                    producer_tool_commit="b" * 40,
+                    producer_tool_hash="c" * 64,
+                )
+
+            verify(base)
+            for label, mutate, code in (
+                ("fake-git", lambda x: x["source"].__setitem__("commit", "f" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("archive-sha", lambda x: x["source"].__setitem__("sha256", "f" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("tree", lambda x: x["materialization"].__setitem__("tree_sha256", "f" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("members", lambda x: x["materialization"].__setitem__("member_manifest_sha256", "f" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("producer", lambda x: x["producer"].__setitem__("tool_commit", "f" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("raw", lambda x: x["raw_depgraph"].__setitem__("sha256", "0" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("observed-missing", lambda x: x.pop("observed"), "BLOCKED_SOURCE_BINDING"),
+                ("observed-extra", lambda x: x["observed"].__setitem__("publisher", "example"), "BLOCKED_SOURCE_BINDING"),
+            ):
+                with self.subTest(label=label):
+                    payload = json.loads(json.dumps(base))
+                    mutate(payload)
+                    with self.assertRaises(RepoSearchError) as caught:
+                        verify(payload)
+                    self.assertEqual(caught.exception.code, code)
+
 
 
 class CliTests(unittest.TestCase):

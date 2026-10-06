@@ -15,6 +15,7 @@ from .graph import dependencies, path as graph_path, reverse_dependencies
 from .model import ArtifactScope, EvidenceGrade, ProducerPin
 from .normalize import normalize_leandepviz
 from .projection import build_projection
+from .producer_config import LeanArchiveSource
 from .retrieval import SearchHit, context as build_context, search as search_repo
 from .sources import bind_node_sources, scan_lean_sources
 
@@ -199,6 +200,76 @@ def _verify_raw_depgraph_receipt(
         raise RepoSearchError(
             "BLOCKED_SOURCE_MISMATCH",
             "raw dependency graph receipt does not match source, producer, scope, or graph hash",
+        )
+
+
+def _verify_archive_raw_depgraph_receipt(
+    receipt_path: Path,
+    raw_depgraph_path: Path,
+    *,
+    source: LeanArchiveSource,
+    tree_sha256: str,
+    member_manifest_sha256: str,
+    producer_kind: str,
+    producer_tool_repo: str,
+    producer_tool_commit: str,
+    producer_tool_hash: str,
+) -> None:
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        raw_hash = sha256(raw_depgraph_path.read_bytes()).hexdigest()
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"invalid archive raw dependency graph receipt: {exc}",
+        ) from exc
+    if not isinstance(receipt, dict):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "invalid archive raw dependency graph receipt: root must be an object",
+        )
+    observed = receipt.get("observed")
+    if (
+        not isinstance(observed, dict)
+        or set(observed) != {"lean_toolchain"}
+        or not isinstance(observed.get("lean_toolchain"), str)
+        or not observed["lean_toolchain"].strip()
+    ):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive raw dependency graph receipt must contain exactly one "
+            "non-empty observed.lean_toolchain field",
+        )
+
+    authority_receipt = dict(receipt)
+    authority_receipt.pop("observed")
+    expected = {
+        "schema": "theseus.raw-depgraph-receipt.v3",
+        "source": {
+            "kind": "archive",
+            "url": source.archive_url,
+            "sha256": source.archive_sha256,
+            "format": source.archive_format,
+            "subdir": source.source_subdir,
+        },
+        "materialization": {
+            "tree_sha256": tree_sha256,
+            "member_manifest_sha256": member_manifest_sha256,
+        },
+        "scope": {"root_modules": list(source.root_modules)},
+        "producer": {
+            "kind": producer_kind,
+            "tool_repo": producer_tool_repo,
+            "tool_commit": producer_tool_commit,
+            "tool_hash": producer_tool_hash,
+        },
+        "raw_depgraph": {"sha256": raw_hash},
+    }
+    if authority_receipt != expected:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "archive raw dependency graph receipt does not match source, "
+            "materialization, producer, scope, or graph hash",
         )
 
 
