@@ -255,6 +255,34 @@ class ArchiveMaterializerTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
             self.assertFalse(dest.exists())
 
+    def test_receipt_staging_path_is_unique_per_invocation(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            receipt_path = root / "receipt.json"
+            staged: list[Path] = []
+
+            def capture_and_fail(src, _dst):
+                staged.append(Path(src))
+                raise OSError("stop after staging")
+
+            with mock.patch(
+                "scripts.materialize_archive_source.os.link", side_effect=capture_and_fail
+            ):
+                for index in range(2):
+                    with self.assertRaises(RepoSearchError):
+                        materialize_archive_source(
+                            source,
+                            dest=root / f"source-{index}",
+                            receipt_path=receipt_path,
+                            opener=lambda *_args, **_kwargs: Response(data),
+                        )
+
+            self.assertEqual(len(staged), 2)
+            self.assertNotEqual(staged[0], staged[1])
+            self.assertFalse(receipt_path.exists())
+
     def test_concurrent_receipt_target_is_not_overwritten(self):
         data = zip_bytes({"pkg/Main.lean": b"x"})
         source = LeanArchiveSource.from_dict(payload(data))

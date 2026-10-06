@@ -212,7 +212,7 @@ The acquisition slice already defines `theseus.lean-archive-source.v1` and verif
 
 For issue #68, archive materialization must additionally persist a deterministic **member-level hash manifest** for the authoritative archive members. The manifest records each normalized archive member path and its content SHA-256 and has its own digest. Build outputs created after extraction are not added to this authority manifest.
 
-The materialized tree and its authority receipt form one logical publication boundary. The receipt path and destination MUST be path-disjoint (neither equal nor ancestor/descendant), and the receipt target MUST NOT pre-exist. Receipt publication MUST use an atomic no-clobber operation so a target created after preflight is never overwritten; if publishing either output fails, the operation leaves no newly published destination owned by this attempt and never removes or replaces a pre-existing/concurrently created receipt.
+The materialized tree and its authority receipt form one logical publication boundary. The receipt path and destination MUST be path-disjoint (neither equal nor ancestor/descendant), and the receipt target MUST NOT pre-exist. Receipt staging MUST be invocation-unique and exclusively created in the receipt directory, and receipt publication MUST use an atomic no-clobber operation so a target created after preflight is never overwritten; if publishing either output fails, the operation leaves no newly published destination owned by this attempt and never removes or replaces a pre-existing/concurrently created receipt.
 
 The archive materialization receipt becomes an input to exact extraction rather than an isolated preprocessing receipt.
 
@@ -496,7 +496,7 @@ The architecture is accepted only when:
 14. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced;
 15. archive normalization hashes each authoritative source at consumption and rejects any byte mismatch with the persisted member manifest;
 16. archive normalization cannot serialize any source file, node/module, or dependent edge absent from the authoritative member-manifest-backed source set under the archive revision;
-17. materialization receipt publication is atomic no-clobber: a concurrently created target is preserved, never overwritten, and any destination published by the losing attempt is rolled back.
+17. materialization receipt staging is invocation-unique/exclusive and final publication is atomic no-clobber: concurrent invocations cannot share staging bytes, a concurrently created target is preserved, and any destination published by the losing attempt is rolled back.
 
 ## 17. Non-goals
 

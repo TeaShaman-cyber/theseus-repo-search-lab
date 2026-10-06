@@ -149,9 +149,13 @@ def materialize_archive_source(
         receipt_bytes = (
             json.dumps(receipt, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
         ).encode("utf-8")
-        temp_receipt = receipt_path.with_name(f".{receipt_path.name}.tmp-{os.getpid()}")
+        fd, temp_name = tempfile.mkstemp(
+            prefix=f".{receipt_path.name}.tmp-", dir=receipt_path.parent
+        )
+        temp_receipt = Path(temp_name)
         try:
-            temp_receipt.write_bytes(receipt_bytes)
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(receipt_bytes)
             if dest.exists():
                 dest.rmdir()
             os.replace(extracted, dest)
