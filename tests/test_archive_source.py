@@ -5,6 +5,7 @@ import unittest
 import zipfile
 from hashlib import sha256
 from pathlib import Path
+from unittest import mock
 
 from scripts.materialize_archive_source import materialize_archive_source
 from theseus_repo_search.errors import RepoSearchError
@@ -190,6 +191,51 @@ class ArchiveMaterializerTests(unittest.TestCase):
                 )
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
             self.assertFalse(dest.exists())
+
+    def test_existing_directory_receipt_target_fails_before_publication(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            dest = root / "source"
+            receipt_path = root / "receipt-dir"
+            receipt_path.mkdir()
+            with self.assertRaises(RepoSearchError) as cm:
+                materialize_archive_source(
+                    source,
+                    dest=dest,
+                    receipt_path=receipt_path,
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(dest.exists())
+
+    def test_receipt_publication_failure_rolls_back_destination(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            dest = root / "source"
+            receipt_path = root / "receipt.json"
+            real_replace = __import__("os").replace
+
+            def fail_receipt_replace(src, dst):
+                if Path(dst) == receipt_path:
+                    raise OSError("simulated receipt publication failure")
+                return real_replace(src, dst)
+
+            with mock.patch(
+                "scripts.materialize_archive_source.os.replace", side_effect=fail_receipt_replace
+            ), self.assertRaises(RepoSearchError) as cm:
+                materialize_archive_source(
+                    source,
+                    dest=dest,
+                    receipt_path=receipt_path,
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(dest.exists())
+            self.assertFalse(receipt_path.exists())
 
     def test_existing_file_destination_fails_closed(self):
         data = zip_bytes({"pkg/Main.lean": b"x"})

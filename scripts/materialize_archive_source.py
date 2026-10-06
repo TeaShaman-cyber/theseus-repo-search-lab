@@ -102,6 +102,8 @@ def materialize_archive_source(
     receipt_path = receipt_path.resolve()
     if receipt_path == dest or receipt_path.is_relative_to(dest):
         raise _blocked(f"materialization receipt must be outside destination: {receipt_path}")
+    if receipt_path.exists():
+        raise _blocked(f"materialization receipt target already exists: {receipt_path}")
     if dest.exists() and (not dest.is_dir() or any(dest.iterdir())):
         raise _blocked(f"materialization destination is not an empty directory: {dest}")
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -137,12 +139,20 @@ def materialize_archive_source(
         receipt_bytes = (
             json.dumps(receipt, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
         ).encode("utf-8")
-        if dest.exists():
-            dest.rmdir()
-        os.replace(extracted, dest)
         temp_receipt = receipt_path.with_name(f".{receipt_path.name}.tmp-{os.getpid()}")
-        temp_receipt.write_bytes(receipt_bytes)
-        os.replace(temp_receipt, receipt_path)
+        try:
+            temp_receipt.write_bytes(receipt_bytes)
+            if dest.exists():
+                dest.rmdir()
+            os.replace(extracted, dest)
+            try:
+                os.replace(temp_receipt, receipt_path)
+            except OSError:
+                shutil.rmtree(dest, ignore_errors=True)
+                raise
+        except OSError as exc:
+            temp_receipt.unlink(missing_ok=True)
+            raise _blocked(f"cannot publish archive materialization atomically: {exc}") from exc
         return receipt
     finally:
         shutil.rmtree(stage, ignore_errors=True)

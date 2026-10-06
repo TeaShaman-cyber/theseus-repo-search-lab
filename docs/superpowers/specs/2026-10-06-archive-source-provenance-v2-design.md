@@ -212,6 +212,8 @@ The acquisition slice already defines `theseus.lean-archive-source.v1` and verif
 
 For issue #68, archive materialization must additionally persist a deterministic **member-level hash manifest** for the authoritative archive members. The manifest records each normalized archive member path and its content SHA-256 and has its own digest. Build outputs created after extraction are not added to this authority manifest.
 
+The materialized tree and its authority receipt form one logical publication boundary. The receipt path MUST be outside the destination and MUST NOT pre-exist; if publishing either output fails, the operation leaves no newly published destination or receipt.
+
 The archive materialization receipt becomes an input to exact extraction rather than an isolated preprocessing receipt.
 
 The extraction stage MUST verify that:
@@ -224,8 +226,10 @@ The extraction stage MUST verify that:
 6. every authoritative archive member is revalidated **immediately after LeanDepViz extraction and before the raw graph receipt is published**;
 7. any changed, missing, type-changed, or newly shadowing authoritative member blocks publication of the raw graph receipt;
 8. separately classified build outputs such as `.lake` products may exist without entering authority, provided they do not replace or mutate an authoritative archive member;
-9. normalized archive source chunks are enumerated only from authoritative member-manifest paths under the selected source root; a generated `.lean` file absent from that manifest MUST NOT inherit the archive revision or enter the archive artifact unless it is bound under a separate explicit authority;
-10. no Git cleanliness/readback check is required or fabricated for archive sources.
+9. normalized archive source chunks are enumerated only from authoritative member-manifest paths under the selected source root; for each file, the artifact builder hashes the exact bytes it is about to parse/serialize and requires equality with the persisted member hash, so a mutation after raw-graph publication but before normalization fails closed;
+10. every normalized in-scope node/module must bind to exactly one manifest-backed authoritative source path/chunk before serialization; a generated or otherwise unmanifested module/node MUST NOT inherit the archive revision, and edges that depend on such a node cannot enter the artifact;
+11. a generated `.lean` file absent from the manifest may enter only if it is bound under a separate explicit authority;
+12. no Git cleanliness/readback check is required or fabricated for archive sources.
 
 This closes the archive TOCTOU boundary: `lake exe cache get`, `lake build`, build hooks, or the extractor itself cannot mutate an authoritative source member while the producer continues to attest the original archive tree.
 
@@ -436,9 +440,10 @@ Required negative cases include:
 - duplicate normalized member path;
 - selected source root escaping extraction tree;
 - materialization receipt or member-manifest mismatch;
-- authoritative archive member mutation before or during extraction;
-- unmanifested generated `.lean` source entering an archive artifact;
+- authoritative archive member mutation before, during, or after extraction but before normalization consumes it;
+- unmanifested generated `.lean` source, node, module, or dependent edge entering an archive artifact;
 - materialization receipt path equal to or contained by the materialization destination;
+- pre-existing or otherwise unpublishable materialization receipt target leaving a published destination without its receipt;
 - descriptor/manifest source-kind mismatch;
 - archive URL or digest tampering after artifact publication;
 - raw dependency graph receipt not bound to the same archive authority;
@@ -488,7 +493,9 @@ The architecture is accepted only when:
 12. repository-native QA passes for the changed scope;
 13. any hosted repository-wide baseline failure is separated from PR-introduced diagnostics;
 14. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced;
-15. archive normalization cannot serialize any source file absent from the authoritative member manifest under the archive revision.
+15. archive normalization hashes each authoritative source at consumption and rejects any byte mismatch with the persisted member manifest;
+16. archive normalization cannot serialize any source file, node/module, or dependent edge absent from the authoritative member-manifest-backed source set under the archive revision;
+17. materialization publication cannot leave a newly published destination without its authority receipt after a receipt-target or receipt-publication failure.
 
 ## 17. Non-goals
 
