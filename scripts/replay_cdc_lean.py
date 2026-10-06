@@ -4,10 +4,10 @@ import argparse
 import json
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
 from theseus_repo_search.replay_contract import prepare_registered_replay
 from theseus_repo_search.retrieval import context, search
-
 
 TARGET = "CDCLean.cycleDoubleCover_of_bridgeless"
 LEXICAL_QUERY = "cycle double cover bridgeless"
@@ -43,6 +43,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
 
     return {
         "status": "PASS",
+        "artifact_identity": artifact_identity(manifest),
         "provenance": {
             "repo": manifest.source_repo,
             "commit": manifest.source_commit,
