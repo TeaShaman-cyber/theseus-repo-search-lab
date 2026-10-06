@@ -431,12 +431,21 @@ def bind_manifest_backed_node_sources(
     bound: list[Node] = []
     for node in nodes:
         expected_path = f"{node.module.replace('.', '/')}.lean"
+        candidates = by_path.get(expected_path, [])
         matches = [
             chunk
-            for chunk in by_path.get(expected_path, [])
+            for chunk in candidates
             if node.full_name == chunk.declaration_hint
             or node.full_name.endswith(f".{chunk.declaration_hint}")
         ]
+        if not matches and "." in node.full_name:
+            parent_name = node.full_name.rsplit(".", 1)[0]
+            matches = [
+                chunk
+                for chunk in candidates
+                if parent_name == chunk.declaration_hint
+                or parent_name.endswith(f".{chunk.declaration_hint}")
+            ]
         if len(matches) != 1:
             raise _source_mismatch(
                 "archive node is not backed by exactly one authoritative source chunk: "
