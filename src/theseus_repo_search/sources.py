@@ -422,18 +422,22 @@ def scan_lean_sources(
 def bind_manifest_backed_node_sources(
     nodes: list[Node], sources: list[SourceChunk]
 ) -> list[Node]:
-    by_path_and_name: dict[tuple[str, str], list[SourceChunk]] = {}
-    for chunk in sources:
-        if chunk.declaration_hint is None:
-            continue
-        by_path_and_name.setdefault(
-            (chunk.source_path, chunk.declaration_hint), []
-        ).append(chunk)
+    def matches_node(chunk: SourceChunk, node: Node, expected_path: str) -> bool:
+        hint = chunk.declaration_hint
+        if chunk.source_path != expected_path or hint is None:
+            return False
+        if hint == node.name or hint == node.full_name:
+            return True
+        return node.full_name.endswith(f".{hint}")
 
     bound: list[Node] = []
     for node in nodes:
         expected_path = f"{node.module.replace('.', '/')}.lean"
-        matches = by_path_and_name.get((expected_path, node.name), [])
+        matches = [
+            chunk
+            for chunk in sources
+            if matches_node(chunk, node, expected_path)
+        ]
         if len(matches) != 1:
             raise _source_mismatch(
                 "archive node is not backed by exactly one authoritative source chunk: "
