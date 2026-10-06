@@ -326,6 +326,31 @@ class CliTests(unittest.TestCase):
             "--out", out,
         )
 
+    def test_build_source_artifact_dispatches_archive_without_git_fields(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            out = root / "generic-artifact"
+            result = self.run_cli(
+                "build-source-artifact",
+                "--source", fixture["descriptor"],
+                "--source-root", fixture["materialized"],
+                "--source-container", fixture["materialized"],
+                "--materialization-receipt", fixture["materialization_receipt"],
+                "--member-manifest", fixture["member_manifest"],
+                "--raw-depgraph", fixture["raw"],
+                "--raw-depgraph-receipt", fixture["raw_receipt"],
+                "--producer-kind", "lean-dep-viz",
+                "--producer-tool-repo", "cameronfreer/LeanDepViz",
+                "--producer-tool-commit", TOOL_COMMIT,
+                "--producer-tool-hash", TOOL_HASH,
+                "--out", out,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            manifest, *_ = load_artifact(out)
+            self.assertEqual(manifest.schema, "theseus.repo-index.v2")
+            self.assertNotIn("source_commit", (out / "manifest.json").read_text())
+
     def test_build_archive_artifact_uses_only_manifest_backed_sources(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

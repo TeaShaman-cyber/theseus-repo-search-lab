@@ -20,7 +20,12 @@ from .graph import dependencies, path as graph_path, reverse_dependencies
 from .model import ArchiveAuthority, ArtifactScope, EvidenceGrade, ProducerPin
 from .normalize import normalize_leandepviz
 from .projection import build_projection
-from .producer_config import LeanArchiveSource, load_lean_archive_source
+from .producer_config import (
+    LeanArchiveSource,
+    LeanGitSource,
+    load_lean_archive_source,
+    load_lean_source,
+)
 from .retrieval import SearchHit, context as build_context, search as search_repo
 from .sources import (
     bind_manifest_backed_node_sources,
@@ -559,6 +564,52 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_build_source_artifact(args: argparse.Namespace) -> int:
+    source = load_lean_source(args.source)
+    if isinstance(source, LeanGitSource):
+        return _cmd_build_artifact(
+            argparse.Namespace(
+                source_root=args.source_root,
+                source_repo=source.source_repo,
+                source_commit=source.source_commit,
+                source_subdir=source.source_subdir,
+                root_module=list(source.root_modules),
+                exclude_source_prefix=list(source.exclude_source_prefixes),
+                producer_kind=args.producer_kind,
+                producer_tool_repo=args.producer_tool_repo,
+                producer_tool_commit=args.producer_tool_commit,
+                producer_tool_hash=args.producer_tool_hash,
+                authoritative_readback=True,
+                raw_depgraph=args.raw_depgraph,
+                lexical_only=False,
+                raw_depgraph_receipt=args.raw_depgraph_receipt,
+                out=args.out,
+            )
+        )
+    if isinstance(source, LeanArchiveSource):
+        if args.materialization_receipt is None or args.member_manifest is None:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "archive artifact build requires materialization receipt and member manifest",
+            )
+        return _cmd_build_archive_artifact(
+            argparse.Namespace(
+                source=args.source,
+                materialization_root=args.source_container,
+                materialization_receipt=args.materialization_receipt,
+                member_manifest=args.member_manifest,
+                raw_depgraph=args.raw_depgraph,
+                raw_depgraph_receipt=args.raw_depgraph_receipt,
+                producer_kind=args.producer_kind,
+                producer_tool_repo=args.producer_tool_repo,
+                producer_tool_commit=args.producer_tool_commit,
+                producer_tool_hash=args.producer_tool_hash,
+                out=args.out,
+            )
+        )
+    raise TypeError("unsupported Lean source descriptor type")
+
+
 def _cmd_build_archive_artifact(args: argparse.Namespace) -> int:
     source = load_lean_archive_source(args.source)
     materialization_root = args.materialization_root.resolve()
@@ -726,6 +777,23 @@ def _add_build_artifact(subparsers) -> None:
     parser.set_defaults(func=_cmd_build_artifact)
 
 
+def _add_build_source_artifact(subparsers) -> None:
+    parser = subparsers.add_parser("build-source-artifact")
+    parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path, required=True)
+    parser.add_argument("--source-container", type=Path, required=True)
+    parser.add_argument("--materialization-receipt", type=Path)
+    parser.add_argument("--member-manifest", type=Path)
+    parser.add_argument("--raw-depgraph", type=Path, required=True)
+    parser.add_argument("--raw-depgraph-receipt", type=Path, required=True)
+    parser.add_argument("--producer-kind", required=True)
+    parser.add_argument("--producer-tool-repo", required=True)
+    parser.add_argument("--producer-tool-commit", required=True)
+    parser.add_argument("--producer-tool-hash", required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    parser.set_defaults(func=_cmd_build_source_artifact)
+
+
 def _add_build_archive_artifact(subparsers) -> None:
     parser = subparsers.add_parser("build-archive-artifact")
     parser.add_argument("--source", type=Path, required=True)
@@ -746,6 +814,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="repo-search")
     subparsers = parser.add_subparsers(dest="command", required=True)
     _add_build_artifact(subparsers)
+    _add_build_source_artifact(subparsers)
     _add_build_archive_artifact(subparsers)
 
     verify = subparsers.add_parser("verify-artifact")
