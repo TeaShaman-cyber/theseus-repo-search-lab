@@ -18,7 +18,12 @@ class ConsumerReceiptTests(unittest.TestCase):
             db = root / "index.sqlite"
             build_projection(artifact, db)
             replay = root / "replay.json"
-            replay.write_text(json.dumps({"status": "PASS", "exact": {"target": "x"}}), encoding="utf-8")
+            manifest, *_ = load_artifact(artifact)
+            identity = artifact_identity(manifest)
+            replay.write_text(
+                json.dumps({"status": "PASS", "artifact_identity": identity, "exact": {"target": "x"}}),
+                encoding="utf-8",
+            )
 
             receipt = build_receipt(
                 artifact=artifact,
@@ -32,7 +37,6 @@ class ConsumerReceiptTests(unittest.TestCase):
                 workflow_sha="b" * 40,
             )
 
-            manifest, *_ = load_artifact(artifact)
             self.assertEqual(receipt["schema"], "theseus.repo-search-consumer-receipt.v1")
             self.assertEqual(receipt["result"], "PASS")
             self.assertEqual(receipt["artifact"]["identity"], artifact_identity(manifest))
@@ -40,6 +44,7 @@ class ConsumerReceiptTests(unittest.TestCase):
             self.assertEqual(receipt["projection"]["quick_check"], "ok")
             self.assertEqual(receipt["projection"]["artifact_identity"], artifact_identity(manifest))
             self.assertEqual(receipt["replay"]["status"], "PASS")
+            self.assertEqual(receipt["replay"]["artifact_identity"], identity)
             self.assertEqual(receipt["workflow"]["repository_head"], "a" * 40)
             self.assertEqual(receipt["workflow"]["run_id"], "12345")
             self.assertEqual(receipt["workflow"]["run_attempt"], "2")
@@ -54,6 +59,40 @@ class ConsumerReceiptTests(unittest.TestCase):
             replay = root / "replay.json"
             replay.write_text(json.dumps({"status": "NO_SIGNAL"}), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "replay status"):
+                build_receipt(
+                    artifact=artifact, db=db, replay=replay, artifact_name="a",
+                    repository_head="a" * 40, workflow_run_id="1", workflow_run_attempt="1",
+                    workflow_ref="wf", workflow_sha="b" * 40,
+                )
+
+
+    def test_receipt_rejects_missing_replay_artifact_identity(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = write_fixture(root)
+            db = root / "index.sqlite"
+            build_projection(artifact, db)
+            replay = root / "replay.json"
+            replay.write_text(json.dumps({"status": "PASS"}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "replay artifact identity"):
+                build_receipt(
+                    artifact=artifact, db=db, replay=replay, artifact_name="a",
+                    repository_head="a" * 40, workflow_run_id="1", workflow_run_attempt="1",
+                    workflow_ref="wf", workflow_sha="b" * 40,
+                )
+
+    def test_receipt_rejects_replay_artifact_identity_mismatch(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = write_fixture(root)
+            db = root / "index.sqlite"
+            build_projection(artifact, db)
+            replay = root / "replay.json"
+            replay.write_text(
+                json.dumps({"status": "PASS", "artifact_identity": "0" * 64}),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "replay artifact identity mismatch"):
                 build_receipt(
                     artifact=artifact, db=db, replay=replay, artifact_name="a",
                     repository_head="a" * 40, workflow_run_id="1", workflow_run_attempt="1",
