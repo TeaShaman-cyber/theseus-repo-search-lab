@@ -212,7 +212,7 @@ The acquisition slice already defines `theseus.lean-archive-source.v1` and verif
 
 For issue #68, archive materialization must additionally persist a deterministic **member-level hash manifest** for the authoritative archive members. The manifest records each normalized archive member path and its content SHA-256 and has its own digest. Build outputs created after extraction are not added to this authority manifest.
 
-The materialized tree and its authority receipt form one logical publication boundary. The receipt path and destination MUST be path-disjoint (neither equal nor ancestor/descendant), and the receipt target MUST NOT pre-exist; if publishing either output fails, the operation leaves no newly published destination or receipt.
+The materialized tree and its authority receipt form one logical publication boundary. The receipt path and destination MUST be path-disjoint (neither equal nor ancestor/descendant), and the receipt target MUST NOT pre-exist. Receipt publication MUST use an atomic no-clobber operation so a target created after preflight is never overwritten; if publishing either output fails, the operation leaves no newly published destination owned by this attempt and never removes or replaces a pre-existing/concurrently created receipt.
 
 The archive materialization receipt becomes an input to exact extraction rather than an isolated preprocessing receipt.
 
@@ -444,7 +444,7 @@ Required negative cases include:
 - authoritative archive member mutation before, during, or after extraction but before normalization consumes it;
 - unmanifested generated `.lean` source, node, module, or dependent edge entering an archive artifact;
 - materialization receipt path equal to, contained by, or an ancestor of the materialization destination;
-- pre-existing or otherwise unpublishable materialization receipt target leaving a published destination without its receipt;
+- pre-existing, concurrently created, or otherwise unpublishable materialization receipt target being overwritten or leaving a published destination without its receipt;
 - descriptor/manifest source-kind mismatch;
 - archive URL or digest tampering after artifact publication;
 - raw dependency graph receipt not bound to the same archive authority;
@@ -496,7 +496,7 @@ The architecture is accepted only when:
 14. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced;
 15. archive normalization hashes each authoritative source at consumption and rejects any byte mismatch with the persisted member manifest;
 16. archive normalization cannot serialize any source file, node/module, or dependent edge absent from the authoritative member-manifest-backed source set under the archive revision;
-17. materialization publication cannot leave a newly published destination without its authority receipt after a receipt-target or receipt-publication failure.
+17. materialization receipt publication is atomic no-clobber: a concurrently created target is preserved, never overwritten, and any destination published by the losing attempt is rolled back.
 
 ## 17. Non-goals
 

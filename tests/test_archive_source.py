@@ -255,6 +255,33 @@ class ArchiveMaterializerTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
             self.assertFalse(dest.exists())
 
+    def test_concurrent_receipt_target_is_not_overwritten(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            dest = root / "source"
+            receipt_path = root / "receipt.json"
+            real_link = __import__("os").link
+
+            def race_receipt_link(src, dst):
+                if Path(dst) == receipt_path:
+                    receipt_path.write_text("other receipt\n", encoding="utf-8")
+                return real_link(src, dst)
+
+            with mock.patch(
+                "scripts.materialize_archive_source.os.link", side_effect=race_receipt_link
+            ), self.assertRaises(RepoSearchError) as cm:
+                materialize_archive_source(
+                    source,
+                    dest=dest,
+                    receipt_path=receipt_path,
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(dest.exists())
+            self.assertEqual(receipt_path.read_text(encoding="utf-8"), "other receipt\n")
+
     def test_receipt_publication_failure_rolls_back_destination(self):
         data = zip_bytes({"pkg/Main.lean": b"x"})
         source = LeanArchiveSource.from_dict(payload(data))
@@ -262,15 +289,11 @@ class ArchiveMaterializerTests(unittest.TestCase):
             root = Path(d)
             dest = root / "source"
             receipt_path = root / "receipt.json"
-            real_replace = __import__("os").replace
-
-            def fail_receipt_replace(src, dst):
-                if Path(dst) == receipt_path:
-                    raise OSError("simulated receipt publication failure")
-                return real_replace(src, dst)
+            def fail_receipt_link(_src, _dst):
+                raise OSError("simulated receipt publication failure")
 
             with mock.patch(
-                "scripts.materialize_archive_source.os.replace", side_effect=fail_receipt_replace
+                "scripts.materialize_archive_source.os.link", side_effect=fail_receipt_link
             ), self.assertRaises(RepoSearchError) as cm:
                 materialize_archive_source(
                     source,

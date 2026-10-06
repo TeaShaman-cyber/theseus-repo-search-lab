@@ -156,10 +156,14 @@ def materialize_archive_source(
                 dest.rmdir()
             os.replace(extracted, dest)
             try:
-                os.replace(temp_receipt, receipt_path)
+                os.link(temp_receipt, receipt_path)
             except OSError:
                 shutil.rmtree(dest, ignore_errors=True)
                 raise
+            try:
+                temp_receipt.unlink()
+            except OSError:
+                pass
         except OSError as exc:
             temp_receipt.unlink(missing_ok=True)
             raise _blocked(f"cannot publish archive materialization atomically: {exc}") from exc
