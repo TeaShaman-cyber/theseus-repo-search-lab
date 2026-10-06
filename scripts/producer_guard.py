@@ -10,7 +10,12 @@ import tempfile
 from pathlib import Path
 
 from theseus_repo_search.errors import RepoSearchError
-from theseus_repo_search.producer_config import LeanArchiveSource, load_lean_archive_source
+from theseus_repo_search.producer_config import (
+    LeanArchiveSource,
+    LeanGitSource,
+    load_lean_archive_source,
+    load_lean_source,
+)
 
 if __package__:
     from .materialize_archive_source import verify_materialized_archive_members
@@ -265,6 +270,61 @@ def _publish_archive_raw_receipt(receipt_path: Path, receipt: dict[str, object])
         temp.unlink(missing_ok=True)
 
 
+def run_bound_source_extraction(
+    argv: list[str],
+    *,
+    cwd: Path,
+    source_container: Path,
+    descriptor_path: Path,
+    materialization_receipt: Path | None,
+    raw_depgraph: Path,
+    receipt_path: Path,
+    producer_kind: str,
+    producer_tool_repo: str,
+    producer_tool_commit: str,
+    producer_tool_hash: str,
+) -> None:
+    source = load_lean_source(descriptor_path)
+    if isinstance(source, LeanGitSource):
+        run_bound_extraction(
+            argv,
+            cwd=cwd,
+            repo_dir=source_container,
+            expected_commit=source.source_commit,
+            raw_depgraph=raw_depgraph,
+            receipt_path=receipt_path,
+            source_repo=source.source_repo,
+            source_subdir=source.source_subdir,
+            root_modules=source.root_modules,
+            producer_kind=producer_kind,
+            producer_tool_repo=producer_tool_repo,
+            producer_tool_commit=producer_tool_commit,
+            producer_tool_hash=producer_tool_hash,
+        )
+        return
+    if isinstance(source, LeanArchiveSource):
+        if materialization_receipt is None:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "archive extraction requires materialization receipt",
+            )
+        run_bound_archive_extraction(
+            argv,
+            cwd=cwd,
+            materialization_root=source_container,
+            materialization_receipt=materialization_receipt,
+            source=source,
+            raw_depgraph=raw_depgraph,
+            receipt_path=receipt_path,
+            producer_kind=producer_kind,
+            producer_tool_repo=producer_tool_repo,
+            producer_tool_commit=producer_tool_commit,
+            producer_tool_hash=producer_tool_hash,
+        )
+        return
+    raise TypeError("unsupported Lean source descriptor type")
+
+
 def run_bound_archive_extraction(
     argv: list[str],
     *,
@@ -399,6 +459,19 @@ def build_parser() -> argparse.ArgumentParser:
     extract.add_argument("--producer-tool-hash", required=True)
     extract.add_argument("argv", nargs=argparse.REMAINDER)
 
+    extract_source = subparsers.add_parser("extract-source")
+    extract_source.add_argument("--cwd", type=Path, required=True)
+    extract_source.add_argument("--source-container", type=Path, required=True)
+    extract_source.add_argument("--source", type=Path, required=True)
+    extract_source.add_argument("--materialization-receipt", type=Path)
+    extract_source.add_argument("--raw-depgraph", type=Path, required=True)
+    extract_source.add_argument("--receipt", type=Path, required=True)
+    extract_source.add_argument("--producer-kind", required=True)
+    extract_source.add_argument("--producer-tool-repo", required=True)
+    extract_source.add_argument("--producer-tool-commit", required=True)
+    extract_source.add_argument("--producer-tool-hash", required=True)
+    extract_source.add_argument("argv", nargs=argparse.REMAINDER)
+
     extract_archive = subparsers.add_parser("extract-archive")
     extract_archive.add_argument("--cwd", type=Path, required=True)
     extract_archive.add_argument("--materialization-root", type=Path, required=True)
@@ -433,6 +506,28 @@ def main(argv: list[str] | None = None) -> int:
                     "no exact extraction command provided",
                 )
             run_exact_command(command, args.cwd)
+        elif args.command == "extract-source":
+            command = list(args.argv)
+            if command and command[0] == "--":
+                command = command[1:]
+            if not command:
+                raise RepoSearchError(
+                    "DEGRADED_EXACT_EXTRACTION_UNAVAILABLE",
+                    "no exact extraction command provided",
+                )
+            run_bound_source_extraction(
+                command,
+                cwd=args.cwd,
+                source_container=args.source_container,
+                descriptor_path=args.source,
+                materialization_receipt=args.materialization_receipt,
+                raw_depgraph=args.raw_depgraph,
+                receipt_path=args.receipt,
+                producer_kind=args.producer_kind,
+                producer_tool_repo=args.producer_tool_repo,
+                producer_tool_commit=args.producer_tool_commit,
+                producer_tool_hash=args.producer_tool_hash,
+            )
         elif args.command == "extract-archive":
             command = list(args.argv)
             if command and command[0] == "--":

@@ -37,6 +37,72 @@ class ProducerGuardTests(unittest.TestCase):
             run_exact_command(["lake", "build", "Zeta23"], Path("target"))
         self.assertEqual(caught.exception.code, "DEGRADED_EXACT_EXTRACTION_UNAVAILABLE")
 
+    def test_generic_extraction_dispatches_by_descriptor_kind(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            git_descriptor = root / "git.json"
+            git_descriptor.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.lean-git-source.v1",
+                        "source_id": "git-fixture",
+                        "source_repo": "example/repo",
+                        "source_commit": "a" * 40,
+                        "source_subdir": "pkg",
+                        "root_modules": ["Main"],
+                        "build_target": "Main",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            archive_descriptor = root / "archive.json"
+            archive_descriptor.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.lean-archive-source.v1",
+                        "source_id": "archive-fixture",
+                        "archive_url": "https://example.invalid/source.zip",
+                        "archive_sha256": "e" * 64,
+                        "archive_format": "zip",
+                        "source_subdir": "pkg",
+                        "root_modules": ["Main"],
+                        "build_target": "Main",
+                        "exclude_source_prefixes": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            common = {
+                "argv": ["lake", "env", "lean"],
+                "cwd": root / "source" / "pkg",
+                "source_container": root / "source",
+                "raw_depgraph": root / "raw.json",
+                "receipt_path": root / "raw-receipt.json",
+                "producer_kind": "lean-dep-viz",
+                "producer_tool_repo": "cameronfreer/LeanDepViz",
+                "producer_tool_commit": "b" * 40,
+                "producer_tool_hash": "c" * 64,
+            }
+            with patch.object(producer_guard, "run_bound_extraction") as git_run, patch.object(
+                producer_guard, "run_bound_archive_extraction"
+            ) as archive_run:
+                producer_guard.run_bound_source_extraction(
+                    descriptor_path=git_descriptor,
+                    materialization_receipt=None,
+                    **common,
+                )
+                git_run.assert_called_once()
+                archive_run.assert_not_called()
+
+                git_run.reset_mock()
+                producer_guard.run_bound_source_extraction(
+                    descriptor_path=archive_descriptor,
+                    materialization_receipt=root / "materialization.json",
+                    **common,
+                )
+                archive_run.assert_called_once()
+                git_run.assert_not_called()
+
     def test_archive_bound_extraction_writes_v3_without_fake_git_fields(self):
         import zipfile
 

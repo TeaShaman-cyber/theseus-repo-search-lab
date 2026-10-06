@@ -14,6 +14,7 @@ ALL_REPLAYS = (
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
     "scripts/replay_ten_proofs_multicolor.py",
+    "scripts/replay_decreasing_diagrams.py",
 )
 ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_zeta23.py",
@@ -22,6 +23,7 @@ ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
     "scripts/replay_ten_proofs_multicolor.py",
+    "scripts/replay_decreasing_diagrams.py",
 )
 REQUIRED = (
     "scripts/producer_guard.py",
@@ -61,14 +63,83 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertNotIn("_out/raw-depgraph-receipt.json", upload)
         self.assertIn("authority-receipt.json", text)
 
-    def test_source_exclusions_are_wired_only_into_artifact_build(self):
+    def test_source_exclusions_are_descriptor_driven_after_generic_dispatch(self):
         text = GENERIC.read_text(encoding="utf-8")
-        extract = text.split("- name: Extract exact declaration graph", 1)[1].split("- name: Install repository lens package", 1)[0]
-        build = text.split("- name: Build normalized artifact", 1)[1].split("- name: Verify project and replay selected source", 1)[0]
+        extract = text.split("- name: Extract exact declaration graph", 1)[1].split(
+            "- name: Install repository lens package", 1
+        )[0]
+        build = text.split("- name: Build normalized artifact", 1)[1].split(
+            "- name: Verify project and replay selected source", 1
+        )[0]
         self.assertNotIn("exclude_args", extract)
-        self.assertIn("exclude_args=()", build)
-        self.assertIn("--exclude-source-prefix", build)
-        self.assertIn('"${exclude_args[@]}"', build)
+        self.assertNotIn("exclude_args", build)
+        self.assertNotIn("--exclude-source-prefix", build)
+        self.assertIn("build-source-artifact", build)
+        self.assertIn('"${{ matrix.source_descriptor }}"', build)
+
+    def test_archive_row_and_source_kind_acquisition_dispatch_are_explicit(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        producer = text.split("  produce-and-replay:\n", 1)[1].split("  consume-artifact:\n", 1)[0]
+        consumer = text.split("  consume-artifact:\n", 1)[1]
+
+        archive_row = (
+            "producer/sources/decreasing-diagrams-complete.json",
+            "scripts/replay_decreasing_diagrams.py",
+            "decreasing-diagrams-complete-repo-index-v2",
+        )
+        pattern = re.compile(
+            r"- source_descriptor:\s*(\S+)\n\s*replay_script:\s*(\S+)\n\s*artifact_name:\s*(\S+)"
+        )
+        producer_rows = pattern.findall(producer)
+        consumer_rows = pattern.findall(consumer)
+        self.assertIn(archive_row, producer_rows)
+        self.assertIn(archive_row, consumer_rows)
+        self.assertEqual(producer.count("source_kind: archive"), 1)
+        self.assertEqual(consumer.count("source_kind: archive"), 1)
+
+        expected_git_rows = [
+            ("producer/sources/zeta23.json", "scripts/replay_zeta23.py", "zeta23-repo-index-v1"),
+            ("producer/sources/openai-long-gaps.json", "scripts/replay_long_gaps.py", "openai-long-gaps-repo-index-v1"),
+            ("producer/sources/leanprover-community-flt-regular.json", "scripts/replay_flt_regular.py", "leanprover-community-flt-regular-repo-index-v1"),
+            ("producer/sources/openai-cdc-lean.json", "scripts/replay_cdc_lean.py", "openai-cdc-lean-repo-index-v1"),
+            ("producer/sources/leanprover-community-con-nf.json", "scripts/replay_con_nf.py", "leanprover-community-con-nf-repo-index-v1"),
+            ("producer/sources/openai-ten-proofs-multicolor.json", "scripts/replay_ten_proofs_multicolor.py", "openai-ten-proofs-multicolor-repo-index-v1"),
+        ]
+        self.assertEqual(producer_rows[:6], expected_git_rows)
+        self.assertEqual(consumer_rows[:6], expected_git_rows)
+
+        checkout = producer.split("- name: Checkout pinned source", 1)[1].split(
+            "- name: Materialize pinned archive source", 1
+        )[0]
+        materialize = producer.split("- name: Materialize pinned archive source", 1)[1].split(
+            "- name: Verify exact source readback", 1
+        )[0]
+        git_readback = producer.split("- name: Verify exact source readback", 1)[1].split(
+            "- name: Verify archive materialization readback", 1
+        )[0]
+        archive_readback = producer.split(
+            "- name: Verify archive materialization readback", 1
+        )[1].split("- name: Resolve canonical source root", 1)[0]
+        self.assertIn("if: matrix.source_kind != 'archive'", checkout)
+        self.assertIn("if: matrix.source_kind == 'archive'", materialize)
+        self.assertIn("scripts/materialize_archive_source.py", materialize)
+        self.assertIn('"${{ matrix.source_descriptor }}"', materialize)
+        self.assertIn("if: matrix.source_kind != 'archive'", git_readback)
+        self.assertIn("if: matrix.source_kind == 'archive'", archive_readback)
+        self.assertIn("verify_materialized_archive_members", archive_readback)
+
+        shared = producer.split("- name: Resolve canonical source root", 1)[1]
+        self.assertNotIn("if: matrix.source_kind", shared)
+        self.assertNotIn("if: env.SOURCE_KIND", shared)
+        self.assertNotIn('case "$SOURCE_KIND"', shared)
+        self.assertNotIn("SOURCE_COMMIT", shared)
+        self.assertNotIn("SOURCE_REPO", shared)
+        self.assertIn("extract-source", shared)
+        self.assertIn("build-source-artifact", shared)
+        self.assertNotRegex(materialize, r"SOURCE_COMMIT|--commit|--expected")
+        self.assertNotRegex(archive_readback, r"SOURCE_COMMIT|--commit|--expected")
+        self.assertNotIn("ARCHIVE_SHA256", checkout)
+        self.assertNotIn("ARCHIVE_SHA256", git_readback)
 
     def test_prime_gaps_is_not_in_default_generic_matrix(self):
         text = GENERIC.read_text(encoding="utf-8")

@@ -38,6 +38,10 @@ jobs:
           - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
             replay_script: scripts/replay_ten_proofs_multicolor.py
             artifact_name: openai-ten-proofs-multicolor-repo-index-v1
+          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
+            replay_script: scripts/replay_decreasing_diagrams.py
+            artifact_name: decreasing-diagrams-complete-repo-index-v2
+            source_kind: archive
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -54,6 +58,7 @@ jobs:
             --github-env "$GITHUB_ENV"
 
       - name: Checkout pinned source
+        if: matrix.source_kind != 'archive'
         shell: bash
         run: |
           set -euo pipefail
@@ -62,7 +67,19 @@ jobs:
             --commit "$SOURCE_COMMIT" \
             --dest _target/source
 
+      - name: Materialize pinned archive source
+        if: matrix.source_kind == 'archive'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          python3 scripts/materialize_archive_source.py \
+            --source "${{ matrix.source_descriptor }}" \
+            --dest _target/source \
+            --receipt _out/source-materialization.json
+
       - name: Verify exact source readback
+        if: matrix.source_kind != 'archive'
         shell: bash
         run: |
           set -euo pipefail
@@ -70,6 +87,30 @@ jobs:
             --repo-dir _target/source \
             --expected "$SOURCE_COMMIT"
           printf "source_readback=%s\n" "$(git -C _target/source rev-parse HEAD)"
+
+      - name: Verify archive materialization readback
+        if: matrix.source_kind == 'archive'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "${{ matrix.source_descriptor }}" \
+            "$GITHUB_WORKSPACE/_target/source" \
+            "$GITHUB_WORKSPACE/_out/source-materialization.json" <<'PY_ARCHIVE_READBACK'
+          import sys
+          from pathlib import Path
+
+          from scripts.materialize_archive_source import verify_materialized_archive_members
+          from theseus_repo_search.producer_config import load_lean_archive_source
+
+          descriptor = Path(sys.argv[1])
+          materialization_root = Path(sys.argv[2])
+          receipt = Path(sys.argv[3])
+          source = load_lean_archive_source(descriptor)
+          members = verify_materialized_archive_members(
+              source, dest=materialization_root, receipt_path=receipt
+          )
+          print(f"archive_member_count={len(members['members'])}")
+          PY_ARCHIVE_READBACK
 
       - name: Resolve canonical source root
         shell: bash
@@ -188,20 +229,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _out
-          root_args=()
-          IFS="," read -r -a roots <<< "$ROOT_MODULES_CSV"
-          for root in "${roots[@]}"; do
-            root_args+=(--root-module "$root")
-          done
-          python3 scripts/producer_guard.py extract \
+          python3 scripts/producer_guard.py extract-source \
             --cwd "$SOURCE_ROOT" \
-            --repo-dir "$GITHUB_WORKSPACE/_target/source" \
-            --expected "$SOURCE_COMMIT" \
+            --source-container "$GITHUB_WORKSPACE/_target/source" \
+            --source "${{ matrix.source_descriptor }}" \
+            --materialization-receipt "$GITHUB_WORKSPACE/_out/source-materialization.json" \
             --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
             --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
-            --source-repo "$SOURCE_REPO" \
-            --source-subdir "$SOURCE_SUBDIR" \
-            "${root_args[@]}" \
             --producer-kind lean-dep-viz \
             --producer-tool-repo "$EXTRACTOR_REPO" \
             --producer-tool-commit "$EXTRACTOR_COMMIT" \
@@ -217,32 +251,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          root_args=()
-          IFS="," read -r -a roots <<< "$ROOT_MODULES_CSV"
-          for root in "${roots[@]}"; do
-            root_args+=(--root-module "$root")
-          done
-          exclude_args=()
-          if [ -n "$EXCLUDE_SOURCE_PREFIXES_CSV" ]; then
-            IFS="," read -r -a excludes <<< "$EXCLUDE_SOURCE_PREFIXES_CSV"
-            for prefix in "${excludes[@]}"; do
-              exclude_args+=(--exclude-source-prefix "$prefix")
-            done
-          fi
-          python3 -m theseus_repo_search build-artifact \
+          python3 -m theseus_repo_search build-source-artifact \
+            --source "${{ matrix.source_descriptor }}" \
             --source-root "$SOURCE_ROOT" \
-            --source-repo "$SOURCE_REPO" \
-            --source-commit "$SOURCE_COMMIT" \
-            --source-subdir "$SOURCE_SUBDIR" \
-            "${root_args[@]}" \
-            "${exclude_args[@]}" \
+            --source-container "$GITHUB_WORKSPACE/_target/source" \
+            --materialization-receipt "$GITHUB_WORKSPACE/_out/source-materialization.json" \
+            --member-manifest "$GITHUB_WORKSPACE/_out/source-materialization.members.json" \
+            --raw-depgraph _out/raw-depgraph.json \
+            --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
             --producer-kind lean-dep-viz \
             --producer-tool-repo "$EXTRACTOR_REPO" \
             --producer-tool-commit "$EXTRACTOR_COMMIT" \
             --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" \
-            --authoritative-readback \
-            --raw-depgraph _out/raw-depgraph.json \
-            --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
             --out "_out/${SOURCE_ID}-artifact"
           test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
 
@@ -265,7 +285,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite" _out/raw-depgraph-receipt.json
+          rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite" _out/raw-depgraph-receipt.json \
+            _out/source-materialization.json _out/source-materialization.members.json
           test ! -e _out/raw-depgraph.json
           test ! -e "_out/${SOURCE_ID}.sqlite"
           test ! -e _out/raw-depgraph-receipt.json
@@ -308,6 +329,10 @@ jobs:
           - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
             replay_script: scripts/replay_ten_proofs_multicolor.py
             artifact_name: openai-ten-proofs-multicolor-repo-index-v1
+          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
+            replay_script: scripts/replay_decreasing_diagrams.py
+            artifact_name: decreasing-diagrams-complete-repo-index-v2
+            source_kind: archive
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
