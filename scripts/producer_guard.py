@@ -321,7 +321,7 @@ def run_bound_archive_extraction(
             f"exact extraction did not produce raw dependency graph: {raw_depgraph}",
         ) from exc
 
-    receipt = {
+    receipt: dict[str, object] = {
         "schema": "theseus.raw-depgraph-receipt.v3",
         "source": {
             "kind": "archive",
