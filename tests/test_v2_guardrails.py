@@ -4,7 +4,6 @@ from pathlib import Path
 
 from scripts.write_consumer_receipt import build_receipt
 from theseus_repo_search.artifact import write_archive_artifact_v2
-from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.model import ArchiveAuthority, ArtifactScope, ProducerPin
 from theseus_repo_search.projection import build_projection
 from theseus_repo_search.replay_contract import prepare_registered_replay
@@ -38,12 +37,14 @@ def write_v2(path: Path) -> Path:
 
 
 class V2GuardrailTests(unittest.TestCase):
-    def test_projection_rejects_v2_until_task6(self):
+    def test_projection_accepts_v2_from_task6_onward(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             artifact = write_v2(root / "artifact")
-            with self.assertRaisesRegex(RepoSearchError, "repo-index.v2"):
-                build_projection(artifact, root / "index.sqlite")
+            db = root / "index.sqlite"
+            fingerprint = build_projection(artifact, db)
+            self.assertTrue(fingerprint)
+            self.assertTrue(db.is_file())
 
     def test_registered_replay_rejects_v2_until_task7(self):
         with tempfile.TemporaryDirectory() as d:
