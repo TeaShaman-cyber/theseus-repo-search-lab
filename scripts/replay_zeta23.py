@@ -7,7 +7,10 @@ from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies, reverse_dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+)
 from theseus_repo_search.retrieval import search
 from theseus_repo_search.sources import tracked_lean_files
 
@@ -102,11 +105,7 @@ def run_replay(
     return {
         "status": "PASS",
         "artifact_identity": artifact_identity(manifest),
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "graph": {
             "lemmaR_tight_two": {
                 "required_target": required_tight,
