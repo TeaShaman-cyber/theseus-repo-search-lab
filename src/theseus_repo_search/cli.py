@@ -407,6 +407,11 @@ def _load_archive_materialization_evidence(
             "BLOCKED_SOURCE_MISMATCH",
             "archive member manifest source-root mapping mismatch",
         )
+    if not isinstance(tree_sha256, str) or not isinstance(member_manifest_sha256, str):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive materialization digest types changed after validation",
+        )
     return tree_sha256, member_manifest_sha256
 
 
