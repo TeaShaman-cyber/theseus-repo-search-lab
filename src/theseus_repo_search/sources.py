@@ -12,7 +12,7 @@ from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
 from .errors import RepoSearchError
-from .model import Node, SourceChunk
+from .model import Edge, Node, SourceChunk
 
 
 DECL_RE = re.compile(
@@ -419,6 +419,14 @@ def scan_lean_sources(
     return sorted(chunks, key=lambda chunk: (chunk.source_path, chunk.source_start_line, chunk.id))
 
 
+def _full_name_matches_hint(full_name: str, hint: str) -> bool:
+    return full_name == hint or full_name.endswith(f".{hint}")
+
+
+def _chunk_declares_member(chunk: SourceChunk, name: str) -> bool:
+    return re.search(rf"(?m)^[ \t]*{re.escape(name)}[ \t]*:", chunk.text) is not None
+
+
 def bind_manifest_backed_node_sources(
     nodes: list[Node], sources: list[SourceChunk]
 ) -> list[Node]:
@@ -432,25 +440,44 @@ def bind_manifest_backed_node_sources(
     for node in nodes:
         expected_path = f"{node.module.replace('.', '/')}.lean"
         candidates = by_path.get(expected_path, [])
+        if not candidates:
+            raise _source_mismatch(
+                "archive node belongs to a module with no manifest-backed source chunks: "
+                f"{node.full_name} -> {expected_path}"
+            )
+
         matches = [
             chunk
             for chunk in candidates
-            if node.full_name == chunk.declaration_hint
-            or node.full_name.endswith(f".{chunk.declaration_hint}")
+            if chunk.declaration_hint is not None
+            and _full_name_matches_hint(node.full_name, chunk.declaration_hint)
         ]
+        if len(matches) > 1:
+            raise _source_mismatch(
+                "archive node is ambiguously backed by authoritative source chunks: "
+                f"{node.full_name} -> {expected_path}"
+            )
+
         if not matches and "." in node.full_name:
             parent_name = node.full_name.rsplit(".", 1)[0]
             matches = [
                 chunk
                 for chunk in candidates
-                if parent_name == chunk.declaration_hint
-                or parent_name.endswith(f".{chunk.declaration_hint}")
+                if chunk.declaration_hint is not None
+                and _full_name_matches_hint(parent_name, chunk.declaration_hint)
+                and _chunk_declares_member(chunk, node.name)
             ]
-        if len(matches) != 1:
-            raise _source_mismatch(
-                "archive node is not backed by exactly one authoritative source chunk: "
-                f"{node.full_name} -> {expected_path}"
-            )
+            if len(matches) > 1:
+                raise _source_mismatch(
+                    "archive node member is ambiguously backed by authoritative source chunks: "
+                    f"{node.full_name} -> {expected_path}"
+                )
+
+        if not matches:
+            # The module itself is manifest-backed, but this declaration has no lexical
+            # source evidence. Compiler-generated helpers must not inherit archive authority.
+            continue
+
         chunk = matches[0]
         if chunk.source_revision != node.source_revision:
             raise _source_mismatch(
@@ -465,6 +492,17 @@ def bind_manifest_backed_node_sources(
             )
         )
     return bound
+
+
+def filter_manifest_backed_edges(
+    edges: list[Edge], bound_nodes: list[Node]
+) -> list[Edge]:
+    node_ids = {node.id for node in bound_nodes}
+    return [
+        edge
+        for edge in edges
+        if edge.source_id in node_ids and edge.target_id in node_ids
+    ]
 
 
 def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Node]:

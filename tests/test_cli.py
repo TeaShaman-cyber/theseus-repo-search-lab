@@ -163,10 +163,21 @@ class CliTests(unittest.TestCase):
             text=True,
         )
 
-    def write_archive_build_fixture(self, root: Path, *, unbacked_node: bool = False):
+    def write_archive_build_fixture(
+        self,
+        root: Path,
+        *,
+        unbacked_node: bool = False,
+        generated_descendant: bool = False,
+        structure_driver: bool = False,
+    ):
         materialized = root / "materialized"
         (materialized / "Pkg").mkdir(parents=True)
-        main_bytes = b"theorem ok : True := by trivial\n"
+        main_bytes = (
+            b"structure Driver where\n  aleph0_le : True\n"
+            if structure_driver
+            else b"theorem ok : True := by trivial\n"
+        )
         toolchain_bytes = b"leanprover/lean4:v4.30.0\n"
         (materialized / "Pkg" / "Main.lean").write_bytes(main_bytes)
         (materialized / "lean-toolchain").write_bytes(toolchain_bytes)
@@ -244,13 +255,25 @@ class CliTests(unittest.TestCase):
             encoding="utf-8",
         )
         raw_nodes = [
-            {
-                "module": "Pkg.Main",
-                "fullName": "Pkg.Main.ok",
-                "name": "ok",
-                "kind": "thm",
-            }
+            (
+                {
+                    "module": "Pkg.Main",
+                    "fullName": "Pkg.Driver.aleph0_le",
+                    "name": "aleph0_le",
+                    "kind": "def",
+                }
+                if structure_driver
+                else {
+                    "module": "Pkg.Main",
+                    "fullName": "Pkg.Main.ok",
+                    "name": "ok",
+                    "kind": "thm",
+                }
+            )
         ]
+        authoritative_name = (
+            "Pkg.Driver.aleph0_le" if structure_driver else "Pkg.Main.ok"
+        )
         raw_edges = []
         if unbacked_node:
             raw_nodes.append(
@@ -265,7 +288,26 @@ class CliTests(unittest.TestCase):
                 {
                     "kind": "value",
                     "source": "Pkg.Generated.injected",
-                    "target": "Pkg.Main.ok",
+                    "target": authoritative_name,
+                }
+            )
+        if generated_descendant:
+            generated_name = (
+                "Pkg.Driver.mk.inj" if structure_driver else "Pkg.Main.ok._proof_1"
+            )
+            raw_nodes.append(
+                {
+                    "module": "Pkg.Main",
+                    "fullName": generated_name,
+                    "name": "inj" if structure_driver else "_proof_1",
+                    "kind": "thm",
+                }
+            )
+            raw_edges.append(
+                {
+                    "kind": "value",
+                    "source": generated_name,
+                    "target": authoritative_name,
                 }
             )
         raw = root / "raw.json"
@@ -390,6 +432,22 @@ class CliTests(unittest.TestCase):
             manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
             with self.assertRaisesRegex(RepoSearchError, "lacks source binding"):
                 load_artifact(out)
+
+    def test_build_archive_artifact_drops_generated_descendant_and_edges(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(
+                root, generated_descendant=True, structure_driver=True
+            )
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            _manifest, nodes, edges, _sources = load_artifact(out)
+            self.assertEqual(
+                [node.full_name for node in nodes], ["Pkg.Driver.aleph0_le"]
+            )
+            self.assertEqual([node.source_path for node in nodes], ["Pkg/Main.lean"])
+            self.assertEqual(edges, [])
 
     def test_build_archive_artifact_rejects_source_mutation_after_raw_receipt(self):
         with tempfile.TemporaryDirectory() as d:

@@ -438,7 +438,6 @@ class SourceChunkTests(unittest.TestCase):
         self.assertEqual(bound[0].source_end_line, 570)
 
     def test_manifest_backed_binding_does_not_use_non_immediate_ancestor(self):
-        from theseus_repo_search.errors import RepoSearchError
         from theseus_repo_search.sources import bind_manifest_backed_node_sources
 
         text = "structure Outer where\n  marker : True\n"
@@ -460,9 +459,56 @@ class SourceChunkTests(unittest.TestCase):
             source_commit="a" * 64,
         )
 
-        with self.assertRaises(RepoSearchError) as caught:
-            bind_manifest_backed_node_sources([node], [source])
-        self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+        self.assertEqual(
+            bind_manifest_backed_node_sources([node], [source]),
+            [],
+        )
+
+    def test_manifest_backed_binding_drops_unwritten_immediate_member(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "structure Driver where\n  aleph0_le : True\n"
+        source = SourceChunk(
+            id="src:Regular.lean:1:2",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=1,
+            source_end_line=2,
+            declaration_hint="Driver",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.Driver.synthetic",
+            name="synthetic",
+            kind="def",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+        self.assertEqual(bind_manifest_backed_node_sources([node], [source]), [])
+
+    def test_manifest_backed_binding_drops_compiler_generated_descendant(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "structure Driver where\n  aleph0_le : True\n"
+        source = SourceChunk(
+            id="src:Regular.lean:1:2",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=1,
+            source_end_line=2,
+            declaration_hint="Driver",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.Driver.mk.inj",
+            name="inj",
+            kind="thm",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+        self.assertEqual(bind_manifest_backed_node_sources([node], [source]), [])
 
     def test_manifest_backed_binding_rejects_unbacked_node_module(self):
         from theseus_repo_search.errors import RepoSearchError
