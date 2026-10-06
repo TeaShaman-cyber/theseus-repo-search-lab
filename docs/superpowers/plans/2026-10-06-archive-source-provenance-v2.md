@@ -239,6 +239,10 @@ The remaining work begins at the provenance boundary after verified materializat
 - Modify: `scripts/load_producer_env.py` only if the current generic mapping is insufficient
 - Modify: `tests/test_workflow_structure.py`
 - Modify: `tests/test_load_producer_env.py`
+- Modify: `scripts/producer_guard.py` for generic `extract-source` dispatch after acquisition/readback
+- Modify: `src/theseus_repo_search/cli.py` for generic `build-source-artifact` dispatch after acquisition/readback
+- Add: `scripts/replay_decreasing_diagrams.py` for the registered #67 replay target
+- Modify: `tests/test_producer_guard.py` and `tests/test_cli.py` for generic dispatcher coverage
 - Use existing: `producer/sources/decreasing-diagrams-complete.json`
 
 **Rules:**
@@ -247,11 +251,11 @@ The remaining work begins at the provenance boundary after verified materializat
 - no Zenodo special-case;
 - archive workflow row stays disabled until Tasks 1-7 are merged/verified in the same branch state.
 
-- [ ] RED structural test requiring explicit source-kind acquisition dispatch and forbidding archive SHA in Git commit env/arguments.
-- [ ] Add archive row for #67 exact descriptor.
-- [ ] Preserve all existing Git matrix rows unchanged.
-- [ ] Run `./tools/dev/check` and workflow-structure tests.
-- [ ] Push exact head and inspect hosted checks; do not infer hosted success from local QA.
+- [x] RED structural test requiring explicit source-kind acquisition dispatch and forbidding archive SHA in Git commit env/arguments.
+- [x] Add archive row for #67 exact descriptor.
+- [x] Preserve all existing Git matrix rows unchanged.
+- [x] Run `./tools/dev/check` and workflow-structure tests.
+- [x] Push exact head and inspect hosted checks; do not infer hosted success from local QA.
 
 **Checkpoint:** hosted producer can attempt the archive corpus through the generic path.
 
