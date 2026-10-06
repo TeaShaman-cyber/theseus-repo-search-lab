@@ -7,7 +7,9 @@ import sqlite3
 from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity, load_artifact
-from theseus_repo_search.model import ArtifactManifest
+from theseus_repo_search.model import ArtifactManifest, ArtifactManifestV2
+from theseus_repo_search.projection import read_projection_provenance
+from theseus_repo_search.replay_contract import validate_registered_replay_provenance
 
 SCHEMA = "theseus.repo-search-consumer-receipt.v1"
 
@@ -29,14 +31,13 @@ def build_receipt(
     workflow_sha: str,
 ) -> dict[str, object]:
     manifest, *_ = load_artifact(artifact)
-    if not isinstance(manifest, ArtifactManifest):
-        raise TypeError("consumer receipt v1 does not support repo-index.v2 yet")
     expected_identity = artifact_identity(manifest)
 
     with sqlite3.connect(db) as conn:
         quick_row = conn.execute("PRAGMA quick_check").fetchone()
         quick_check = None if quick_row is None else str(quick_row[0])
         projection_meta = dict(conn.execute("SELECT key, value FROM meta"))
+        projection_provenance = read_projection_provenance(conn)
 
     if quick_check != "ok":
         raise ValueError(f"SQLite quick_check failed: {quick_check}")
@@ -47,6 +48,34 @@ def build_receipt(
             "projection artifact identity mismatch: "
             f"expected={expected_identity} observed={projected_identity}"
         )
+
+    if isinstance(manifest, ArtifactManifestV2):
+        authority = manifest.source_authority
+        expected_projection_authority = {
+            "kind": "archive",
+            "url": authority.url,
+            "sha256": authority.sha256,
+            "format": authority.format,
+            "subdir": authority.subdir,
+        }
+        if (
+            projection_provenance.source_kind != "archive"
+            or projection_provenance.source_revision != manifest.source_revision
+            or projection_provenance.source_authority != expected_projection_authority
+            or projection_provenance.created_from_authoritative_source
+            != manifest.created_from_authoritative_source
+        ):
+            raise ValueError("projection provenance mismatch for archive artifact")
+    elif isinstance(manifest, ArtifactManifest):
+        if (
+            projection_provenance.source_kind != "git"
+            or projection_provenance.source_revision != manifest.source_commit
+            or projection_provenance.created_from_authoritative_source
+            != manifest.created_from_authoritative_commit
+        ):
+            raise ValueError("projection provenance mismatch for Git artifact")
+    else:
+        raise TypeError("unsupported artifact manifest type")
 
     replay_payload = json.loads(replay.read_text(encoding="utf-8"))
     replay_status = replay_payload.get("status")
@@ -61,6 +90,33 @@ def build_receipt(
             f"expected={expected_identity} observed={replay_identity}"
         )
 
+    if isinstance(manifest, ArtifactManifestV2):
+        validate_registered_replay_provenance(
+            artifact, manifest, replay_payload.get("provenance")
+        )
+        authority = manifest.source_authority
+        artifact_payload: dict[str, object] = {
+            "name": artifact_name,
+            "identity": expected_identity,
+            "source": {
+                "kind": "archive",
+                "url": authority.url,
+                "sha256": authority.sha256,
+                "format": authority.format,
+                "subdir": authority.subdir,
+            },
+        }
+    elif isinstance(manifest, ArtifactManifest):
+        artifact_payload = {
+            "name": artifact_name,
+            "identity": expected_identity,
+            "source_repo": manifest.source_repo,
+            "source_commit": manifest.source_commit,
+            "source_subdir": manifest.source_subdir,
+        }
+    else:
+        raise TypeError("unsupported artifact manifest type")
+
     return {
         "schema": SCHEMA,
         "result": "PASS",
@@ -71,13 +127,7 @@ def build_receipt(
             "workflow_ref": workflow_ref,
             "workflow_sha": workflow_sha,
         },
-        "artifact": {
-            "name": artifact_name,
-            "identity": expected_identity,
-            "source_repo": manifest.source_repo,
-            "source_commit": manifest.source_commit,
-            "source_subdir": manifest.source_subdir,
-        },
+        "artifact": artifact_payload,
         "projection": {
             "quick_check": quick_check,
             "artifact_identity": projected_identity,

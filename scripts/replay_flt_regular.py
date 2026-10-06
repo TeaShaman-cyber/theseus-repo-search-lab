@@ -6,7 +6,10 @@ from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+)
 from theseus_repo_search.retrieval import context, search
 
 TARGET = "flt_regular"
@@ -44,11 +47,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
     return {
         "status": "PASS",
         "artifact_identity": artifact_identity(manifest),
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "exact": {
             "target": TARGET,
             "source_path": exact_hits[0].source_path,
