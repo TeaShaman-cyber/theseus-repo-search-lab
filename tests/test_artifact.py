@@ -10,6 +10,7 @@ from theseus_repo_search.artifact import (
     _write_artifact_contents,
     artifact_identity,
     load_artifact,
+    write_archive_artifact_v2,
     write_artifact,
 )
 from theseus_repo_search.errors import RepoSearchError
@@ -115,7 +116,241 @@ def write_sample(path: Path, *, nodes=None, edges=None, sources=_DEFAULT, scope=
     )
 
 
+ARCHIVE_SHA256 = "4" * 64
+ARCHIVE_URL = "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip"
+
+
+def write_v2_archive_fixture(path: Path, *, revision_key: str = "source_revision") -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    node = {
+        "id": "lean:Regular.Main.demo",
+        "full_name": "Regular.Main.demo",
+        "name": "demo",
+        "kind": "thm",
+        "module": "Regular.Main",
+        "source_path": None,
+        "source_start_line": None,
+        "source_end_line": None,
+        revision_key: ARCHIVE_SHA256,
+    }
+    nodes_bytes = (
+        json.dumps(node, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
+    edges_bytes = b""
+    (path / "nodes.jsonl").write_bytes(nodes_bytes)
+    (path / "edges.jsonl").write_bytes(edges_bytes)
+    manifest = {
+        "schema": "theseus.repo-index.v2",
+        "source": {
+            "kind": "archive",
+            "url": ARCHIVE_URL,
+            "sha256": ARCHIVE_SHA256,
+            "format": "zip",
+            "subdir": "decreasing-diagrams-lean",
+        },
+        "producer": {
+            "kind": PRODUCER.kind,
+            "tool_repo": PRODUCER.tool_repo,
+            "tool_commit": PRODUCER.tool_commit,
+            "tool_hash": PRODUCER.tool_hash,
+        },
+        "scope": {
+            "root_modules": ["Regular"],
+            "dependency_boundary": "internal_only",
+        },
+        "members": {
+            "nodes": {"sha256": hashlib.sha256(nodes_bytes).hexdigest()},
+            "edges": {"sha256": hashlib.sha256(edges_bytes).hexdigest()},
+            "sources": {"sha256": None},
+            "authority_receipt": {"sha256": None},
+        },
+        "counts": {"nodes": 1, "edges": 0},
+        "created_from_authoritative_source": False,
+    }
+    (path / "manifest.json").write_text(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+
+
 class ArtifactTests(unittest.TestCase):
+    def test_loads_v2_archive_fixture_with_structured_authority(self):
+        from theseus_repo_search.model import ArchiveAuthority
+
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_v2_archive_fixture(path)
+            manifest, nodes, edges, sources = load_artifact(path)
+
+        self.assertEqual(manifest.schema, "theseus.repo-index.v2")
+        self.assertEqual(
+            manifest.source_authority,
+            ArchiveAuthority(
+                url=ARCHIVE_URL,
+                sha256=ARCHIVE_SHA256,
+                format="zip",
+                subdir="decreasing-diagrams-lean",
+            ),
+        )
+        self.assertEqual(manifest.source_revision, ARCHIVE_SHA256)
+        self.assertFalse(manifest.created_from_authoritative_source)
+        self.assertEqual(nodes[0].source_revision, ARCHIVE_SHA256)
+        self.assertEqual(edges, [])
+        self.assertEqual(sources, [])
+
+    def test_v2_node_rejects_source_commit_field(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_v2_archive_fixture(path, revision_key="source_commit")
+            with self.assertRaises(RepoSearchError):
+                load_artifact(path)
+
+    def test_v2_writer_serializes_only_generic_revision_fields(self):
+        from theseus_repo_search.model import ArchiveAuthority
+
+        node = Node.from_lean(
+            full_name="Regular.Main.demo",
+            name="demo",
+            kind="thm",
+            module="Regular.Main",
+            source_commit=ARCHIVE_SHA256,
+        )
+        text = "theorem demo : True := by trivial\n"
+        source = SourceChunk(
+            id="src:Regular/Main.lean:1:1",
+            source_commit=ARCHIVE_SHA256,
+            source_path="Regular/Main.lean",
+            source_start_line=1,
+            source_end_line=1,
+            declaration_hint="demo",
+            text=text,
+            content_sha256=hashlib.sha256(text.encode()).hexdigest(),
+        )
+        authority = ArchiveAuthority(
+            url=ARCHIVE_URL, sha256=ARCHIVE_SHA256, format="zip", subdir="pkg"
+        )
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "artifact"
+            manifest = write_archive_artifact_v2(
+                path,
+                nodes=[node],
+                edges=[],
+                sources=[source],
+                source_authority=authority,
+                producer=PRODUCER,
+                scope=ArtifactScope(root_modules=("Regular",), dependency_boundary="internal_only"),
+            )
+            node_row = json.loads((path / "nodes.jsonl").read_text().strip())
+            source_row = json.loads((path / "sources.jsonl").read_text().strip())
+            manifest_row = json.loads((path / "manifest.json").read_text())
+            loaded, _, _, _ = load_artifact(path)
+
+        self.assertEqual(manifest, loaded)
+        self.assertEqual(node_row["source_revision"], ARCHIVE_SHA256)
+        self.assertNotIn("source_commit", node_row)
+        self.assertEqual(source_row["source_revision"], ARCHIVE_SHA256)
+        self.assertNotIn("source_commit", source_row)
+        self.assertIn("created_from_authoritative_source", manifest_row)
+        self.assertNotIn("created_from_authoritative_commit", manifest_row)
+
+    def test_v2_identity_binds_full_archive_authority(self):
+        from theseus_repo_search.model import ArchiveAuthority, ArtifactManifestV2
+
+        base = ArtifactManifestV2(
+            schema="theseus.repo-index.v2",
+            source_authority=ArchiveAuthority(
+                url=ARCHIVE_URL, sha256=ARCHIVE_SHA256, format="zip", subdir="pkg"
+            ),
+            producer=PRODUCER,
+            scope=ArtifactScope(root_modules=("Regular",), dependency_boundary="internal_only"),
+            nodes_sha256="n" * 64,
+            edges_sha256="e" * 64,
+            sources_sha256=None,
+            nodes_count=1,
+            edges_count=0,
+            created_from_authoritative_source=False,
+        )
+        variants = [
+            replace(base, source_authority=replace(base.source_authority, url=ARCHIVE_URL + "?v=2")),
+            replace(base, source_authority=replace(base.source_authority, sha256="5" * 64)),
+            replace(base, source_authority=replace(base.source_authority, format="tar")),
+            replace(base, source_authority=replace(base.source_authority, subdir="other")),
+            replace(base, created_from_authoritative_source=True),
+        ]
+        base_identity = artifact_identity(base)
+        self.assertTrue(all(artifact_identity(item) != base_identity for item in variants))
+
+    def test_v2_schema_rejects_v1_source_shape(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_v2_archive_fixture(path)
+            manifest_path = path / "manifest.json"
+            payload = json.loads(manifest_path.read_text())
+            payload["source"] = {"repo": "owner/repo", "commit": "a" * 40, "subdir": ""}
+            manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(RepoSearchError):
+                load_artifact(path)
+
+    def test_v2_rejects_mixed_archive_and_git_source_claims(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_v2_archive_fixture(path)
+            manifest_path = path / "manifest.json"
+            payload = json.loads(manifest_path.read_text())
+            payload["source"]["repo"] = "fake/repo"
+            payload["source"]["commit"] = "a" * 40
+            manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(RepoSearchError):
+                load_artifact(path)
+
+    def test_v2_rejects_git_named_authority_state(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_v2_archive_fixture(path)
+            manifest_path = path / "manifest.json"
+            payload = json.loads(manifest_path.read_text())
+            payload["created_from_authoritative_commit"] = False
+            manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(RepoSearchError):
+                load_artifact(path)
+
+    def test_v1_schema_rejects_v2_source_shape(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_sample(path)
+            manifest_path = path / "manifest.json"
+            payload = json.loads(manifest_path.read_text())
+            payload["source"] = {
+                "kind": "archive",
+                "url": ARCHIVE_URL,
+                "sha256": ARCHIVE_SHA256,
+                "format": "zip",
+                "subdir": "pkg",
+            }
+            manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(RepoSearchError):
+                load_artifact(path)
+
+    def test_v2_authoritative_writer_waits_for_receipt_v3(self):
+        from theseus_repo_search.model import ArchiveAuthority
+
+        authority = ArchiveAuthority(
+            url=ARCHIVE_URL, sha256=ARCHIVE_SHA256, format="zip", subdir="pkg"
+        )
+        with tempfile.TemporaryDirectory() as d, self.assertRaisesRegex(
+            RepoSearchError, "receipt v3"
+        ):
+            write_archive_artifact_v2(
+                Path(d) / "artifact",
+                nodes=[],
+                edges=[],
+                sources=None,
+                source_authority=authority,
+                producer=PRODUCER,
+                scope=ArtifactScope(root_modules=("Regular",), dependency_boundary="internal_only"),
+                created_from_authoritative_source=True,
+            )
+
     def test_v1_identity_and_manifest_bytes_are_stable(self):
         expected_identity = "2ab27e03377162f22a5af336036793f04d3f09ee1291ffe48fdd1d615100f03a"
         expected_manifest = (

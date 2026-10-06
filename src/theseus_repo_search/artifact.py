@@ -12,6 +12,9 @@ from .errors import RepoSearchError
 from .normalize import normalize_leandepviz
 from .model import (
     ArtifactManifest,
+    ArtifactManifestAny,
+    ArchiveAuthority,
+    ArtifactManifestV2,
     ArtifactScope,
     Edge,
     EvidenceGrade,
@@ -22,6 +25,7 @@ from .model import (
 
 
 SCHEMA = "theseus.repo-index.v1"
+V2_SCHEMA = "theseus.repo-index.v2"
 
 _DEPENDENCY_GRADE_BY_RELATION = {
     "type_dependency": EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
@@ -55,8 +59,40 @@ def _write_jsonl(path: Path, rows: Iterable[dict[str, object]]) -> str:
     return _sha256(data)
 
 
-def artifact_identity(manifest: ArtifactManifest) -> str:
-    payload: dict[str, object] = {
+def artifact_identity(manifest: ArtifactManifestAny) -> str:
+    if isinstance(manifest, ArtifactManifestV2):
+        source = manifest.source_authority
+        payload: dict[str, object] = {
+            "schema": manifest.schema,
+            "source": {
+                "kind": source.kind,
+                "url": source.url,
+                "sha256": source.sha256,
+                "format": source.format,
+                "subdir": source.subdir,
+            },
+            "producer": {
+                "kind": manifest.producer.kind,
+                "tool_repo": manifest.producer.tool_repo,
+                "tool_commit": manifest.producer.tool_commit,
+                "tool_hash": manifest.producer.tool_hash,
+            },
+            "scope": {
+                "root_modules": list(manifest.scope.root_modules),
+                "dependency_boundary": manifest.scope.dependency_boundary,
+                **({"exclude_source_prefixes": list(manifest.scope.exclude_source_prefixes)} if manifest.scope.exclude_source_prefixes else {}),
+            },
+            "created_from_authoritative_source": manifest.created_from_authoritative_source,
+            "members": {
+                "nodes": {"sha256": manifest.nodes_sha256},
+                "edges": {"sha256": manifest.edges_sha256},
+                "sources": {"sha256": manifest.sources_sha256},
+                "authority_receipt": {"sha256": manifest.authority_receipt_sha256},
+            },
+        }
+        return _sha256(_canonical_json(payload))
+
+    payload = {
         "schema": manifest.schema,
         "source": {
             "repo": manifest.source_repo,
@@ -160,6 +196,110 @@ def _write_artifact_contents(
     return manifest
 
 
+def _node_v2_dict(node: Node) -> dict[str, object]:
+    data = node.to_dict()
+    data["source_revision"] = data.pop("source_commit")
+    return data
+
+
+def _source_v2_dict(chunk: SourceChunk) -> dict[str, object]:
+    data = chunk.to_dict()
+    data["source_revision"] = data.pop("source_commit")
+    return data
+
+
+def _write_archive_artifact_v2_contents(
+    out_dir: Path,
+    *,
+    nodes: Sequence[Node],
+    edges: Sequence[Edge],
+    sources: Sequence[SourceChunk] | None,
+    source_authority: ArchiveAuthority,
+    producer: ProducerPin,
+    scope: ArtifactScope,
+    created_from_authoritative_source: bool,
+) -> ArtifactManifestV2:
+    if created_from_authoritative_source:
+        raise _integrity(
+            "authoritative archive artifacts require raw-depgraph receipt v3 support"
+        )
+    out_dir.mkdir(parents=True, exist_ok=True)
+    sorted_nodes = sorted(nodes, key=lambda node: node.id)
+    sorted_edges = sorted(
+        edges,
+        key=lambda edge: (
+            edge.source_id,
+            edge.target_id,
+            edge.relation,
+            edge.producer,
+        ),
+    )
+    sorted_sources = None if sources is None else sorted(
+        sources, key=lambda chunk: (chunk.source_path, chunk.source_start_line, chunk.id)
+    )
+    nodes_sha256 = _write_jsonl(
+        out_dir / "nodes.jsonl", (_node_v2_dict(node) for node in sorted_nodes)
+    )
+    edges_sha256 = _write_jsonl(
+        out_dir / "edges.jsonl", (edge.to_dict() for edge in sorted_edges)
+    )
+    sources_sha256 = None
+    if sorted_sources is not None:
+        sources_sha256 = _write_jsonl(
+            out_dir / "sources.jsonl",
+            (_source_v2_dict(chunk) for chunk in sorted_sources),
+        )
+    manifest = ArtifactManifestV2(
+        schema=V2_SCHEMA,
+        source_authority=source_authority,
+        producer=producer,
+        scope=scope,
+        nodes_sha256=nodes_sha256,
+        edges_sha256=edges_sha256,
+        sources_sha256=sources_sha256,
+        nodes_count=len(sorted_nodes),
+        edges_count=len(sorted_edges),
+        created_from_authoritative_source=False,
+        authority_receipt_sha256=None,
+    )
+    (out_dir / "manifest.json").write_bytes(_json_line(manifest.to_dict()))
+    return manifest
+
+
+def write_archive_artifact_v2(
+    out_dir: Path,
+    *,
+    nodes: Sequence[Node],
+    edges: Sequence[Edge],
+    sources: Sequence[SourceChunk] | None,
+    source_authority: ArchiveAuthority,
+    producer: ProducerPin,
+    scope: ArtifactScope,
+    created_from_authoritative_source: bool = False,
+) -> ArtifactManifestV2:
+    out_dir.parent.mkdir(parents=True, exist_ok=True)
+    staged = Path(
+        tempfile.mkdtemp(prefix=f".{out_dir.name}.tmp-", dir=out_dir.parent)
+    )
+    try:
+        manifest = _write_archive_artifact_v2_contents(
+            staged,
+            nodes=nodes,
+            edges=edges,
+            sources=sources,
+            source_authority=source_authority,
+            producer=producer,
+            scope=scope,
+            created_from_authoritative_source=created_from_authoritative_source,
+        )
+        load_artifact(staged)
+        _publish_artifact_directory(staged, out_dir)
+        return manifest
+    finally:
+        if staged.exists():
+            shutil.rmtree(staged, ignore_errors=True)
+
+
 def _publish_artifact_directory(staged: Path, out_dir: Path) -> None:
     if out_dir.exists():
         try:
@@ -220,7 +360,9 @@ def _integrity(message: str) -> RepoSearchError:
 
 
 
-def _validate_authority_receipt_bytes(data: bytes, manifest: ArtifactManifest) -> str:
+def _validate_authority_receipt_bytes(data: bytes, manifest: ArtifactManifestAny) -> str:
+    if isinstance(manifest, ArtifactManifestV2):
+        raise _integrity("archive authority receipt validation requires raw-depgraph receipt v3")
     try:
         receipt = json.loads(data.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -311,7 +453,10 @@ def _optional_int(data: dict[str, object], key: str) -> int | None:
     return value
 
 
-def _node_from_dict(data: dict[str, object]) -> Node:
+def _node_from_dict(data: dict[str, object], *, revision_key: str) -> Node:
+    forbidden_key = "source_revision" if revision_key == "source_commit" else "source_commit"
+    if forbidden_key in data:
+        raise TypeError(f"{forbidden_key} is not valid for this artifact schema")
     return Node(
         id=_require_str(data, "id"),
         full_name=_require_str(data, "full_name"),
@@ -321,7 +466,7 @@ def _node_from_dict(data: dict[str, object]) -> Node:
         source_path=_optional_str(data, "source_path"),
         source_start_line=_optional_int(data, "source_start_line"),
         source_end_line=_optional_int(data, "source_end_line"),
-        source_commit=_require_str(data, "source_commit"),
+        source_commit=_require_str(data, revision_key),
     )
 
 
@@ -335,10 +480,13 @@ def _edge_from_dict(data: dict[str, object]) -> Edge:
     )
 
 
-def _source_from_dict(data: dict[str, object]) -> SourceChunk:
+def _source_from_dict(data: dict[str, object], *, revision_key: str) -> SourceChunk:
+    forbidden_key = "source_revision" if revision_key == "source_commit" else "source_commit"
+    if forbidden_key in data:
+        raise TypeError(f"{forbidden_key} is not valid for this artifact schema")
     return SourceChunk(
         id=_require_str(data, "id"),
-        source_commit=_require_str(data, "source_commit"),
+        source_commit=_require_str(data, revision_key),
         source_path=_require_str(data, "source_path"),
         source_start_line=_require_int(data, "source_start_line"),
         source_end_line=_require_int(data, "source_end_line"),
@@ -350,29 +498,32 @@ def _source_from_dict(data: dict[str, object]) -> SourceChunk:
 
 def load_artifact(
     path: Path,
-) -> tuple[ArtifactManifest, list[Node], list[Edge], list[SourceChunk]]:
+) -> tuple[ArtifactManifestAny, list[Node], list[Edge], list[SourceChunk]]:
     try:
         manifest_data = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
         if not isinstance(manifest_data, dict):
             raise ValueError("manifest is not an object")
-        manifest = ArtifactManifest.from_dict(manifest_data)
+        schema = manifest_data.get("schema")
+        if schema == SCHEMA:
+            manifest: ArtifactManifestAny = ArtifactManifest.from_dict(manifest_data)
+        elif schema == V2_SCHEMA:
+            manifest = ArtifactManifestV2.from_dict(manifest_data)
+        else:
+            raise ValueError(f"unsupported schema: {schema}")
     except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError, ValueError, AssertionError) as exc:
         raise _integrity(f"invalid manifest: {exc}") from exc
-
-    if manifest.schema != SCHEMA:
-        raise _integrity(f"unsupported schema: {manifest.schema}")
     if manifest.scope.dependency_boundary != "internal_only":
         raise _integrity(
             f"unsupported dependency boundary: {manifest.scope.dependency_boundary}"
         )
     if (
-        manifest.created_from_authoritative_commit
+        manifest.created_from_authoritative_source
         and manifest.producer.kind != "lexical_only"
         and manifest.authority_receipt_sha256 is None
     ):
         raise _integrity("authoritative artifact requires authority receipt")
     raw_depgraph_path = path / "raw-depgraph.json"
-    if manifest.created_from_authoritative_commit and manifest.producer.kind != "lexical_only":
+    if manifest.created_from_authoritative_source and manifest.producer.kind != "lexical_only":
         if not raw_depgraph_path.is_file():
             raise _integrity("authoritative exact artifact requires raw dependency graph member")
 
@@ -423,10 +574,15 @@ def load_artifact(
             raise _integrity("raw dependency graph member hash does not match authority receipt")
 
     try:
-        nodes = [_node_from_dict(row) for row in _read_jsonl(path / "nodes.jsonl")]
+        revision_key = "source_commit" if manifest.schema == SCHEMA else "source_revision"
+        nodes = [
+            _node_from_dict(row, revision_key=revision_key)
+            for row in _read_jsonl(path / "nodes.jsonl")
+        ]
         edges = [_edge_from_dict(row) for row in _read_jsonl(path / "edges.jsonl")]
         sources = [] if manifest.sources_sha256 is None else [
-            _source_from_dict(row) for row in _read_jsonl(sources_path)
+            _source_from_dict(row, revision_key=revision_key)
+            for row in _read_jsonl(sources_path)
         ]
     except (KeyError, TypeError, ValueError) as exc:
         raise _integrity(f"invalid artifact record: {exc}") from exc
@@ -458,7 +614,7 @@ def load_artifact(
     if len(set(source_ids)) != len(source_ids):
         raise _integrity("duplicate source id")
 
-    if any(node.source_commit != manifest.source_commit for node in nodes):
+    if any(node.source_revision != manifest.source_revision for node in nodes):
         raise _integrity("node source commit mismatch")
     for node in nodes:
         if not any(
@@ -468,7 +624,7 @@ def load_artifact(
             raise _integrity(
                 f"node outside declared root-module scope: {node.id} ({node.module})"
             )
-    if any(chunk.source_commit != manifest.source_commit for chunk in sources):
+    if any(chunk.source_revision != manifest.source_revision for chunk in sources):
         raise _integrity("source chunk commit mismatch")
     for chunk in sources:
         if chunk.source_start_line < 1 or chunk.source_end_line < chunk.source_start_line:
@@ -514,7 +670,7 @@ def load_artifact(
                 if source_binding_counts.get(key, 0) != 1:
                     raise _integrity(f"node source location mismatch: {node.id}")
 
-    if manifest.created_from_authoritative_commit and manifest.producer.kind != "lexical_only":
+    if manifest.created_from_authoritative_source and manifest.producer.kind != "lexical_only":
         try:
             raw_value = json.loads(raw_depgraph_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -523,7 +679,7 @@ def load_artifact(
             raise _integrity("raw dependency graph member must be a JSON object")
         derived_nodes, derived_edges = normalize_leandepviz(
             raw_value,
-            source_commit=manifest.source_commit,
+            source_commit=manifest.source_revision,
             root_modules=manifest.scope.root_modules,
             producer_ref=f"{manifest.producer.tool_repo}@{manifest.producer.tool_commit}",
         )
