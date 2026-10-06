@@ -106,12 +106,12 @@ The remaining work begins at the provenance boundary after verified materializat
 - digest of that manifest in the materialization receipt;
 - exact source-root-relative mapping needed by downstream extraction/normalization.
 
-- [ ] RED: successful materialization receipt lacks a persisted member manifest / manifest digest.
-- [ ] RED: tamper an extracted authoritative member and require verification failure against persisted member hash.
-- [ ] Implement deterministic manifest persistence inside the same logical materialization publication contract.
-- [ ] Verify cleanup/rollback still preserves no-clobber semantics from PR #69.
-- [ ] GREEN full `tests.test_archive_source`.
-- [ ] Run touched Ruff, `./tools/dev/check`, and `git diff --check`.
+- [x] RED: successful materialization receipt lacks a persisted member manifest / manifest digest.
+- [x] RED: tamper an extracted authoritative member and require verification failure against persisted member hash.
+- [x] Implement deterministic manifest persistence inside the same logical materialization publication contract.
+- [x] Verify cleanup/rollback still preserves no-clobber semantics from PR #69.
+- [x] GREEN full `tests.test_archive_source`.
+- [x] Run touched Ruff, `./tools/dev/check`, and `git diff --check`.
 
 **Checkpoint:** verified materialization exposes a stable authoritative file set; no raw-depgraph v3 exists yet.
 
