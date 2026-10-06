@@ -116,6 +116,78 @@ def write_sample(path: Path, *, nodes=None, edges=None, sources=_DEFAULT, scope=
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_v1_identity_and_manifest_bytes_are_stable(self):
+        expected_identity = "2ab27e03377162f22a5af336036793f04d3f09ee1291ffe48fdd1d615100f03a"
+        expected_manifest = (
+            b'{"counts":{"edges":1,"nodes":2},"created_from_authoritative_commit":false,'
+            b'"members":{"authority_receipt":{"sha256":null},'
+            b'"edges":{"sha256":"27e76e62e3f81aff319008e0276456b29cd11e9fd0d0ff8ae180bf468329a76f"},'
+            b'"nodes":{"sha256":"e4f1a5faf58f8e6150e8d1f850b39de20086c8287d12488d35c1e661f804c0a5"},'
+            b'"sources":{"sha256":"2cf88ff3fada95495ee2fa0f8fa49c6ef684d168d4507d6025268a96923a7da4"}},'
+            b'"producer":{"kind":"lean-dep-viz","tool_commit":"deadbeef",'
+            b'"tool_hash":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",'
+            b'"tool_repo":"cameronfreer/LeanDepViz"},"schema":"theseus.repo-index.v1",'
+            b'"scope":{"dependency_boundary":"internal_only","root_modules":["Zeta23"]},'
+            b'"source":{"commit":"abc123","repo":"anthropics/formal-math","subdir":"zeta23"}}\n'
+        )
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            manifest = write_sample(path)
+            self.assertEqual(artifact_identity(manifest), expected_identity)
+            self.assertEqual((path / "manifest.json").read_bytes(), expected_manifest)
+
+    def test_v1_manifest_exposes_generic_git_authority_without_reserialization(self):
+        from theseus_repo_search.model import GitAuthority
+
+        with tempfile.TemporaryDirectory() as d:
+            manifest = write_sample(Path(d))
+            self.assertEqual(
+                manifest.source_authority,
+                GitAuthority(
+                    repo="anthropics/formal-math",
+                    commit=SOURCE_COMMIT,
+                    subdir="zeta23",
+                ),
+            )
+            self.assertEqual(manifest.source_revision, SOURCE_COMMIT)
+            self.assertFalse(manifest.created_from_authoritative_source)
+
+    def test_source_authority_dispatch_requires_explicit_kind(self):
+        from theseus_repo_search.model import GitAuthority, source_authority_from_dict
+
+        git = source_authority_from_dict({
+            "kind": "git",
+            "repo": "anthropics/formal-math",
+            "commit": SOURCE_COMMIT,
+            "subdir": "zeta23",
+        })
+        self.assertIsInstance(git, GitAuthority)
+        self.assertEqual(git.source_revision, SOURCE_COMMIT)
+
+        with self.assertRaises(TypeError):
+            source_authority_from_dict({
+                "url": "https://example.invalid/source.zip",
+                "sha256": "4" * 64,
+                "format": "zip",
+                "subdir": "pkg",
+            })
+
+    def test_archive_authority_parses_explicit_discriminator(self):
+        from theseus_repo_search.model import (
+            ArchiveAuthority,
+            source_authority_from_dict,
+        )
+
+        authority = source_authority_from_dict({
+            "kind": "archive",
+            "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip",
+            "sha256": "4" * 64,
+            "format": "zip",
+            "subdir": "decreasing-diagrams-lean",
+        })
+        self.assertIsInstance(authority, ArchiveAuthority)
+        self.assertEqual(authority.source_revision, "4" * 64)
+
     def test_authoritative_artifact_without_receipt_is_blocked(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "artifact"
