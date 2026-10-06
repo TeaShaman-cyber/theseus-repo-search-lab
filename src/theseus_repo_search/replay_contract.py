@@ -57,6 +57,8 @@ def prepare_registered_replay(
     from .artifact import load_artifact
 
     manifest, _, _, _ = load_artifact(artifact_path)
+    if not isinstance(manifest, ArtifactManifest):
+        raise TypeError("registered replay does not support repo-index.v2 yet")
     source = validate_registered_replay_manifest(
         manifest, descriptor_path, runner_path=runner_path
     )
