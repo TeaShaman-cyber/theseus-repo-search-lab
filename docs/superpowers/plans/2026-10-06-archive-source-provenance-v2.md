@@ -180,6 +180,7 @@ The remaining work begins at the provenance boundary after verified materializat
 - Modify: `src/theseus_repo_search/projection.py`
 - Modify: `src/theseus_repo_search/retrieval.py`
 - Modify if needed: `src/theseus_repo_search/graph.py`
+- Modify: `src/theseus_repo_search/cli.py` for source-kind-aware output compatibility
 - Modify: `tests/test_projection.py`
 - Modify: `tests/test_retrieval.py`
 - Modify graph tests only if generic authority state reaches graph results.
@@ -192,12 +193,12 @@ The remaining work begins at the provenance boundary after verified materializat
 - `created_from_authoritative_source`;
 - `artifact_identity`.
 
-- [ ] RED: build projection from v2 archive artifact and assert no archive digest is stored/exposed in any `source_commit` field/column/view.
-- [ ] RED: retrieval result from v2 exposes generic revision + structured authority, not Git terminology.
-- [ ] Implement schema-aware projection layout/reader boundary; keep v1 DB layout and readers working.
-- [ ] Do not migrate historical projection DB files.
-- [ ] GREEN projection/retrieval tests for both schemas.
-- [ ] Run `./tools/dev/check` and `git diff --check`.
+- [x] RED: build projection from v2 archive artifact and assert no archive digest is stored/exposed in any `source_commit` field/column/view.
+- [x] RED: retrieval result from v2 exposes generic revision + structured authority, not Git terminology.
+- [x] Implement schema-aware projection layout/reader boundary; keep v1 DB layout and readers working.
+- [x] Do not migrate historical projection DB files.
+- [x] GREEN projection/retrieval tests for both schemas.
+- [x] Run `./tools/dev/check` and `git diff --check`.
 
 **Checkpoint:** artifact-only query path works for both v1 Git and v2 archive artifacts.
 
