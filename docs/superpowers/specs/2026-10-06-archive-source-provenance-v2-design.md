@@ -212,7 +212,7 @@ The acquisition slice already defines `theseus.lean-archive-source.v1` and verif
 
 For issue #68, archive materialization must additionally persist a deterministic **member-level hash manifest** for the authoritative archive members. The manifest records each normalized archive member path and its content SHA-256 and has its own digest. Build outputs created after extraction are not added to this authority manifest.
 
-The materialized tree and its authority receipt form one logical publication boundary. The receipt path MUST be outside the destination and MUST NOT pre-exist; if publishing either output fails, the operation leaves no newly published destination or receipt.
+The materialized tree and its authority receipt form one logical publication boundary. The receipt path and destination MUST be path-disjoint (neither equal nor ancestor/descendant), and the receipt target MUST NOT pre-exist; if publishing either output fails, the operation leaves no newly published destination or receipt.
 
 The archive materialization receipt becomes an input to exact extraction rather than an isolated preprocessing receipt.
 
@@ -437,12 +437,13 @@ Required negative cases include:
 - absolute archive member path;
 - parent traversal;
 - symlink/device/special member;
+- explicit ZIP member file type conflicting with its directory-name marker;
 - duplicate normalized member path;
 - selected source root escaping extraction tree;
 - materialization receipt or member-manifest mismatch;
 - authoritative archive member mutation before, during, or after extraction but before normalization consumes it;
 - unmanifested generated `.lean` source, node, module, or dependent edge entering an archive artifact;
-- materialization receipt path equal to or contained by the materialization destination;
+- materialization receipt path equal to, contained by, or an ancestor of the materialization destination;
 - pre-existing or otherwise unpublishable materialization receipt target leaving a published destination without its receipt;
 - descriptor/manifest source-kind mismatch;
 - archive URL or digest tampering after artifact publication;

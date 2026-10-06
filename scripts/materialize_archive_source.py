@@ -49,6 +49,10 @@ def _safe_members(archive: zipfile.ZipFile) -> list[zipfile.ZipInfo]:
         file_type = stat.S_IFMT(mode)
         if file_type not in (0, stat.S_IFREG, stat.S_IFDIR):
             raise _blocked(f"unsupported archive member type: {name}")
+        if file_type == stat.S_IFREG and member.is_dir():
+            raise _blocked(f"archive member type conflicts with directory marker: {name}")
+        if file_type == stat.S_IFDIR and not member.is_dir():
+            raise _blocked(f"archive member type conflicts with directory marker: {name}")
     return members
 
 
@@ -100,8 +104,14 @@ def materialize_archive_source(
 ) -> dict[str, object]:
     dest = dest.resolve()
     receipt_path = receipt_path.resolve()
-    if receipt_path == dest or receipt_path.is_relative_to(dest):
-        raise _blocked(f"materialization receipt must be outside destination: {receipt_path}")
+    if (
+        receipt_path == dest
+        or receipt_path.is_relative_to(dest)
+        or dest.is_relative_to(receipt_path)
+    ):
+        raise _blocked(
+            f"materialization receipt and destination must be path-disjoint: {receipt_path} vs {dest}"
+        )
     if receipt_path.exists():
         raise _blocked(f"materialization receipt target already exists: {receipt_path}")
     if dest.exists() and (not dest.is_dir() or any(dest.iterdir())):

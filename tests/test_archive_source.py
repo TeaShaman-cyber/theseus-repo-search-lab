@@ -1,5 +1,6 @@
 import io
 import json
+import stat
 import tempfile
 import unittest
 import zipfile
@@ -156,6 +157,32 @@ class ArchiveMaterializerTests(unittest.TestCase):
                 )
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
 
+    def test_declared_zip_member_type_must_match_directory_marker(self):
+        cases = [
+            ("pkg/", stat.S_IFREG | 0o644),
+            ("pkg", stat.S_IFDIR | 0o755),
+        ]
+        for name, mode in cases:
+            with self.subTest(name=name, mode=mode):
+                unsafe = io.BytesIO()
+                with zipfile.ZipFile(unsafe, "w") as archive:
+                    info = zipfile.ZipInfo(name)
+                    info.create_system = 3
+                    info.external_attr = mode << 16
+                    archive.writestr(info, b"x")
+                unsafe_data = unsafe.getvalue()
+                source = LeanArchiveSource.from_dict(payload(unsafe_data, subdir="."))
+                with tempfile.TemporaryDirectory() as d:
+                    root = Path(d)
+                    with self.assertRaises(RepoSearchError) as cm:
+                        materialize_archive_source(
+                            source,
+                            dest=root / "source",
+                            receipt_path=root / "receipt.json",
+                            opener=lambda *_args, data=unsafe_data, **_kwargs: Response(data),
+                        )
+                    self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+
     def test_symlink_member_fails_closed(self):
         unsafe = io.BytesIO()
         with zipfile.ZipFile(unsafe, "w") as archive:
@@ -190,6 +217,24 @@ class ArchiveMaterializerTests(unittest.TestCase):
                     opener=lambda *_args, **_kwargs: Response(data),
                 )
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(dest.exists())
+
+    def test_receipt_ancestor_of_destination_fails_before_parent_creation(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            receipt_path = root / "out"
+            dest = receipt_path / "source"
+            with self.assertRaises(RepoSearchError) as cm:
+                materialize_archive_source(
+                    source,
+                    dest=dest,
+                    receipt_path=receipt_path,
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(receipt_path.exists())
             self.assertFalse(dest.exists())
 
     def test_existing_directory_receipt_target_fails_before_publication(self):
