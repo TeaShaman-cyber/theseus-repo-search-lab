@@ -352,6 +352,61 @@ class SourceChunkTests(unittest.TestCase):
                 )
             self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
 
+    def test_manifest_backed_binding_accepts_qualified_declaration_hint_suffix(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "lemma AlmostDetSeq.det_prepend : True := by trivial\n"
+        source = SourceChunk(
+            id="src:Regular.lean:1:1",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=1,
+            source_end_line=1,
+            declaration_hint="AlmostDetSeq.det_prepend",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.AlmostDetSeq.det_prepend",
+            name="det_prepend",
+            kind="lemma",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+
+        bound = bind_manifest_backed_node_sources([node], [source])
+        self.assertEqual(bound[0].source_path, "Regular.lean")
+        self.assertEqual(bound[0].source_start_line, 1)
+
+    def test_manifest_backed_binding_rejects_ambiguous_suffix_matches(self):
+        from theseus_repo_search.errors import RepoSearchError
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        chunks = [
+            SourceChunk(
+                id=f"src:Regular.lean:{line}:{line}",
+                source_commit="a" * 64,
+                source_path="Regular.lean",
+                source_start_line=line,
+                source_end_line=line,
+                declaration_hint="det_prepend",
+                text="lemma det_prepend : True := by trivial\n",
+                content_sha256=sha256(b"lemma det_prepend : True := by trivial\n").hexdigest(),
+            )
+            for line in (1, 10)
+        ]
+        node = Node.from_lean(
+            full_name="DCR.AlmostDetSeq.det_prepend",
+            name="det_prepend",
+            kind="lemma",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+
+        with self.assertRaises(RepoSearchError) as caught:
+            bind_manifest_backed_node_sources([node], chunks)
+        self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+
     def test_manifest_backed_binding_rejects_unbacked_node_module(self):
         from theseus_repo_search.errors import RepoSearchError
         from theseus_repo_search.sources import bind_manifest_backed_node_sources
