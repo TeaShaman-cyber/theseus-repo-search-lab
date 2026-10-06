@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import cast
 
 from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.replay_contract import (
@@ -26,9 +27,10 @@ def run_replay(
         )
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
+    chunks = cast(list[dict[str, object]], ctx["chunks"])
     if not any(
         chunk["declaration_hint"] == "dcr_three_of_confluent"
-        for chunk in ctx["chunks"]
+        for chunk in chunks
     ):
         raise AssertionError(
             "bounded context omitted DCR.dcr_three_of_confluent source"
@@ -46,7 +48,7 @@ def run_replay(
         },
         "context": {
             "estimated_tokens": ctx["estimated_tokens"],
-            "chunks": ctx["chunks"],
+            "chunks": chunks,
         },
     }
 
