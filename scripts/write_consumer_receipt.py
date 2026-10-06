@@ -7,6 +7,7 @@ import sqlite3
 from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity, load_artifact
+from theseus_repo_search.model import ArtifactManifest
 
 SCHEMA = "theseus.repo-search-consumer-receipt.v1"
 
@@ -28,6 +29,8 @@ def build_receipt(
     workflow_sha: str,
 ) -> dict[str, object]:
     manifest, *_ = load_artifact(artifact)
+    if not isinstance(manifest, ArtifactManifest):
+        raise TypeError("consumer receipt v1 does not support repo-index.v2 yet")
     expected_identity = artifact_identity(manifest)
 
     with sqlite3.connect(db) as conn:

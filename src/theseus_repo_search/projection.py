@@ -9,6 +9,7 @@ from pathlib import Path
 
 from .artifact import artifact_identity, load_artifact
 from .errors import RepoSearchError
+from .model import ArtifactManifest
 
 
 _SCHEMA_STATEMENTS = (
@@ -163,6 +164,11 @@ def projection_fingerprint(db_path: Path) -> str:
 
 def _populate_projection(artifact_dir: Path, db_path: Path) -> None:
     manifest, nodes, edges, sources = load_artifact(artifact_dir)
+    if not isinstance(manifest, ArtifactManifest):
+        raise RepoSearchError(
+            "BLOCKED_ARTIFACT_INTEGRITY",
+            "projection does not support repo-index.v2 yet",
+        )
     conn = sqlite3.connect(db_path)
     try:
         with conn:
