@@ -57,12 +57,12 @@ The remaining work begins at the provenance boundary after verified materializat
 - generic internal `source_revision` / `created_from_authoritative_source` meaning;
 - compatibility access for v1 callers without emitting archive data under Git terminology.
 
-- [ ] Add regression asserting a known v1 manifest serialization and `artifact_identity()` are unchanged.
-- [ ] RED: parse an explicit archive authority object into the internal authority model; fail because no archive authority model exists yet.
-- [ ] Add the minimal authority classes/helpers and v1 adapters.
-- [ ] Keep `ArtifactManifest.to_dict()` v1 behavior byte-for-byte unchanged.
-- [ ] GREEN focused artifact/model tests.
-- [ ] Run `./tools/dev/check` and `git diff --check`.
+- [x] Add regression asserting a known v1 manifest serialization and `artifact_identity()` are unchanged.
+- [x] RED: parse an explicit archive authority object into the internal authority model; fail because no archive authority model exists yet.
+- [x] Add the minimal authority classes/helpers and v1 adapters.
+- [x] Keep `ArtifactManifest.to_dict()` v1 behavior byte-for-byte unchanged.
+- [x] GREEN focused artifact/model tests.
+- [x] Run `./tools/dev/check` and `git diff --check`.
 
 **Checkpoint:** existing v1 artifact production and all existing replay/consumer paths still run unchanged; no v2 writer exists yet.
 
