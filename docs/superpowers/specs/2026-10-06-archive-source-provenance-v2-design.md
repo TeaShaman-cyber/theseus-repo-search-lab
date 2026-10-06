@@ -1,0 +1,491 @@
+# Archive Source Provenance V2 Design
+
+**Issue:** #68
+**Parent corpus:** #67
+**Status:** design approved in chat; written specification pending review
+**Primary goal:** represent immutable archive-backed Lean sources honestly through producer, artifact, projection, replay, and consumer receipts without fabricating Git authority or breaking existing Git-backed artifacts.
+
+## 1. Problem
+
+The generic Lean producer was designed around one authority shape:
+
+```text
+Git repository @ exact commit = source authority
+```
+
+Issue #67 found a canonical source that does not have that shape. The Lean formalization accompanying arXiv:2610.06368 is published by the authors as an immutable Zenodo software archive:
+
+```text
+https://doi.org/10.5281/zenodo.23160921
+decreasing-diagrams-lean.zip
+sha256 4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f
+```
+
+The Lean mechanics are ordinary Lean 4 + Lake + Mathlib. The incompatibility is source authority and provenance representation.
+
+The current normalized artifact schema `theseus.repo-index.v1` is Git-shaped throughout:
+
+- manifest source = `repo + commit + subdir`;
+- `Node.source_commit`;
+- `SourceChunk.source_commit`;
+- raw dependency-graph receipt source = `repo + commit + subdir`;
+- projection metadata contains `source_commit`;
+- registered replay validates against `LeanGitSource`;
+- consumer receipts expose `source_repo` and `source_commit`;
+- authoritative state is named `created_from_authoritative_commit`.
+
+Encoding an archive SHA-256 as a fake Git commit would make transport mechanics indistinguishable from source authority. Mirroring the archive into a project-owned Git repository would not repair that semantic error: the mirror commit would describe the mirror, not the upstream publication.
+
+## 2. Invariants
+
+The authority invariant becomes:
+
+```text
+source authority
+  = exact externally verifiable source identity
+
+Git:
+  repository + exact commit + subdir
+
+Archive:
+  immutable/versioned URL + SHA-256 + format + subdir
+```
+
+The rest of the evidence flow remains:
+
+```text
+source authority
+      ↓
+verified materialization
+      ↓
+Lean build / exact extraction
+      ↓
+normalized immutable artifact
+      ↓
+disposable SQLite projection
+      ↓
+replay / query candidate evidence
+```
+
+A materialized checkout or extraction directory is mechanics, not authority.
+
+A project-owned mirror MAY be used later as a cache or transport optimization, but MUST NOT replace or rewrite the upstream authority identity.
+
+Publisher identity is not an adapter boundary. Zenodo is not special in the normalized model; the archive contract is based on immutable URL + checksum semantics.
+
+## 3. Compatibility strategy
+
+### 3.1 Existing Git artifacts
+
+`theseus.repo-index.v1` remains supported and unchanged.
+
+Existing v1 artifacts MUST:
+
+- continue to load;
+- preserve the existing artifact identity algorithm;
+- preserve existing projection/retrieval/replay behavior;
+- require no migration or republishing.
+
+No existing Git source descriptor is rewritten merely to adopt the new vocabulary.
+
+### 3.2 Archive artifacts
+
+Archive-backed authoritative artifacts use a new schema:
+
+`theseus.repo-index.v2`.
+
+V2 is introduced because a sidecar-only archive receipt would leave the manifest itself making a false Git claim. The manifest authority representation must therefore become explicit.
+
+V2 support is additive. The loader dispatches by artifact schema and normalizes both versions into one internal authority model.
+
+## 4. Source authority model
+
+Introduce an explicit internal sum type conceptually equivalent to:
+
+```text
+SourceAuthority =
+    GitAuthority(
+        repo,
+        commit,
+        subdir
+    )
+  | ArchiveAuthority(
+        url,
+        sha256,
+        format,
+        subdir
+    )
+```
+
+The exact Python class layout is an implementation detail. The important rule is that callers do not infer source kind from string shape.
+
+### Git serialized form
+
+V1 remains:
+
+```json
+{
+  "source": {
+    "repo": "owner/repository",
+    "commit": "<40-char git sha>",
+    "subdir": "..."
+  }
+}
+```
+
+### Archive serialized form
+
+V2 uses an explicit discriminator:
+
+```json
+{
+  "source": {
+    "kind": "archive",
+    "url": "https://...",
+    "sha256": "<64-char sha256>",
+    "format": "zip",
+    "subdir": "..."
+  }
+}
+```
+
+If a future v2 Git serialization is introduced, it MUST also be explicitly discriminated. This issue does not require republishing existing Git artifacts as v2.
+
+## 5. Generic exact revision inside normalized records
+
+Today `Node` and `SourceChunk` use a field named `source_commit`. For archive sources that name is false.
+
+V2 introduces the generic concept:
+
+```text
+source_revision
+```
+
+Semantics:
+
+```text
+Git v1       -> source_revision = exact Git commit
+Archive v2   -> source_revision = archive SHA-256
+```
+
+For v1 decoding, the loader maps serialized `source_commit` into the internal revision value.
+
+For v2 serialization, nodes and source chunks use `source_revision`, not `source_commit`.
+
+The revision is a compact equality/join key inside the normalized artifact. It is NOT sufficient source authority by itself. Full authority remains the structured manifest `source` object.
+
+This avoids duplicating URL/repository metadata in every node while still preventing archive data from being mislabeled as Git.
+
+## 6. Authoritative-state naming
+
+`created_from_authoritative_commit` is also Git-specific.
+
+V2 uses:
+
+```text
+created_from_authoritative_source
+```
+
+V1 decoding preserves current behavior by mapping:
+
+```text
+created_from_authoritative_commit
+  -> created_from_authoritative_source
+```
+
+No v1 manifest bytes or identity calculation are changed.
+
+Consumers should use the generic internal meaning. Compatibility properties may remain temporarily where needed, but new archive logic MUST NOT emit `created_from_authoritative_commit=true`.
+
+## 7. Archive materialization boundary
+
+The acquisition slice already defines `theseus.lean-archive-source.v1` and verifies:
+
+- HTTPS archive URL;
+- exact SHA-256 before extraction;
+- supported archive format;
+- traversal rejection;
+- symlink/device rejection;
+- duplicate/unsafe member rejection;
+- source-root containment;
+- deterministic materialization receipt.
+
+For issue #68, the archive materialization receipt becomes an input to exact extraction rather than an isolated preprocessing receipt.
+
+The extraction stage MUST verify that:
+
+1. the selected source root belongs to the verified materialization;
+2. the materialization receipt matches the selected source descriptor;
+3. the source-owned `lean-toolchain` is observed from that verified root;
+4. the raw dependency graph is produced only after those checks;
+5. no Git cleanliness/readback check is required or fabricated for archive sources.
+
+## 8. Raw dependency-graph authority receipt
+
+Git receipts currently use `theseus.raw-depgraph-receipt.v2` with a Git-shaped source object.
+
+Archive extraction introduces a new receipt version or a backward-compatible explicitly discriminated version. The preferred design is a new version to keep old receipt bytes/validation stable.
+
+Conceptual archive receipt:
+
+```json
+{
+  "schema": "theseus.raw-depgraph-receipt.v3",
+  "source": {
+    "kind": "archive",
+    "url": "https://...",
+    "sha256": "<archive sha256>",
+    "format": "zip",
+    "subdir": "decreasing-diagrams-lean"
+  },
+  "materialization": {
+    "tree_sha256": "<deterministic extracted-tree digest>"
+  },
+  "scope": {
+    "root_modules": ["Regular", "Singular", "Audit"]
+  },
+  "producer": {
+    "kind": "lean-dep-viz",
+    "tool_repo": "...",
+    "tool_commit": "...",
+    "tool_hash": "..."
+  },
+  "observed": {
+    "lean_toolchain": "leanprover/lean4:v4.30.0"
+  },
+  "raw_depgraph": {
+    "sha256": "..."
+  }
+}
+```
+
+The materialized tree hash is evidence that extraction used the same verified archive tree. It does not replace the archive SHA-256 as upstream authority.
+
+V2 Git receipts remain valid. There is no requirement to republish existing Git receipts as v3.
+
+## 9. Artifact identity
+
+Artifact identity MUST continue to bind:
+
+- artifact schema;
+- full structured source authority;
+- producer pin;
+- scope;
+- authoritative-source state;
+- normalized member hashes;
+- authority receipt hash.
+
+For v1 artifacts, the current identity algorithm remains byte-for-byte compatible.
+
+For v2 archive artifacts, identity includes the structured archive authority rather than a synthetic `repo/commit` pair.
+
+Changing any of:
+
+- archive URL;
+- archive SHA-256;
+- format;
+- subdir;
+- root modules;
+- producer pin;
+- authority receipt;
+- normalized members
+
+must change the artifact identity or fail validation before identity is accepted.
+
+## 10. Projection
+
+The SQLite projection remains disposable and must not become an authority database.
+
+V2 projection metadata adds generic provenance sufficient for consumers to reconstruct the artifact authority without schema guessing.
+
+Preferred metadata shape:
+
+```text
+artifact_schema
+source_kind
+source_revision
+source_authority_json
+created_from_authoritative_source
+artifact_identity
+```
+
+Existing v1 projection readers remain compatible. Migration of historical SQLite projections is unnecessary because projections are disposable and rebuildable.
+
+Node/source tables SHOULD rename `source_commit` to `source_revision` only if that can be done without forcing a broad simultaneous migration. A compatibility view/column strategy is acceptable during the transition.
+
+The acceptance criterion is semantic honesty, not a cosmetic database rename in this slice.
+
+## 11. Registered replay
+
+Registered replay becomes source-kind aware through the descriptor loader:
+
+```text
+LeanSource = LeanGitSource | LeanArchiveSource
+```
+
+Replay validation compares structured authority:
+
+Git:
+- manifest repo == descriptor repo;
+- manifest commit == descriptor commit;
+- subdir/scope/exclusions match.
+
+Archive:
+- manifest URL == descriptor URL;
+- manifest SHA-256 == descriptor SHA-256;
+- format/subdir/scope/exclusions match;
+- artifact authority receipt validates the same source identity.
+
+Replay MUST NOT accept an archive artifact against a Git descriptor or vice versa.
+
+Source-specific research assertions remain in source-specific replay scripts. No archive-publisher special case enters retrieval or graph code.
+
+## 12. Consumer receipt
+
+Consumer receipts must report source authority without assuming Git.
+
+For v1 Git artifacts, existing fields remain accepted.
+
+For v2 archive artifacts, the receipt records a structured source object, for example:
+
+```json
+{
+  "artifact": {
+    "name": "...",
+    "identity": "...",
+    "source": {
+      "kind": "archive",
+      "url": "https://...",
+      "sha256": "...",
+      "format": "zip",
+      "subdir": "..."
+    }
+  }
+}
+```
+
+A consumer receipt must never emit `source_commit=<archive hash>`.
+
+## 13. Workflow routing
+
+The generic producer workflow branches only at acquisition/readback mechanics:
+
+```text
+descriptor
+   ↓
+source kind?
+   ├─ git
+   │   checkout exact commit
+   │   git readback + tracked cleanliness
+   │
+   └─ archive
+       download exact URL
+       verify SHA-256
+       safe extraction
+       materialization receipt
+       tree/source-root readback
+   ↓
+observe source-owned Lean toolchain
+   ↓
+lake cache/build
+   ↓
+LeanDepViz extraction
+   ↓
+normalized artifact
+   ↓
+artifact verification
+   ↓
+projection + replay
+```
+
+After verified materialization, Lean build/extraction logic is shared.
+
+There must be no Zenodo-specific branch in the workflow.
+
+## 14. Security and fail-closed behavior
+
+Archive support increases the input boundary and therefore must fail closed.
+
+Required negative cases include:
+
+- checksum mismatch;
+- HTTP or credential-bearing authority URL;
+- absolute archive member path;
+- parent traversal;
+- symlink/device/special member;
+- duplicate normalized member path;
+- selected source root escaping extraction tree;
+- materialization receipt mismatch;
+- descriptor/manifest source-kind mismatch;
+- archive URL or digest tampering after artifact publication;
+- raw dependency graph receipt not bound to the same archive authority;
+- consumer receipt attempting Git-shaped provenance for archive artifact.
+
+No network fallback is allowed after an authority mismatch.
+
+## 15. Migration and rollout
+
+Rollout is intentionally asymmetric:
+
+1. retain v1 Git artifact production and consumption unchanged;
+2. implement internal generic authority/revision types;
+3. teach artifact loader to read both v1 and v2;
+4. add v2 archive artifact writer/validator;
+5. add archive raw-depgraph receipt validation;
+6. add projection/replay/consumer support for archive authority;
+7. wire the archive acquisition path into the generic hosted producer;
+8. prove the path with the #67 Zenodo Lean corpus;
+9. only then consider whether future Git artifacts should ever use v2.
+
+There is no bulk artifact migration.
+
+## 16. Acceptance criteria
+
+The architecture is accepted only when:
+
+1. all existing v1 Git artifact/replay tests remain green;
+2. historical v1 artifact identity remains unchanged;
+3. an archive artifact contains no fabricated Git repository or Git commit;
+4. changing archive URL/SHA-256/subdir causes validation failure or a distinct artifact identity;
+5. raw dependency graph receipt is bound to the verified archive materialization and source authority;
+6. normalized nodes/source chunks use generic revision semantics for v2;
+7. projection and registered replay preserve archive authority without source-kind guessing;
+8. consumer receipt reports structured archive authority;
+9. the exact Zenodo source from #67 completes hosted producer + fresh artifact-only consumer acceptance;
+10. repository-native QA passes for the changed scope;
+11. any hosted repository-wide baseline failure is separated from PR-introduced diagnostics;
+12. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced.
+
+## 17. Non-goals
+
+- changing theorem/research authority semantics;
+- making Repository Search an authority over upstream source publication;
+- supporting arbitrary archive formats in v1; ZIP is sufficient for the observed source;
+- adding Isabelle ingestion;
+- mirroring Zenodo into Git as canonical authority;
+- migrating all existing Git artifacts to v2;
+- combining corpora into one artifact/database;
+- introducing a hosted source registry;
+- changing lexical/graph ranking;
+- fixing unrelated repository-wide heavy-Python baseline debt.
+
+## 18. Multi-budget expectation
+
+This design deliberately spends a small additional implementation and QA budget to reduce future epistemic and maintenance risk.
+
+Expected conversion:
+
+```text
+extra implementation/CI cost now
+        ↓
+reusable immutable-archive acquisition + provenance
+        ↓
+less repeated model reasoning about source identity
+less human provenance reconstruction
+lower risk of false Git authority
+lower future onboarding cost for archive-published formal corpora
+```
+
+The hypothesis is falsified or narrowed if the archive path remains a one-off for #67, requires pervasive source-kind branching in retrieval code, or materially increases maintenance/CI cost without reuse.
+
+A successful build is not sufficient evidence of value. The downstream value gate remains #67 / the math-research smoke: the accepted corpus must expose a useful bounded formal seam or terminate as `NO_USEFUL_SIGNAL`.
