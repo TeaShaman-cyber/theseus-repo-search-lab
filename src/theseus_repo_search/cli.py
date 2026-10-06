@@ -135,19 +135,41 @@ def _search_hit_dict(hit: SearchHit) -> dict[str, object]:
     grade = data["evidence_grade"]
     if isinstance(grade, EvidenceGrade):
         data["evidence_grade"] = grade.value
+    if hit.source_kind == "git":
+        data["source_commit"] = data.pop("source_revision")
+        data["created_from_authoritative_commit"] = data.pop(
+            "created_from_authoritative_source"
+        )
+        data.pop("source_kind", None)
+        data.pop("source_authority", None)
     return data
 
 
 def _graph_payload(result) -> dict[str, object]:
-    return {
+    payload: dict[str, object] = {
         "status": "FOUND" if result.found else "UNKNOWN",
         "query": result.query,
         "edges": list(result.edges),
         "scope_root_modules": list(result.scope_root_modules),
         "dependency_boundary": result.dependency_boundary,
         "complete_within_scope": result.complete_within_scope,
-        "created_from_authoritative_commit": result.created_from_authoritative_commit,
     }
+    if result.source_kind == "git":
+        payload["created_from_authoritative_commit"] = (
+            result.created_from_authoritative_source
+        )
+    else:
+        payload.update(
+            {
+                "source_kind": result.source_kind,
+                "source_revision": result.source_revision,
+                "source_authority": result.source_authority,
+                "created_from_authoritative_source": (
+                    result.created_from_authoritative_source
+                ),
+            }
+        )
+    return payload
 
 
 def _verify_raw_depgraph_receipt(

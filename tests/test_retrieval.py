@@ -1,12 +1,13 @@
 import tempfile
-from dataclasses import replace
+from dataclasses import asdict, replace
 import unittest
 from hashlib import sha256
 from math import ceil
 from pathlib import Path
 
-from theseus_repo_search.artifact import write_artifact
+from theseus_repo_search.artifact import write_archive_artifact_v2, write_artifact
 from theseus_repo_search.model import (
+    ArchiveAuthority,
     ArtifactScope,
     Edge,
     EvidenceGrade,
@@ -104,6 +105,85 @@ class RetrievalTests(unittest.TestCase):
         )
         build_projection(artifact, db)
         return db, target_text
+
+    def test_v2_retrieval_exposes_generic_archive_provenance_without_git_terms(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = root / "artifact-v2"
+            db = root / "projection-v2.db"
+            revision = "a" * 64
+            text = "theorem ok : True := by trivial -- archivequery\n"
+            node = replace(
+                Node.from_lean(
+                    full_name="Pkg.Main.ok", name="ok", kind="thm",
+                    module="Pkg.Main", source_commit=revision,
+                ),
+                source_path="Pkg/Main.lean", source_start_line=1, source_end_line=1,
+            )
+            source = SourceChunk(
+                id="src:Pkg/Main.lean:1:1",
+                source_commit=revision,
+                source_path="Pkg/Main.lean",
+                source_start_line=1,
+                source_end_line=1,
+                declaration_hint="ok",
+                text=text,
+                content_sha256=sha256(text.encode()).hexdigest(),
+            )
+            authority = ArchiveAuthority(
+                url="https://example.invalid/source.zip",
+                sha256=revision,
+                format="zip",
+                subdir=".",
+            )
+            write_archive_artifact_v2(
+                artifact,
+                nodes=[node], edges=[], sources=[source],
+                source_authority=authority,
+                producer=ProducerPin(
+                    kind="lean-dep-viz",
+                    tool_repo="cameronfreer/LeanDepViz",
+                    tool_commit="deadbeef", tool_hash="f" * 64,
+                ),
+                scope=ArtifactScope(root_modules=("Pkg",), dependency_boundary="internal_only"),
+            )
+            build_projection(artifact, db)
+            hit = search(db, "archivequery")[0]
+            payload = asdict(hit)
+
+            self.assertEqual(payload["source_kind"], "archive")
+            self.assertEqual(payload["source_revision"], revision)
+            self.assertEqual(
+                payload["source_authority"],
+                {
+                    "kind": "archive",
+                    "url": authority.url,
+                    "sha256": authority.sha256,
+                    "format": authority.format,
+                    "subdir": authority.subdir,
+                },
+            )
+            self.assertFalse(payload["created_from_authoritative_source"])
+            self.assertNotIn("source_commit", payload)
+            self.assertNotIn("created_from_authoritative_commit", payload)
+
+            result = context(db, "ok", depth=1, token_budget=100)
+            self.assertEqual(result["source_kind"], "archive")
+            self.assertEqual(result["source_revision"], revision)
+            self.assertEqual(
+                result["source_authority"],
+                {
+                    "kind": "archive",
+                    "url": authority.url,
+                    "sha256": authority.sha256,
+                    "format": authority.format,
+                    "subdir": authority.subdir,
+                },
+            )
+            self.assertFalse(result["created_from_authoritative_source"])
+            self.assertNotIn("created_from_authoritative_commit", result)
+            self.assertNotIn("source_commit", result["chunks"][0])
+            self.assertEqual(result["chunks"][0]["source_revision"], revision)
 
     def test_exact_identifier_prefers_declaration_and_preserves_source_provenance(self):
         with tempfile.TemporaryDirectory() as d:
