@@ -82,13 +82,13 @@ The remaining work begins at the provenance boundary after verified materializat
 - v2 `created_from_authoritative_source`;
 - schema-aware artifact identity binding full structured authority + producer + scope + members + authority state.
 
-- [ ] RED: load a minimal v2 archive fixture and require structured archive authority + `source_revision`.
-- [ ] RED: reject v2 archive rows containing `source_commit` instead of `source_revision`.
-- [ ] RED: changing URL, SHA-256, format, or subdir changes identity or fails validation as appropriate.
-- [ ] Implement schema-aware decode/encode while leaving v1 serializer/identity path untouched.
-- [ ] Add fail-closed cross-schema tests: v1 shape under v2 schema and v2 archive source under v1 schema must reject.
-- [ ] GREEN focused artifact tests.
-- [ ] Run `./tools/dev/check` and `git diff --check`.
+- [x] RED: load a minimal v2 archive fixture and require structured archive authority + `source_revision`.
+- [x] RED: reject v2 archive rows containing `source_commit` instead of `source_revision`.
+- [x] RED: changing URL, SHA-256, format, or subdir changes identity or fails validation as appropriate.
+- [x] Implement schema-aware decode/encode while leaving v1 serializer/identity path untouched.
+- [x] Add fail-closed cross-schema tests: v1 shape under v2 schema and v2 archive source under v1 schema must reject.
+- [x] GREEN focused artifact tests.
+- [x] Run `./tools/dev/check` and `git diff --check`.
 
 **Checkpoint:** v2 archive artifacts can be written/loaded synthetically; existing CLI/workflow still produces only v1 Git artifacts.
 
