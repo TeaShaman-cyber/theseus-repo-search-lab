@@ -4,18 +4,18 @@ import argparse
 from pathlib import Path
 
 from theseus_repo_search.producer_config import (
+    LeanArchiveSource,
     LeanGitSource,
+    LeanSource,
     RunnerPins,
-    load_lean_git_source,
+    load_lean_source,
     load_runner_pins,
 )
 
 
-def environment_mapping(source: LeanGitSource, runner: RunnerPins) -> dict[str, str]:
-    return {
+def environment_mapping(source: LeanSource, runner: RunnerPins) -> dict[str, str]:
+    mapping = {
         "SOURCE_ID": source.source_id,
-        "SOURCE_REPO": source.source_repo,
-        "SOURCE_COMMIT": source.source_commit,
         "SOURCE_SUBDIR": source.source_subdir,
         "ROOT_MODULES_CSV": ",".join(source.root_modules),
         "EXCLUDE_SOURCE_PREFIXES_CSV": ",".join(source.exclude_source_prefixes),
@@ -26,6 +26,20 @@ def environment_mapping(source: LeanGitSource, runner: RunnerPins) -> dict[str, 
         "ELAN_VERSION": runner.elan_version,
         "ELAN_SHA256": runner.elan_sha256,
     }
+    if isinstance(source, LeanGitSource):
+        mapping.update({
+            "SOURCE_KIND": "git",
+            "SOURCE_REPO": source.source_repo,
+            "SOURCE_COMMIT": source.source_commit,
+        })
+    elif isinstance(source, LeanArchiveSource):
+        mapping.update({
+            "SOURCE_KIND": "archive",
+            "ARCHIVE_URL": source.archive_url,
+            "ARCHIVE_SHA256": source.archive_sha256,
+            "ARCHIVE_FORMAT": source.archive_format,
+        })
+    return mapping
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -35,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--checkout-root", type=Path)
     parser.add_argument("--github-env", type=Path, required=True)
     args = parser.parse_args(argv)
-    source = load_lean_git_source(args.source)
+    source = load_lean_source(args.source)
     runner = load_runner_pins(args.runner)
     if args.checkout_root is None:
         mapping = environment_mapping(source, runner)

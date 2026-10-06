@@ -1,0 +1,11 @@
+{
+  "schema": "theseus.lean-archive-source.v1",
+  "source_id": "decreasing-diagrams-complete",
+  "archive_url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1",
+  "archive_sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+  "archive_format": "zip",
+  "source_subdir": "decreasing-diagrams-lean",
+  "root_modules": ["Regular", "Singular", "Audit"],
+  "build_target": "Audit",
+  "exclude_source_prefixes": []
+}
