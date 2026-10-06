@@ -42,6 +42,58 @@ class EvidenceGrade(str, Enum):
 
 
 @dataclass(frozen=True)
+class GitAuthority:
+    repo: str
+    commit: str
+    subdir: str
+
+    @property
+    def kind(self) -> str:
+        return "git"
+
+    @property
+    def source_revision(self) -> str:
+        return self.commit
+
+
+@dataclass(frozen=True)
+class ArchiveAuthority:
+    url: str
+    sha256: str
+    format: str
+    subdir: str
+
+    @property
+    def kind(self) -> str:
+        return "archive"
+
+    @property
+    def source_revision(self) -> str:
+        return self.sha256
+
+
+SourceAuthority = GitAuthority | ArchiveAuthority
+
+
+def source_authority_from_dict(data: dict[str, object]) -> SourceAuthority:
+    kind = _require_str(data.get("kind"), "source.kind")
+    if kind == "git":
+        return GitAuthority(
+            repo=_require_str(data.get("repo"), "source.repo"),
+            commit=_require_str(data.get("commit"), "source.commit"),
+            subdir=_require_str(data.get("subdir"), "source.subdir"),
+        )
+    if kind == "archive":
+        return ArchiveAuthority(
+            url=_require_str(data.get("url"), "source.url"),
+            sha256=_require_str(data.get("sha256"), "source.sha256"),
+            format=_require_str(data.get("format"), "source.format"),
+            subdir=_require_str(data.get("subdir"), "source.subdir"),
+        )
+    raise ValueError(f"unsupported source authority kind: {kind}")
+
+
+@dataclass(frozen=True)
 class Node:
     id: str
     full_name: str
@@ -161,6 +213,22 @@ class ArtifactManifest:
     edges_count: int
     created_from_authoritative_commit: bool
     authority_receipt_sha256: str | None = None
+
+    @property
+    def source_authority(self) -> GitAuthority:
+        return GitAuthority(
+            repo=self.source_repo,
+            commit=self.source_commit,
+            subdir=self.source_subdir,
+        )
+
+    @property
+    def source_revision(self) -> str:
+        return self.source_commit
+
+    @property
+    def created_from_authoritative_source(self) -> bool:
+        return self.created_from_authoritative_commit
 
     def to_dict(self) -> dict[str, object]:
         return {
