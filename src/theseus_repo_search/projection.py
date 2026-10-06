@@ -348,6 +348,7 @@ def projection_fingerprint(db_path: Path) -> str:
 
 def _populate_projection(artifact_dir: Path, db_path: Path) -> None:
     manifest, nodes, edges, sources = load_artifact(artifact_dir)
+    meta_rows: tuple[tuple[str, str], ...]
     if isinstance(manifest, ArtifactManifest):
         schema_statements = _V1_SCHEMA_STATEMENTS
         revision_column = "source_commit"
