@@ -100,6 +100,8 @@ def materialize_archive_source(
 ) -> dict[str, object]:
     dest = dest.resolve()
     receipt_path = receipt_path.resolve()
+    if receipt_path == dest or receipt_path.is_relative_to(dest):
+        raise _blocked(f"materialization receipt must be outside destination: {receipt_path}")
     if dest.exists() and (not dest.is_dir() or any(dest.iterdir())):
         raise _blocked(f"materialization destination is not an empty directory: {dest}")
     dest.parent.mkdir(parents=True, exist_ok=True)

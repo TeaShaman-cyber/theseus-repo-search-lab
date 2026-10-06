@@ -175,6 +175,22 @@ class ArchiveMaterializerTests(unittest.TestCase):
                 )
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
 
+    def test_receipt_inside_destination_fails_closed(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            dest = root / "source"
+            with self.assertRaises(RepoSearchError) as cm:
+                materialize_archive_source(
+                    source,
+                    dest=dest,
+                    receipt_path=dest / "receipt.json",
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(dest.exists())
+
     def test_existing_file_destination_fails_closed(self):
         data = zip_bytes({"pkg/Main.lean": b"x"})
         source = LeanArchiveSource.from_dict(payload(data))

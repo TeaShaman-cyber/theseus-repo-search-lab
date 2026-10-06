@@ -224,7 +224,8 @@ The extraction stage MUST verify that:
 6. every authoritative archive member is revalidated **immediately after LeanDepViz extraction and before the raw graph receipt is published**;
 7. any changed, missing, type-changed, or newly shadowing authoritative member blocks publication of the raw graph receipt;
 8. separately classified build outputs such as `.lake` products may exist without entering authority, provided they do not replace or mutate an authoritative archive member;
-9. no Git cleanliness/readback check is required or fabricated for archive sources.
+9. normalized archive source chunks are enumerated only from authoritative member-manifest paths under the selected source root; a generated `.lean` file absent from that manifest MUST NOT inherit the archive revision or enter the archive artifact unless it is bound under a separate explicit authority;
+10. no Git cleanliness/readback check is required or fabricated for archive sources.
 
 This closes the archive TOCTOU boundary: `lake exe cache get`, `lake build`, build hooks, or the extractor itself cannot mutate an authoritative source member while the producer continues to attest the original archive tree.
 
@@ -436,6 +437,8 @@ Required negative cases include:
 - selected source root escaping extraction tree;
 - materialization receipt or member-manifest mismatch;
 - authoritative archive member mutation before or during extraction;
+- unmanifested generated `.lean` source entering an archive artifact;
+- materialization receipt path equal to or contained by the materialization destination;
 - descriptor/manifest source-kind mismatch;
 - archive URL or digest tampering after artifact publication;
 - raw dependency graph receipt not bound to the same archive authority;
@@ -484,7 +487,8 @@ The architecture is accepted only when:
 11. the exact Zenodo source from #67 completes hosted producer + fresh artifact-only consumer acceptance;
 12. repository-native QA passes for the changed scope;
 13. any hosted repository-wide baseline failure is separated from PR-introduced diagnostics;
-14. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced.
+14. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced;
+15. archive normalization cannot serialize any source file absent from the authoritative member manifest under the archive revision.
 
 ## 17. Non-goals
 
