@@ -132,13 +132,13 @@ The remaining work begins at the provenance boundary after verified materializat
 - pre-extraction and post-extraction authoritative-member verification;
 - existing Git receipt v2 unchanged.
 
-- [ ] RED: archive extraction cannot produce/validate a structured raw receipt without fake repo/commit fields.
-- [ ] RED: mutate, remove, or type-change an authoritative member before extraction and require fail-closed.
-- [ ] RED: mutate an authoritative member during extraction and require post-extraction failure before receipt publication.
-- [ ] Implement source-kind-aware producer guard/receipt validation.
-- [ ] Preserve Git v2 receipt behavior and tests exactly.
-- [ ] GREEN focused producer/CLI tests.
-- [ ] Run `./tools/dev/check` and `git diff --check`.
+- [x] RED: archive extraction cannot produce/validate a structured raw receipt without fake repo/commit fields.
+- [x] RED: mutate, remove, or type-change an authoritative member before extraction and require fail-closed.
+- [x] RED: mutate an authoritative member during extraction and require post-extraction failure before receipt publication.
+- [x] Implement source-kind-aware producer guard/receipt validation.
+- [x] Preserve Git v2 receipt behavior and tests exactly.
+- [x] GREEN focused producer/CLI tests.
+- [x] Run `./tools/dev/check` and `git diff --check`.
 
 **Checkpoint:** raw graph evidence is honestly archive-bound, but archive artifact construction is not yet enabled in workflow.
 
