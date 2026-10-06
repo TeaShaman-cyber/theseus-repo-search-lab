@@ -8,13 +8,16 @@ import stat
 import tempfile
 import urllib.request
 import zipfile
+from collections.abc import Callable
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
-from typing import BinaryIO, Callable
+from typing import BinaryIO
 
 from theseus_repo_search.errors import RepoSearchError
-from theseus_repo_search.producer_config import LeanArchiveSource, load_lean_archive_source
-
+from theseus_repo_search.producer_config import (
+    LeanArchiveSource,
+    load_lean_archive_source,
+)
 
 RECEIPT_SCHEMA = "theseus.archive-materialization-receipt.v1"
 
@@ -114,7 +117,7 @@ def materialize_archive_source(
             )
         file_count, tree_sha256 = _extract_zip(archive_path, extracted)
         source_root = source.resolve_source_root(extracted)
-        receipt = {
+        receipt: dict[str, object] = {
             "schema": RECEIPT_SCHEMA,
             "source": {
                 "kind": "archive",

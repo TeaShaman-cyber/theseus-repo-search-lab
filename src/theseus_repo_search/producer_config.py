@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 
 from .errors import RepoSearchError
 
-
 SOURCE_SCHEMA_V1 = "theseus.lean-git-source.v1"
 SOURCE_SCHEMA_V2 = "theseus.lean-git-source.v2"
 ARCHIVE_SOURCE_SCHEMA_V1 = "theseus.lean-archive-source.v1"
@@ -124,7 +123,7 @@ class LeanGitSource:
     exclude_source_prefixes: tuple[str, ...] = ()
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> "LeanGitSource":
+    def from_dict(cls, data: dict[str, object]) -> LeanGitSource:
         schema = _require_str(data, "schema")
         if schema == SOURCE_SCHEMA_V1:
             expected = {
@@ -176,7 +175,7 @@ class LeanArchiveSource:
     exclude_source_prefixes: tuple[str, ...] = ()
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> "LeanArchiveSource":
+    def from_dict(cls, data: dict[str, object]) -> LeanArchiveSource:
         _require_exact_keys(
             data,
             {
@@ -228,7 +227,7 @@ class RunnerPins:
     elan_sha256: str
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> "RunnerPins":
+    def from_dict(cls, data: dict[str, object]) -> RunnerPins:
         expected = {
             "schema", "extractor_repo", "extractor_commit",
             "extractor_main_sha256", "elan_version", "elan_sha256",

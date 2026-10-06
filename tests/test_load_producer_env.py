@@ -6,7 +6,11 @@ from pathlib import Path
 
 from scripts.load_producer_env import environment_mapping, main
 from theseus_repo_search.errors import RepoSearchError
-from theseus_repo_search.producer_config import LeanArchiveSource, LeanGitSource, RunnerPins
+from theseus_repo_search.producer_config import (
+    LeanArchiveSource,
+    LeanGitSource,
+    RunnerPins,
+)
 
 
 class ProducerEnvTests(unittest.TestCase):
