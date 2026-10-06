@@ -9,15 +9,25 @@ from hashlib import sha256
 from dataclasses import asdict
 from pathlib import Path
 
-from .artifact import artifact_identity, load_artifact, write_artifact
+from .artifact import (
+    artifact_identity,
+    load_artifact,
+    write_archive_artifact_v2,
+    write_artifact,
+)
 from .errors import RepoSearchError
 from .graph import dependencies, path as graph_path, reverse_dependencies
-from .model import ArtifactScope, EvidenceGrade, ProducerPin
+from .model import ArchiveAuthority, ArtifactScope, EvidenceGrade, ProducerPin
 from .normalize import normalize_leandepviz
 from .projection import build_projection
-from .producer_config import LeanArchiveSource
+from .producer_config import LeanArchiveSource, load_lean_archive_source
 from .retrieval import SearchHit, context as build_context, search as search_repo
-from .sources import bind_node_sources, scan_lean_sources
+from .sources import (
+    bind_manifest_backed_node_sources,
+    bind_node_sources,
+    scan_lean_sources,
+    scan_manifest_backed_lean_sources,
+)
 
 
 def _emit(payload: dict[str, object], *, stream=sys.stdout) -> None:
@@ -203,9 +213,9 @@ def _verify_raw_depgraph_receipt(
         )
 
 
-def _verify_archive_raw_depgraph_receipt(
-    receipt_path: Path,
-    raw_depgraph_path: Path,
+def _verify_archive_raw_depgraph_receipt_bytes(
+    receipt_bytes: bytes,
+    raw_depgraph_bytes: bytes,
     *,
     source: LeanArchiveSource,
     tree_sha256: str,
@@ -216,13 +226,13 @@ def _verify_archive_raw_depgraph_receipt(
     producer_tool_hash: str,
 ) -> None:
     try:
-        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-        raw_hash = sha256(raw_depgraph_path.read_bytes()).hexdigest()
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        receipt = json.loads(receipt_bytes.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
         raise RepoSearchError(
             "BLOCKED_SOURCE_BINDING",
             f"invalid archive raw dependency graph receipt: {exc}",
         ) from exc
+    raw_hash = sha256(raw_depgraph_bytes).hexdigest()
     if not isinstance(receipt, dict):
         raise RepoSearchError(
             "BLOCKED_SOURCE_BINDING",
@@ -271,6 +281,154 @@ def _verify_archive_raw_depgraph_receipt(
             "archive raw dependency graph receipt does not match source, "
             "materialization, producer, scope, or graph hash",
         )
+
+
+def _verify_archive_raw_depgraph_receipt(
+    receipt_path: Path,
+    raw_depgraph_path: Path,
+    *,
+    source: LeanArchiveSource,
+    tree_sha256: str,
+    member_manifest_sha256: str,
+    producer_kind: str,
+    producer_tool_repo: str,
+    producer_tool_commit: str,
+    producer_tool_hash: str,
+) -> None:
+    try:
+        receipt_bytes = receipt_path.read_bytes()
+        raw_depgraph_bytes = raw_depgraph_path.read_bytes()
+    except OSError as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"cannot read archive raw dependency graph evidence: {exc}",
+        ) from exc
+    _verify_archive_raw_depgraph_receipt_bytes(
+        receipt_bytes,
+        raw_depgraph_bytes,
+        source=source,
+        tree_sha256=tree_sha256,
+        member_manifest_sha256=member_manifest_sha256,
+        producer_kind=producer_kind,
+        producer_tool_repo=producer_tool_repo,
+        producer_tool_commit=producer_tool_commit,
+        producer_tool_hash=producer_tool_hash,
+    )
+
+
+def _archive_source_identity(source: LeanArchiveSource) -> dict[str, object]:
+    return {
+        "kind": "archive",
+        "url": source.archive_url,
+        "sha256": source.archive_sha256,
+        "format": source.archive_format,
+        "subdir": source.source_subdir,
+    }
+
+
+def _load_archive_materialization_evidence(
+    receipt_path: Path,
+    member_manifest_path: Path,
+    *,
+    source: LeanArchiveSource,
+    materialization_root: Path,
+) -> tuple[str, str]:
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        member_manifest_bytes = member_manifest_path.read_bytes()
+        member_manifest = json.loads(member_manifest_bytes.decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"invalid archive materialization evidence: {exc}",
+        ) from exc
+    if not isinstance(receipt, dict) or not isinstance(member_manifest, dict):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive materialization evidence roots must be objects",
+        )
+    expected_source = _archive_source_identity(source)
+    if receipt.get("schema") != "theseus.archive-materialization-receipt.v1":
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "unsupported archive materialization receipt schema",
+        )
+    if receipt.get("source") != expected_source:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "archive materialization receipt source mismatch",
+        )
+    materialized = receipt.get("materialized")
+    if not isinstance(materialized, dict):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive materialization receipt materialized section must be an object",
+        )
+    tree_sha256 = materialized.get("tree_sha256")
+    member_manifest_sha256 = materialized.get("member_manifest_sha256")
+    source_root_relative = materialized.get("source_root_relative")
+    for label, digest in (
+        ("tree_sha256", tree_sha256),
+        ("member_manifest_sha256", member_manifest_sha256),
+    ):
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or any(ch not in "0123456789abcdef" for ch in digest)
+        ):
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                f"archive materialization receipt {label} must be SHA-256 hex",
+            )
+    expected_root = source.resolve_source_root(materialization_root.resolve())
+    expected_relative = expected_root.relative_to(materialization_root.resolve()).as_posix() or "."
+    if source_root_relative != expected_relative:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "archive materialization source-root mapping mismatch",
+        )
+    if sha256(member_manifest_bytes).hexdigest() != member_manifest_sha256:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "archive member manifest digest does not match materialization receipt",
+        )
+    if member_manifest.get("schema") != "theseus.archive-member-manifest.v1":
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "unsupported archive member manifest schema",
+        )
+    if member_manifest.get("source") != expected_source:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "archive member manifest source mismatch",
+        )
+    if member_manifest.get("source_root_relative") != expected_relative:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_MISMATCH",
+            "archive member manifest source-root mapping mismatch",
+        )
+    if not isinstance(tree_sha256, str) or not isinstance(member_manifest_sha256, str):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive materialization digest types changed after validation",
+        )
+    return tree_sha256, member_manifest_sha256
+
+
+def _load_raw_depgraph_bytes(data: bytes) -> dict[str, object]:
+    try:
+        value = json.loads(data.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_ARTIFACT_INTEGRITY",
+            f"invalid raw dependency graph: {exc}",
+        ) from exc
+    if not isinstance(value, dict):
+        raise RepoSearchError(
+            "BLOCKED_ARTIFACT_INTEGRITY",
+            "raw dependency graph must be a JSON object",
+        )
+    return value
 
 
 def _load_raw_depgraph(path: Path) -> dict[str, object]:
@@ -379,6 +537,89 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_build_archive_artifact(args: argparse.Namespace) -> int:
+    source = load_lean_archive_source(args.source)
+    materialization_root = args.materialization_root.resolve()
+    source_root = source.resolve_source_root(materialization_root)
+    tree_sha256, member_manifest_sha256 = _load_archive_materialization_evidence(
+        args.materialization_receipt,
+        args.member_manifest,
+        source=source,
+        materialization_root=materialization_root,
+    )
+    try:
+        authority_receipt = args.raw_depgraph_receipt.read_bytes()
+        raw_depgraph_bytes = args.raw_depgraph.read_bytes()
+    except OSError as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"cannot read archive raw dependency graph evidence: {exc}",
+        ) from exc
+    _verify_archive_raw_depgraph_receipt_bytes(
+        authority_receipt,
+        raw_depgraph_bytes,
+        source=source,
+        tree_sha256=tree_sha256,
+        member_manifest_sha256=member_manifest_sha256,
+        producer_kind=args.producer_kind,
+        producer_tool_repo=args.producer_tool_repo,
+        producer_tool_commit=args.producer_tool_commit,
+        producer_tool_hash=args.producer_tool_hash,
+    )
+    raw = _load_raw_depgraph_bytes(raw_depgraph_bytes)
+    nodes, edges = normalize_leandepviz(
+        raw,
+        source_commit=source.archive_sha256,
+        root_modules=source.root_modules,
+        producer_ref=f"{args.producer_tool_repo}@{args.producer_tool_commit}",
+    )
+    sources = scan_manifest_backed_lean_sources(
+        source_root,
+        source_revision=source.archive_sha256,
+        member_manifest_path=args.member_manifest,
+        expected_manifest_sha256=member_manifest_sha256,
+        exclude_prefixes=source.exclude_source_prefixes,
+    )
+    nodes = bind_manifest_backed_node_sources(nodes, sources)
+    manifest = write_archive_artifact_v2(
+        args.out,
+        nodes=nodes,
+        edges=edges,
+        sources=sources,
+        source_authority=ArchiveAuthority(
+            url=source.archive_url,
+            sha256=source.archive_sha256,
+            format=source.archive_format,
+            subdir=source.source_subdir,
+        ),
+        producer=ProducerPin(
+            kind=args.producer_kind,
+            tool_repo=args.producer_tool_repo,
+            tool_commit=args.producer_tool_commit,
+            tool_hash=args.producer_tool_hash,
+        ),
+        scope=ArtifactScope(
+            root_modules=source.root_modules,
+            dependency_boundary="internal_only",
+            exclude_source_prefixes=source.exclude_source_prefixes,
+        ),
+        created_from_authoritative_source=True,
+        authority_receipt=authority_receipt,
+        raw_depgraph=raw_depgraph_bytes,
+    )
+    _emit(
+        {
+            "status": "BUILT",
+            "artifact_identity": artifact_identity(manifest),
+            "nodes": manifest.nodes_count,
+            "edges": manifest.edges_count,
+            "sources": len(sources),
+            "out": str(args.out),
+        }
+    )
+    return 0
+
+
 def _cmd_verify_artifact(args: argparse.Namespace) -> int:
     manifest, nodes, edges, sources = load_artifact(args.artifact)
     _emit(
@@ -463,10 +704,27 @@ def _add_build_artifact(subparsers) -> None:
     parser.set_defaults(func=_cmd_build_artifact)
 
 
+def _add_build_archive_artifact(subparsers) -> None:
+    parser = subparsers.add_parser("build-archive-artifact")
+    parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument("--materialization-root", type=Path, required=True)
+    parser.add_argument("--materialization-receipt", type=Path, required=True)
+    parser.add_argument("--member-manifest", type=Path, required=True)
+    parser.add_argument("--raw-depgraph", type=Path, required=True)
+    parser.add_argument("--raw-depgraph-receipt", type=Path, required=True)
+    parser.add_argument("--producer-kind", required=True)
+    parser.add_argument("--producer-tool-repo", required=True)
+    parser.add_argument("--producer-tool-commit", required=True)
+    parser.add_argument("--producer-tool-hash", required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    parser.set_defaults(func=_cmd_build_archive_artifact)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="repo-search")
     subparsers = parser.add_subparsers(dest="command", required=True)
     _add_build_artifact(subparsers)
+    _add_build_archive_artifact(subparsers)
 
     verify = subparsers.add_parser("verify-artifact")
     verify.add_argument("--artifact", type=Path, required=True)

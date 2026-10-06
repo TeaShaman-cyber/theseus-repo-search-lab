@@ -163,6 +163,234 @@ class CliTests(unittest.TestCase):
             text=True,
         )
 
+    def write_archive_build_fixture(self, root: Path, *, unbacked_node: bool = False):
+        materialized = root / "materialized"
+        (materialized / "Pkg").mkdir(parents=True)
+        main_bytes = b"theorem ok : True := by trivial\n"
+        toolchain_bytes = b"leanprover/lean4:v4.30.0\n"
+        (materialized / "Pkg" / "Main.lean").write_bytes(main_bytes)
+        (materialized / "lean-toolchain").write_bytes(toolchain_bytes)
+        (materialized / "Pkg" / "Generated.lean").write_text(
+            "theorem injected : True := by trivial\n", encoding="utf-8"
+        )
+
+        archive_sha = "a" * 64
+        source_payload = {
+            "schema": "theseus.lean-archive-source.v1",
+            "source_id": "task-five-fixture",
+            "archive_url": "https://example.invalid/source.zip",
+            "archive_sha256": archive_sha,
+            "archive_format": "zip",
+            "source_subdir": ".",
+            "root_modules": ["Pkg"],
+            "build_target": "Pkg",
+            "exclude_source_prefixes": [],
+        }
+        descriptor = root / "source.json"
+        descriptor.write_text(json.dumps(source_payload), encoding="utf-8")
+        source_identity = {
+            "kind": "archive",
+            "url": source_payload["archive_url"],
+            "sha256": archive_sha,
+            "format": "zip",
+            "subdir": ".",
+        }
+        file_hashes = sorted(
+            [
+                ("Pkg/Main.lean", sha256(main_bytes).hexdigest()),
+                ("lean-toolchain", sha256(toolchain_bytes).hexdigest()),
+            ]
+        )
+        tree_sha = sha256(
+            json.dumps(file_hashes, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        member_payload = {
+            "schema": "theseus.archive-member-manifest.v1",
+            "source": source_identity,
+            "source_root_relative": ".",
+            "members": [
+                {
+                    "path": "Pkg/Main.lean",
+                    "source_path": "Pkg/Main.lean",
+                    "sha256": sha256(main_bytes).hexdigest(),
+                },
+                {
+                    "path": "lean-toolchain",
+                    "source_path": "lean-toolchain",
+                    "sha256": sha256(toolchain_bytes).hexdigest(),
+                },
+            ],
+        }
+        member_bytes = (
+            json.dumps(member_payload, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        member_manifest = root / "members.json"
+        member_manifest.write_bytes(member_bytes)
+        member_sha = sha256(member_bytes).hexdigest()
+        materialization_receipt = root / "materialization.json"
+        materialization_receipt.write_text(
+            json.dumps(
+                {
+                    "schema": "theseus.archive-materialization-receipt.v1",
+                    "source": source_identity,
+                    "materialized": {
+                        "file_count": 2,
+                        "tree_sha256": tree_sha,
+                        "member_manifest_sha256": member_sha,
+                        "source_root_relative": ".",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        raw_nodes = [
+            {
+                "module": "Pkg.Main",
+                "fullName": "Pkg.Main.ok",
+                "name": "ok",
+                "kind": "thm",
+            }
+        ]
+        raw_edges = []
+        if unbacked_node:
+            raw_nodes.append(
+                {
+                    "module": "Pkg.Generated",
+                    "fullName": "Pkg.Generated.injected",
+                    "name": "injected",
+                    "kind": "thm",
+                }
+            )
+            raw_edges.append(
+                {
+                    "kind": "value",
+                    "source": "Pkg.Generated.injected",
+                    "target": "Pkg.Main.ok",
+                }
+            )
+        raw = root / "raw.json"
+        raw_bytes = (
+            json.dumps(
+                {"nodes": raw_nodes, "edges": raw_edges},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode("utf-8")
+        raw.write_bytes(raw_bytes)
+        raw_receipt = root / "raw-receipt.json"
+        raw_receipt.write_text(
+            json.dumps(
+                {
+                    "schema": "theseus.raw-depgraph-receipt.v3",
+                    "source": source_identity,
+                    "materialization": {
+                        "tree_sha256": tree_sha,
+                        "member_manifest_sha256": member_sha,
+                    },
+                    "scope": {"root_modules": ["Pkg"]},
+                    "producer": {
+                        "kind": "lean-dep-viz",
+                        "tool_repo": "cameronfreer/LeanDepViz",
+                        "tool_commit": TOOL_COMMIT,
+                        "tool_hash": TOOL_HASH,
+                    },
+                    "observed": {"lean_toolchain": "leanprover/lean4:v4.30.0"},
+                    "raw_depgraph": {"sha256": sha256(raw_bytes).hexdigest()},
+                }
+            ),
+            encoding="utf-8",
+        )
+        return {
+            "materialized": materialized,
+            "descriptor": descriptor,
+            "materialization_receipt": materialization_receipt,
+            "member_manifest": member_manifest,
+            "raw": raw,
+            "raw_receipt": raw_receipt,
+        }
+
+    def build_archive(self, fixture, out: Path):
+        return self.run_cli(
+            "build-archive-artifact",
+            "--source", fixture["descriptor"],
+            "--materialization-root", fixture["materialized"],
+            "--materialization-receipt", fixture["materialization_receipt"],
+            "--member-manifest", fixture["member_manifest"],
+            "--raw-depgraph", fixture["raw"],
+            "--raw-depgraph-receipt", fixture["raw_receipt"],
+            "--producer-kind", "lean-dep-viz",
+            "--producer-tool-repo", "cameronfreer/LeanDepViz",
+            "--producer-tool-commit", TOOL_COMMIT,
+            "--producer-tool-hash", TOOL_HASH,
+            "--out", out,
+        )
+
+    def test_build_archive_artifact_uses_only_manifest_backed_sources(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            manifest, nodes, edges, sources = load_artifact(out)
+            self.assertEqual(manifest.schema, "theseus.repo-index.v2")
+            self.assertTrue(manifest.created_from_authoritative_source)
+            self.assertEqual(manifest.source_revision, "a" * 64)
+            self.assertEqual([chunk.source_path for chunk in sources], ["Pkg/Main.lean"])
+            self.assertEqual([node.source_path for node in nodes], ["Pkg/Main.lean"])
+            self.assertEqual(edges, [])
+            self.assertNotIn("Generated.lean", (out / "sources.jsonl").read_text())
+            self.assertNotIn("source_commit", (out / "nodes.jsonl").read_text())
+
+    def test_authoritative_v2_loader_rejects_node_without_source_binding(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            nodes_path = out / "nodes.jsonl"
+            node = json.loads(nodes_path.read_text())
+            node["source_path"] = None
+            node["source_start_line"] = None
+            node["source_end_line"] = None
+            nodes_bytes = (
+                json.dumps(node, sort_keys=True, separators=(",", ":")) + "\n"
+            ).encode()
+            nodes_path.write_bytes(nodes_bytes)
+            manifest_path = out / "manifest.json"
+            manifest = json.loads(manifest_path.read_text())
+            manifest["members"]["nodes"]["sha256"] = sha256(nodes_bytes).hexdigest()
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(RepoSearchError, "lacks source binding"):
+                load_artifact(out)
+
+    def test_build_archive_artifact_rejects_source_mutation_after_raw_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            (fixture["materialized"] / "Pkg" / "Main.lean").write_text(
+                "theorem ok : False := by contradiction\n", encoding="utf-8"
+            )
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(json.loads(result.stderr)["code"], "BLOCKED_SOURCE_MISMATCH")
+            self.assertFalse(out.exists())
+
+    def test_build_archive_artifact_rejects_unmanifested_node_and_edge(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root, unbacked_node=True)
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stderr)
+            self.assertEqual(payload["code"], "BLOCKED_SOURCE_MISMATCH")
+            self.assertIn("Pkg.Generated.injected", payload["message"])
+            self.assertFalse(out.exists())
+
     def build_exact(self, out: Path):
         result = self.run_cli(
             "build-artifact",

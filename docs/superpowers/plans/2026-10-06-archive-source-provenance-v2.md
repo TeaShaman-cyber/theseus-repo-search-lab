@@ -150,6 +150,7 @@ The remaining work begins at the provenance boundary after verified materializat
 - Modify: `src/theseus_repo_search/sources.py`
 - Modify: `src/theseus_repo_search/normalize.py` only if the source-neutral boundary requires it
 - Modify: `src/theseus_repo_search/cli.py`
+- Modify: `src/theseus_repo_search/artifact.py` to enable authoritative v2 only after Task 4 receipt-v3 support
 - Modify: `tests/test_sources.py`
 - Modify: `tests/test_cli.py`
 - Modify/add narrow normalization tests only where required.
@@ -161,13 +162,13 @@ The remaining work begins at the provenance boundary after verified materializat
 - every serialized in-scope node/module binds to exactly one manifest-backed authoritative source path/chunk;
 - dependent edges to generated/unmanifested nodes fail closed.
 
-- [ ] RED: generated `.lean` outside the member manifest is visible to the current recursive non-Git scanner.
-- [ ] RED: change an authoritative `.lean` after raw-receipt publication but before source normalization; require mismatch failure.
-- [ ] RED: inject an in-scope raw node/module whose source is not manifest-backed; require artifact construction failure.
-- [ ] Add an explicit manifest-backed archive scan path; do not weaken Git `tracked_only` semantics.
-- [ ] Require exact node-to-authoritative-source binding before v2 archive serialization.
-- [ ] GREEN focused source/CLI tests.
-- [ ] Run `./tools/dev/check` and `git diff --check`.
+- [x] RED: generated `.lean` outside the member manifest is visible to the current recursive non-Git scanner.
+- [x] RED: change an authoritative `.lean` after raw-receipt publication but before source normalization; require mismatch failure.
+- [x] RED: inject an in-scope raw node/module whose source is not manifest-backed; require artifact construction failure.
+- [x] Add an explicit manifest-backed archive scan path; do not weaken Git `tracked_only` semantics.
+- [x] Require exact node-to-authoritative-source binding before v2 archive serialization.
+- [x] GREEN focused source/CLI tests.
+- [x] Run `./tools/dev/check` and `git diff --check`.
 
 **Checkpoint:** one local synthetic archive can produce a fully validated v2 artifact; projection/replay/consumer still intentionally reject/ignore v2 until migrated.
 

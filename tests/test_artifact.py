@@ -331,25 +331,79 @@ class ArtifactTests(unittest.TestCase):
             with self.assertRaises(RepoSearchError):
                 load_artifact(path)
 
-    def test_v2_authoritative_writer_waits_for_receipt_v3(self):
+    def test_v2_authoritative_writer_requires_and_validates_receipt_v3(self):
         from theseus_repo_search.model import ArchiveAuthority
 
         authority = ArchiveAuthority(
             url=ARCHIVE_URL, sha256=ARCHIVE_SHA256, format="zip", subdir="pkg"
         )
-        with tempfile.TemporaryDirectory() as d, self.assertRaisesRegex(
-            RepoSearchError, "receipt v3"
-        ):
-            write_archive_artifact_v2(
-                Path(d) / "artifact",
+        scope = ArtifactScope(root_modules=("Regular",), dependency_boundary="internal_only")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            with self.assertRaisesRegex(RepoSearchError, "receipt v3"):
+                write_archive_artifact_v2(
+                    root / "missing-receipt",
+                    nodes=[],
+                    edges=[],
+                    sources=[],
+                    source_authority=authority,
+                    producer=PRODUCER,
+                    scope=scope,
+                    created_from_authoritative_source=True,
+                )
+
+            raw = b'{"nodes":[],"edges":[]}\n'
+            receipt = (
+                json.dumps(
+                    {
+                        "schema": "theseus.raw-depgraph-receipt.v3",
+                        "source": {
+                            "kind": "archive",
+                            "url": ARCHIVE_URL,
+                            "sha256": ARCHIVE_SHA256,
+                            "format": "zip",
+                            "subdir": "pkg",
+                        },
+                        "materialization": {
+                            "tree_sha256": "d" * 64,
+                            "member_manifest_sha256": "e" * 64,
+                        },
+                        "scope": {"root_modules": ["Regular"]},
+                        "producer": {
+                            "kind": PRODUCER.kind,
+                            "tool_repo": PRODUCER.tool_repo,
+                            "tool_commit": PRODUCER.tool_commit,
+                            "tool_hash": PRODUCER.tool_hash,
+                        },
+                        "observed": {"lean_toolchain": "leanprover/lean4:v4.30.0"},
+                        "raw_depgraph": {"sha256": sha256(raw).hexdigest()},
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n"
+            ).encode()
+            path = root / "artifact"
+            manifest = write_archive_artifact_v2(
+                path,
                 nodes=[],
                 edges=[],
-                sources=None,
+                sources=[],
                 source_authority=authority,
                 producer=PRODUCER,
-                scope=ArtifactScope(root_modules=("Regular",), dependency_boundary="internal_only"),
+                scope=scope,
                 created_from_authoritative_source=True,
+                authority_receipt=receipt,
+                raw_depgraph=raw,
             )
+            loaded, nodes, edges, sources = load_artifact(path)
+            self.assertEqual(loaded, manifest)
+            self.assertTrue(manifest.created_from_authoritative_source)
+            self.assertEqual(manifest.authority_receipt_sha256, sha256(receipt).hexdigest())
+            self.assertEqual(nodes, [])
+            self.assertEqual(edges, [])
+            self.assertEqual(sources, [])
+
 
     def test_v1_identity_and_manifest_bytes_are_stable(self):
         expected_identity = "2ab27e03377162f22a5af336036793f04d3f09ee1291ffe48fdd1d615100f03a"
