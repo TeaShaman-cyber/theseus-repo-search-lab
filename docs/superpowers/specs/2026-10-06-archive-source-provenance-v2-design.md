@@ -210,15 +210,23 @@ The acquisition slice already defines `theseus.lean-archive-source.v1` and verif
 - source-root containment;
 - deterministic materialization receipt.
 
-For issue #68, the archive materialization receipt becomes an input to exact extraction rather than an isolated preprocessing receipt.
+For issue #68, archive materialization must additionally persist a deterministic **member-level hash manifest** for the authoritative archive members. The manifest records each normalized archive member path and its content SHA-256 and has its own digest. Build outputs created after extraction are not added to this authority manifest.
+
+The archive materialization receipt becomes an input to exact extraction rather than an isolated preprocessing receipt.
 
 The extraction stage MUST verify that:
 
 1. the selected source root belongs to the verified materialization;
-2. the materialization receipt matches the selected source descriptor;
-3. the source-owned `lean-toolchain` is observed from that verified root;
-4. the raw dependency graph is produced only after those checks;
-5. no Git cleanliness/readback check is required or fabricated for archive sources.
+2. the materialization receipt and member-hash manifest match the selected source descriptor and archive SHA-256;
+3. every authoritative archive member still matches the persisted member hash **immediately before LeanDepViz extraction**;
+4. the source-owned `lean-toolchain` is observed from that verified root;
+5. the raw dependency graph is produced only after those checks;
+6. every authoritative archive member is revalidated **immediately after LeanDepViz extraction and before the raw graph receipt is published**;
+7. any changed, missing, type-changed, or newly shadowing authoritative member blocks publication of the raw graph receipt;
+8. separately classified build outputs such as `.lake` products may exist without entering authority, provided they do not replace or mutate an authoritative archive member;
+9. no Git cleanliness/readback check is required or fabricated for archive sources.
+
+This closes the archive TOCTOU boundary: `lake exe cache get`, `lake build`, build hooks, or the extractor itself cannot mutate an authoritative source member while the producer continues to attest the original archive tree.
 
 ## 8. Raw dependency-graph authority receipt
 
@@ -239,7 +247,8 @@ Conceptual archive receipt:
     "subdir": "decreasing-diagrams-lean"
   },
   "materialization": {
-    "tree_sha256": "<deterministic extracted-tree digest>"
+    "tree_sha256": "<deterministic extracted-tree digest>",
+    "member_manifest_sha256": "<digest of persisted path/content-hash manifest>"
   },
   "scope": {
     "root_modules": ["Regular", "Singular", "Audit"]
@@ -259,7 +268,7 @@ Conceptual archive receipt:
 }
 ```
 
-The materialized tree hash is evidence that extraction used the same verified archive tree. It does not replace the archive SHA-256 as upstream authority.
+The materialized tree hash is evidence that extraction used the same verified archive tree. The member-manifest hash binds the exact authoritative file set used for pre/post extraction revalidation. Neither replaces the archive SHA-256 as upstream authority.
 
 V2 Git receipts remain valid. There is no requirement to republish existing Git receipts as v3.
 
@@ -311,9 +320,11 @@ artifact_identity
 
 Existing v1 projection readers remain compatible. Migration of historical SQLite projections is unnecessary because projections are disposable and rebuildable.
 
-Node/source tables SHOULD rename `source_commit` to `source_revision` only if that can be done without forcing a broad simultaneous migration. A compatibility view/column strategy is acceptable during the transition.
+V1 Git projections keep the existing `source_commit` layout unchanged. V2 archive projections MUST store the archive revision only as `source_revision`; an archive SHA-256 MUST NOT be stored or exposed in a `source_commit` column or compatibility view.
 
-The acceptance criterion is semantic honesty, not a cosmetic database rename in this slice.
+Shared retrieval code may normalize v1 `source_commit` and v2 `source_revision` into one internal revision field after schema-aware decoding. That compatibility belongs in the reader/model boundary, not in a misleading archive database column.
+
+The acceptance criterion is semantic honesty, not a cosmetic rename: querying a v2 archive projection must never surface its digest under Git-commit terminology.
 
 ## 11. Registered replay
 
@@ -366,6 +377,14 @@ For v2 archive artifacts, the receipt records a structured source object, for ex
 
 A consumer receipt must never emit `source_commit=<archive hash>`.
 
+The replay payload MUST also carry the exact `artifact_identity` it consumed. Before reporting PASS, the consumer receipt builder MUST compare:
+
+1. the freshly validated artifact identity;
+2. the projection metadata artifact identity; and
+3. the replay payload artifact identity.
+
+All three must be identical. A `status=PASS` replay from another artifact is invalid evidence and must fail closed. This is a general consumer-acceptance correctness requirement, not an archive-only exception; the pre-existing v1 gap is tracked as #70 and is a prerequisite for archive acceptance.
+
 ## 13. Workflow routing
 
 The generic producer workflow branches only at acquisition/readback mechanics:
@@ -415,7 +434,8 @@ Required negative cases include:
 - symlink/device/special member;
 - duplicate normalized member path;
 - selected source root escaping extraction tree;
-- materialization receipt mismatch;
+- materialization receipt or member-manifest mismatch;
+- authoritative archive member mutation before or during extraction;
 - descriptor/manifest source-kind mismatch;
 - archive URL or digest tampering after artifact publication;
 - raw dependency graph receipt not bound to the same archive authority;
@@ -447,14 +467,16 @@ The architecture is accepted only when:
 2. historical v1 artifact identity remains unchanged;
 3. an archive artifact contains no fabricated Git repository or Git commit;
 4. changing archive URL/SHA-256/subdir causes validation failure or a distinct artifact identity;
-5. raw dependency graph receipt is bound to the verified archive materialization and source authority;
+5. raw dependency graph receipt is bound to the verified archive materialization, persisted member manifest, pre/post extraction member revalidation, and source authority;
 6. normalized nodes/source chunks use generic revision semantics for v2;
-7. projection and registered replay preserve archive authority without source-kind guessing;
-8. consumer receipt reports structured archive authority;
-9. the exact Zenodo source from #67 completes hosted producer + fresh artifact-only consumer acceptance;
-10. repository-native QA passes for the changed scope;
-11. any hosted repository-wide baseline failure is separated from PR-introduced diagnostics;
-12. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced.
+7. v2 archive projections never expose archive digests as `source_commit`;
+8. projection and registered replay preserve archive authority without source-kind guessing;
+9. consumer receipt reports structured archive authority and rejects any replay whose `artifact_identity` differs from artifact/projection identity;
+10. #70 closes the general replay-to-artifact consumer binding gap before archive acceptance;
+11. the exact Zenodo source from #67 completes hosted producer + fresh artifact-only consumer acceptance;
+12. repository-native QA passes for the changed scope;
+13. any hosted repository-wide baseline failure is separated from PR-introduced diagnostics;
+14. no Isabelle adapter, source registry, mirror-authority scheme, or publisher-specific retrieval logic is introduced.
 
 ## 17. Non-goals
 
