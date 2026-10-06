@@ -8,7 +8,11 @@ from hashlib import sha256
 from pathlib import Path
 from unittest import mock
 
-from scripts.materialize_archive_source import materialize_archive_source
+from scripts.materialize_archive_source import (
+    materialize_archive_source,
+    member_manifest_path_for_receipt,
+    verify_materialized_archive_members,
+)
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.producer_config import LeanArchiveSource, load_lean_source
 
@@ -98,6 +102,127 @@ class ArchiveMaterializerTests(unittest.TestCase):
             self.assertEqual(receipt["materialized"]["file_count"], 2)
             persisted = json.loads(receipt_path.read_text(encoding="utf-8"))
             self.assertEqual(persisted, receipt)
+
+    def test_materialization_persists_member_manifest_and_digest(self):
+        data = zip_bytes({
+            "pkg/lean-toolchain": b"leanprover/lean4:v4.30.0\n",
+            "pkg/Main.lean": b"theorem ok : True := by trivial\n",
+        })
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            receipt_path = root / "receipt.json"
+            receipt = materialize_archive_source(
+                source,
+                dest=root / "source",
+                receipt_path=receipt_path,
+                opener=lambda *_args, **_kwargs: Response(data),
+            )
+            member_manifest_path = root / "receipt.members.json"
+            manifest_bytes = member_manifest_path.read_bytes()
+            member_manifest = json.loads(manifest_bytes)
+
+            self.assertEqual(
+                receipt["materialized"]["member_manifest_sha256"],
+                sha256(manifest_bytes).hexdigest(),
+            )
+            self.assertEqual(member_manifest["schema"], "theseus.archive-member-manifest.v1")
+            self.assertEqual(member_manifest["source"], receipt["source"])
+            self.assertEqual(member_manifest["source_root_relative"], "pkg")
+            self.assertEqual(
+                member_manifest["members"],
+                [
+                    {
+                        "path": "pkg/Main.lean",
+                        "source_path": "Main.lean",
+                        "sha256": sha256(b"theorem ok : True := by trivial\n").hexdigest(),
+                    },
+                    {
+                        "path": "pkg/lean-toolchain",
+                        "source_path": "lean-toolchain",
+                        "sha256": sha256(b"leanprover/lean4:v4.30.0\n").hexdigest(),
+                    },
+                ],
+            )
+            self.assertEqual(
+                verify_materialized_archive_members(
+                    source, dest=root / "source", receipt_path=receipt_path
+                ),
+                member_manifest,
+            )
+
+    def test_member_manifest_and_receipt_are_output_path_independent(self):
+        data = zip_bytes({
+            "pkg/Main.lean": b"theorem ok : True := by trivial\n",
+            "pkg/lean-toolchain": b"leanprover/lean4:v4.30.0\n",
+        })
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            snapshots = []
+            for name in ("one", "two"):
+                run_root = root / name
+                receipt_path = run_root / "authority.json"
+                materialize_archive_source(
+                    source,
+                    dest=run_root / "source",
+                    receipt_path=receipt_path,
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+                snapshots.append(
+                    (
+                        receipt_path.read_bytes(),
+                        member_manifest_path_for_receipt(receipt_path).read_bytes(),
+                    )
+                )
+            self.assertEqual(snapshots[0], snapshots[1])
+
+    def test_existing_member_manifest_target_fails_before_publication(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            receipt_path = root / "receipt.json"
+            member_manifest_path = member_manifest_path_for_receipt(receipt_path)
+            member_manifest_path.write_text("existing manifest\n", encoding="utf-8")
+            with self.assertRaises(RepoSearchError) as cm:
+                materialize_archive_source(
+                    source,
+                    dest=root / "source",
+                    receipt_path=receipt_path,
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse((root / "source").exists())
+            self.assertFalse(receipt_path.exists())
+            self.assertEqual(
+                member_manifest_path.read_text(encoding="utf-8"), "existing manifest\n"
+            )
+
+    def test_persisted_member_manifest_rejects_tampered_member(self):
+        data = zip_bytes({
+            "pkg/Main.lean": b"theorem ok : True := by trivial\n",
+            "pkg/lean-toolchain": b"leanprover/lean4:v4.30.0\n",
+        })
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            dest = root / "source"
+            receipt_path = root / "receipt.json"
+            materialize_archive_source(
+                source,
+                dest=dest,
+                receipt_path=receipt_path,
+                opener=lambda *_args, **_kwargs: Response(data),
+            )
+            (dest / "pkg" / "Main.lean").write_bytes(b"tampered\n")
+
+            with self.assertRaises(RepoSearchError) as cm:
+                verify_materialized_archive_members(
+                    source, dest=dest, receipt_path=receipt_path
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_MISMATCH")
+            self.assertIn("pkg/Main.lean", str(cm.exception))
 
     def test_relative_destination_paths_are_supported(self):
         data = zip_bytes({"pkg/Main.lean": b"theorem ok : True := by trivial\n"})
@@ -309,6 +434,39 @@ class ArchiveMaterializerTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
             self.assertFalse(dest.exists())
             self.assertEqual(receipt_path.read_text(encoding="utf-8"), "other receipt\n")
+            self.assertFalse(member_manifest_path_for_receipt(receipt_path).exists())
+
+    def test_concurrent_member_manifest_target_is_not_overwritten(self):
+        data = zip_bytes({"pkg/Main.lean": b"x"})
+        source = LeanArchiveSource.from_dict(payload(data))
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            dest = root / "source"
+            receipt_path = root / "receipt.json"
+            member_manifest_path = member_manifest_path_for_receipt(receipt_path)
+            real_link = __import__("os").link
+
+            def race_member_manifest_link(src, dst):
+                if Path(dst) == member_manifest_path:
+                    member_manifest_path.write_text("other manifest\n", encoding="utf-8")
+                return real_link(src, dst)
+
+            with mock.patch(
+                "scripts.materialize_archive_source.os.link",
+                side_effect=race_member_manifest_link,
+            ), self.assertRaises(RepoSearchError) as cm:
+                materialize_archive_source(
+                    source,
+                    dest=dest,
+                    receipt_path=receipt_path,
+                    opener=lambda *_args, **_kwargs: Response(data),
+                )
+            self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+            self.assertFalse(dest.exists())
+            self.assertFalse(receipt_path.exists())
+            self.assertEqual(
+                member_manifest_path.read_text(encoding="utf-8"), "other manifest\n"
+            )
 
     def test_receipt_publication_failure_rolls_back_destination(self):
         data = zip_bytes({"pkg/Main.lean": b"x"})
@@ -317,8 +475,12 @@ class ArchiveMaterializerTests(unittest.TestCase):
             root = Path(d)
             dest = root / "source"
             receipt_path = root / "receipt.json"
-            def fail_receipt_link(_src, _dst):
-                raise OSError("simulated receipt publication failure")
+            real_link = __import__("os").link
+
+            def fail_receipt_link(src, dst):
+                if Path(dst) == receipt_path:
+                    raise OSError("simulated receipt publication failure")
+                return real_link(src, dst)
 
             with mock.patch(
                 "scripts.materialize_archive_source.os.link", side_effect=fail_receipt_link
@@ -332,6 +494,7 @@ class ArchiveMaterializerTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
             self.assertFalse(dest.exists())
             self.assertFalse(receipt_path.exists())
+            self.assertFalse(member_manifest_path_for_receipt(receipt_path).exists())
 
     def test_existing_file_destination_fails_closed(self):
         data = zip_bytes({"pkg/Main.lean": b"x"})
