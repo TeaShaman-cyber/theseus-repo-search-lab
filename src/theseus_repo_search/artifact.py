@@ -10,6 +10,7 @@ from typing import Iterable, Sequence
 
 from .errors import RepoSearchError
 from .normalize import normalize_leandepviz
+from .sources import bind_manifest_backed_node_sources, filter_manifest_backed_edges
 from .model import (
     ArtifactManifest,
     ArtifactManifestAny,
@@ -742,7 +743,10 @@ def load_artifact(
             expected_source_path = f"{node.module.replace('.', '/')}.lean"
             if source_path != expected_source_path:
                 raise _integrity(f"node source location mismatch: {node.id}")
-            if sources:
+            if sources and not (
+                isinstance(manifest, ArtifactManifestV2)
+                and manifest.created_from_authoritative_source
+            ):
                 key = (
                     source_path,
                     source_start_line,
@@ -751,6 +755,22 @@ def load_artifact(
                 )
                 if source_binding_counts.get(key, 0) != 1:
                     raise _integrity(f"node source location mismatch: {node.id}")
+
+    if isinstance(manifest, ArtifactManifestV2) and manifest.created_from_authoritative_source:
+        try:
+            rebound_nodes = bind_manifest_backed_node_sources(nodes, sources)
+        except RepoSearchError as exc:
+            raise _integrity(f"archive node source binding mismatch: {exc}") from exc
+        observed_bindings = [
+            (node.id, node.source_path, node.source_start_line, node.source_end_line)
+            for node in nodes
+        ]
+        expected_bindings = [
+            (node.id, node.source_path, node.source_start_line, node.source_end_line)
+            for node in rebound_nodes
+        ]
+        if observed_bindings != expected_bindings:
+            raise _integrity("authoritative archive nodes do not match manifest-backed source binding")
 
     if manifest.created_from_authoritative_source and manifest.producer.kind != "lexical_only":
         try:
@@ -765,6 +785,13 @@ def load_artifact(
             root_modules=manifest.scope.root_modules,
             producer_ref=f"{manifest.producer.tool_repo}@{manifest.producer.tool_commit}",
         )
+        if isinstance(manifest, ArtifactManifestV2):
+            try:
+                derived_nodes = bind_manifest_backed_node_sources(derived_nodes, sources)
+            except RepoSearchError as exc:
+                raise _integrity(f"raw archive graph source binding mismatch: {exc}") from exc
+            derived_edges = filter_manifest_backed_edges(derived_edges, derived_nodes)
+
         def graph_node_key(node: Node) -> tuple[str, str, str, str, str, str]:
             return (
                 node.id, node.full_name, node.name, node.kind, node.module, node.source_commit

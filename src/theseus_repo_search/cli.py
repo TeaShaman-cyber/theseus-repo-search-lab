@@ -30,6 +30,7 @@ from .retrieval import SearchHit, context as build_context, search as search_rep
 from .sources import (
     bind_manifest_backed_node_sources,
     bind_node_sources,
+    filter_manifest_backed_edges,
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
 )
@@ -654,6 +655,7 @@ def _cmd_build_archive_artifact(args: argparse.Namespace) -> int:
         exclude_prefixes=source.exclude_source_prefixes,
     )
     nodes = bind_manifest_backed_node_sources(nodes, sources)
+    edges = filter_manifest_backed_edges(edges, nodes)
     manifest = write_archive_artifact_v2(
         args.out,
         nodes=nodes,
