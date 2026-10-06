@@ -2,7 +2,7 @@
 
 **Issue:** #68
 **Parent corpus:** #67
-**Status:** design approved; written specification self-reviewed; implementation plan pending
+**Status:** design approved; written specification self-reviewed; implementation plan written
 **Primary goal:** represent immutable archive-backed Lean sources honestly through producer, artifact, projection, replay, and consumer receipts without fabricating Git authority or breaking existing Git-backed artifacts.
 
 ## 1. Problem
