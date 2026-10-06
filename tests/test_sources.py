@@ -5,8 +5,12 @@ import unittest
 from hashlib import sha256
 from pathlib import Path
 
-from theseus_repo_search.model import Node
-from theseus_repo_search.sources import bind_node_sources, scan_lean_sources
+from theseus_repo_search.model import Node, SourceChunk
+from theseus_repo_search.sources import (
+    bind_node_sources,
+    scan_lean_sources,
+    scan_manifest_backed_lean_sources,
+)
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "lean_src"
@@ -151,6 +155,229 @@ class SourceChunkTests(unittest.TestCase):
             bound = bind_node_sources([node], chunks)[0]
             self.assertEqual(bound.source_path, "Zeta23/A.lean")
             self.assertEqual((bound.source_start_line, bound.source_end_line), (1, 1))
+
+    def test_manifest_backed_scan_ignores_generated_unmanifested_lean(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            authoritative = root / "Main.lean"
+            authoritative_bytes = b"theorem authoritative : True := by trivial\n"
+            authoritative.write_bytes(authoritative_bytes)
+            generated = root / "Generated.lean"
+            generated.write_text(
+                "theorem generated : True := by trivial\n", encoding="utf-8"
+            )
+            member_manifest = root / "members.json"
+            member_manifest.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.archive-member-manifest.v1",
+                        "source": {
+                            "kind": "archive",
+                            "url": "https://example.invalid/source.zip",
+                            "sha256": "a" * 64,
+                            "format": "zip",
+                            "subdir": ".",
+                        },
+                        "source_root_relative": ".",
+                        "members": [
+                            {
+                                "path": "Main.lean",
+                                "source_path": "Main.lean",
+                                "sha256": sha256(authoritative_bytes).hexdigest(),
+                            }
+                        ],
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                {chunk.declaration_hint for chunk in scan_lean_sources(root, source_commit="a" * 64)},
+                {"authoritative", "generated"},
+            )
+            chunks = scan_manifest_backed_lean_sources(
+                root,
+                source_revision="a" * 64,
+                member_manifest_path=member_manifest,
+            )
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["authoritative"])
+            self.assertEqual([chunk.source_path for chunk in chunks], ["Main.lean"])
+            self.assertTrue(all(chunk.source_revision == "a" * 64 for chunk in chunks))
+
+    def test_manifest_backed_scan_rejects_member_changed_before_consumption(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            authoritative = root / "Main.lean"
+            original = b"theorem authoritative : True := by trivial\n"
+            authoritative.write_bytes(original)
+            member_manifest = root / "members.json"
+            member_manifest.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.archive-member-manifest.v1",
+                        "source": {
+                            "kind": "archive",
+                            "url": "https://example.invalid/source.zip",
+                            "sha256": "a" * 64,
+                            "format": "zip",
+                            "subdir": ".",
+                        },
+                        "source_root_relative": ".",
+                        "members": [
+                            {
+                                "path": "Main.lean",
+                                "source_path": "Main.lean",
+                                "sha256": sha256(original).hexdigest(),
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            authoritative.write_text(
+                "theorem authoritative : False := by contradiction\n",
+                encoding="utf-8",
+            )
+
+            from theseus_repo_search.errors import RepoSearchError
+
+            with self.assertRaises(RepoSearchError) as caught:
+                scan_manifest_backed_lean_sources(
+                    root,
+                    source_revision="a" * 64,
+                    member_manifest_path=member_manifest,
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+            self.assertIn("Main.lean", str(caught.exception))
+
+    def test_manifest_backed_scan_rejects_type_changed_source_at_consumption(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            target = root / "Main.lean"
+            data = b"theorem authoritative : True := by trivial\n"
+            target.write_bytes(data)
+            manifest_path = root / "members.json"
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.archive-member-manifest.v1",
+                        "source": {
+                            "kind": "archive",
+                            "url": "https://example.invalid/source.zip",
+                            "sha256": "a" * 64,
+                            "format": "zip",
+                            "subdir": ".",
+                        },
+                        "source_root_relative": ".",
+                        "members": [
+                            {
+                                "path": "Main.lean",
+                                "source_path": "Main.lean",
+                                "sha256": sha256(data).hexdigest(),
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            target.unlink()
+            target.mkdir()
+            from theseus_repo_search.errors import RepoSearchError
+
+            with self.assertRaises(RepoSearchError) as caught:
+                scan_manifest_backed_lean_sources(
+                    root,
+                    source_revision="a" * 64,
+                    member_manifest_path=manifest_path,
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+
+    def test_manifest_backed_scan_rejects_changed_member_manifest_bytes(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            data = b"theorem authoritative : True := by trivial\n"
+            (root / "Main.lean").write_bytes(data)
+            manifest_path = root / "members.json"
+            payload = {
+                "schema": "theseus.archive-member-manifest.v1",
+                "source": {
+                    "kind": "archive",
+                    "url": "https://example.invalid/source.zip",
+                    "sha256": "a" * 64,
+                    "format": "zip",
+                    "subdir": ".",
+                },
+                "source_root_relative": ".",
+                "members": [
+                    {
+                        "path": "Main.lean",
+                        "source_path": "Main.lean",
+                        "sha256": sha256(data).hexdigest(),
+                    }
+                ],
+            }
+            original = (
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n"
+            ).encode()
+            manifest_path.write_bytes(original)
+            expected = sha256(original).hexdigest()
+            payload["members"].append(
+                {
+                    "path": "Generated.lean",
+                    "source_path": "Generated.lean",
+                    "sha256": "0" * 64,
+                }
+            )
+            manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            from theseus_repo_search.errors import RepoSearchError
+
+            with self.assertRaises(RepoSearchError) as caught:
+                scan_manifest_backed_lean_sources(
+                    root,
+                    source_revision="a" * 64,
+                    member_manifest_path=manifest_path,
+                    expected_manifest_sha256=expected,
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+
+    def test_manifest_backed_binding_rejects_unbacked_node_module(self):
+        from theseus_repo_search.errors import RepoSearchError
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "theorem authoritative : True := by trivial\n"
+        source = SourceChunk(
+            id="src:Main.lean:1:1",
+            source_commit="a" * 64,
+            source_path="Main.lean",
+            source_start_line=1,
+            source_end_line=1,
+            declaration_hint="authoritative",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        generated = Node.from_lean(
+            full_name="Generated.injected",
+            name="injected",
+            kind="thm",
+            module="Generated",
+            source_commit="a" * 64,
+        )
+        with self.assertRaises(RepoSearchError) as caught:
+            bind_manifest_backed_node_sources([generated], [source])
+        self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+        self.assertIn("Generated.injected", str(caught.exception))
 
     def test_tracked_only_scan_excludes_lake_and_untracked_lean_files(self):
         with tempfile.TemporaryDirectory() as d:

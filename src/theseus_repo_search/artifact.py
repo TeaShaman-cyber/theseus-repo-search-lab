@@ -218,10 +218,13 @@ def _write_archive_artifact_v2_contents(
     producer: ProducerPin,
     scope: ArtifactScope,
     created_from_authoritative_source: bool,
+    authority_receipt: bytes | None = None,
+    raw_depgraph: bytes | None = None,
 ) -> ArtifactManifestV2:
-    if created_from_authoritative_source:
+    has_authority_evidence = authority_receipt is not None and raw_depgraph is not None
+    if created_from_authoritative_source != has_authority_evidence:
         raise _integrity(
-            "authoritative archive artifacts require raw-depgraph receipt v3 support"
+            "archive authoritative-source state must match receipt v3/raw graph presence"
         )
     out_dir.mkdir(parents=True, exist_ok=True)
     sorted_nodes = sorted(nodes, key=lambda node: node.id)
@@ -249,6 +252,12 @@ def _write_archive_artifact_v2_contents(
             out_dir / "sources.jsonl",
             (_source_v2_dict(chunk) for chunk in sorted_sources),
         )
+    authority_receipt_sha256 = None
+    if authority_receipt is not None:
+        (out_dir / "authority-receipt.json").write_bytes(authority_receipt)
+        authority_receipt_sha256 = _sha256(authority_receipt)
+    if raw_depgraph is not None:
+        (out_dir / "raw-depgraph.json").write_bytes(raw_depgraph)
     manifest = ArtifactManifestV2(
         schema=V2_SCHEMA,
         source_authority=source_authority,
@@ -259,8 +268,8 @@ def _write_archive_artifact_v2_contents(
         sources_sha256=sources_sha256,
         nodes_count=len(sorted_nodes),
         edges_count=len(sorted_edges),
-        created_from_authoritative_source=False,
-        authority_receipt_sha256=None,
+        created_from_authoritative_source=created_from_authoritative_source,
+        authority_receipt_sha256=authority_receipt_sha256,
     )
     (out_dir / "manifest.json").write_bytes(_json_line(manifest.to_dict()))
     return manifest
@@ -276,6 +285,8 @@ def write_archive_artifact_v2(
     producer: ProducerPin,
     scope: ArtifactScope,
     created_from_authoritative_source: bool = False,
+    authority_receipt: bytes | None = None,
+    raw_depgraph: bytes | None = None,
 ) -> ArtifactManifestV2:
     out_dir.parent.mkdir(parents=True, exist_ok=True)
     staged = Path(
@@ -291,6 +302,8 @@ def write_archive_artifact_v2(
             producer=producer,
             scope=scope,
             created_from_authoritative_source=created_from_authoritative_source,
+            authority_receipt=authority_receipt,
+            raw_depgraph=raw_depgraph,
         )
         load_artifact(staged)
         _publish_artifact_directory(staged, out_dir)
@@ -361,14 +374,77 @@ def _integrity(message: str) -> RepoSearchError:
 
 
 def _validate_authority_receipt_bytes(data: bytes, manifest: ArtifactManifestAny) -> str:
-    if isinstance(manifest, ArtifactManifestV2):
-        raise _integrity("archive authority receipt validation requires raw-depgraph receipt v3")
     try:
         receipt = json.loads(data.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise _integrity(f"invalid authority receipt: {exc}") from exc
     if not isinstance(receipt, dict):
         raise _integrity("invalid authority receipt: root must be an object")
+    if isinstance(manifest, ArtifactManifestV2):
+        try:
+            source = receipt["source"]
+            materialization = receipt["materialization"]
+            scope = receipt["scope"]
+            producer = receipt["producer"]
+            observed = receipt["observed"]
+            raw = receipt["raw_depgraph"]
+            if receipt.get("schema") != "theseus.raw-depgraph-receipt.v3":
+                raise ValueError("unsupported schema")
+            if not all(
+                isinstance(x, dict)
+                for x in (source, materialization, scope, producer, observed, raw)
+            ):
+                raise TypeError("receipt sections must be objects")
+            authority = manifest.source_authority
+            expected_source = {
+                "kind": "archive",
+                "url": authority.url,
+                "sha256": authority.sha256,
+                "format": authority.format,
+                "subdir": authority.subdir,
+            }
+            if source != expected_source:
+                raise ValueError("source mismatch")
+            if scope != {"root_modules": list(manifest.scope.root_modules)}:
+                raise ValueError("scope mismatch")
+            expected_producer = {
+                "kind": manifest.producer.kind,
+                "tool_repo": manifest.producer.tool_repo,
+                "tool_commit": manifest.producer.tool_commit,
+                "tool_hash": manifest.producer.tool_hash,
+            }
+            if producer != expected_producer:
+                raise ValueError("producer mismatch")
+            lean_toolchain = observed.get("lean_toolchain")
+            if (
+                set(observed) != {"lean_toolchain"}
+                or not isinstance(lean_toolchain, str)
+                or not lean_toolchain.strip()
+            ):
+                raise ValueError("invalid observed lean_toolchain")
+            if set(materialization) != {"tree_sha256", "member_manifest_sha256"}:
+                raise ValueError("invalid materialization evidence fields")
+            for label in ("tree_sha256", "member_manifest_sha256"):
+                digest = materialization.get(label)
+                if (
+                    not isinstance(digest, str)
+                    or len(digest) != 64
+                    or any(ch not in "0123456789abcdef" for ch in digest)
+                ):
+                    raise ValueError(f"invalid {label}")
+            raw_sha = raw.get("sha256")
+            if (
+                set(raw) != {"sha256"}
+                or not isinstance(raw_sha, str)
+                or len(raw_sha) != 64
+                or any(ch not in "0123456789abcdef" for ch in raw_sha)
+            ):
+                raise ValueError("invalid raw depgraph hash")
+            return raw_sha
+        except (KeyError, TypeError, ValueError) as exc:
+            raise _integrity(
+                f"authority receipt does not match artifact manifest: {exc}"
+            ) from exc
     try:
         source = receipt["source"]
         scope = receipt["scope"]
@@ -649,6 +725,12 @@ def load_artifact(
         present = tuple(value is not None for value in location)
         if any(present) and not all(present):
             raise _integrity(f"partial node source location: {node.id}")
+        if (
+            isinstance(manifest, ArtifactManifestV2)
+            and manifest.created_from_authoritative_source
+            and not all(present)
+        ):
+            raise _integrity(f"authoritative archive node lacks source binding: {node.id}")
         if all(present):
             source_path = node.source_path
             source_start_line = node.source_start_line
