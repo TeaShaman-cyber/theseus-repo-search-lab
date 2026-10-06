@@ -2,7 +2,7 @@
 
 **Issue:** #68
 **Parent corpus:** #67
-**Status:** design approved in chat; written specification pending review
+**Status:** design approved; written specification self-reviewed; implementation plan pending
 **Primary goal:** represent immutable archive-backed Lean sources honestly through producer, artifact, projection, replay, and consumer receipts without fabricating Git authority or breaking existing Git-backed artifacts.
 
 ## 1. Problem
@@ -383,7 +383,7 @@ The replay payload MUST also carry the exact `artifact_identity` it consumed. Be
 2. the projection metadata artifact identity; and
 3. the replay payload artifact identity.
 
-All three must be identical. A `status=PASS` replay from another artifact is invalid evidence and must fail closed. This is a general consumer-acceptance correctness requirement, not an archive-only exception; the pre-existing v1 gap is tracked as #70 and is a prerequisite for archive acceptance.
+All three must be identical. A `status=PASS` replay from another artifact is invalid evidence and must fail closed. This is a general consumer-acceptance correctness requirement, not an archive-only exception. The pre-existing v1 gap tracked by #70 is now closed on `main` by PRs #71 and #73; archive work must preserve that invariant rather than re-open it.
 
 ## 13. Workflow routing
 
@@ -457,6 +457,14 @@ Rollout is intentionally asymmetric:
 8. prove the path with the #67 Zenodo Lean corpus;
 9. only then consider whether future Git artifacts should ever use v2.
 
+Execution-state closure is part of the rollout contract:
+
+- every intermediate commit/task state must keep existing v1 Git production and consumption runnable;
+- archive workflow rows MUST NOT be enabled before the v2 loader, projection, replay, and consumer paths they depend on already exist and are verified;
+- removing or renaming an input is allowed only after all surviving consumers have been migrated;
+- every promised RED regression must be discoverable by the stated test command and fail for the intended reason before the production change;
+- use the repository's existing deterministic QA surface first (`./tools/dev/check`, touched-surface checks, and the existing hosted producer/consumer workflow) rather than introducing a bespoke verifier unless an uncovered gap is demonstrated.
+
 There is no bulk artifact migration.
 
 ## 16. Acceptance criteria
@@ -472,7 +480,7 @@ The architecture is accepted only when:
 7. v2 archive projections never expose archive digests as `source_commit`;
 8. projection and registered replay preserve archive authority without source-kind guessing;
 9. consumer receipt reports structured archive authority and rejects any replay whose `artifact_identity` differs from artifact/projection identity;
-10. #70 closes the general replay-to-artifact consumer binding gap before archive acceptance;
+10. #70 is closed and merged fixes #71 + #73 establish the general replay-to-artifact consumer binding invariant before archive acceptance;
 11. the exact Zenodo source from #67 completes hosted producer + fresh artifact-only consumer acceptance;
 12. repository-native QA passes for the changed scope;
 13. any hosted repository-wide baseline failure is separated from PR-introduced diagnostics;
