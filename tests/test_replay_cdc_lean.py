@@ -6,11 +6,22 @@ from hashlib import sha256
 from pathlib import Path
 
 from scripts.replay_cdc_lean import run_replay
-from theseus_repo_search.artifact import write_artifact
-from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
+from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
+from theseus_repo_search.artifact import (
+    artifact_identity,
+    load_artifact,
+    write_artifact,
+)
+from theseus_repo_search.model import (
+    ArtifactScope,
+    Edge,
+    EvidenceGrade,
+    Node,
+    ProducerPin,
+    SourceChunk,
+)
 from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
 from theseus_repo_search.projection import build_projection
-from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
 
 DESCRIPTOR = Path("producer/sources/openai-cdc-lean.json")
 RUNNER = load_runner_pins(Path("producer/runner.json"))
@@ -76,6 +87,7 @@ class ReplayCdcLeanTests(unittest.TestCase):
             artifact, db = build_fixture(Path(d))
             result = run_replay(db, artifact, DESCRIPTOR)
             self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["artifact_identity"], artifact_identity(load_artifact(artifact)[0]))
             self.assertEqual(result["provenance"]["repo"], "openai/cdc-lean")
             self.assertEqual(result["exact"]["target"], "CDCLean.cycleDoubleCover_of_bridgeless")
 

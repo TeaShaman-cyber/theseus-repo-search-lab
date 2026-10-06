@@ -49,6 +49,14 @@ def build_receipt(
     replay_status = replay_payload.get("status")
     if replay_status != "PASS":
         raise ValueError(f"replay status is not PASS: {replay_status}")
+    replay_identity = replay_payload.get("artifact_identity")
+    if not isinstance(replay_identity, str) or not replay_identity:
+        raise ValueError("replay artifact identity is missing or invalid")
+    if replay_identity != expected_identity:
+        raise ValueError(
+            "replay artifact identity mismatch: "
+            f"expected={expected_identity} observed={replay_identity}"
+        )
 
     return {
         "schema": SCHEMA,
@@ -74,6 +82,7 @@ def build_receipt(
         },
         "replay": {
             "status": replay_status,
+            "artifact_identity": replay_identity,
             "sha256": _sha256(replay),
         },
     }

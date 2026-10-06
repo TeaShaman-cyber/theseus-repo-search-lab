@@ -5,11 +5,11 @@ import json
 import re
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies, reverse_dependencies
 from theseus_repo_search.replay_contract import prepare_registered_replay
 from theseus_repo_search.retrieval import search
 from theseus_repo_search.sources import tracked_lean_files
-
 
 TIGHT_QUERY = "tight pairs extremal"
 CHEBYSHEV_QUERY = "Chebyshev Mertens"
@@ -58,7 +58,7 @@ def run_replay(
     descriptor_path: Path,
     source_root: Path | None = None,
 ) -> dict[str, object]:
-    manifest, source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
+    manifest, _source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
     tight_deps = dependencies(db_path, "lemmaR_tight_two", depth=1)
     tight_targets = {str(edge["target_id"]) for edge in tight_deps.edges}
     required_tight = "lean:Zeta23.ZeroSide.TightMult.lemmaR_tight"
@@ -101,6 +101,7 @@ def run_replay(
 
     return {
         "status": "PASS",
+        "artifact_identity": artifact_identity(manifest),
         "provenance": {
             "repo": manifest.source_repo,
             "commit": manifest.source_commit,

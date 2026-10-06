@@ -4,17 +4,17 @@ import argparse
 import json
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
 from theseus_repo_search.replay_contract import prepare_registered_replay
 from theseus_repo_search.retrieval import context, search
-
 
 TARGET = "LongGapsBetweenPrimes.long_gap_theorem"
 LEXICAL_QUERY = "unconditional long gap bound"
 
 
 def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
-    manifest, source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
+    manifest, _source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1 or exact_hits[0].source_path != "LongGapsBetweenPrimes.lean":
         raise AssertionError("main theorem did not resolve to exact source provenance")
@@ -35,6 +35,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
 
     return {
         "status": "PASS",
+        "artifact_identity": artifact_identity(manifest),
         "provenance": {
             "repo": manifest.source_repo,
             "commit": manifest.source_commit,
