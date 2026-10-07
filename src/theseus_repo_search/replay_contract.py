@@ -52,6 +52,13 @@ def _require_sha256(value: object, label: str) -> str:
     return value
 
 
+def require_context_chunks(context_result: dict[str, object]) -> list[dict[str, object]]:
+    chunks = context_result.get("chunks")
+    if not isinstance(chunks, list) or not all(isinstance(chunk, dict) for chunk in chunks):
+        raise AssertionError("replay context chunks must be a list of objects")
+    return chunks
+
+
 def registered_replay_provenance(
     artifact_path: Path, manifest: ArtifactManifestAny
 ) -> dict[str, object]:
