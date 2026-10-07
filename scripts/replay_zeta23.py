@@ -21,7 +21,7 @@ BASELINE_RE = re.compile(r"certificate|trace|frobenius|moment", re.IGNORECASE)
 
 def _top10_contains(db_path: Path, query: str, declaration_hint: str) -> tuple[bool, list[dict[str, object]]]:
     hits = search(db_path, query, limit=10)
-    payload = [
+    payload: list[dict[str, object]] = [
         {
             "rank": index + 1,
             "declaration_id": hit.declaration_id,

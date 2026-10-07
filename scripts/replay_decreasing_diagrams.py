@@ -3,12 +3,12 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import cast
 
 from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.replay_contract import (
     prepare_registered_replay,
     registered_replay_provenance,
+    require_context_chunks,
 )
 from theseus_repo_search.retrieval import context, search
 
@@ -27,7 +27,7 @@ def run_replay(
         )
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    chunks = cast(list[dict[str, object]], ctx["chunks"])
+    chunks = require_context_chunks(ctx)
     if not any(
         chunk["declaration_hint"] == "dcr_three_of_confluent"
         for chunk in chunks

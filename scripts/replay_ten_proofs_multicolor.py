@@ -9,6 +9,7 @@ from theseus_repo_search.graph import dependencies
 from theseus_repo_search.replay_contract import (
     prepare_registered_replay,
     registered_replay_provenance,
+    require_context_chunks,
 )
 from theseus_repo_search.retrieval import context, search
 
@@ -40,7 +41,8 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         raise AssertionError("grounded ten-proofs lexical query missed erdos_183")
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "erdos_183" for chunk in ctx["chunks"]):
+    chunks = require_context_chunks(ctx)
+    if not any(chunk["declaration_hint"] == "erdos_183" for chunk in chunks):
         raise AssertionError("bounded context omitted ten-proofs endpoint source")
 
     return {
@@ -55,7 +57,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         },
         "graph": {"edge_count": len(graph.edges), "edges": list(graph.edges)},
         "lexical": {"query": LEXICAL_QUERY, "hits": [hit.declaration_hint for hit in lexical]},
-        "context": {"estimated_tokens": ctx["estimated_tokens"], "chunks": ctx["chunks"]},
+        "context": {"estimated_tokens": ctx["estimated_tokens"], "chunks": chunks},
     }
 
 

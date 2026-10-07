@@ -9,6 +9,7 @@ from theseus_repo_search.graph import dependencies
 from theseus_repo_search.replay_contract import (
     prepare_registered_replay,
     registered_replay_provenance,
+    require_context_chunks,
 )
 from theseus_repo_search.retrieval import context, search
 
@@ -41,7 +42,8 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         raise AssertionError("grounded FLT lexical query missed flt_regular")
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "flt_regular" for chunk in ctx["chunks"]):
+    chunks = require_context_chunks(ctx)
+    if not any(chunk["declaration_hint"] == "flt_regular" for chunk in chunks):
         raise AssertionError("bounded context omitted flt_regular source")
 
     return {
@@ -61,7 +63,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         },
         "context": {
             "estimated_tokens": ctx["estimated_tokens"],
-            "chunks": ctx["chunks"],
+            "chunks": chunks,
         },
     }
 
