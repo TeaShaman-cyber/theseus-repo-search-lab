@@ -111,6 +111,8 @@ def build_release_package(
         or manifest.source_commit != source.source_commit
         or manifest.source_subdir != source.source_subdir
         or tuple(manifest.scope.root_modules) != tuple(source.root_modules)
+        or tuple(manifest.scope.exclude_source_prefixes)
+        != tuple(source.exclude_source_prefixes)
     ):
         raise ValueError("source descriptor does not match accepted artifact provenance/scope")
     if (

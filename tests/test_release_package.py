@@ -6,6 +6,8 @@ import unittest
 from pathlib import Path
 
 from scripts.package_accepted_artifact import build_release_package
+from tests.test_replay_con_nf import DESCRIPTOR as CON_NF_DESCRIPTOR
+from tests.test_replay_con_nf import write_fixture as write_con_nf_fixture
 from tests.test_replay_ten_proofs_multicolor import DESCRIPTOR, write_fixture
 from theseus_repo_search.artifact import artifact_identity, load_artifact
 
@@ -59,6 +61,35 @@ class ReleasePackageTests(unittest.TestCase):
 
             self.assertEqual(first_archive.read_bytes(), second_archive.read_bytes())
             self.assertEqual(first_receipt.read_bytes(), second_receipt.read_bytes())
+
+    def test_rejects_source_descriptor_exclusion_scope_mismatch(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = write_con_nf_fixture(root)
+            identity = artifact_identity(load_artifact(artifact)[0])
+            replay = root / "replay.json"
+            replay.write_text(
+                json.dumps({"status": "PASS", "artifact_identity": identity}),
+                encoding="utf-8",
+            )
+            descriptor_payload = json.loads(CON_NF_DESCRIPTOR.read_text(encoding="utf-8"))
+            descriptor_payload["exclude_source_prefixes"] = []
+            mismatched_descriptor = root / "mismatched-source.json"
+            mismatched_descriptor.write_text(
+                json.dumps(descriptor_payload), encoding="utf-8"
+            )
+
+            with self.assertRaisesRegex(
+                ValueError, "source descriptor does not match accepted artifact provenance/scope"
+            ):
+                build_release_package(
+                    artifact=artifact,
+                    replay=replay,
+                    source_descriptor=mismatched_descriptor,
+                    runner_config=RUNNER,
+                    archive=root / "accepted-artifact.tar.gz",
+                    receipt=root / "accepted-artifact-receipt.json",
+                )
 
     def test_receipt_binds_exact_inputs_artifact_identity_and_package_digest(self):
         with tempfile.TemporaryDirectory() as d:
