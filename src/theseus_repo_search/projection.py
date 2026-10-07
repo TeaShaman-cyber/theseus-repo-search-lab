@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 import sqlite3
+import tempfile
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -11,7 +11,6 @@ from pathlib import Path
 from .artifact import artifact_identity, load_artifact
 from .errors import RepoSearchError
 from .model import ArtifactManifest, ArtifactManifestV2
-
 
 _V1_SCHEMA_STATEMENTS = (
     """

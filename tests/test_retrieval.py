@@ -1,6 +1,6 @@
 import tempfile
-from dataclasses import asdict, replace
 import unittest
+from dataclasses import asdict, replace
 from hashlib import sha256
 from math import ceil
 from pathlib import Path
@@ -17,7 +17,6 @@ from theseus_repo_search.model import (
 )
 from theseus_repo_search.projection import build_projection
 from theseus_repo_search.retrieval import context, search
-
 
 COMMIT = "abc123"
 

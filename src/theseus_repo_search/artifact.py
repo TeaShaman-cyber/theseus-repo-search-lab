@@ -9,12 +9,10 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 from .errors import RepoSearchError
-from .normalize import normalize_leandepviz
-from .sources import bind_manifest_backed_node_sources, filter_manifest_backed_edges
 from .model import (
+    ArchiveAuthority,
     ArtifactManifest,
     ArtifactManifestAny,
-    ArchiveAuthority,
     ArtifactManifestV2,
     ArtifactScope,
     Edge,
@@ -23,7 +21,8 @@ from .model import (
     ProducerPin,
     SourceChunk,
 )
-
+from .normalize import normalize_leandepviz
+from .sources import bind_manifest_backed_node_sources, filter_manifest_backed_edges
 
 SCHEMA = "theseus.repo-index.v1"
 V2_SCHEMA = "theseus.repo-index.v2"

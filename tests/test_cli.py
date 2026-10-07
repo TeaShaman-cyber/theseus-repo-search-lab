@@ -4,8 +4,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from pathlib import Path
 from hashlib import sha256
+from pathlib import Path
 
 from theseus_repo_search.artifact import load_artifact
 from theseus_repo_search.cli import (
@@ -14,7 +14,6 @@ from theseus_repo_search.cli import (
 )
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.producer_config import LeanArchiveSource
-
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "tests" / "fixtures" / "raw_leandepviz.json"

@@ -3,16 +3,16 @@ import sqlite3
 import tempfile
 import unittest
 from dataclasses import replace
-from unittest import mock
 from hashlib import sha256
 from pathlib import Path
+from unittest import mock
 
+from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.artifact import (
     artifact_identity,
     write_archive_artifact_v2,
     write_artifact,
 )
-from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.model import (
     ArchiveAuthority,
     ArtifactScope,

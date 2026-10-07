@@ -1,11 +1,12 @@
-from dataclasses import replace
 import hashlib
 import json
 import tempfile
 import unittest
-from pathlib import Path
+from dataclasses import replace
 from hashlib import sha256
+from pathlib import Path
 
+from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.artifact import (
     _write_artifact_contents,
     artifact_identity,
@@ -14,7 +15,6 @@ from theseus_repo_search.artifact import (
     write_artifact,
 )
 from theseus_repo_search.errors import RepoSearchError
-from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.model import (
     ArtifactManifest,
     ArtifactScope,
@@ -24,7 +24,6 @@ from theseus_repo_search.model import (
     ProducerPin,
     SourceChunk,
 )
-
 
 SOURCE_COMMIT = "abc123"
 PRODUCER = ProducerPin(

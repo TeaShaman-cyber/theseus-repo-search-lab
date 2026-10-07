@@ -3,10 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
-import sys
 import subprocess
-from hashlib import sha256
+import sys
 from dataclasses import asdict
+from hashlib import sha256
 from pathlib import Path
 
 from .artifact import (
@@ -16,17 +16,20 @@ from .artifact import (
     write_artifact,
 )
 from .errors import RepoSearchError
-from .graph import dependencies, path as graph_path, reverse_dependencies
+from .graph import dependencies, reverse_dependencies
+from .graph import path as graph_path
 from .model import ArchiveAuthority, ArtifactScope, EvidenceGrade, ProducerPin
 from .normalize import normalize_leandepviz
-from .projection import build_projection
 from .producer_config import (
     LeanArchiveSource,
     LeanGitSource,
     load_lean_archive_source,
     load_lean_source,
 )
-from .retrieval import SearchHit, context as build_context, search as search_repo
+from .projection import build_projection
+from .retrieval import SearchHit
+from .retrieval import context as build_context
+from .retrieval import search as search_repo
 from .sources import (
     bind_manifest_backed_node_sources,
     bind_node_sources,

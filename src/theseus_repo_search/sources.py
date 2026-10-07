@@ -14,7 +14,6 @@ from pathlib import Path, PurePosixPath
 from .errors import RepoSearchError
 from .model import Edge, Node, SourceChunk
 
-
 DECL_RE = re.compile(
     r"^\s*(?:protected\s+|private\s+|noncomputable\s+|unsafe\s+)*"
     r"(?:theorem|lemma|def|abbrev|structure|class|inductive|instance)\s+"

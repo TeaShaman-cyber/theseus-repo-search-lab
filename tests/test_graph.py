@@ -5,9 +5,14 @@ from pathlib import Path
 from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.graph import dependencies, path, reverse_dependencies
-from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin
+from theseus_repo_search.model import (
+    ArtifactScope,
+    Edge,
+    EvidenceGrade,
+    Node,
+    ProducerPin,
+)
 from theseus_repo_search.projection import build_projection
-
 
 COMMIT = "abc123"
 SCOPE = ArtifactScope(root_modules=("Zeta23",), dependency_boundary="internal_only")

@@ -1,6 +1,6 @@
 import os
-import tempfile
 import subprocess
+import tempfile
 import unittest
 from hashlib import sha256
 from pathlib import Path
@@ -11,7 +11,6 @@ from theseus_repo_search.sources import (
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
 )
-
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "lean_src"
 

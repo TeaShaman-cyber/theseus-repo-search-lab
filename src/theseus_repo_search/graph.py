@@ -9,7 +9,6 @@ from pathlib import Path
 from .errors import RepoSearchError
 from .projection import ProjectionProvenance, read_projection_provenance
 
-
 MAX_DEPTH = 5
 
 

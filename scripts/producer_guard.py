@@ -3,10 +3,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from hashlib import sha256
 import subprocess
 import sys
 import tempfile
+from hashlib import sha256
 from pathlib import Path
 
 from theseus_repo_search.errors import RepoSearchError

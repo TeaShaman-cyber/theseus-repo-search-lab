@@ -11,7 +11,6 @@ from theseus_repo_search.producer_config import (
     load_runner_pins,
 )
 
-
 COMMIT = "a" * 40
 
 

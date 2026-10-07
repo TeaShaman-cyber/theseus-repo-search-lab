@@ -1,16 +1,21 @@
 import io
 import json
-import tempfile
-from hashlib import sha256
 import subprocess
+import tempfile
 import unittest
 from contextlib import redirect_stderr
+from hashlib import sha256
 from pathlib import Path
 from unittest.mock import patch
 
-from theseus_repo_search.errors import RepoSearchError
 from scripts import producer_guard
-from scripts.producer_guard import checkout_exact, main, run_exact_command, verify_checked_out_commit
+from scripts.producer_guard import (
+    checkout_exact,
+    main,
+    run_exact_command,
+    verify_checked_out_commit,
+)
+from theseus_repo_search.errors import RepoSearchError
 
 
 class ProducerGuardTests(unittest.TestCase):
