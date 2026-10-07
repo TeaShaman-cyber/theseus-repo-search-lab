@@ -269,28 +269,32 @@ The remaining work begins at the provenance boundary after verified materializat
 - SHA-256: `4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f`
 
 **Acceptance:**
-- [ ] hosted producer succeeds on exact PR head and records exact source identity;
-- [ ] produced v2 manifest contains explicit archive authority and no fabricated Git fields;
-- [ ] authority/raw receipts bind archive digest + member manifest + pre/post checks;
-- [ ] fresh consumer downloads only the produced artifact, rebuilds projection, runs registered replay, and emits consumer receipt;
-- [ ] consumer replay identity == projection identity == freshly validated artifact identity;
-- [ ] consumer receipt reports structured archive authority;
-- [ ] existing Git matrix producer/consumer rows remain green;
-- [ ] exact remote/head/check readback recorded on #68/#69 or successor implementation PR.
+- [x] hosted producer succeeds on exact PR head and records exact source identity;
+- [x] produced v2 manifest contains explicit archive authority and no fabricated Git fields;
+- [x] authority/raw receipts bind archive digest + member manifest + pre/post checks;
+- [x] fresh consumer downloads only the produced artifact, rebuilds projection, runs registered replay, and emits consumer receipt;
+- [x] consumer replay identity == projection identity == freshly validated artifact identity;
+- [x] consumer receipt reports structured archive authority;
+- [x] existing Git matrix producer/consumer rows remain green;
+- [x] exact remote/head/check readback recorded on #68/#69 or successor implementation PR.
 
 If the formal corpus cannot complete for a source-owned/toolchain reason, record the exact bounded blocker; do not weaken provenance to make the smoke green.
+
+Task 9 accepted on hosted run `37625972481` at exact head `44fa94716def5d1184e565e1525b4e7b70a91cb0`; artifact/projection/replay identity `abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb`.
 
 ---
 
 ## Task 10: Terminal disposition and handoff to #67
 
-- [ ] Run final `./tools/dev/check` and `git diff --check` on exact implementation head.
-- [ ] Separate any known advisory heavy-Python baseline from PR-introduced diagnostics per #74.
-- [ ] Confirm no P0/P1/blocker remains in current scope.
-- [ ] Confirm v1 identity regression fixture still matches the pre-v2 value.
-- [ ] Record exact artifact identity + hosted producer/consumer receipts on #68.
-- [ ] Close #68 only after the generic archive provenance path is verified end-to-end.
-- [ ] Return the accepted artifact to #67 for the research-value smoke; archive infrastructure success does not imply useful mathematical signal.
+- [x] Run final `./tools/dev/check` and `git diff --check` on exact implementation head.
+- [x] Separate any known advisory heavy-Python baseline from PR-introduced diagnostics per #74.
+- [x] Confirm no P0/P1/blocker remains in current scope.
+- [x] Confirm v1 identity regression fixture still matches the pre-v2 value.
+- [x] Record exact artifact identity + hosted producer/consumer receipts on #68.
+- [x] Close #68 only after the generic archive provenance path is verified end-to-end.
+- [x] Return the accepted artifact to #67 for the research-value smoke; archive infrastructure success does not imply useful mathematical signal.
+
+Follow-up review debt is separated from #68 terminal acceptance: #88 tracks full Lean identifier continuation; #89 tracks archive projection authority field-type validation. Both are P2 follow-ups; implementation not started by this plan closeout.
 
 ## Explicit non-step
 
