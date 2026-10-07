@@ -12,6 +12,7 @@ from tests.test_replay_con_nf import RUNNER as CON_NF_RUNNER
 from tests.test_replay_con_nf import write_fixture as write_con_nf_fixture
 from tests.test_replay_ten_proofs_multicolor import DESCRIPTOR, write_fixture
 from theseus_repo_search.artifact import artifact_identity, load_artifact
+from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.model import ProducerPin
 from theseus_repo_search.replay_contract import registered_replay_provenance
 
@@ -266,6 +267,46 @@ class ReleasePackageTests(unittest.TestCase):
                 consumer.write_text(json.dumps(consumer_payload), encoding="utf-8")
 
                 with self.assertRaises((AssertionError, TypeError, ValueError)):
+                    build_release_package(
+                        artifact=artifact,
+                        replay=replay,
+                        source_descriptor=descriptor,
+                        runner_config=runner,
+                        consumer_receipt=consumer,
+                        repository_root=repo,
+                        archive=root / "accepted-artifact.tar.gz",
+                        receipt=root / "accepted-artifact-receipt.json",
+                    )
+
+    def test_rejects_post_acceptance_artifact_member_mutation_matrix(self):
+        cases = (
+            "extra_file",
+            "unexpected_nested_file",
+            "extra_symlink",
+            "missing_canonical_member",
+        )
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                artifact = write_fixture(root)
+                replay = root / "replay.json"
+                _write_replay(replay, artifact)
+                repo, descriptor, runner, consumer, _ = _accepted_context(
+                    root, artifact, replay, descriptor_source=DESCRIPTOR
+                )
+
+                if case == "extra_file":
+                    (artifact / "unexpected.txt").write_text("not accepted\n", encoding="utf-8")
+                elif case == "unexpected_nested_file":
+                    nested = artifact / "nested"
+                    nested.mkdir()
+                    (nested / "unexpected.json").write_text("{}\n", encoding="utf-8")
+                elif case == "extra_symlink":
+                    (artifact / "unexpected-link").symlink_to("manifest.json")
+                elif case == "missing_canonical_member":
+                    (artifact / "edges.jsonl").unlink()
+
+                with self.assertRaises((AssertionError, RepoSearchError, TypeError, ValueError)):
                     build_release_package(
                         artifact=artifact,
                         replay=replay,

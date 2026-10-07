@@ -10,7 +10,11 @@ import subprocess
 import tarfile
 from pathlib import Path
 
-from theseus_repo_search.artifact import artifact_identity, load_artifact
+from theseus_repo_search.artifact import (
+    artifact_identity,
+    canonical_artifact_member_names,
+    load_artifact,
+)
 from theseus_repo_search.model import ArtifactManifestV2
 from theseus_repo_search.producer_config import LeanGitSource
 from theseus_repo_search.replay_contract import (
@@ -46,21 +50,30 @@ def _load_json_object(data: bytes, label: str) -> dict[str, object]:
 def _package_member_bytes(
     *,
     artifact: Path,
+    artifact_member_names: tuple[str, ...],
     replay: bytes,
     consumer_receipt: bytes,
     source_descriptor: bytes,
     runner_config: bytes,
 ) -> list[tuple[str, bytes]]:
+    expected = set(artifact_member_names)
+    actual_entries = list(artifact.iterdir())
+    actual = {path.name for path in actual_entries}
+    if actual != expected:
+        extra = sorted(actual - expected)
+        missing = sorted(expected - actual)
+        raise ValueError(
+            f"artifact package member set mismatch: extra={extra} missing={missing}"
+        )
+
     members: list[tuple[str, bytes]] = []
-    for path in sorted(artifact.rglob("*")):
+    for name in artifact_member_names:
+        path = artifact / name
         if path.is_symlink():
             raise ValueError(f"artifact package refuses symlink: {path}")
-        if path.is_dir():
-            continue
         if not path.is_file():
             raise ValueError(f"artifact package member is not a regular file: {path}")
-        relative = path.relative_to(artifact).as_posix()
-        members.append((f"artifact/{relative}", path.read_bytes()))
+        members.append((f"artifact/{name}", path.read_bytes()))
     members.extend(
         [
             ("consumer-receipt.json", consumer_receipt),
@@ -302,6 +315,7 @@ def build_release_package(
 
     members = _package_member_bytes(
         artifact=artifact,
+        artifact_member_names=canonical_artifact_member_names(manifest),
         replay=replay_bytes,
         consumer_receipt=consumer_receipt_bytes,
         source_descriptor=descriptor_bytes,

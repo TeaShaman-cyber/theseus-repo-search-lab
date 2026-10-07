@@ -121,6 +121,15 @@ def artifact_identity(manifest: ArtifactManifestAny) -> str:
     return _sha256(_canonical_json(payload))
 
 
+def canonical_artifact_member_names(manifest: ArtifactManifestAny) -> tuple[str, ...]:
+    members = ["manifest.json", "nodes.jsonl", "edges.jsonl"]
+    if manifest.sources_sha256 is not None:
+        members.append("sources.jsonl")
+    if manifest.authority_receipt_sha256 is not None:
+        members.extend(("authority-receipt.json", "raw-depgraph.json"))
+    return tuple(sorted(members))
+
+
 def _write_artifact_contents(
     out_dir: Path,
     *,
