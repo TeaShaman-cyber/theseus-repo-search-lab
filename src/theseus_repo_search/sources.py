@@ -18,7 +18,7 @@ from .model import Edge, Node, SourceChunk
 DECL_RE = re.compile(
     r"^\s*(?:protected\s+|private\s+|noncomputable\s+|unsafe\s+)*"
     r"(?:theorem|lemma|def|abbrev|structure|class|inductive|instance)\s+"
-    r"(?P<name>[A-Za-z_][A-Za-z0-9_'\.]*)"
+    r"(?P<name>[^\W\d][\w']*(?:\.[^\W\d][\w']*)*)"
 )
 
 
