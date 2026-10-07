@@ -312,7 +312,13 @@ def context(
         distances: dict[str, int] = {target_id: 0}
         for edge in graph_result.edges:
             target = str(edge["target_id"])
-            edge_depth = int(edge["depth"])
+            edge_depth_raw = edge["depth"]
+            if isinstance(edge_depth_raw, bool) or not isinstance(edge_depth_raw, int):
+                raise RepoSearchError(
+                    "BLOCKED_PROJECTION_INTEGRITY",
+                    "graph edge depth must be an integer",
+                )
+            edge_depth = edge_depth_raw
             distances[target] = min(distances.get(target, edge_depth), edge_depth)
 
         candidates = []
