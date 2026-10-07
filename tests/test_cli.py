@@ -160,6 +160,7 @@ class CliTests(unittest.TestCase):
             env=env,
             capture_output=True,
             text=True,
+            check=False,
         )
 
     def write_archive_build_fixture(

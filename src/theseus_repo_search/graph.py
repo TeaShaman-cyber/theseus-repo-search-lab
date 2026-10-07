@@ -211,7 +211,7 @@ def path(
             path_found = True
         else:
             path_edges = []
-            queue = deque([(source_id, tuple(), 0)])
+            queue = deque([(source_id, (), 0)])
             visited = {source_id}
             found_path: tuple[dict[str, object], ...] | None = None
 
