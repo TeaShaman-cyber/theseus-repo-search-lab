@@ -6,7 +6,7 @@ import shutil
 import tempfile
 from hashlib import sha256
 from pathlib import Path
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 from .errors import RepoSearchError
 from .model import (
