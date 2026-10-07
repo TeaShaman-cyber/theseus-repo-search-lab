@@ -729,11 +729,18 @@ def _cmd_build_index(args: argparse.Namespace) -> int:
 
 
 def _cmd_search(args: argparse.Namespace) -> int:
-    hits = search_repo(args.db, args.query, limit=args.limit)
+    hits = search_repo(args.db, args.query, limit=args.limit, mode=args.mode)
+    if not hits:
+        status = "UNKNOWN"
+    elif args.mode == "evidence" or all(hit.match_mode == "exact" for hit in hits):
+        status = "FOUND"
+    else:
+        status = "CANDIDATE"
     _emit(
         {
-            "status": "FOUND" if hits else "UNKNOWN",
+            "status": status,
             "query": args.query,
+            "query_mode": args.mode,
             "hits": [_search_hit_dict(hit) for hit in hits],
         }
     )
@@ -844,6 +851,7 @@ def build_parser() -> argparse.ArgumentParser:
     search.add_argument("--db", type=Path, required=True)
     search.add_argument("--query", required=True)
     search.add_argument("--limit", type=int, default=10)
+    search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
     search.set_defaults(func=_cmd_search)
 
     for command, handler in (("deps", _cmd_deps), ("rdeps", _cmd_rdeps)):

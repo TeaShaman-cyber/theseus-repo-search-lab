@@ -212,6 +212,62 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(hits[0].evidence_grade, EvidenceGrade.LEXICAL_HIT)
             self.assertIn("rank trace tightness", hits[0].text)
 
+    def test_multiterm_discovery_keeps_weak_or_hits_but_evidence_requires_all_terms(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = root / "artifact"
+            db = root / "projection.db"
+            truth_text = "theorem truth_only : True := by trivial -- truth\n"
+            predicate_text = "theorem predicate_only : True := by trivial -- predicate\n"
+            sources = [
+                SourceChunk(
+                    id="src:Pkg/Truth.lean:1:1",
+                    source_commit=COMMIT,
+                    source_path="Pkg/Truth.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="truth_only",
+                    text=truth_text,
+                    content_sha256=sha256(truth_text.encode()).hexdigest(),
+                ),
+                SourceChunk(
+                    id="src:Pkg/Predicate.lean:1:1",
+                    source_commit=COMMIT,
+                    source_path="Pkg/Predicate.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                    declaration_hint="predicate_only",
+                    text=predicate_text,
+                    content_sha256=sha256(predicate_text.encode()).hexdigest(),
+                ),
+            ]
+            write_artifact(
+                artifact,
+                nodes=[],
+                edges=[],
+                sources=sources,
+                source_repo="example/repo",
+                source_commit=COMMIT,
+                source_subdir="",
+                producer=ProducerPin(
+                    kind="lexical_only",
+                    tool_repo="TeaShaman-cyber/theseus-repo-search-lab",
+                    tool_commit="deadbeef",
+                    tool_hash="f" * 64,
+                ),
+                scope=ArtifactScope(root_modules=("Pkg",), dependency_boundary="internal_only"),
+                created_from_authoritative_commit=False,
+            )
+            build_projection(artifact, db)
+
+            discovery = search(db, "truth predicate")
+            self.assertEqual(len(discovery), 2)
+            self.assertTrue(all(hit.query_mode == "discovery" for hit in discovery))
+            self.assertTrue(all(hit.match_mode == "any_terms" for hit in discovery))
+
+            evidence = search(db, "truth predicate", mode="evidence")
+            self.assertEqual(evidence, [])
+
     def test_unicode_query_reaches_fts5_unicode61(self):
         with tempfile.TemporaryDirectory() as d:
             db, _ = self.build_db(Path(d))

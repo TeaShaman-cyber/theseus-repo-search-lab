@@ -830,8 +830,20 @@ class CliTests(unittest.TestCase):
             result = self.run_cli("search", "--db", db, "--query", "rank trace tightness")
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual(payload["status"], "FOUND")
+            self.assertEqual(payload["status"], "CANDIDATE")
+            self.assertEqual(payload["query_mode"], "discovery")
+            self.assertEqual(payload["hits"][0]["match_mode"], "any_terms")
             self.assertEqual(payload["hits"][0]["declaration_hint"], "lemmaR_tight_two")
+
+            evidence = self.run_cli(
+                "search", "--db", db, "--query", "rank trace tightness",
+                "--mode", "evidence",
+            )
+            self.assertEqual(evidence.returncode, 0, evidence.stderr)
+            evidence_payload = json.loads(evidence.stdout)
+            self.assertEqual(evidence_payload["status"], "FOUND")
+            self.assertEqual(evidence_payload["query_mode"], "evidence")
+            self.assertEqual(evidence_payload["hits"][0]["match_mode"], "all_terms")
 
     def test_deps_on_lexical_only_projection_returns_unavailable_grade(self):
         with tempfile.TemporaryDirectory() as d:
