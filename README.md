@@ -22,3 +22,11 @@ The consumer job must remain source-free: no upstream checkout, Elan/Lake setup,
 ## Lexical search modes
 
 `repo-search search` defaults to `--mode discovery`: multi-term lexical search may use broad OR matching and reports such hits as `CANDIDATE`. Use `--mode evidence` when all query terms must match the same source chunk; qualifying hits report `FOUND`. Exact declaration lookup remains `FOUND` in either mode.
+
+## Live research smoke
+
+After significant corpus acceptance, Repository Search can run a bounded versioned research-smoke panel on fresh Actions consumers. Smoke scenarios ask for evidence classes and record grounded observations; they do not encode a desired mathematical conclusion.
+
+Current v0 scenarios live under `qa/research-smoke/`. Search probes explicitly declare `query_mode`: broad `discovery` results remain candidate signals, while promotion-relevant target probes use `evidence` mode before they can contribute `FOUND_USEFUL_STRUCTURE`. Each run emits `theseus.repo-search-research-smoke-receipt.v1` with exact tool/artifact identity, probe evidence, observed states, regression flags, and `scientific_authority = NONE`.
+
+Smoke dispositions are non-blocking evidence states, not mathematical verdicts. `regression_detected` records loss of a previously demonstrated capability without converting the smoke layer into scientific acceptance authority.
