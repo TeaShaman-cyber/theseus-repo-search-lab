@@ -490,7 +490,7 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
                 continue
             value = json.loads(line)
             if not isinstance(value, dict):
-                raise ValueError("JSONL row is not an object")
+                raise ValueError("JSONL row is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
             rows.append(value)
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
         raise _integrity(f"invalid artifact member {path.name}: {exc}") from exc
@@ -578,7 +578,7 @@ def load_artifact(
     try:
         manifest_data = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
         if not isinstance(manifest_data, dict):
-            raise ValueError("manifest is not an object")
+            raise ValueError("manifest is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
         schema = manifest_data.get("schema")
         if schema == SCHEMA:
             manifest: ArtifactManifestAny = ArtifactManifest.from_dict(manifest_data)
