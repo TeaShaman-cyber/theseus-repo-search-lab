@@ -18,7 +18,14 @@ from .artifact import (
 from .errors import RepoSearchError
 from .graph import dependencies, reverse_dependencies
 from .graph import path as graph_path
-from .model import ArchiveAuthority, ArtifactScope, EvidenceGrade, ProducerPin
+from .model import (
+    ArchiveAuthority,
+    ArtifactScope,
+    Edge,
+    EvidenceGrade,
+    Node,
+    ProducerPin,
+)
 from .normalize import normalize_leandepviz
 from .producer_config import (
     LeanArchiveSource,
@@ -505,6 +512,8 @@ def _cmd_build_artifact(args: argparse.Namespace) -> int:
             producer_tool_commit=args.producer_tool_commit,
             producer_tool_hash=args.producer_tool_hash,
         )
+    nodes: list[Node]
+    edges: list[Edge]
     if args.lexical_only:
         nodes = []
         edges = []
