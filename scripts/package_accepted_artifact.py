@@ -11,7 +11,11 @@ from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity, load_artifact
 from theseus_repo_search.model import ArtifactManifestV2
-from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
+from theseus_repo_search.producer_config import LeanGitSource
+from theseus_repo_search.replay_contract import (
+    validate_registered_replay_manifest,
+    validate_registered_replay_provenance,
+)
 
 RECEIPT_SCHEMA = "theseus.repo-search-accepted-artifact-release-receipt.v1"
 FINGERPRINT_SCHEMA = "theseus.repo-search-accepted-artifact-fingerprint.v1"
@@ -104,23 +108,11 @@ def build_release_package(
     if isinstance(manifest, ArtifactManifestV2):
         raise TypeError("release package pilot currently supports git-backed repo-index.v1 only")
 
-    source = load_lean_git_source(source_descriptor)
-    runner = load_runner_pins(runner_config)
-    if (
-        manifest.source_repo != source.source_repo
-        or manifest.source_commit != source.source_commit
-        or manifest.source_subdir != source.source_subdir
-        or tuple(manifest.scope.root_modules) != tuple(source.root_modules)
-        or tuple(manifest.scope.exclude_source_prefixes)
-        != tuple(source.exclude_source_prefixes)
-    ):
-        raise ValueError("source descriptor does not match accepted artifact provenance/scope")
-    if (
-        manifest.producer.tool_repo != runner.extractor_repo
-        or manifest.producer.tool_commit != runner.extractor_commit
-        or manifest.producer.tool_hash != runner.extractor_main_sha256
-    ):
-        raise ValueError("runner config does not match accepted artifact producer pin")
+    source = validate_registered_replay_manifest(
+        manifest, source_descriptor, runner_path=runner_config
+    )
+    if not isinstance(source, LeanGitSource):
+        raise TypeError("release package pilot currently supports Git sources only")
 
     identity = artifact_identity(manifest)
     replay_bytes = replay.read_bytes()
@@ -129,6 +121,9 @@ def build_release_package(
         raise ValueError("release package requires replay status PASS")
     if replay_payload.get("artifact_identity") != identity:
         raise ValueError("replay artifact identity does not match accepted artifact")
+    validate_registered_replay_provenance(
+        artifact, manifest, replay_payload.get("provenance")
+    )
 
     authority_path = artifact / "authority-receipt.json"
     authority_bytes = authority_path.read_bytes()
