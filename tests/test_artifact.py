@@ -1,11 +1,12 @@
-from dataclasses import replace
 import hashlib
 import json
 import tempfile
 import unittest
-from pathlib import Path
+from dataclasses import replace
 from hashlib import sha256
+from pathlib import Path
 
+from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.artifact import (
     _write_artifact_contents,
     artifact_identity,
@@ -14,7 +15,6 @@ from theseus_repo_search.artifact import (
     write_artifact,
 )
 from theseus_repo_search.errors import RepoSearchError
-from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.model import (
     ArtifactManifest,
     ArtifactScope,
@@ -24,7 +24,6 @@ from theseus_repo_search.model import (
     ProducerPin,
     SourceChunk,
 )
-
 
 SOURCE_COMMIT = "abc123"
 PRODUCER = ProducerPin(
@@ -174,6 +173,38 @@ def write_v2_archive_fixture(path: Path, *, revision_key: str = "source_revision
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_manifest_non_object_is_normalized_to_integrity_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_v2_archive_fixture(path)
+            (path / "manifest.json").write_text("[]\n", encoding="utf-8")
+
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("manifest is not an object", str(caught.exception))
+
+    def test_jsonl_non_object_is_normalized_to_integrity_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            write_v2_archive_fixture(path)
+            nodes_bytes = b"[]\n"
+            (path / "nodes.jsonl").write_bytes(nodes_bytes)
+            manifest_path = path / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["members"]["nodes"]["sha256"] = hashlib.sha256(nodes_bytes).hexdigest()
+            manifest_path.write_text(
+                json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(RepoSearchError) as caught:
+                load_artifact(path)
+
+            self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+            self.assertIn("JSONL row is not an object", str(caught.exception))
+
     def test_loads_v2_archive_fixture_with_structured_authority(self):
         from theseus_repo_search.model import ArchiveAuthority
 

@@ -4,17 +4,15 @@ import json
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable, Sequence
 from hashlib import sha256
 from pathlib import Path
-from typing import Iterable, Sequence
 
 from .errors import RepoSearchError
-from .normalize import normalize_leandepviz
-from .sources import bind_manifest_backed_node_sources, filter_manifest_backed_edges
 from .model import (
+    ArchiveAuthority,
     ArtifactManifest,
     ArtifactManifestAny,
-    ArchiveAuthority,
     ArtifactManifestV2,
     ArtifactScope,
     Edge,
@@ -23,7 +21,8 @@ from .model import (
     ProducerPin,
     SourceChunk,
 )
-
+from .normalize import normalize_leandepviz
+from .sources import bind_manifest_backed_node_sources, filter_manifest_backed_edges
 
 SCHEMA = "theseus.repo-index.v1"
 V2_SCHEMA = "theseus.repo-index.v2"
@@ -491,7 +490,7 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
                 continue
             value = json.loads(line)
             if not isinstance(value, dict):
-                raise ValueError("JSONL row is not an object")
+                raise ValueError("JSONL row is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
             rows.append(value)
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
         raise _integrity(f"invalid artifact member {path.name}: {exc}") from exc
@@ -579,7 +578,7 @@ def load_artifact(
     try:
         manifest_data = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
         if not isinstance(manifest_data, dict):
-            raise ValueError("manifest is not an object")
+            raise ValueError("manifest is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
         schema = manifest_data.get("schema")
         if schema == SCHEMA:
             manifest: ArtifactManifestAny = ArtifactManifest.from_dict(manifest_data)
@@ -600,9 +599,12 @@ def load_artifact(
     ):
         raise _integrity("authoritative artifact requires authority receipt")
     raw_depgraph_path = path / "raw-depgraph.json"
-    if manifest.created_from_authoritative_source and manifest.producer.kind != "lexical_only":
-        if not raw_depgraph_path.is_file():
-            raise _integrity("authoritative exact artifact requires raw dependency graph member")
+    if (
+        manifest.created_from_authoritative_source
+        and manifest.producer.kind != "lexical_only"
+        and not raw_depgraph_path.is_file()
+    ):
+        raise _integrity("authoritative exact artifact requires raw dependency graph member")
 
     members = (
         ("nodes.jsonl", manifest.nodes_sha256),

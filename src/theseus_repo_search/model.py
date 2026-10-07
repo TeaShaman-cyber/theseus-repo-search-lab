@@ -114,7 +114,7 @@ class Node:
         kind: str,
         module: str,
         source_commit: str,
-    ) -> "Node":
+    ) -> Node:
         return cls(
             id=f"lean:{full_name}",
             full_name=full_name,
@@ -271,7 +271,7 @@ class ArtifactManifest:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> "ArtifactManifest":
+    def from_dict(cls, data: dict[str, object]) -> ArtifactManifest:
         source = _require_dict(data["source"], "source")
         producer = _require_dict(data["producer"], "producer")
         scope = _require_dict(data["scope"], "scope")

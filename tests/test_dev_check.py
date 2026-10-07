@@ -1,10 +1,9 @@
-from pathlib import Path
 import os
 import shutil
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECK = ROOT / "tools" / "dev" / "check"
@@ -57,9 +56,9 @@ class DevCheckContractTest(unittest.TestCase):
                 [str(copied)],
                 cwd=root,
                 text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 env=env,
+                check=False,
             )
 
     def test_dev_check_sets_repo_src_for_clean_checkout(self):

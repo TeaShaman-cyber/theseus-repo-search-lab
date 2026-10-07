@@ -6,7 +6,6 @@ from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.model import EvidenceGrade
 from theseus_repo_search.normalize import normalize_leandepviz
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "raw_leandepviz.json"
 
 

@@ -103,7 +103,7 @@ def _required_node_id(conn: sqlite3.Connection, query: str) -> str:
 def _source_row_for_node(
     conn: sqlite3.Connection, node_row, *, revision_column: str
 ):
-    _, name, source_path, source_start_line, source_end_line, _, module = node_row
+    _, name, source_path, source_start_line, _source_end_line, _, module = node_row
     if source_path is not None:
         rows = conn.execute(
             f"SELECT id, {revision_column}, source_path, source_start_line, source_end_line, "

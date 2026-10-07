@@ -1,4 +1,5 @@
 import unittest
+
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.model import Edge, EvidenceGrade, Node
 
@@ -43,7 +44,11 @@ class ModelTests(unittest.TestCase):
 
 class ManifestTests(unittest.TestCase):
     def test_manifest_round_trips_nested_scope_and_producer(self):
-        from theseus_repo_search.model import ArtifactManifest, ArtifactScope, ProducerPin
+        from theseus_repo_search.model import (
+            ArtifactManifest,
+            ArtifactScope,
+            ProducerPin,
+        )
 
         manifest = ArtifactManifest(
             schema="theseus.repo-index.v1",
@@ -71,7 +76,11 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(ArtifactManifest.from_dict(manifest.to_dict()), manifest)
 
     def test_manifest_rejects_string_boolean_authority_attestation(self):
-        from theseus_repo_search.model import ArtifactManifest, ArtifactScope, ProducerPin
+        from theseus_repo_search.model import (
+            ArtifactManifest,
+            ArtifactScope,
+            ProducerPin,
+        )
 
         manifest = ArtifactManifest(
             schema="theseus.repo-index.v1",

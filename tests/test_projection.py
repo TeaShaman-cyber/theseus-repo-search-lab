@@ -3,16 +3,16 @@ import sqlite3
 import tempfile
 import unittest
 from dataclasses import replace
-from unittest import mock
 from hashlib import sha256
 from pathlib import Path
+from unittest import mock
 
+from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.artifact import (
     artifact_identity,
     write_archive_artifact_v2,
     write_artifact,
 )
-from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.model import (
     ArchiveAuthority,
     ArtifactScope,
@@ -425,9 +425,8 @@ class ProjectionTests(unittest.TestCase):
             with mock.patch(
                 "theseus_repo_search.projection._FTS_STATEMENT",
                 "CREATE VIRTUAL TABLE sources_fts USING definitely_not_a_module(x)",
-            ):
-                with self.assertRaises(sqlite3.OperationalError):
-                    build_projection(artifact_dir, db)
+            ), self.assertRaises(sqlite3.OperationalError):
+                build_projection(artifact_dir, db)
             self.assertEqual(projection_fingerprint(db), old_fingerprint)
             with sqlite3.connect(db) as conn:
                 self.assertEqual(conn.execute("SELECT count(*) FROM sources").fetchone()[0], 1)
