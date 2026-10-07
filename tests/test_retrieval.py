@@ -4,8 +4,11 @@ from dataclasses import asdict, replace
 from hashlib import sha256
 from math import ceil
 from pathlib import Path
+from unittest.mock import patch
 
 from theseus_repo_search.artifact import write_archive_artifact_v2, write_artifact
+from theseus_repo_search.errors import RepoSearchError
+from theseus_repo_search.graph import GraphResult
 from theseus_repo_search.model import (
     ArchiveAuthority,
     ArtifactScope,
@@ -337,6 +340,39 @@ class RetrievalTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             db, _ = self.build_db(Path(d))
             self.assertEqual(search(db, "definitely_not_in_corpus"), [])
+
+    def test_context_rejects_non_integer_graph_depth_as_projection_integrity_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            db, _ = self.build_db(Path(d))
+            malformed = GraphResult(
+                query="deps:lemmaR_tight_two",
+                edges=(
+                    {
+                        "source_id": "lean:Zeta23.Tiny.lemmaR_tight_two",
+                        "target_id": "lean:Zeta23.Tiny.N0star_lower_moment",
+                        "relation": "value_dependency",
+                        "evidence_grade": EvidenceGrade.ELABORATED_VALUE_DEPENDENCY.value,
+                        "producer": "cameronfreer/LeanDepViz@deadbeef",
+                        "depth": "not-an-int",
+                    },
+                ),
+                scope_root_modules=("Zeta23",),
+                dependency_boundary="internal_only",
+                complete_within_scope=True,
+                source_kind="git",
+                source_revision=COMMIT,
+                source_authority=None,
+                created_from_authoritative_source=False,
+                found=True,
+            )
+
+            with patch(
+                "theseus_repo_search.retrieval.dependencies", return_value=malformed
+            ), self.assertRaises(RepoSearchError) as caught:
+                context(db, "lemmaR_tight_two", depth=1, token_budget=30)
+
+            self.assertEqual(caught.exception.code, "BLOCKED_PROJECTION_INTEGRITY")
+            self.assertIn("graph edge depth", str(caught.exception))
 
     def test_context_respects_budget_and_reports_scope(self):
         with tempfile.TemporaryDirectory() as d:
