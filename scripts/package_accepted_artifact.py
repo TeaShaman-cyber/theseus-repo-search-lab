@@ -6,6 +6,7 @@ import gzip
 import hashlib
 import io
 import json
+import subprocess
 import tarfile
 from pathlib import Path
 
@@ -46,6 +47,7 @@ def _package_member_bytes(
     *,
     artifact: Path,
     replay: bytes,
+    consumer_receipt: bytes,
     source_descriptor: bytes,
     runner_config: bytes,
 ) -> list[tuple[str, bytes]]:
@@ -61,6 +63,7 @@ def _package_member_bytes(
         members.append((f"artifact/{relative}", path.read_bytes()))
     members.extend(
         [
+            ("consumer-receipt.json", consumer_receipt),
             ("replay.json", replay),
             ("runner.json", runner_config),
             ("source-descriptor.json", source_descriptor),
@@ -95,15 +98,149 @@ def _deterministic_tar_gz(members: list[tuple[str, bytes]]) -> bytes:
     return compressed.getvalue()
 
 
+
+def _require_commit(value: object, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 40
+        or any(ch not in "0123456789abcdef" for ch in value)
+    ):
+        raise ValueError(f"{label} must be a full lowercase Git commit")
+    return value
+
+
+def _repo_relative(repository_root: Path, path: Path, label: str) -> str:
+    root = repository_root.resolve()
+    try:
+        relative = path.resolve().relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"{label} must be inside repository root") from exc
+    return relative.as_posix()
+
+
+def _git_blob(repository_root: Path, commit: str, path: Path, label: str) -> bytes:
+    relative = _repo_relative(repository_root, path, label)
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repository_root), "show", f"{commit}:{relative}"],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError(f"cannot resolve {label} at accepted repository head") from exc
+    return result.stdout
+
+
+def _validate_output_paths(
+    *,
+    artifact: Path,
+    inputs: tuple[Path, ...],
+    archive: Path,
+    receipt: Path,
+) -> None:
+    archive_path = archive.resolve()
+    receipt_path = receipt.resolve()
+    if archive_path == receipt_path:
+        raise ValueError("archive and receipt outputs must be distinct")
+
+    input_paths = {path.resolve() for path in inputs}
+    for label, output in (("archive", archive_path), ("receipt", receipt_path)):
+        if output in input_paths:
+            raise ValueError(f"{label} output must not overwrite an input")
+        try:
+            output.relative_to(artifact.resolve())
+        except ValueError:
+            pass
+        else:
+            raise ValueError(f"{label} output must stay outside artifact directory")
+
+
+def _validate_consumer_acceptance(
+    *,
+    data: bytes,
+    manifest: object,
+    identity: str,
+    replay_sha256: str,
+) -> dict[str, object]:
+    payload = _load_json_object(data, "consumer receipt")
+    if payload.get("schema") != "theseus.repo-search-consumer-receipt.v1":
+        raise ValueError("unsupported consumer receipt schema")
+    if payload.get("result") != "PASS":
+        raise ValueError("consumer receipt result must be PASS")
+
+    artifact = payload.get("artifact")
+    projection = payload.get("projection")
+    replay = payload.get("replay")
+    workflow = payload.get("workflow")
+    if not all(isinstance(section, dict) for section in (artifact, projection, replay, workflow)):
+        raise TypeError("consumer receipt sections must be objects")
+    assert isinstance(artifact, dict)
+    assert isinstance(projection, dict)
+    assert isinstance(replay, dict)
+    assert isinstance(workflow, dict)
+
+    if artifact.get("identity") != identity:
+        raise ValueError("consumer receipt artifact identity mismatch")
+    source_repo = getattr(manifest, "source_repo", None)
+    source_commit = getattr(manifest, "source_commit", None)
+    source_subdir = getattr(manifest, "source_subdir", None)
+    if (
+        artifact.get("source_repo"),
+        artifact.get("source_commit"),
+        artifact.get("source_subdir"),
+    ) != (source_repo, source_commit, source_subdir):
+        raise ValueError("consumer receipt artifact source mismatch")
+    if projection.get("quick_check") != "ok" or projection.get("artifact_identity") != identity:
+        raise ValueError("consumer receipt projection acceptance mismatch")
+    if (
+        replay.get("status") != "PASS"
+        or replay.get("artifact_identity") != identity
+        or replay.get("sha256") != replay_sha256
+    ):
+        raise ValueError("consumer receipt replay acceptance mismatch")
+
+    repository_head = _require_commit(
+        workflow.get("repository_head"), "consumer receipt repository_head"
+    )
+    _require_commit(workflow.get("workflow_sha"), "consumer receipt workflow_sha")
+    run_id = workflow.get("run_id")
+    run_attempt = workflow.get("run_attempt")
+    workflow_ref = workflow.get("workflow_ref")
+    if not isinstance(run_id, str) or not run_id.isdigit() or not run_id:
+        raise ValueError("consumer receipt run_id must be decimal text")
+    if not isinstance(run_attempt, str) or not run_attempt.isdigit() or not run_attempt:
+        raise ValueError("consumer receipt run_attempt must be decimal text")
+    if (
+        not isinstance(workflow_ref, str)
+        or "/.github/workflows/lean-source-producer-smoke.yml@" not in workflow_ref
+    ):
+        raise ValueError("consumer receipt workflow_ref is not the producer acceptance workflow")
+    return {
+        "repository_head": repository_head,
+        "workflow_sha": workflow["workflow_sha"],
+        "run_id": run_id,
+        "run_attempt": run_attempt,
+        "workflow_ref": workflow_ref,
+    }
+
+
 def build_release_package(
     *,
     artifact: Path,
     replay: Path,
     source_descriptor: Path,
     runner_config: Path,
+    consumer_receipt: Path,
+    repository_root: Path,
     archive: Path,
     receipt: Path,
 ) -> dict[str, object]:
+    _validate_output_paths(
+        artifact=artifact,
+        inputs=(replay, source_descriptor, runner_config, consumer_receipt),
+        archive=archive,
+        receipt=receipt,
+    )
     manifest, *_ = load_artifact(artifact)
     if isinstance(manifest, ArtifactManifestV2):
         raise TypeError("release package pilot currently supports git-backed repo-index.v1 only")
@@ -134,6 +271,20 @@ def build_release_package(
 
     descriptor_bytes = source_descriptor.read_bytes()
     runner_bytes = runner_config.read_bytes()
+    consumer_receipt_bytes = consumer_receipt.read_bytes()
+    acceptance = _validate_consumer_acceptance(
+        data=consumer_receipt_bytes,
+        manifest=manifest,
+        identity=identity,
+        replay_sha256=_sha256(replay_bytes),
+    )
+    repository_head = str(acceptance["repository_head"])
+    if _git_blob(
+        repository_root, repository_head, source_descriptor, "source descriptor"
+    ) != descriptor_bytes:
+        raise ValueError("source descriptor bytes do not match accepted repository head")
+    if _git_blob(repository_root, repository_head, runner_config, "runner config") != runner_bytes:
+        raise ValueError("runner config bytes do not match accepted repository head")
     manifest_bytes = (artifact / "manifest.json").read_bytes()
 
     fingerprint_payload: dict[str, object] = {
@@ -144,12 +295,15 @@ def build_release_package(
         "artifact_manifest_sha256": _sha256(manifest_bytes),
         "artifact_identity": identity,
         "replay_sha256": _sha256(replay_bytes),
+        "consumer_receipt_sha256": _sha256(consumer_receipt_bytes),
+        "accepted_repository_head": repository_head,
     }
     fingerprint_sha256 = _sha256(_json_line(fingerprint_payload))
 
     members = _package_member_bytes(
         artifact=artifact,
         replay=replay_bytes,
+        consumer_receipt=consumer_receipt_bytes,
         source_descriptor=descriptor_bytes,
         runner_config=runner_bytes,
     )
@@ -167,6 +321,10 @@ def build_release_package(
             "subdir": source.source_subdir,
         },
         "runner_config": {"sha256": _sha256(runner_bytes)},
+        "acceptance": {
+            "consumer_receipt_sha256": _sha256(consumer_receipt_bytes),
+            **acceptance,
+        },
         "producer": {
             "kind": manifest.producer.kind,
             "tool_repo": manifest.producer.tool_repo,
@@ -210,6 +368,8 @@ def main() -> int:
     parser.add_argument("--replay", type=Path, required=True)
     parser.add_argument("--source-descriptor", type=Path, required=True)
     parser.add_argument("--runner-config", type=Path, required=True)
+    parser.add_argument("--consumer-receipt", type=Path, required=True)
+    parser.add_argument("--repository-root", type=Path, required=True)
     parser.add_argument("--archive", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args()
@@ -218,6 +378,8 @@ def main() -> int:
         replay=args.replay,
         source_descriptor=args.source_descriptor,
         runner_config=args.runner_config,
+        consumer_receipt=args.consumer_receipt,
+        repository_root=args.repository_root,
         archive=args.archive,
         receipt=args.receipt,
     )
