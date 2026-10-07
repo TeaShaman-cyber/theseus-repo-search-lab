@@ -68,7 +68,7 @@ def _write_consumer_receipt(path: Path, artifact: Path, replay: Path, repository
     identity = artifact_identity(manifest)
     replay_payload = json.loads(replay.read_text(encoding="utf-8"))
     payload: dict[str, object] = {
-        "schema": "theseus.repo-search-consumer-receipt.v1",
+        "schema": "theseus.repo-search-consumer-receipt.v2",
         "result": "PASS",
         "workflow": {
             "repository_head": repository_head,
@@ -83,6 +83,20 @@ def _write_consumer_receipt(path: Path, artifact: Path, replay: Path, repository
             "source_repo": manifest.source_repo,
             "source_commit": manifest.source_commit,
             "source_subdir": manifest.source_subdir,
+        },
+        "producer_config": {
+            "source_descriptor": {
+                "path": "producer/sources/source.json",
+                "sha256": hashlib.sha256(
+                    (path.parent / "config-repo/producer/sources/source.json").read_bytes()
+                ).hexdigest(),
+            },
+            "runner_config": {
+                "path": "producer/runner.json",
+                "sha256": hashlib.sha256(
+                    (path.parent / "config-repo/producer/runner.json").read_bytes()
+                ).hexdigest(),
+            },
         },
         "projection": {"quick_check": "ok", "artifact_identity": identity, "db_sha256": "a" * 64},
         "replay": {
@@ -180,12 +194,17 @@ class ReleasePackageTests(unittest.TestCase):
             "replay_status",
             "replay_identity",
             "replay_provenance",
+            "consumer_schema_v1",
             "consumer_result",
             "consumer_artifact_identity",
             "consumer_projection_identity",
             "consumer_replay_sha",
             "consumer_repository_head",
             "consumer_workflow_ref",
+            "consumer_descriptor_path",
+            "consumer_descriptor_hash",
+            "consumer_runner_path",
+            "consumer_runner_hash",
         )
 
         for case in cases:
@@ -248,11 +267,28 @@ class ReleasePackageTests(unittest.TestCase):
                     runner_payload["elan_version"] = "v9.9.9"
                 elif case == "runner_elan_sha256":
                     runner_payload["elan_sha256"] = "e" * 64
-                descriptor.write_text(json.dumps(descriptor_payload), encoding="utf-8")
-                runner.write_text(json.dumps(runner_payload), encoding="utf-8")
+                if case in {
+                    "source_repo",
+                    "source_commit",
+                    "source_subdir",
+                    "root_modules",
+                    "exclude_source_prefixes",
+                    "build_target",
+                }:
+                    descriptor.write_text(json.dumps(descriptor_payload), encoding="utf-8")
+                if case in {
+                    "runner_repo",
+                    "runner_commit",
+                    "runner_hash",
+                    "runner_elan_version",
+                    "runner_elan_sha256",
+                }:
+                    runner.write_text(json.dumps(runner_payload), encoding="utf-8")
 
                 consumer_payload = json.loads(consumer.read_text(encoding="utf-8"))
-                if case == "consumer_result":
+                if case == "consumer_schema_v1":
+                    consumer_payload["schema"] = "theseus.repo-search-consumer-receipt.v1"
+                elif case == "consumer_result":
                     consumer_payload["result"] = "FAIL"
                 elif case == "consumer_artifact_identity":
                     consumer_payload["artifact"]["identity"] = "0" * 64
@@ -264,6 +300,14 @@ class ReleasePackageTests(unittest.TestCase):
                     consumer_payload["workflow"]["repository_head"] = "0" * 40
                 elif case == "consumer_workflow_ref":
                     consumer_payload["workflow"]["workflow_ref"] = "owner/repo/.github/workflows/other.yml@refs/heads/main"
+                elif case == "consumer_descriptor_path":
+                    consumer_payload["producer_config"]["source_descriptor"]["path"] = "producer/sources/other.json"
+                elif case == "consumer_descriptor_hash":
+                    consumer_payload["producer_config"]["source_descriptor"]["sha256"] = "0" * 64
+                elif case == "consumer_runner_path":
+                    consumer_payload["producer_config"]["runner_config"]["path"] = "producer/other-runner.json"
+                elif case == "consumer_runner_hash":
+                    consumer_payload["producer_config"]["runner_config"]["sha256"] = "0" * 64
                 consumer.write_text(json.dumps(consumer_payload), encoding="utf-8")
 
                 with self.assertRaises((AssertionError, TypeError, ValueError)):

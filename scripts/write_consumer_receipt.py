@@ -11,11 +11,23 @@ from theseus_repo_search.model import ArtifactManifest, ArtifactManifestV2
 from theseus_repo_search.projection import read_projection_provenance
 from theseus_repo_search.replay_contract import validate_registered_replay_provenance
 
-SCHEMA = "theseus.repo-search-consumer-receipt.v1"
+SCHEMA = "theseus.repo-search-consumer-receipt.v2"
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _config_evidence(path: Path, logical_path: str, label: str) -> dict[str, str]:
+    logical = Path(logical_path)
+    if (
+        not logical_path
+        or logical.is_absolute()
+        or ".." in logical.parts
+        or logical.as_posix() != logical_path
+    ):
+        raise ValueError(f"{label} path must be normalized repository-relative POSIX text")
+    return {"path": logical_path, "sha256": _sha256(path)}
 
 
 def build_receipt(
@@ -23,6 +35,10 @@ def build_receipt(
     artifact: Path,
     db: Path,
     replay: Path,
+    source_descriptor: Path,
+    source_descriptor_path: str,
+    runner_config: Path,
+    runner_config_path: str,
     artifact_name: str,
     repository_head: str,
     workflow_run_id: str,
@@ -128,6 +144,14 @@ def build_receipt(
             "workflow_sha": workflow_sha,
         },
         "artifact": artifact_payload,
+        "producer_config": {
+            "source_descriptor": _config_evidence(
+                source_descriptor, source_descriptor_path, "source descriptor"
+            ),
+            "runner_config": _config_evidence(
+                runner_config, runner_config_path, "runner config"
+            ),
+        },
         "projection": {
             "quick_check": quick_check,
             "artifact_identity": projected_identity,
@@ -146,6 +170,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--artifact", type=Path, required=True)
     parser.add_argument("--db", type=Path, required=True)
     parser.add_argument("--replay", type=Path, required=True)
+    parser.add_argument("--source-descriptor", type=Path, required=True)
+    parser.add_argument("--source-descriptor-path", required=True)
+    parser.add_argument("--runner-config", type=Path, required=True)
+    parser.add_argument("--runner-config-path", required=True)
     parser.add_argument("--artifact-name", required=True)
     parser.add_argument("--repository-head", required=True)
     parser.add_argument("--workflow-run-id", required=True)
@@ -162,6 +190,10 @@ def main(argv: list[str] | None = None) -> int:
         artifact=args.artifact,
         db=args.db,
         replay=args.replay,
+        source_descriptor=args.source_descriptor,
+        source_descriptor_path=args.source_descriptor_path,
+        runner_config=args.runner_config,
+        runner_config_path=args.runner_config_path,
         artifact_name=args.artifact_name,
         repository_head=args.repository_head,
         workflow_run_id=args.workflow_run_id,

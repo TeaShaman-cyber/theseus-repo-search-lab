@@ -395,6 +395,10 @@ jobs:
             --artifact "_consumer/download/${SOURCE_ID}-artifact" \
             --db "_consumer/${SOURCE_ID}.sqlite" \
             --replay "_consumer/${SOURCE_ID}-replay.json" \
+            --source-descriptor "${{ matrix.source_descriptor }}" \
+            --source-descriptor-path "${{ matrix.source_descriptor }}" \
+            --runner-config producer/runner.json \
+            --runner-config-path producer/runner.json \
             --artifact-name "${{ matrix.artifact_name }}" \
             --repository-head "${{ github.sha }}" \
             --workflow-run-id "${{ github.run_id }}" \

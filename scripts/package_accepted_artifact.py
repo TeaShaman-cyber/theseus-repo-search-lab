@@ -174,23 +174,53 @@ def _validate_consumer_acceptance(
     manifest: object,
     identity: str,
     replay_sha256: str,
+    source_descriptor_path: str,
+    source_descriptor_sha256: str,
+    runner_config_path: str,
+    runner_config_sha256: str,
 ) -> dict[str, object]:
     payload = _load_json_object(data, "consumer receipt")
-    if payload.get("schema") != "theseus.repo-search-consumer-receipt.v1":
+    if payload.get("schema") != "theseus.repo-search-consumer-receipt.v2":
         raise ValueError("unsupported consumer receipt schema")
     if payload.get("result") != "PASS":
         raise ValueError("consumer receipt result must be PASS")
 
     artifact = payload.get("artifact")
+    producer_config = payload.get("producer_config")
     projection = payload.get("projection")
     replay = payload.get("replay")
     workflow = payload.get("workflow")
-    if not all(isinstance(section, dict) for section in (artifact, projection, replay, workflow)):
+    if not all(
+        isinstance(section, dict)
+        for section in (artifact, producer_config, projection, replay, workflow)
+    ):
         raise TypeError("consumer receipt sections must be objects")
     assert isinstance(artifact, dict)
+    assert isinstance(producer_config, dict)
     assert isinstance(projection, dict)
     assert isinstance(replay, dict)
     assert isinstance(workflow, dict)
+
+    if set(producer_config) != {"source_descriptor", "runner_config"}:
+        raise ValueError("consumer receipt producer_config fields mismatch")
+    source_evidence = producer_config.get("source_descriptor")
+    runner_evidence = producer_config.get("runner_config")
+    if not isinstance(source_evidence, dict) or not isinstance(runner_evidence, dict):
+        raise TypeError("consumer receipt producer_config entries must be objects")
+    if set(source_evidence) != {"path", "sha256"}:
+        raise ValueError("consumer receipt source descriptor evidence fields mismatch")
+    if set(runner_evidence) != {"path", "sha256"}:
+        raise ValueError("consumer receipt runner config evidence fields mismatch")
+    if source_evidence != {
+        "path": source_descriptor_path,
+        "sha256": source_descriptor_sha256,
+    }:
+        raise ValueError("consumer receipt source descriptor evidence mismatch")
+    if runner_evidence != {
+        "path": runner_config_path,
+        "sha256": runner_config_sha256,
+    }:
+        raise ValueError("consumer receipt runner config evidence mismatch")
 
     if artifact.get("identity") != identity:
         raise ValueError("consumer receipt artifact identity mismatch")
@@ -284,12 +314,20 @@ def build_release_package(
 
     descriptor_bytes = source_descriptor.read_bytes()
     runner_bytes = runner_config.read_bytes()
+    descriptor_relative = _repo_relative(
+        repository_root, source_descriptor, "source descriptor"
+    )
+    runner_relative = _repo_relative(repository_root, runner_config, "runner config")
     consumer_receipt_bytes = consumer_receipt.read_bytes()
     acceptance = _validate_consumer_acceptance(
         data=consumer_receipt_bytes,
         manifest=manifest,
         identity=identity,
         replay_sha256=_sha256(replay_bytes),
+        source_descriptor_path=descriptor_relative,
+        source_descriptor_sha256=_sha256(descriptor_bytes),
+        runner_config_path=runner_relative,
+        runner_config_sha256=_sha256(runner_bytes),
     )
     repository_head = str(acceptance["repository_head"])
     if _git_blob(

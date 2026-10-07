@@ -185,6 +185,10 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("needs: produce-and-replay", consumer)
         self.assertIn("actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c", consumer)
         self.assertIn("scripts/write_consumer_receipt.py", consumer)
+        self.assertIn('--source-descriptor "${{ matrix.source_descriptor }}"', consumer)
+        self.assertIn('--source-descriptor-path "${{ matrix.source_descriptor }}"', consumer)
+        self.assertIn('--runner-config producer/runner.json', consumer)
+        self.assertIn('--runner-config-path producer/runner.json', consumer)
         self.assertIn("PRAGMA quick_check", consumer)
 
         forbidden = (
