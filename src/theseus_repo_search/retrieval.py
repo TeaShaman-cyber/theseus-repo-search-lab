@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import re
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import ceil
 from pathlib import Path
+from typing import Literal
 
 from .errors import RepoSearchError
 from .graph import dependencies
 from .model import EvidenceGrade
 from .projection import ProjectionProvenance, read_projection_provenance
+
+SearchMode = Literal["discovery", "evidence"]
+SearchMatchMode = Literal["exact", "single_term", "any_terms", "all_terms"]
 
 
 @dataclass(frozen=True)
@@ -26,6 +30,8 @@ class SearchHit:
     score: float
     text: str | None
     created_from_authoritative_source: bool
+    query_mode: SearchMode = "discovery"
+    match_mode: SearchMatchMode = "exact"
 
     @property
     def source_commit(self) -> str:
@@ -224,19 +230,36 @@ def _declaration_id_for_hit(
     return ids[0] if len(ids) == 1 else None
 
 
-def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
+def search(
+    db_path: Path,
+    query: str,
+    *,
+    limit: int = 10,
+    mode: SearchMode = "discovery",
+) -> list[SearchHit]:
+    if mode not in {"discovery", "evidence"}:
+        raise ValueError(f"unsupported search mode: {mode}")
     if limit <= 0:
         return []
     with sqlite3.connect(db_path) as conn:
         provenance = read_projection_provenance(conn)
         exact = _exact_hit(conn, query, provenance=provenance)
         if exact is not None:
-            return [exact]
+            return [replace(exact, query_mode=mode, match_mode="exact")]
 
         terms = re.findall(r"\w+", query, flags=re.UNICODE)
         if not terms:
             return []
-        fts_query = " OR ".join(f'"{term}"' for term in terms)
+        if len(terms) == 1:
+            operator = " OR "
+            match_mode: SearchMatchMode = "single_term"
+        elif mode == "evidence":
+            operator = " AND "
+            match_mode = "all_terms"
+        else:
+            operator = " OR "
+            match_mode = "any_terms"
+        fts_query = operator.join(f'"{term}"' for term in terms)
         rows = conn.execute(
             f"SELECT s.id, s.{provenance.revision_column}, s.source_path, s.source_start_line, "
             "s.source_end_line, s.declaration_hint, s.text, bm25(sources_fts) AS rank "
@@ -265,6 +288,8 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
                 score=float(row[7]),
                 text=str(row[6]),
                 created_from_authoritative_source=provenance.created_from_authoritative_source,
+                query_mode=mode,
+                match_mode=match_mode,
             )
             for row in rows
         ]
