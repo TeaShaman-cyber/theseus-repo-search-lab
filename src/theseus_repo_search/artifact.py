@@ -599,9 +599,12 @@ def load_artifact(
     ):
         raise _integrity("authoritative artifact requires authority receipt")
     raw_depgraph_path = path / "raw-depgraph.json"
-    if manifest.created_from_authoritative_source and manifest.producer.kind != "lexical_only":
-        if not raw_depgraph_path.is_file():
-            raise _integrity("authoritative exact artifact requires raw dependency graph member")
+    if (
+        manifest.created_from_authoritative_source
+        and manifest.producer.kind != "lexical_only"
+        and not raw_depgraph_path.is_file()
+    ):
+        raise _integrity("authoritative exact artifact requires raw dependency graph member")
 
     members = (
         ("nodes.jsonl", manifest.nodes_sha256),

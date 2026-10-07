@@ -386,9 +386,9 @@ class ProducerGuardTests(unittest.TestCase):
             receipt = root / "receipt.json"
             with patch.object(producer_guard, "verify_checked_out_commit", return_value="a" * 40), \
                  patch.object(producer_guard, "verify_tracked_source_clean"), \
-                 patch.object(producer_guard, "run_exact_command") as run:
-                with self.assertRaisesRegex(RepoSearchError, "extraction cwd"):
-                    producer_guard.run_bound_extraction(
+                 patch.object(producer_guard, "run_exact_command") as run, \
+                 self.assertRaisesRegex(RepoSearchError, "extraction cwd"):
+                producer_guard.run_bound_extraction(
                         ["lake", "env", "lean"],
                         cwd=other,
                         repo_dir=repo,
@@ -507,9 +507,9 @@ class ProducerGuardTests(unittest.TestCase):
                 tracked.write_text("theorem a : False := by contradiction\n", encoding="utf-8")
                 raw.write_text('{"nodes":[],"edges":[]}\n', encoding="utf-8")
 
-            with patch.object(producer_guard, "run_exact_command", side_effect=dirty_run):
-                with self.assertRaises(RepoSearchError) as caught:
-                    producer_guard.run_bound_extraction(
+            with patch.object(producer_guard, "run_exact_command", side_effect=dirty_run), \
+                 self.assertRaises(RepoSearchError) as caught:
+                producer_guard.run_bound_extraction(
                         ["lake", "env", "lean"],
                         cwd=source,
                         repo_dir=repo,
@@ -543,9 +543,9 @@ class ProducerGuardTests(unittest.TestCase):
             try:
                 with patch.object(producer_guard, "verify_checked_out_commit", return_value="a" * 40), \
                      patch.object(producer_guard, "verify_tracked_source_clean"), \
-                     patch.object(producer_guard, "run_exact_command", side_effect=fake_run):
-                    with self.assertRaises(RepoSearchError) as caught:
-                        producer_guard.run_bound_extraction(
+                     patch.object(producer_guard, "run_exact_command", side_effect=fake_run), \
+                     self.assertRaises(RepoSearchError) as caught:
+                    producer_guard.run_bound_extraction(
                             ["lake", "env", "lean"],
                             cwd=root,
                             repo_dir=root,
@@ -578,14 +578,14 @@ class ProducerGuardTests(unittest.TestCase):
                 if content is not None:
                     (source / "lean-toolchain").write_text(content, encoding="utf-8")
 
-                def fake_run(argv, cwd):
+                def fake_run(argv, cwd, raw=raw):
                     raw.write_text('{"nodes":[],"edges":[]}\n', encoding="utf-8")
 
                 with patch.object(producer_guard, "verify_checked_out_commit", return_value="a" * 40), \
                      patch.object(producer_guard, "verify_tracked_source_clean"), \
-                     patch.object(producer_guard, "run_exact_command", side_effect=fake_run):
-                    with self.assertRaises(RepoSearchError) as caught:
-                        producer_guard.run_bound_extraction(
+                     patch.object(producer_guard, "run_exact_command", side_effect=fake_run), \
+                     self.assertRaises(RepoSearchError) as caught:
+                    producer_guard.run_bound_extraction(
                             ["lake", "env", "lean"],
                             cwd=source,
                             repo_dir=root,
