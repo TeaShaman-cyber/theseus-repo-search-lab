@@ -156,6 +156,19 @@ class SourceChunkTests(unittest.TestCase):
             self.assertEqual(bound.source_path, "Zeta23/A.lean")
             self.assertEqual((bound.source_start_line, bound.source_end_line), (1, 1))
 
+    def test_lexical_chunks_preserve_unicode_identifier_suffixes(self):
+        from theseus_repo_search.sources import _chunks_from_text
+
+        chunks = _chunks_from_text(
+            "Regular.lean",
+            "def below : Nat := 0\ndef below₂ : Nat := 0\n",
+            source_revision="a" * 64,
+        )
+        self.assertEqual(
+            [chunk.declaration_hint for chunk in chunks],
+            ["below", "below₂"],
+        )
+
     def test_manifest_backed_scan_ignores_generated_unmanifested_lean(self):
         import json
 
