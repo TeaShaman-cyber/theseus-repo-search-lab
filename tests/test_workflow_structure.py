@@ -238,3 +238,28 @@ class WorkflowStructureTests(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertNotIn(token, smoke)
+
+class ReleaseConsumerCanaryWorkflowTests(unittest.TestCase):
+    def test_release_consumer_canary_is_source_free_and_reruns_fresh_consumers(self):
+        path = ROOT / ".github" / "workflows" / "accepted-artifact-consumer-canary.yml"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("accepted-artifact/flt-regular/41bfa1d236ee59a8", text)
+        self.assertIn("gh release verify", text)
+        self.assertIn("gh release verify-asset", text)
+        self.assertIn('git/ref/tags/$RELEASE_TAG', text)
+        self.assertIn('.acceptance.repository_head', text)
+        self.assertIn("scripts/consume_accepted_release.py", text)
+        self.assertIn("python3 -m theseus_repo_search build-index", text)
+        self.assertIn("scripts/replay_flt_regular.py", text)
+        self.assertIn("scripts/run_research_smoke.py", text)
+        for forbidden in (
+            "Checkout pinned source",
+            "Build source target",
+            "LeanDepViz",
+            "elan",
+            "lake ",
+            "_target/source",
+            "producer_guard.py checkout",
+        ):
+            with self.subTest(token=forbidden):
+                self.assertNotIn(forbidden, text)
