@@ -13,6 +13,7 @@ from theseus_repo_search.artifact import (
     canonical_artifact_member_names,
     load_artifact,
 )
+from theseus_repo_search.errors import RepoSearchError
 
 RELEASE_RECEIPT_SCHEMA = "theseus.repo-search-accepted-artifact-release-receipt.v1"
 FINGERPRINT_SCHEMA = "theseus.repo-search-accepted-artifact-fingerprint.v1"
@@ -23,6 +24,14 @@ _METADATA_MEMBERS = {
     "runner.json",
     "source-descriptor.json",
 }
+
+
+class RebuildRequired(ValueError):
+    """Current producer inputs no longer match the accepted artifact fingerprint."""
+
+
+class ReleaseEvidenceInvalid(ValueError):
+    """Release evidence is missing, malformed, or unverifiable; reuse must fail closed."""
 
 
 def _sha256(data: bytes) -> str:
@@ -124,7 +133,7 @@ def _require_section(receipt: dict[str, object], name: str) -> dict[str, object]
     return section
 
 
-def verify_and_extract_release(
+def _verify_and_extract_release(
     *,
     archive: Path,
     receipt: Path,
@@ -154,9 +163,9 @@ def verify_and_extract_release(
     source_bytes = source_descriptor.read_bytes()
     runner_bytes = runner_config.read_bytes()
     if source.get("sha256") != _sha256(source_bytes):
-        raise ValueError("current source descriptor requires producer rebuild")
+        raise RebuildRequired("REBUILD_REQUIRED: current source descriptor differs from accepted producer fingerprint")
     if runner.get("sha256") != _sha256(runner_bytes):
-        raise ValueError("current runner config requires producer rebuild")
+        raise RebuildRequired("REBUILD_REQUIRED: current runner config differs from accepted producer fingerprint")
 
     members = _member_map(payload)
     if not _METADATA_MEMBERS.issubset(members):
@@ -237,6 +246,28 @@ def verify_and_extract_release(
         "source_descriptor_sha256": _sha256(source_bytes),
         "runner_config_sha256": _sha256(runner_bytes),
     }
+
+
+def verify_and_extract_release(
+    *,
+    archive: Path,
+    receipt: Path,
+    source_descriptor: Path,
+    runner_config: Path,
+    dest: Path,
+) -> dict[str, object]:
+    try:
+        return _verify_and_extract_release(
+            archive=archive,
+            receipt=receipt,
+            source_descriptor=source_descriptor,
+            runner_config=runner_config,
+            dest=dest,
+        )
+    except RebuildRequired:
+        raise
+    except (FileNotFoundError, TypeError, ValueError, RepoSearchError) as exc:
+        raise ReleaseEvidenceInvalid(f"RELEASE_EVIDENCE_INVALID: {exc}") from exc
 
 
 def main() -> int:

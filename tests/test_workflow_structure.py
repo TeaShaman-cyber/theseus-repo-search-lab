@@ -263,3 +263,26 @@ class ReleaseConsumerCanaryWorkflowTests(unittest.TestCase):
         ):
             with self.subTest(token=forbidden):
                 self.assertNotIn(forbidden, text)
+
+class ReleaseConsumerNegativeCanaryWorkflowTests(unittest.TestCase):
+    def test_negative_canary_requires_rebuild_and_fails_closed(self):
+        path = ROOT / ".github" / "workflows" / "accepted-artifact-consumer-negative-canary.yml"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("REBUILD_REQUIRED", text)
+        self.assertIn("RELEASE_EVIDENCE_INVALID", text)
+        self.assertIn("producer/sources/leanprover-community-flt-regular.json", text)
+        self.assertIn("consume_accepted_release.py", text)
+        self.assertIn("missing-package.tar.gz", text)
+        self.assertNotIn("build-index", text)
+        self.assertNotIn("replay_flt_regular.py", text)
+        self.assertNotIn("run_research_smoke.py", text)
+        for forbidden in (
+            "Checkout pinned source",
+            "Build source target",
+            "LeanDepViz",
+            "elan",
+            "lake ",
+            "_target/source",
+        ):
+            with self.subTest(token=forbidden):
+                self.assertNotIn(forbidden, text)
