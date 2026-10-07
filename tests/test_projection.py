@@ -425,9 +425,8 @@ class ProjectionTests(unittest.TestCase):
             with mock.patch(
                 "theseus_repo_search.projection._FTS_STATEMENT",
                 "CREATE VIRTUAL TABLE sources_fts USING definitely_not_a_module(x)",
-            ):
-                with self.assertRaises(sqlite3.OperationalError):
-                    build_projection(artifact_dir, db)
+            ), self.assertRaises(sqlite3.OperationalError):
+                build_projection(artifact_dir, db)
             self.assertEqual(projection_fingerprint(db), old_fingerprint)
             with sqlite3.connect(db) as conn:
                 self.assertEqual(conn.execute("SELECT count(*) FROM sources").fetchone()[0], 1)

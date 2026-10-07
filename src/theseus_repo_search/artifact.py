@@ -4,9 +4,9 @@ import json
 import os
 import shutil
 import tempfile
+from collections.abc import Iterable, Sequence
 from hashlib import sha256
 from pathlib import Path
-from collections.abc import Iterable, Sequence
 
 from .errors import RepoSearchError
 from .model import (
