@@ -13,7 +13,6 @@ import re
 from .proof_evidence_sidecar import _axioms_from_exact_report
 
 MAX_STDOUT_BYTES = 1024 * 1024
-_REPORT_LINE = re.compile(r"^'(?P<declaration>[^']+)' (?P<detail>.*)$")
 _SORRY_WARNING = re.compile(r"^.+:[0-9]+:[0-9]+: warning: declaration uses `sorry`$")
 
 
@@ -43,7 +42,12 @@ def extract_exact_axiom_reports(
         raise ValueError("LEAN_STDOUT_DIGEST_MISMATCH")
     if not expected_declarations or len(set(expected_declarations)) != len(expected_declarations):
         raise ValueError("invalid expected declarations")
-    if any(not isinstance(decl, str) or not decl or "\n" in decl or "'" in decl for decl in expected_declarations):
+    if any(
+        not isinstance(decl, str)
+        or not decl
+        or any(control in decl for control in ("\n", "\r", "\x00"))
+        for decl in expected_declarations
+    ):
         raise ValueError("invalid declaration name")
     try:
         stdout = raw_stdout.decode("utf-8")
@@ -58,16 +62,21 @@ def extract_exact_axiom_reports(
         if _SORRY_WARNING.fullmatch(line):
             sorry_warnings += 1
             continue
-        match = _REPORT_LINE.fullmatch(line)
-        if match is None:
-            raise ValueError("unexpected Lean stdout line")
-        declaration = match.group("declaration")
-        if declaration not in expected_declarations:
-            raise ValueError("unrequested Lean declaration")
+        # Lean quotes the *whole* declaration, but a valid Lean name may
+        # itself end in apostrophes: 'Example.foo'' is a valid report.
+        # Anchor parsing to an expected name and its exact closing delimiter.
+        matched = [
+            declaration for declaration in expected_declarations
+            if line.startswith(f"'{declaration}' ")
+        ]
+        if len(matched) != 1:
+            raise ValueError("unrequested or ambiguous Lean declaration")
+        declaration = matched[0]
         if declaration in reports:
             raise ValueError("duplicate Lean axiom report")
         report_bytes = (line + "\n").encode("utf-8")
-        if match.group("detail") == "depends on axioms: []":
+        detail = line[len(f"'{declaration}' ") :]
+        if detail == "depends on axioms: []":
             raise ValueError("invalid empty Lean axiom list")
         _axioms_from_exact_report(report_bytes, declaration)
         reports[declaration] = report_bytes
