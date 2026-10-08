@@ -78,6 +78,36 @@ class LeanAxiomStdoutTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_with_test_pin(wrong, expected_declarations=DECLS, exit_code=0, pin=STDOUT_SHA256)
 
+    def test_real_lean_apostrophe_suffixes_are_valid_declarations(self):
+        # Observed from actual Lean 4.33.0-rc2: the closing quote follows
+        # apostrophe suffixes, so 'Example.foo'' is unambiguous.
+        stdout = (
+            b"/tmp/ApostropheProbe.lean:3:9: warning: declaration uses `sorry`\n"
+            b"'Example.foo'' does not depend on any axioms\n"
+            b"'Example.bar''' depends on axioms: [sorryAx]\n"
+        )
+        result = parse_with_test_pin(
+            stdout,
+            expected_declarations=("Example.foo'", "Example.bar''"),
+            exit_code=0,
+        )
+        self.assertEqual(result["Example.foo'"], b"'Example.foo'' does not depend on any axioms\n")
+        self.assertEqual(result["Example.bar''"], b"'Example.bar''' depends on axioms: [sorryAx]\n")
+
+    def test_apostrophe_name_does_not_pass_as_shorter_expected_declaration(self):
+        stdout = b"'Example.foo'' does not depend on any axioms\n"
+        with self.assertRaises(ValueError):
+            parse_with_test_pin(stdout, expected_declarations=("Example.foo",), exit_code=0)
+
+    def test_apostrophe_and_short_name_are_independently_distinguished(self):
+        stdout = (
+            b"'Example.foo' does not depend on any axioms\n"
+            b"'Example.foo'' depends on axioms: [sorryAx]\n"
+        )
+        result = parse_with_test_pin(stdout, expected_declarations=("Example.foo", "Example.foo'"), exit_code=0)
+        self.assertEqual(result["Example.foo'"], b"'Example.foo'' depends on axioms: [sorryAx]\n")
+        self.assertEqual(result["Example.foo"], b"'Example.foo' does not depend on any axioms\n")
+
 
 if __name__ == "__main__":
     unittest.main()

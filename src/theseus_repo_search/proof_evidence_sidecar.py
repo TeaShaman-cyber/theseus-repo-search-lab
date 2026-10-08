@@ -24,6 +24,16 @@ from .evidence_class import (
 
 SCHEMA = "theseus.repo-search-proof-evidence-sidecar.v1"
 MAX_TRANSCRIPT_BYTES = 64 * 1024
+MAX_SIDECAR_BYTES = 64 * 1024
+
+
+def _read_bounded_evidence(path: Path, *, limit: int, label: str) -> bytes:
+    """Read no more than limit+1 bytes, including from oversized input files."""
+    with path.open("rb") as stream:
+        data = stream.read(limit + 1)
+    if len(data) > limit:
+        raise ValueError(f"EVIDENCE_TOO_LARGE: {label} exceeds {limit} bytes")
+    return data
 
 
 def _sha256(data: bytes) -> str:
@@ -110,8 +120,12 @@ def verify_bound_proof_evidence(
     if not _is_sha256(expected_sidecar_sha256):
         raise ValueError("UNPINNED_EVIDENCE: missing exact trusted sidecar digest")
     try:
-        sidecar_bytes = sidecar.read_bytes()
-        transcript_bytes = transcript.read_bytes()
+        sidecar_bytes = _read_bounded_evidence(
+            sidecar, limit=MAX_SIDECAR_BYTES, label="sidecar"
+        )
+        transcript_bytes = _read_bounded_evidence(
+            transcript, limit=MAX_TRANSCRIPT_BYTES, label="transcript"
+        )
     except OSError as exc:
         raise ValueError(f"MISSING_EVIDENCE: {exc}") from exc
     if _sha256(sidecar_bytes) != expected_sidecar_sha256:

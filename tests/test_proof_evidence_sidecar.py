@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tests.test_artifact import (
     ARCHIVE_SHA256,
@@ -145,6 +146,37 @@ class BoundProofEvidenceTests(unittest.TestCase):
                 sidecar.write_text(variant, encoding="utf-8")
                 with self.assertRaises((ValueError, TypeError)):
                     _check(artifact, sidecar, transcript, pin=hashlib.sha256(sidecar.read_bytes()).hexdigest())
+
+    def test_evidence_files_are_never_read_unbounded(self):
+        with tempfile.TemporaryDirectory() as d:
+            artifact, sidecar, transcript, _ = _prepare(Path(d))
+            sidecar_pin = hashlib.sha256(sidecar.read_bytes()).hexdigest()
+            original = Path.read_bytes
+
+            def reject_unbounded_read(path):
+                if path in (sidecar, transcript):
+                    raise AssertionError("unbounded read_bytes on untrusted evidence")
+                return original(path)
+
+            with patch.object(Path, "read_bytes", reject_unbounded_read):
+                result = _check(artifact, sidecar, transcript, pin=sidecar_pin)
+            self.assertEqual(result, ProofEligibility.CANDIDATE_FOR_PROOF_VERIFICATION)
+
+    def test_oversized_sidecar_fails_closed_even_if_valid_json_and_re_pinned(self):
+        with tempfile.TemporaryDirectory() as d:
+            artifact, sidecar, transcript, _ = _prepare(Path(d))
+            sidecar.write_bytes(sidecar.read_bytes() + b" " * (64 * 1024))
+            sidecar_pin = hashlib.sha256(sidecar.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(ValueError, "EVIDENCE_TOO_LARGE"):
+                _check(artifact, sidecar, transcript, pin=sidecar_pin)
+
+    def test_oversized_transcript_checks_length_before_digest(self):
+        with tempfile.TemporaryDirectory() as d:
+            artifact, sidecar, transcript, _ = _prepare(Path(d))
+            transcript.write_bytes(transcript.read_bytes() + b" " * (64 * 1024))
+            sidecar_pin = hashlib.sha256(sidecar.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(ValueError, "EVIDENCE_TOO_LARGE"):
+                _check(artifact, sidecar, transcript, pin=sidecar_pin)
 
 
 if __name__ == "__main__":
