@@ -14,6 +14,7 @@ from theseus_repo_search.artifact import (
     load_artifact,
 )
 from theseus_repo_search.errors import RepoSearchError
+from theseus_repo_search.evidence_class import release_replay_evidence
 
 RELEASE_RECEIPT_SCHEMA = "theseus.repo-search-accepted-artifact-release-receipt.v1"
 FINGERPRINT_SCHEMA = "theseus.repo-search-accepted-artifact-fingerprint.v1"
@@ -211,6 +212,12 @@ def _verify_and_extract_release(
     if fingerprint.get("sha256") != observed_fingerprint:
         raise ValueError("accepted-artifact fingerprint mismatch")
 
+    # Reject dishonest class metadata before materializing any archive member.
+    replay_payload = _load_json_object(observed["replay.json"], "replay")
+    replay_evidence = release_replay_evidence(replay_payload)
+    if "evidence" in payload and payload["evidence"] != replay_evidence:
+        raise ValueError("release receipt evidence disagrees with packaged replay")
+
     dest.mkdir(parents=True, exist_ok=True)
     for name, data in observed.items():
         target = dest.joinpath(*PurePosixPath(name).parts)
@@ -232,7 +239,6 @@ def _verify_and_extract_release(
         raise ValueError("packaged consumer receipt is not accepted v2 evidence")
     if _require_section(consumer, "artifact").get("identity") != identity:
         raise ValueError("packaged consumer receipt artifact identity mismatch")
-    replay_payload = _load_json_object(observed["replay.json"], "replay")
     if replay_payload.get("status") != "PASS" or replay_payload.get("artifact_identity") != identity:
         raise ValueError("packaged replay is not accepted evidence")
 
@@ -240,6 +246,7 @@ def _verify_and_extract_release(
         "schema": CONSUMER_SCHEMA,
         "status": "PASS",
         "artifact_identity": identity,
+        "evidence": replay_evidence,
         "accepted_repository_head": acceptance.get("repository_head"),
         "fingerprint_sha256": observed_fingerprint,
         "package_sha256": _sha256(archive_bytes),
