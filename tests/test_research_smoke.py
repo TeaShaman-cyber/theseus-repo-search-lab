@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from scripts.run_research_smoke import _search_probe, load_scenario, run_scenario
 from tests.test_replay_flt_regular import build_fixture as build_flt_fixture
+from theseus_repo_search.producer_config import load_lean_git_source
 
 
 class ResearchSmokeTests(unittest.TestCase):
@@ -295,6 +296,30 @@ class ResearchSmokeTests(unittest.TestCase):
             path.write_text(json.dumps({"schema": "wrong"}), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "scenario schema"):
                 load_scenario(path)
+
+    def test_marton_seam_is_persisted_in_nonblocking_qa_and_owned_by_math(self):
+        scenario = load_scenario(Path("qa/research-smoke/annals-marton-seam-v0.json"))
+        source = load_lean_git_source(Path("producer/sources/annals-challenge-marton.json"))
+        self.assertEqual(scenario["scenario_id"], "annals-marton-seam-v0")
+        self.assertEqual(scenario["source_repo"], source.source_repo)
+        self.assertEqual(source.source_commit, "e32eb1411db0d700ca874dd695aea92f78699db8")
+        self.assertIn(
+            "TeaShaman-cyber/theseus-math-research-lab#56",
+            scenario["research_refs"],
+        )
+        self.assertIn("FORMAL_STATEMENT_NOT_PROOF", scenario["evidence_classes"])
+        self.assertTrue(scenario["probes"])
+        self.assertTrue(all(not p["regression_guard"] for p in scenario["probes"]))
+        queries = [p for p in scenario["probes"] if p["kind"] == "search"]
+        self.assertGreaterEqual(len(queries), 2)
+        self.assertTrue(all("required_declaration_hints" not in p for p in queries))
+        for probe in queries:
+            with self.subTest(probe=probe["id"]), patch(
+                "scripts.run_research_smoke.search", return_value=[]
+            ):
+                result = _search_probe(Path("unavailable.sqlite"), probe)
+            self.assertEqual(result["state"], "NO_SIGNAL")
+            self.assertFalse(result["regression"])
 
     def test_repository_scenarios_load_and_cover_two_research_families(self):
         paths = sorted(Path("qa/research-smoke").glob("*.json"))
