@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "annals-challenge-marton",
+  "source_repo": "ImperialCollegeLondon/AnnalsChallenge",
+  "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+  "source_subdir": "",
+  "root_modules": ["AnnalsChallenge.AnnalsOfMathematics.«2025-201-2-ConjectureOfMarton»"],
+  "build_target": "AnnalsChallenge.AnnalsOfMathematics.«2025-201-2-ConjectureOfMarton»"
+}
