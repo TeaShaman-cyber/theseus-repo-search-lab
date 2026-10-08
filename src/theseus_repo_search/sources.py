@@ -511,18 +511,18 @@ def lean_module_source_path(module: str) -> str:
     for char in module:
         if char == "«":
             if quoted:
-                raise ValueError("nested quoted Lean module component")
+                raise RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", "nested quoted Lean module component")
             quoted = True
         elif char == "»":
             if not quoted:
-                raise ValueError("unbalanced quoted Lean module component")
+                raise RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", "unbalanced quoted Lean module component")
             quoted = False
         elif char == "." and not quoted:
             parts.append("/")
         else:
             parts.append(char)
     if quoted:
-        raise ValueError("unbalanced quoted Lean module component")
+        raise RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", "unbalanced quoted Lean module component")
     return "".join(parts) + ".lean"
 
 
