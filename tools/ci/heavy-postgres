@@ -19,6 +19,16 @@ command -v psql >/dev/null 2>&1 || {
 }
 
 printf '%s\n' '== PostgreSQL server =='
+server_version_num=$(psql -X -v ON_ERROR_STOP=1 -Atqc \
+    "SELECT current_setting('server_version_num');")
+case "$server_version_num" in
+    17????) ;;
+    *)
+        printf 'heavy-postgres: expected PostgreSQL 17, got server_version_num=%s\n' \
+            "$server_version_num" >&2
+        exit 2
+        ;;
+esac
 psql -X -v ON_ERROR_STOP=1 -Atqc \
     "SELECT current_setting('server_version'), current_database(), current_user;"
 

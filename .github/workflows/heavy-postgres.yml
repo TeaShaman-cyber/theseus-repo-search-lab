@@ -29,15 +29,16 @@ jobs:
       - name: Checkout exact PR head
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
-      - name: Run repository Heavy PostgreSQL endpoint
+      - name: Install PostgreSQL client
         run: |
-          docker run --rm --network host \
-            -e PGHOST=127.0.0.1 \
-            -e PGPORT=5432 \
-            -e PGUSER=postgres \
-            -e PGPASSWORD=postgres \
-            -e PGDATABASE=repo_search_contract \
-            -v "$GITHUB_WORKSPACE:/repo:ro" \
-            -w /repo \
-            postgres:17 \
-            sh -c 'tools/ci/heavy-postgres'
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client
+
+      - name: Run repository Heavy PostgreSQL endpoint
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: repo_search_contract
+        run: tools/ci/heavy-postgres

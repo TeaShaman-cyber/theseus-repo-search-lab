@@ -354,12 +354,16 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("postgres:17", workflow_text)
         self.assertIn("pg_isready", workflow_text)
         self.assertIn("tools/ci/heavy-postgres", workflow_text)
+        self.assertIn("postgresql-client", workflow_text)
+        self.assertNotIn("docker run --rm --network host", workflow_text)
         self.assertNotIn("NEON", workflow_text.upper())
 
         endpoint_text = endpoint.read_text(encoding="utf-8")
         self.assertIn("psql", endpoint_text)
         self.assertIn("ON_ERROR_STOP=1", endpoint_text)
         self.assertIn("qa/postgres/runner-smoke.sql", endpoint_text)
+        self.assertIn("server_version_num", endpoint_text)
+        self.assertIn("expected PostgreSQL 17", endpoint_text)
         self.assertIn("HEAVY_POSTGRES_PASS", endpoint_text)
 
         smoke_text = smoke.read_text(encoding="utf-8")
