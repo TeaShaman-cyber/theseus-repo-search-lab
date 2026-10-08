@@ -210,6 +210,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _out
+          # LeanDepViz nameFromString splits module text into raw Name.str parts.
+          # Quoting delimiters belong to Lean/Lake syntax, not its .olean filesystem path.
+          EXTRACTOR_ROOT_MODULES="${ROOT_MODULES_CSV//«/}"
+          EXTRACTOR_ROOT_MODULES="${EXTRACTOR_ROOT_MODULES//»/}"
+          printf 'extractor_roots=%s\n' "$EXTRACTOR_ROOT_MODULES"
           python3 scripts/producer_guard.py extract-source \
             --cwd "$SOURCE_ROOT" \
             --source-container "$GITHUB_WORKSPACE/_target/source" \
@@ -222,7 +227,7 @@ jobs:
             --producer-tool-commit "$EXTRACTOR_COMMIT" \
             --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" -- \
             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
-            --roots "$ROOT_MODULES_CSV" \
+            --roots "$EXTRACTOR_ROOT_MODULES" \
             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
 
       - name: Install repository lens package
