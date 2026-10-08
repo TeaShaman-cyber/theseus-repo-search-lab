@@ -50,11 +50,13 @@ def _require(condition: bool, why: str) -> None:
 def capture_witness(
     *, source: Path, output_dir: Path, lean_executable: Path,
     repository: str, source_commit: str, run_id: str, run_attempt: str,
+    lean_archive_sha256: str,
 ) -> None:
     """Observe genuine Lean process; the workflow must bind its own checkout."""
     _require(repository == REPO, "WRONG_REPOSITORY")
     _require(bool(re.fullmatch(r"[0-9a-f]{40}", source_commit)), "INVALID_SOURCE_SHA")
     _require(run_id.isdecimal() and run_attempt.isdecimal(), "INVALID_RUN_ID")
+    _require(bool(re.fullmatch(r"[0-9a-f]{64}", lean_archive_sha256)), "INVALID_ARCHIVE_SHA256")
     _require(_digest(_read(source, 64 * 1024)) == SOURCE_SHA256, "UNEXPECTED_SOURCE_BYTES")
     version = subprocess.run(
         [str(lean_executable), "--version"], capture_output=True, timeout=30, check=False,
@@ -97,6 +99,7 @@ def capture_witness(
         "execution": {
             "lean_version": text.strip(),
             "lean_binary_sha256": bin_hash,
+            "lean_archive_sha256": lean_archive_sha256,
             "exit_code": proc.returncode,
             "stdout_sha256": _digest(raw),
             "stderr_sha256": _digest(proc.stderr),
@@ -114,6 +117,7 @@ def consume_witness(
     witness_dir: Path, *, source: Path, expected_commit: str,
     expected_run_id: str, expected_run_attempt: str,
     expected_lean_binary_sha256: str,
+    expected_lean_archive_sha256: str,
 ) -> dict[str, ProofEligibility]:
     """Consume provider-fetched run files, matching independent run id and SHA.
 
@@ -130,7 +134,7 @@ def consume_witness(
     details = receipt["execution"]
     _require(isinstance(upstream, dict) and set(upstream) == {"repository", "commit", "path", "sha256"}, "INVALID_SOURCE_RECEIPT")
     _require(isinstance(run, dict) and set(run) == {"id", "attempt"}, "INVALID_RUN_RECEIPT")
-    _require(isinstance(details, dict) and set(details) == {"lean_version", "lean_binary_sha256", "exit_code", "stdout_sha256", "stderr_sha256"}, "INVALID_EXECUTION_RECEIPT")
+    _require(isinstance(details, dict) and set(details) == {"lean_version", "lean_binary_sha256", "lean_archive_sha256", "exit_code", "stdout_sha256", "stderr_sha256"}, "INVALID_EXECUTION_RECEIPT")
     _require(upstream["repository"] == REPO, "WRONG_REPOSITORY")
     _require(upstream["path"] == SOURCE_PATH, "WRONG_SOURCE_PATH")
     _require(upstream["commit"] == expected_commit, "SOURCE_COMMIT_MISMATCH")
@@ -145,7 +149,11 @@ def consume_witness(
         details["lean_binary_sha256"] == expected_lean_binary_sha256,
         "LEAN_BINARY_DIGEST_MISMATCH",
     )
-    for key in ("lean_binary_sha256", "stdout_sha256", "stderr_sha256"):
+    _require(
+        details["lean_archive_sha256"] == expected_lean_archive_sha256,
+        "LEAN_ARCHIVE_DIGEST_MISMATCH",
+    )
+    for key in ("lean_binary_sha256", "lean_archive_sha256", "stdout_sha256", "stderr_sha256"):
         _require(isinstance(details[key], str) and re.fullmatch(r"[0-9a-f]{64}", details[key]) is not None, "INVALID_DIGEST")
     raw = _read(witness_dir / "stdout.txt")
     stderr = _read(witness_dir / "stderr.txt", 64 * 1024)
@@ -184,6 +192,7 @@ def main() -> None:
     capture.add_argument("--source-commit", required=True)
     capture.add_argument("--run-id", required=True)
     capture.add_argument("--run-attempt", required=True)
+    capture.add_argument("--lean-archive-sha256", required=True)
     consume = sub.add_parser("consume")
     consume.add_argument("--witness-dir", type=Path, required=True)
     consume.add_argument("--source", type=Path, required=True)
@@ -191,12 +200,14 @@ def main() -> None:
     consume.add_argument("--expected-run-id", required=True)
     consume.add_argument("--expected-run-attempt", required=True)
     consume.add_argument("--expected-lean-binary-sha256", required=True)
+    consume.add_argument("--expected-lean-archive-sha256", required=True)
     args = parser.parse_args()
     if args.mode == "capture":
         capture_witness(
             source=args.source, output_dir=args.out, lean_executable=args.lean,
             repository=args.repository, source_commit=args.source_commit,
             run_id=args.run_id, run_attempt=args.run_attempt,
+            lean_archive_sha256=args.lean_archive_sha256,
         )
     else:
         consume_witness(
@@ -204,6 +215,7 @@ def main() -> None:
             expected_commit=args.expected_commit, expected_run_id=args.expected_run_id,
             expected_run_attempt=args.expected_run_attempt,
             expected_lean_binary_sha256=args.expected_lean_binary_sha256,
+            expected_lean_archive_sha256=args.expected_lean_archive_sha256,
         )
 
 

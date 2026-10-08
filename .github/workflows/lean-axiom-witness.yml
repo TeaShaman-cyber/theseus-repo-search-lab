@@ -17,39 +17,37 @@ jobs:
     timeout-minutes: 15
     env:
       PYTHONPATH: ${{ github.workspace }}/src
-      ELAN_VERSION: v4.2.3
-      ELAN_SHA256: df0b2b3a439961ffcbb3985214365ffe40f49bc871df04dff268c7d8e21ca8b2
+      LEAN_ARCHIVE_SHA256: 48010c7d6264dc992574e9b0e09ece1f9c648e8f5106066b2cdb6834a6a60a6c
       LEAN_EXE_SHA256: e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550
-      LEAN_TOOLCHAIN: leanprover/lean4:v4.33.0-rc2
+      LEAN_RELEASE: v4.33.0-rc2
     steps:
       - name: Checkout exact repository source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      - name: Verify exact checkout and established pinned elan source
+      - name: Verify exact checkout and fixture
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${{ github.sha }}"
-          test "$(jq -r .elan_version producer/runner.json)" = "$ELAN_VERSION"
-          test "$(jq -r .elan_sha256 producer/runner.json)" = "$ELAN_SHA256"
           test "$(sha256sum tests/fixtures/lean_axioms/AxiomProbe.lean | cut -d ' ' -f 1)" = "d92d2482c12a116d254feba6e09c275dab183e4a3bf9d1ebf6aa3d48260342b7"
           printf 'verified_checkout_sha=%s\n' "$(git rev-parse HEAD)"
 
-      - name: Install existing pinned elan and minimal Lean toolchain
+      - name: Download and authenticate complete official Lean runtime archive
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --location --proto '=https' --tlsv1.2 \
-            --output "$RUNNER_TEMP/elan.tar.gz" \
-            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
-          mkdir -p "$RUNNER_TEMP/elan"
-          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
-          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
-          "$HOME/.elan/bin/elan" toolchain install "$LEAN_TOOLCHAIN"
-          lean="$HOME/.elan/toolchains/leanprover--lean4---v4.33.0-rc2/bin/lean"
+            --output "$RUNNER_TEMP/lean.tar.zst" \
+            "https://github.com/leanprover/lean4/releases/download/${LEAN_RELEASE}/lean-4.33.0-rc2-linux.tar.zst"
+          # SHA256 is independently pinned in reviewed workflow source, from
+          # the official release asset digest. Verify BEFORE extracting code.
+          echo "$LEAN_ARCHIVE_SHA256  $RUNNER_TEMP/lean.tar.zst" | sha256sum --check
+          command -v zstd
+          mkdir -p "$RUNNER_TEMP/lean-extracted"
+          tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" -C "$RUNNER_TEMP/lean-extracted"
+          lean="$RUNNER_TEMP/lean-extracted/lean-4.33.0-rc2-linux/bin/lean"
           test -x "$lean"
           echo "$LEAN_EXE_SHA256  $lean" | sha256sum --check
           "$lean" --version
@@ -60,7 +58,8 @@ jobs:
           set -euo pipefail
           python3 scripts/lean_axiom_witness.py capture \
             --source tests/fixtures/lean_axioms/AxiomProbe.lean \
-            --lean "$HOME/.elan/toolchains/leanprover--lean4---v4.33.0-rc2/bin/lean" \
+            --lean "$RUNNER_TEMP/lean-extracted/lean-4.33.0-rc2-linux/bin/lean" \
+            --lean-archive-sha256 "$LEAN_ARCHIVE_SHA256" \
             --repository "$GITHUB_REPOSITORY" \
             --source-commit "${{ github.sha }}" \
             --run-id "$GITHUB_RUN_ID" \
