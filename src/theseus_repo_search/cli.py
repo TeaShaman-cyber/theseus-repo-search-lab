@@ -9,6 +9,7 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
+from .accepted_catalog import accepted_catalog_sha256, load_accepted_catalog
 from .artifact import (
     artifact_identity,
     load_artifact,
@@ -26,6 +27,7 @@ from .model import (
     Node,
     ProducerPin,
 )
+from .multicorpus import ensure_local_catalog, search_local_catalog
 from .normalize import normalize_leandepviz
 from .producer_config import (
     LeanArchiveSource,
@@ -728,6 +730,64 @@ def _cmd_build_index(args: argparse.Namespace) -> int:
     return 0
 
 
+def _multicorpus_status(result, *, mode: str) -> str:
+    if result.unavailable_corpora:
+        if result.searched_corpora == 0:
+            return "UNAVAILABLE"
+        return "DEGRADED"
+    if not result.hits:
+        return "UNKNOWN"
+    if mode == "evidence" or all(item.hit.match_mode == "exact" for item in result.hits):
+        return "FOUND"
+    return "CANDIDATE"
+
+
+def _cmd_multicorpus_search(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_ACCEPTED_CATALOG",
+            f"accepted corpus catalog invalid: {exc}",
+        ) from exc
+
+    repository_root = args.catalog.resolve().parent.parent
+    states, unavailable = ensure_local_catalog(
+        catalog,
+        repository_root=repository_root,
+        cache_root=args.cache_dir,
+    )
+    result = search_local_catalog(
+        states,
+        unavailable,
+        catalog_sha256=accepted_catalog_sha256(catalog),
+        query=args.query,
+        limit=args.limit,
+        mode=args.mode,
+    )
+    _emit(
+        {
+            "status": _multicorpus_status(result, mode=args.mode),
+            "query": args.query,
+            "query_mode": args.mode,
+            "catalog_sha256": result.catalog_sha256,
+            "searched_corpora": result.searched_corpora,
+            "unavailable_corpora": len(result.unavailable_corpora),
+            "unavailable": [asdict(item) for item in result.unavailable_corpora],
+            "hits": [
+                {
+                    "candidate_id": item.candidate_id,
+                    "source_id": item.source_id,
+                    "local_rank": item.local_rank,
+                    **_search_hit_dict(item.hit),
+                }
+                for item in result.hits
+            ],
+        }
+    )
+    return 0
+
+
 def _cmd_search(args: argparse.Namespace) -> int:
     hits = search_repo(args.db, args.query, limit=args.limit, mode=args.mode)
     if not hits:
@@ -846,6 +906,16 @@ def build_parser() -> argparse.ArgumentParser:
     index.add_argument("--artifact", type=Path, required=True)
     index.add_argument("--db", type=Path, required=True)
     index.set_defaults(func=_cmd_build_index)
+
+    multicorpus_search = subparsers.add_parser("multicorpus-search")
+    multicorpus_search.add_argument("--catalog", type=Path, required=True)
+    multicorpus_search.add_argument("--cache-dir", type=Path, required=True)
+    multicorpus_search.add_argument("--query", required=True)
+    multicorpus_search.add_argument("--limit", type=int, default=20)
+    multicorpus_search.add_argument(
+        "--mode", choices=("discovery", "evidence"), default="discovery"
+    )
+    multicorpus_search.set_defaults(func=_cmd_multicorpus_search)
 
     search = subparsers.add_parser("search")
     search.add_argument("--db", type=Path, required=True)

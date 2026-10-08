@@ -83,6 +83,21 @@ The heavy producer stores only `$HOME/.cache/mathlib` download archives in GitHu
 
 `repo-search search` defaults to `--mode discovery`: multi-term lexical search may use broad OR matching and reports such hits as `CANDIDATE`. Use `--mode evidence` when all query terms must match the same source chunk; qualifying hits report `FOUND`. Exact declaration lookup remains `FOUND` in either mode.
 
+### Recoverable multi-corpus search
+
+The repository-owned accepted-corpus catalog can be queried through one recoverable runtime entrypoint:
+
+```text
+python3 -m theseus_repo_search multicorpus-search \
+  --catalog producer/accepted-corpora.json \
+  --cache-dir <path> \
+  --query <text> \
+  --limit 20 \
+  --mode discovery
+```
+
+The command verifies accepted release evidence, rebuilds disposable SQLite/FTS5 projections when the identity-bound cache is absent or stale, and federates results without comparing raw BM25 scores across corpora. Exact matches sort before lexical candidates; other ordering uses corpus-local rank, accepted `source_id`, and stable candidate identity. The JSON result always reports the catalog digest, searched-corpus count, explicit unavailable-corpus reasons, and provenance-rich hits. A partial corpus failure is reported as `DEGRADED`; it is never silently omitted.
+
 ## Live research smoke
 
 After significant corpus acceptance, Repository Search can run a bounded versioned research-smoke panel on fresh hosted consumers, including release-backed consumers when the producer fingerprint is unchanged. Smoke scenarios ask for evidence classes and record grounded observations; they do not encode a desired mathematical conclusion.

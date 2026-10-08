@@ -33,6 +33,7 @@ class SearchHit:
     created_from_authoritative_source: bool
     query_mode: SearchMode = "discovery"
     match_mode: SearchMatchMode = "exact"
+    source_row_id: str | None = None
 
     @property
     def source_commit(self) -> str:
@@ -182,6 +183,7 @@ def _exact_hit(
         score=0.0,
         text=str(source_row[6]),
         created_from_authoritative_source=provenance.created_from_authoritative_source,
+        source_row_id=str(source_row[0]),
     )
 
 
@@ -291,6 +293,7 @@ def search(
                 created_from_authoritative_source=provenance.created_from_authoritative_source,
                 query_mode=mode,
                 match_mode=match_mode,
+                source_row_id=str(row[0]),
             )
             for row in rows
         ]

@@ -7,6 +7,7 @@ from hashlib import sha256
 from pathlib import Path
 from unittest import mock
 
+import theseus_repo_search.projection as projection_module
 from tests.raw_fixture import raw_depgraph_bytes
 from theseus_repo_search.artifact import (
     artifact_identity,
@@ -22,7 +23,11 @@ from theseus_repo_search.model import (
     ProducerPin,
     SourceChunk,
 )
-from theseus_repo_search.projection import build_projection, projection_fingerprint
+from theseus_repo_search.projection import (
+    SQLITE_PROJECTION_SCHEMA_VERSION,
+    build_projection,
+    projection_fingerprint,
+)
 
 
 def authority_receipt_bytes(producer: ProducerPin, raw: bytes) -> bytes:
@@ -44,6 +49,9 @@ def authority_receipt_bytes(producer: ProducerPin, raw: bytes) -> bytes:
 
 
 class ProjectionTests(unittest.TestCase):
+    def test_sqlite_projection_schema_version_is_explicit(self):
+        self.assertEqual(SQLITE_PROJECTION_SCHEMA_VERSION, "repo-search-sqlite-v1")
+
     def build_artifact(self, path: Path):
         nodes = [
             Node.from_lean(
@@ -107,6 +115,28 @@ class ProjectionTests(unittest.TestCase):
             authority_receipt=authority_receipt_bytes(producer, raw),
             raw_depgraph=raw,
         )
+
+    def test_projection_fingerprint_matches_legacy_digest_without_materializing_payload(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact_dir = root / "artifact"
+            self.build_artifact(artifact_dir)
+            db = root / "projection.db"
+            build_projection(artifact_dir, db)
+
+            with sqlite3.connect(db) as conn:
+                legacy = sha256(
+                    projection_module._canonical_json(
+                        projection_module._logical_payload(conn)
+                    )
+                ).hexdigest()
+
+            with mock.patch.object(
+                projection_module,
+                "_logical_payload",
+                side_effect=AssertionError("fingerprint must stream logical rows"),
+            ):
+                self.assertEqual(projection_fingerprint(db), legacy)
 
     def test_projection_fingerprint_is_logically_deterministic(self):
         with tempfile.TemporaryDirectory() as d:
