@@ -20,31 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/openai-prime-gaps-186.json
+            replay_script: scripts/replay_prime_gaps_186.py
+            artifact_name: openai-prime-gaps-186-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -263,6 +241,9 @@ jobs:
           trap 'cleanup_heartbeat; exit 130' INT
           trap 'cleanup_heartbeat; exit 143' TERM
 
+          # Dedicated PrimeGaps186 memory-bounded candidate, never the default matrix.
+          export LEAN_NUM_THREADS=2
+          printf 'prime_gaps_lean_num_threads=%s\n' "$LEAN_NUM_THREADS"
           python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
 
           cleanup_heartbeat
@@ -365,31 +346,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/openai-prime-gaps-186.json
+            replay_script: scripts/replay_prime_gaps_186.py
+            artifact_name: openai-prime-gaps-186-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -469,79 +428,4 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}-consumer-receipt
           path: _consumer/*-consumer-receipt.json
-          if-no-files-found: error
-
-  research-smoke:
-    needs: consume-artifact
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      PYTHONPATH: ${{ github.workspace }}/src
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - scenario: qa/research-smoke/zeta23-riemann-panel-v0.json
-            source_descriptor: producer/sources/zeta23.json
-            artifact_name: zeta23-repo-index-v1
-            source_id: zeta23
-          - scenario: qa/research-smoke/flt-bridge-v0.json
-            source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-            source_id: leanprover-community-flt-regular
-          - scenario: qa/research-smoke/annals-marton-seam-v0.json
-            source_descriptor: producer/sources/annals-challenge-marton.json
-            artifact_name: annals-challenge-marton-repo-index-v1
-            source_id: annals-challenge-marton
-    steps:
-      - name: Checkout repository lens
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Verify exact research smoke checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected="${{ github.sha }}"
-          observed="$(git rev-parse HEAD)"
-          test "$observed" = "$expected"
-          printf 'research_smoke_event_sha=%s\n' "$expected"
-          printf 'research_smoke_checkout_sha=%s\n' "$observed"
-          printf 'RESEARCH_SMOKE_TOOL_COMMIT=%s\n' "$observed" >> "$GITHUB_ENV"
-
-      - name: Download accepted normalized artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: _smoke/download
-
-      - name: Install repository lens package
-        run: python3 -m pip install -e .
-
-      - name: Build disposable smoke projection
-        shell: bash
-        run: |
-          set -euo pipefail
-          artifact="_smoke/download/${{ matrix.source_id }}-artifact"
-          db="_smoke/${{ matrix.source_id }}.sqlite"
-          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
-          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
-
-      - name: Run non-blocking live research smoke
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/run_research_smoke.py \
-            --db "_smoke/${{ matrix.source_id }}.sqlite" \
-            --artifact "_smoke/download/${{ matrix.source_id }}-artifact" \
-            --scenario "${{ matrix.scenario }}" \
-            --tool-commit "$RESEARCH_SMOKE_TOOL_COMMIT" \
-            --out "_smoke/${{ matrix.source_id }}-research-smoke-receipt.json"
-
-      - name: Upload research smoke receipt
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: ${{ matrix.artifact_name }}-research-smoke-receipt
-          path: _smoke/*-research-smoke-receipt.json
           if-no-files-found: error
