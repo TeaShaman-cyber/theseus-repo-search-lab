@@ -335,3 +335,34 @@ class ReleaseConsumerNegativeCanaryWorkflowTests(unittest.TestCase):
         ):
             with self.subTest(token=forbidden):
                 self.assertNotIn(forbidden, text)
+
+class HeavyPostgresWorkflowTests(unittest.TestCase):
+    def test_heavy_postgres_runner_contract_is_repo_local_and_ephemeral(self):
+        workflow = ROOT / ".github" / "workflows" / "heavy-postgres.yml"
+        endpoint = ROOT / "tools" / "ci" / "heavy-postgres"
+        smoke = ROOT / "qa" / "postgres" / "runner-smoke.sql"
+
+        self.assertTrue(workflow.is_file())
+        self.assertTrue(endpoint.is_file())
+        self.assertTrue(smoke.is_file())
+        self.assertTrue(endpoint.stat().st_mode & 0o111)
+
+        workflow_text = workflow.read_text(encoding="utf-8")
+        trigger = workflow_text.split("permissions:", 1)[0]
+        self.assertIn("pull_request:", trigger)
+        self.assertIn("workflow_dispatch:", trigger)
+        self.assertIn("postgres:17", workflow_text)
+        self.assertIn("pg_isready", workflow_text)
+        self.assertIn("tools/ci/heavy-postgres", workflow_text)
+        self.assertNotIn("NEON", workflow_text.upper())
+
+        endpoint_text = endpoint.read_text(encoding="utf-8")
+        self.assertIn("psql", endpoint_text)
+        self.assertIn("ON_ERROR_STOP=1", endpoint_text)
+        self.assertIn("qa/postgres/runner-smoke.sql", endpoint_text)
+        self.assertIn("HEAVY_POSTGRES_PASS", endpoint_text)
+
+        smoke_text = smoke.read_text(encoding="utf-8")
+        self.assertIn("BEGIN;", smoke_text)
+        self.assertIn("ROLLBACK;", smoke_text)
+        self.assertIn("HEAVY_POSTGRES_SMOKE_PASS", smoke_text)

@@ -1,0 +1,28 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '%s\n' 'heavy-postgres: not inside a Git worktree' >&2
+    exit 2
+}
+cd "$ROOT"
+
+: "${PGHOST:=127.0.0.1}"
+: "${PGPORT:=5432}"
+: "${PGUSER:=postgres}"
+: "${PGDATABASE:=repo_search_contract}"
+export PGHOST PGPORT PGUSER PGDATABASE
+
+command -v psql >/dev/null 2>&1 || {
+    printf '%s\n' 'heavy-postgres: psql not found' >&2
+    exit 2
+}
+
+printf '%s\n' '== PostgreSQL server =='
+psql -X -v ON_ERROR_STOP=1 -Atqc \
+    "SELECT current_setting('server_version'), current_database(), current_user;"
+
+printf '%s\n' '== runner rollback smoke =='
+psql -X -v ON_ERROR_STOP=1 -f qa/postgres/runner-smoke.sql
+
+printf '%s\n' 'HEAVY_POSTGRES_PASS substrate=postgresql-17 smoke=rollback'
