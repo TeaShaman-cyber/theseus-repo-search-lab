@@ -48,7 +48,7 @@ class WitnessTests(unittest.TestCase):
             receipt = json.loads((root / "receipt.json").read_text())
             self.assertEqual(receipt["source"]["sha256"], SHA)
             self.assertEqual(receipt["execution"]["stdout_sha256"], hashlib.sha256(RAW).hexdigest())
-            result = consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_lean_binary_sha256=FAKE_BINARY_SHA256)
+            result = consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_run_attempt="1", expected_lean_binary_sha256=FAKE_BINARY_SHA256)
             self.assertEqual(result["EvidenceClassCanary.fully_proved"], ProofEligibility.CANDIDATE_FOR_PROOF_VERIFICATION)
             self.assertEqual(result["EvidenceClassCanary.admitted"], ProofEligibility.NOT_PROOF_EVIDENCE)
 
@@ -58,7 +58,7 @@ class WitnessTests(unittest.TestCase):
             self._capture(root)
             for commit, run in (("b" * 40, RUN), (COMMIT, "99888")):
                 with self.subTest(commit=commit, run=run), self.assertRaises(ValueError):
-                    consume_witness(root, source=SOURCE, expected_commit=commit, expected_run_id=run, expected_lean_binary_sha256=FAKE_BINARY_SHA256)
+                    consume_witness(root, source=SOURCE, expected_commit=commit, expected_run_id=run, expected_run_attempt="1", expected_lean_binary_sha256=FAKE_BINARY_SHA256)
 
     def test_fresh_consumer_rejects_raw_stdout_tampering(self):
         with tempfile.TemporaryDirectory() as d:
@@ -66,7 +66,7 @@ class WitnessTests(unittest.TestCase):
             self._capture(root)
             (root / "stdout.txt").write_bytes(RAW.replace(b"[sorryAx]", b"[]"))
             with self.assertRaises(ValueError):
-                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_lean_binary_sha256=FAKE_BINARY_SHA256)
+                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_run_attempt="1", expected_lean_binary_sha256=FAKE_BINARY_SHA256)
 
     def test_fresh_consumer_rejects_re_pinned_synthetic_clean_stdout(self):
         with tempfile.TemporaryDirectory() as d:
@@ -81,7 +81,7 @@ class WitnessTests(unittest.TestCase):
             # Self-consistent metadata is not independent proof; this test
             # protects known toy output ONLY. Run provenance remains external.
             with self.assertRaises(ValueError):
-                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_lean_binary_sha256=FAKE_BINARY_SHA256)
+                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_run_attempt="1", expected_lean_binary_sha256=FAKE_BINARY_SHA256)
 
     def test_fresh_consumer_rejects_wrong_binary_pin(self):
         with tempfile.TemporaryDirectory() as d:
@@ -89,7 +89,18 @@ class WitnessTests(unittest.TestCase):
             self._capture(root)
             with self.assertRaisesRegex(ValueError, "LEAN_BINARY_DIGEST_MISMATCH"):
                 consume_witness(root, source=SOURCE, expected_commit=COMMIT,
-                                expected_run_id=RUN, expected_lean_binary_sha256="0" * 64)
+                                expected_run_id=RUN, expected_run_attempt="1", expected_lean_binary_sha256="0" * 64)
+
+    def test_fresh_consumer_rejects_previous_workflow_attempt(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            self._capture(root)
+            with self.assertRaisesRegex(ValueError, "RUN_ATTEMPT_MISMATCH"):
+                consume_witness(
+                    root, source=SOURCE, expected_commit=COMMIT,
+                    expected_run_id=RUN, expected_run_attempt="2",
+                    expected_lean_binary_sha256=FAKE_BINARY_SHA256,
+                )
 
     def test_fresh_consumer_rejects_missing_receipt_or_unknown_toolchain(self):
         with tempfile.TemporaryDirectory() as d:
@@ -100,10 +111,10 @@ class WitnessTests(unittest.TestCase):
             payload["execution"]["lean_version"] = "Lean (version unknown)"
             receipt_path.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaises(ValueError):
-                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_lean_binary_sha256=FAKE_BINARY_SHA256)
+                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_run_attempt="1", expected_lean_binary_sha256=FAKE_BINARY_SHA256)
             receipt_path.unlink()
             with self.assertRaises((ValueError, OSError)):
-                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_lean_binary_sha256=FAKE_BINARY_SHA256)
+                consume_witness(root, source=SOURCE, expected_commit=COMMIT, expected_run_id=RUN, expected_run_attempt="1", expected_lean_binary_sha256=FAKE_BINARY_SHA256)
 
 
 if __name__ == "__main__":

@@ -112,12 +112,14 @@ def capture_witness(
 
 def consume_witness(
     witness_dir: Path, *, source: Path, expected_commit: str,
-    expected_run_id: str, expected_lean_binary_sha256: str,
+    expected_run_id: str, expected_run_attempt: str,
+    expected_lean_binary_sha256: str,
 ) -> dict[str, ProofEligibility]:
     """Consume provider-fetched run files, matching independent run id and SHA.
 
-    The external caller must obtain expected_run_id/expected_commit from GitHub
-    Actions API, and source from that exact Git revision (not the receipt).
+    The external caller must obtain expected_run_id, expected_run_attempt and
+    expected_commit from GitHub Actions API, and source from that exact Git
+    revision (not the receipt).
     """
     receipt = json.loads(_read(witness_dir / "receipt.json", 64 * 1024))
     _require(isinstance(receipt, dict), "INVALID_WITNESS_RECEIPT")
@@ -134,6 +136,7 @@ def consume_witness(
     _require(upstream["commit"] == expected_commit, "SOURCE_COMMIT_MISMATCH")
     _require(run["id"] == expected_run_id, "RUN_ID_MISMATCH")
     _require(isinstance(run["attempt"], str) and run["attempt"].isdecimal(), "INVALID_RUN_ATTEMPT")
+    _require(run["attempt"] == expected_run_attempt, "RUN_ATTEMPT_MISMATCH")
     _require(upstream["sha256"] == SOURCE_SHA256, "SOURCE_DIGEST_MISMATCH")
     _require(_digest(_read(source, 64 * 1024)) == SOURCE_SHA256, "SOURCE_BYTES_MISMATCH")
     _require(isinstance(details["lean_version"], str) and details["lean_version"].startswith(f"Lean (version {VERSION}, "), "WRONG_LEAN_TOOLCHAIN")
@@ -186,6 +189,7 @@ def main() -> None:
     consume.add_argument("--source", type=Path, required=True)
     consume.add_argument("--expected-commit", required=True)
     consume.add_argument("--expected-run-id", required=True)
+    consume.add_argument("--expected-run-attempt", required=True)
     consume.add_argument("--expected-lean-binary-sha256", required=True)
     args = parser.parse_args()
     if args.mode == "capture":
@@ -198,6 +202,7 @@ def main() -> None:
         consume_witness(
             args.witness_dir, source=args.source,
             expected_commit=args.expected_commit, expected_run_id=args.expected_run_id,
+            expected_run_attempt=args.expected_run_attempt,
             expected_lean_binary_sha256=args.expected_lean_binary_sha256,
         )
 
