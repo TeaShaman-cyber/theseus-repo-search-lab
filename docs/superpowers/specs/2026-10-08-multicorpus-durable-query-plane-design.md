@@ -52,6 +52,25 @@ Authority remains the accepted catalog plus immutable release receipts/assets.
 SQLite and Neon are derived projections. Either can be discarded and rebuilt from
 accepted artifacts without changing corpus identity.
 
+
+## Accepted catalog contract
+
+The accepted set is an explicit repository-owned versioned file, initially
+`producer/accepted-corpora.json`. Runtime code must not infer acceptance by
+listing mutable GitHub Releases. Each catalog entry binds a stable `source_id`
+to the exact release tag, package asset, receipt asset, current source descriptor
+path, and accepted artifact identity/fingerprint needed by
+`consume_accepted_release.py`. Unknown keys, duplicate source IDs, duplicate
+release tags, missing assets, or identity disagreement fail closed.
+
+The catalog has its own canonical SHA-256. A deterministic
+`generation_content_sha256` is derived from that catalog digest plus the
+query-projection schema/version. Each materialization attempt has a separate
+immutable `generation_id` instance identity bound to that content identity. A query
+result and canary receipt report the active generation ID, generation content
+identity, and catalog digest, so a PASS from one accepted set or build instance
+cannot be attributed to another.
+
 ## Primary architecture decision
 
 The first pain to remove is runtime-local state loss. Therefore accepted corpus
@@ -114,6 +133,30 @@ The generation metadata binds at minimum:
 - artifact schema and producer fingerprint;
 - projection schema/version;
 - build timestamp and verification state.
+
+
+### Activation concurrency and immutability
+
+A READY generation is immutable query state. Materialization never updates its
+corpus/search rows in place. Concurrent builders may create candidate generations,
+but activation uses one atomic compare-and-switch from the previously observed
+active generation/catalog digest to the fully verified candidate. A loser must not
+overwrite a newer active pointer. Re-running the same accepted catalog is idempotent at the content level: it may
+reuse an already verified generation with the same `generation_content_sha256`.
+If that derived instance is stale/corrupt, recovery may build a new immutable
+`generation_id` carrying the same content identity and activate it only after fresh
+verification.
+
+If an active generation is unreadable, semantically drifted, or otherwise fails
+query-plane verification, recovery is derived from accepted releases. Verification
+of the disposable/derived old state must never make authoritative rebuild
+impossible; inspection errors become `STALE_QUERY_PROJECTION`/degraded evidence and
+the repair path constructs a fresh candidate generation before activation.
+
+All behavior-affecting search configuration belongs to the projection schema
+identity (table/function/index definitions and ranking/tokenization contract), not
+just corpus rows. Changing that contract requires a new projection schema/version
+and therefore a new generation identity.
 
 ## Query plane versus workbench plane
 
@@ -299,6 +342,17 @@ Final promotion evidence must include:
 This stage belongs in repository-owned QA/promotion automation so a future corpus
 cannot be accepted into the searchable set while silently missing from the durable
 query plane.
+
+
+## Promotion credential boundary
+
+Repository-owned promotion automation needs an independently configured Neon write
+credential/connection route. Interactive ChatGPT Neon and MarcoPolo connectors do
+not prove that GitHub Actions has that authority. Until the CI credential path is
+observed and verified, automated Neon publication is `BLOCKED_USER_SETUP` rather
+than silently falling back to a different authority or storing credentials in the
+repository. Query credentials, where exposed to native consumers, should be
+read-only.
 
 ## Implementation sequencing
 
