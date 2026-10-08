@@ -76,6 +76,27 @@ class AcceptedCatalogTests(unittest.TestCase):
             with self.subTest(payload=payload), self.assertRaises(ValueError):
                 self._load(payload)
 
+    def test_rejects_duplicate_json_object_keys(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "catalog.json"
+            path.write_text(
+                '{"schema":"theseus.repo-search.accepted-catalog.v1",'
+                '"schema":"theseus.repo-search.accepted-catalog.v1",'
+                '"release_repository":"TeaShaman-cyber/theseus-repo-search-lab",'
+                '"corpora":[{'
+                '"source_id":"annals-challenge-marton",'
+                '"release_tag":"tag-a",'
+                '"package_asset":"accepted-artifact.tar.gz",'
+                '"receipt_asset":"release-receipt.json",'
+                '"source_descriptor":"producer/sources/annals-challenge-marton.json",'
+                '"artifact_identity":"' + ('1' * 64) + '",'
+                '"fingerprint_sha256":"' + ('2' * 64) + '"}]}'
+                ,
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate JSON object key: schema"):
+                load_accepted_catalog(path)
+
     def test_rejects_duplicate_identity_keys(self):
         base = _entry("a")
         cases = [

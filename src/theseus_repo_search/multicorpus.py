@@ -21,6 +21,7 @@ from scripts.consume_accepted_release import (
 from .accepted_catalog import AcceptedCatalog, AcceptedCorpus, accepted_catalog_sha256
 from .artifact import artifact_identity, load_artifact
 from .errors import RepoSearchError
+from .json_contract import strict_json_loads
 from .projection import (
     SQLITE_PROJECTION_SCHEMA_VERSION,
     build_projection,
@@ -189,7 +190,7 @@ def _descriptor_path(repository_root: Path, corpus: AcceptedCorpus) -> Path:
 
 def _load_cache_receipt(path: Path) -> dict[str, object]:
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = strict_json_loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"invalid local cache receipt: {exc}") from exc
     if not isinstance(payload, dict):

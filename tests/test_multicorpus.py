@@ -177,6 +177,19 @@ class MultiCorpusFederationTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "BLOCKED_PROJECTION_INTEGRITY")
 
 
+class MultiCorpusJsonContractTests(unittest.TestCase):
+    def test_cache_receipt_rejects_duplicate_json_object_keys(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "verified.json"
+            path.write_text(
+                '{"schema":"theseus.repo-search-local-cache-verification.v1",'
+                '"schema":"theseus.repo-search-local-cache-verification.v1"}',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "duplicate JSON object key: schema"):
+                multicorpus._load_cache_receipt(path)
+
+
 class MultiCorpusCacheTests(unittest.TestCase):
     def _fixture(self, root: Path):
         artifact = write_fixture(root)

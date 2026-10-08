@@ -6,6 +6,8 @@ from dataclasses import asdict, dataclass
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
+from .json_contract import strict_json_loads
+
 _SCHEMA = "theseus.repo-search.accepted-catalog.v1"
 _TOP_LEVEL_FIELDS = frozenset({"schema", "release_repository", "corpora"})
 _CORPUS_FIELDS = frozenset(
@@ -96,7 +98,7 @@ def _parse_corpus(raw: object, *, index: int) -> AcceptedCorpus:
 
 def load_accepted_catalog(path: Path) -> AcceptedCatalog:
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = strict_json_loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError(f"cannot load accepted catalog: {path}") from exc
 
