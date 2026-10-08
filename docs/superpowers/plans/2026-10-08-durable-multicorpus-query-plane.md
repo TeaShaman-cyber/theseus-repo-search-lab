@@ -259,7 +259,7 @@ Cache identity:
 
 - [ ] **Step 1: Write RED tests with a fake `gh` executable and tiny accepted-release fixtures**
 
-Cover cold materialization, warm reuse without a second download, catalog-digest cache separation, **SQLite projection-version mismatch forcing rebuild**, **source-descriptor mutation and runner-config mutation forcing `REBUILD_REQUIRED`/rebuild before reuse**, artifact/fingerprint mismatch, unreadable SQLite rebuild, and one unavailable corpus alongside one searchable corpus. Add `tests/test_projection.py` coverage that pins the version constant and requires an intentional version bump whenever the persisted SQLite search contract changes.
+Cover cold materialization, warm reuse without a second download, catalog-digest cache separation, **SQLite projection-version mismatch forcing rebuild**, **source-descriptor mutation and runner-config mutation forcing `REBUILD_REQUIRED`/rebuild before reuse**, artifact/fingerprint mismatch, unreadable SQLite rebuild, and one unavailable corpus alongside one searchable corpus. Add repair regressions for (a) invalid final replaced by a verified staged candidate, (b) two concurrent repairers serialized by the sibling SQLite coordination lock so only one publishes and the loser re-verifies/reuses the winner, (c) releasing/closing the lock holder permits a later repairer to acquire the coordination transaction, and (d) a known-good final never being quarantined or overwritten. Add `tests/test_projection.py` coverage that pins the version constant and requires an intentional version bump whenever the persisted SQLite search contract changes.
 
 - [ ] **Step 2: Run RED**
 
@@ -269,9 +269,20 @@ PYTHONPATH=src python3 -m unittest tests.test_multicorpus -v
 
 Expected: RED because multicorpus runtime does not exist.
 
-- [ ] **Step 3: Implement cold/warm cache materialization only**
+- [ ] **Step 3: Implement cold/warm cache materialization and atomic repair only**
 
-Use invocation-unique staging directories under the target cache filesystem and publish with same-filesystem `os.rename(staged, final)` only when the content-addressed final path is absent. If a concurrent publisher wins (`EEXIST`/`ENOTEMPTY`), verify and reuse the winner; never overwrite it. Never delete/replace a known-good final cache before the replacement candidate has passed release verification, artifact load, SQLite `quick_check`, and projection fingerprint computation.
+Use invocation-unique staging directories under the target cache filesystem. A staged candidate must pass release verification, artifact load, SQLite `quick_check`, producer-input checks, projection-schema-version checks, and projection fingerprint computation **before** it can replace anything.
+
+For a missing final path, publish with same-filesystem `os.rename(staged, final)`. If another publisher wins, verify the winner and reuse it.
+
+For an existing final path that fails verification, serialize repair through a sibling coordination SQLite file (separate from `index.sqlite`) held with `BEGIN IMMEDIATE` for the repair transaction. The lock database is disposable coordination state, not authority; process exit/crash releases its OS file lock, so no persistent owner token can strand recovery. After acquiring the lock, **re-verify final** because another repair may already have completed. If final is now valid, discard staged and reuse final. If it is still invalid:
+
+1. rename invalid `final` to an invocation-unique sibling quarantine path on the same filesystem;
+2. atomically rename the already-verified `staged` directory to `final`;
+3. verify/read back the published `final` again before returning it;
+4. delete the quarantined invalid cache only after the new final passes readback.
+
+A crash after quarantine but before publish leaves authority untouched and no cache trusted; the coordination transaction is released automatically, so the next invocation may acquire repair serialization and publish a freshly verified staged candidate. Never overwrite or remove a final cache that re-verifies as good under the repair lock.
 
 - [ ] **Step 4: Run the cache tests GREEN before adding federation**
 
@@ -342,7 +353,7 @@ Required generation states: `BUILDING`, `READY`. Failed BUILDING candidates may 
 
 - [ ] **Step 1: Write structural, CAS, immutability, and candidate-query RED tests before adding SQL**
 
-Tests require exact schema version marker `repo-search-query-v1`, no `CREATE EXTENSION`, all required objects, a generated/stored `tsvector` using `simple`, a GIN index, active-generation foreign-key/state guards, explicit result-limit validation, explicit compare-and-switch parameters, rejection of a stale expected previous generation, database-level rejection of mutations to READY generation/corpus/search rows, guarded whole-generation GC that rejects active/wrong-identity/referenced targets, schema-version metadata, provenance fields, and a generation-scoped canary query that accepts inactive READY generations but rejects BUILDING generations.
+Tests require exact schema version marker `repo-search-query-v1`, no `CREATE EXTENSION`, all required objects, a generated/stored `tsvector` using `simple`, a GIN index, active-generation foreign-key/state guards, explicit result-limit validation, explicit compare-and-switch parameters, rejection of a stale expected previous generation, database-level rejection of mutations to READY generation/corpus/search rows, guarded whole-generation GC that rejects active/wrong-identity/referenced targets, schema-version metadata, provenance fields, and a generation-scoped canary query that accepts inactive READY generations but rejects BUILDING generations. The contract tests must also require child-write guards to lock the parent generation row before checking state and `mark_generation_ready(...)` to take a conflicting parent-row lock before completeness/state transition.
 
 - [ ] **Step 2: Run RED and verify the failures are for the missing contract**
 
@@ -354,7 +365,11 @@ Expected: RED for missing schema/functions/guards; test discovery itself must su
 
 - [ ] **Step 3: Implement the minimal SQL contract**
 
-Both `generation_id` and deterministic `generation_content_sha256` are supplied by the materializer and constrained as lowercase 64-hex. `generation_content_sha256` binds catalog digest + projection schema; `generation_id` additionally binds an invocation-unique nonce so a corrupt instance can be replaced without changing accepted content identity. `activate_generation` must lock the singleton active row and compare the caller's expected previous generation before switching. A stale caller raises and leaves the active row unchanged. Database triggers/guard functions reject mutation of READY generation-scoped rows. `gc_inactive_generation(...)` is the only READY deletion path: it locks/reads the active pointer and target, verifies `expected_generation_content_sha256`, refuses active or referenced targets, then deletes the generation and its owned rows transactionally; direct child-row deletion remains blocked.
+Both `generation_id` and deterministic `generation_content_sha256` are supplied by the materializer and constrained as lowercase 64-hex. `generation_content_sha256` binds catalog digest + projection schema; `generation_id` additionally binds an invocation-unique nonce so a corrupt instance can be replaced without changing accepted content identity. `activate_generation` must lock the singleton active row and compare the caller's expected previous generation before switching. A stale caller raises and leaves the active row unchanged.
+
+READY freeze is serialized against child-row writes, not merely checked sequentially. Before any INSERT/UPDATE/DELETE against `corpora` or `search_docs`, the guard trigger locks the parent `generations` row with `SELECT ... FOR SHARE`, then rechecks that the generation is still `BUILDING`. `mark_generation_ready(...)` locks that same parent row with `SELECT ... FOR UPDATE`, rechecks state/catalog/completeness while holding the lock, and only then performs the one-way `BUILDING -> READY` transition. Thus a child writer that acquires the lock first must commit before READY can proceed, while a writer arriving after READY waits and then fails its state recheck. Database guards continue to reject mutation of READY generation-scoped rows.
+
+`gc_inactive_generation(...)` is the only READY deletion path: it locks/reads the active pointer and target, verifies `expected_generation_content_sha256`, refuses active or referenced targets, then deletes the generation and its owned rows transactionally; direct child-row deletion remains blocked.
 
 - [ ] **Step 4: Run the same targeted contract tests GREEN before live execution**
 
@@ -375,8 +390,9 @@ Through the native Neon development connector, create one temporary branch from 
 5. `search_generation(...)` rejects BUILDING state and can exercise the now-immutable inactive READY candidate with the same ranking/filtering implementation used by production `search(...)`;
 6. production `search(...)` reads only active READY rows;
 7. UPDATE/late INSERT/direct child-row DELETE against READY generation rows is rejected at the database layer;
-8. `gc_inactive_generation(...)` refuses the active generation, refuses a wrong expected content identity, and removes a disposable inactive READY generation with all owned rows atomically;
-9. schema/index/function definitions can be read back exactly.
+8. a two-session concurrency canary proves the freeze boundary: when a child writer holds the parent generation `FOR SHARE`, READY waits until that write commits; when `mark_generation_ready(...)` holds `FOR UPDATE` or has committed READY, a waiting child writer resumes only to fail the BUILDING-state recheck, leaving the READY rows unchanged;
+9. `gc_inactive_generation(...)` refuses the active generation, refuses a wrong expected content identity, and removes a disposable inactive READY generation with all owned rows atomically;
+10. schema/index/function definitions can be read back exactly.
 
 Delete the temporary branch after the canary unless it is retained deliberately for the next task. Record branch ID and exact schema readback in #117.
 
@@ -434,19 +450,21 @@ Reuse `load_artifact` and the accepted catalog bindings. Do not re-parse Lean or
 
 - [ ] **Step 4: Run exporter tests GREEN and canonical QA**
 
-- [ ] **Step 5: One-corpus live canary before eight-corpus load**
+- [ ] **Step 5: One-corpus disposable-branch canary before eight-corpus load**
 
-Use one accepted corpus (Marton is smallest). The existing MarcoPolo PostgreSQL connection is bound to the current Neon default branch, not to the temporary schema-test child branch, so do not pretend it can write that child branch. After the SQL contract passes on the disposable child branch and the draft/code review gate is satisfied, apply the namespaced `repo_search` schema transactionally on the actual default branch and:
+Use one accepted corpus (Marton is smallest), but **never** publish a one-corpus generation on the Neon default branch and never point `active_generation` at it. The production exporter remains strict: `build_generation_sql(canonical_catalog, states, ...)` requires all eight canonical states. For this bounded preflight, create a canary-only one-entry catalog object from the exact canonical Marton entry, give it a distinct canary catalog digest, and use only a disposable Neon child branch created from current `main`.
 
-1. generate candidate SQL;
-2. execute it through the existing MarcoPolo PostgreSQL workbench connection;
-3. read back corpus/artifact/catalog/generation/content identity through native Neon;
-4. mark READY and activate only after exact readback;
-5. execute the saved `search.sql` through MarcoPolo `data_query` and independently through native Neon;
-6. compare provenance/candidate identity with the existing SQLite projection;
-7. record `pg_total_relation_size` for the generation and cold/warm query latency.
+On that disposable branch:
 
-Raw SQLite and Postgres relevance scores need not match; exact identity/provenance must match and the expected canary candidate must be present.
+1. apply the exact `repo_search` schema already proven by Task 3;
+2. generate/execute Marton-only canary SQL using the canary catalog identity, never the canonical eight-corpus digest;
+3. verify corpus/artifact/catalog/generation/content identity through the native Neon development connector;
+4. verify completeness for that canary catalog, mark the candidate READY to freeze it, but **do not activate it as production state**;
+5. query it only through `repo_search.search_generation(...)` by explicit generation ID;
+6. compare exact provenance/candidate identity with the existing Marton SQLite projection;
+7. record `pg_total_relation_size` and cold/warm query latency, then delete the disposable branch.
+
+The existing MarcoPolo PostgreSQL connection is bound to the default branch, so cross-route `data_query` verification is deliberately deferred to Task 5's complete eight-corpus generation. Raw SQLite and Postgres relevance scores need not match; exact identity/provenance must match and the expected canary candidate must be present.
 
 - [ ] **Step 6: Commit**
 

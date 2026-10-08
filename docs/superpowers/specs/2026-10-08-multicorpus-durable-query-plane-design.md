@@ -147,7 +147,17 @@ generation, `corpora`, or `search_docs` rows is rejected except for the one-way
 BUILDING -> READY transition performed by the guarded publication function. The
 only READY deletion exception is guarded whole-generation garbage collection of an
 inactive, unreferenced generation after exact identity readback; active generations
-and partial child-row deletion remain forbidden. Concurrent builders may
+and partial child-row deletion remain forbidden.
+
+The READY transition and generation-scoped child writes share one serialization
+point: the parent generation row. Child-row write guards acquire `FOR SHARE` on
+that row before rechecking `BUILDING`; the READY transition acquires conflicting
+`FOR UPDATE`, rechecks completeness and state, then changes to READY. This prevents
+a write that observed BUILDING from committing after the generation has become
+READY. The invariant is verified with a two-session race test, not inferred from
+sequential trigger behavior.
+
+Concurrent builders may
 create candidate generations,
 but activation uses one atomic compare-and-switch from the previously observed
 active generation/catalog digest to the fully verified candidate. A loser must not
@@ -167,6 +177,8 @@ All behavior-affecting search configuration belongs to the projection schema
 identity (table/function/index definitions and ranking/tokenization contract), not
 just corpus rows. Changing that contract requires a new projection schema/version
 and therefore a new generation identity.
+
+A partial-corpus live preflight must never mutate or replace the active production catalog. One-corpus canaries run only on disposable child branches with a distinct canary catalog identity; the default branch accepts activation only for a complete generation matching the canonical accepted-corpus catalog.
 
 ## Query plane versus workbench plane
 
@@ -247,6 +259,8 @@ path. Warm-cache identity also binds a repository-owned SQLite projection schema
 version covering behavior-affecting table/index/FTS-tokenizer and retrieval-contract
 choices. A version mismatch is stale derived state and forces rebuild; a projection
 must never validate indefinitely only against its own old fingerprint.
+
+Corrupt disposable local cache must be recoverable even when its content-addressed final path already exists. Repair is serialized per target: build and verify replacement state first, acquire a crash-releasing lock via `BEGIN IMMEDIATE` on a sibling coordination SQLite file, re-verify the current final, quarantine only a still-invalid final, atomically publish the replacement on the same filesystem, read it back, and only then discard quarantine. The coordination database is disposable state and is separate from the potentially corrupt projection. Concurrent repair losers reuse the verified winner rather than overwriting it.
 
 ## Search semantics
 
