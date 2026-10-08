@@ -176,6 +176,31 @@ class ReleasePackageTests(unittest.TestCase):
             self.assertEqual(first_archive.read_bytes(), second_archive.read_bytes())
             self.assertEqual(first_receipt.read_bytes(), second_receipt.read_bytes())
 
+    def test_unverified_proof_promotion_in_replay_is_rejected(self):
+        for klass, claim in (
+            ("PROOF_CORPUS", "CANDIDATE_FOR_PROOF_VERIFICATION"),
+            ("STATEMENT_CORPUS", "CANDIDATE_FOR_PROOF_VERIFICATION"),
+            ("not-a-class", "NOT_PROOF_EVIDENCE"),
+        ):
+            with self.subTest(klass=klass), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                artifact = write_fixture(root)
+                replay = root / "replay.json"
+                _write_replay(replay, artifact)
+                data = json.loads(replay.read_text(encoding="utf-8"))
+                data.update(corpus_class=klass, proof_evidence=claim)
+                replay.write_text(json.dumps(data), encoding="utf-8")
+                repo, descriptor, runner, consumer, _ = _accepted_context(
+                    root, artifact, replay, descriptor_source=DESCRIPTOR
+                )
+                with self.assertRaises(ValueError):
+                    build_release_package(
+                        artifact=artifact, replay=replay, source_descriptor=descriptor,
+                        runner_config=runner, consumer_receipt=consumer,
+                        repository_root=repo, archive=root / "archive.tar.gz",
+                        receipt=root / "receipt.json",
+                    )
+
     def test_rejects_trust_boundary_mutation_matrix(self):
         cases = (
             "source_repo",

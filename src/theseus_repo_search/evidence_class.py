@@ -62,3 +62,40 @@ def evaluate_proof_eligibility(
     if not set(observed_axioms).issubset(allowed_axioms):
         return ProofEligibility.NOT_PROOF_EVIDENCE
     return ProofEligibility.CANDIDATE_FOR_PROOF_VERIFICATION
+
+
+def release_replay_evidence(replay: dict[str, object]) -> dict[str, str | None]:
+    """Expose a replay's *declared* corpus class without promoting proof authority.
+
+    No independent Lean axiom transcript is part of an accepted release package,
+    so a PROOF_CORPUS claim remains unknown pending detached verification.
+    A missing class remains unknown for legacy packages. Both cases fail closed.
+    """
+    declared = replay.get("corpus_class")
+    claimed = replay.get("proof_evidence")
+    if declared is None:
+        if "corpus_class" in replay or (
+            "proof_evidence" in replay
+            and claimed != ProofEligibility.UNKNOWN_NOT_PROOF_EVIDENCE.value
+        ):
+            raise ValueError("incomplete release replay evidence claim")
+        return {
+            "declared_corpus_class": None,
+            "proof_eligibility": ProofEligibility.UNKNOWN_NOT_PROOF_EVIDENCE.value,
+        }
+    if not isinstance(declared, str):
+        raise TypeError("invalid declared corpus class")
+    try:
+        klass = CorpusEvidenceClass(declared)
+    except ValueError as exc:
+        raise ValueError("unsupported declared corpus class") from exc
+    expected = evaluate_proof_eligibility(
+        corpus_class=klass,
+        observed_axioms=None if klass is CorpusEvidenceClass.PROOF_CORPUS else (),
+    )
+    if claimed != expected.value:
+        raise ValueError("replay proof claim exceeds source-class evidence")
+    return {
+        "declared_corpus_class": klass.value,
+        "proof_eligibility": expected.value,
+    }

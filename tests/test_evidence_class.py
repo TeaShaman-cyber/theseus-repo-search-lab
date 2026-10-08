@@ -4,10 +4,28 @@ from theseus_repo_search.evidence_class import (
     CorpusEvidenceClass,
     ProofEligibility,
     evaluate_proof_eligibility,
+    release_replay_evidence,
 )
 
 
 class ProofEligibilityTests(unittest.TestCase):
+    def test_release_requires_declared_class_without_promoting_proof(self):
+        for klass in CorpusEvidenceClass:
+            expected = (
+                ProofEligibility.UNKNOWN_NOT_PROOF_EVIDENCE
+                if klass is CorpusEvidenceClass.PROOF_CORPUS
+                else ProofEligibility.NOT_PROOF_EVIDENCE
+            )
+            with self.subTest(klass=klass):
+                evidence = release_replay_evidence({
+                    "corpus_class": klass.value,
+                    "proof_evidence": expected.value,
+                })
+                self.assertEqual(evidence, {
+                    "declared_corpus_class": klass.value,
+                    "proof_eligibility": expected.value,
+                })
+
     def test_proof_class_with_no_axiom_audit_does_not_claim_proof(self):
         verdict = evaluate_proof_eligibility(
             corpus_class=CorpusEvidenceClass.PROOF_CORPUS,

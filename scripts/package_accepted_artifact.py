@@ -15,6 +15,7 @@ from theseus_repo_search.artifact import (
     canonical_artifact_member_names,
     load_artifact,
 )
+from theseus_repo_search.evidence_class import release_replay_evidence
 from theseus_repo_search.model import ArtifactManifestV2
 from theseus_repo_search.producer_config import LeanGitSource
 from theseus_repo_search.replay_contract import (
@@ -304,6 +305,7 @@ def build_release_package(
     validate_registered_replay_provenance(
         artifact, manifest, replay_payload.get("provenance")
     )
+    replay_evidence = release_replay_evidence(replay_payload)
 
     authority_path = artifact / "authority-receipt.json"
     authority_bytes = authority_path.read_bytes()
@@ -395,6 +397,7 @@ def build_release_package(
             "artifact_identity": identity,
             "sha256": _sha256(replay_bytes),
         },
+        "evidence": replay_evidence,
         "fingerprint": {
             "schema": FINGERPRINT_SCHEMA,
             "sha256": fingerprint_sha256,
