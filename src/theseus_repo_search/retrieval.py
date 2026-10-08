@@ -11,6 +11,7 @@ from .errors import RepoSearchError
 from .graph import dependencies
 from .model import EvidenceGrade
 from .projection import ProjectionProvenance, read_projection_provenance
+from .sources import lean_module_source_path
 
 SearchMode = Literal["discovery", "evidence"]
 SearchMatchMode = Literal["exact", "single_term", "any_terms", "all_terms"]
@@ -129,7 +130,7 @@ def _source_row_for_node(
             return rows[0]
 
     fallback_path = (
-        source_path if source_path is not None else f"{str(module).replace('.', '/')}.lean"
+        source_path if source_path is not None else lean_module_source_path(str(module))
     )
     rows = conn.execute(
         f"SELECT id, {revision_column}, source_path, source_start_line, source_end_line, "

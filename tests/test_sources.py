@@ -15,6 +15,34 @@ from theseus_repo_search.sources import (
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "lean_src"
 
 
+class LeanQuotedModuleSourcePathTests(unittest.TestCase):
+    def test_marton_declaration_binds_to_unquoted_filesystem_name(self):
+        module = "AnnalsChallenge.AnnalsOfMathematics.«2025-201-2-ConjectureOfMarton»"
+        path = "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean"
+        name = "theorem_1_2"
+        body = "theorem theorem_1_2 : True := by sorry\n"
+        node = Node.from_lean(
+            full_name="ConjectureOfMarton.theorem_1_2",
+            name=name,
+            kind="thm",
+            module=module,
+            source_commit="a" * 40,
+        )
+        chunk = SourceChunk(
+            id=f"src:{path}:1:1",
+            source_commit="a" * 40,
+            source_path=path,
+            source_start_line=1,
+            source_end_line=1,
+            declaration_hint=name,
+            text=body,
+            content_sha256=sha256(body.encode()).hexdigest(),
+        )
+        result = bind_node_sources([node], [chunk])
+        self.assertEqual(result[0].source_path, path)
+        self.assertEqual(result[0].source_start_line, 1)
+
+
 class SourceChunkTests(unittest.TestCase):
     def test_extracts_declarations_with_exact_provenance_and_hash(self):
         chunks = scan_lean_sources(FIXTURE_ROOT, source_commit="abc123")
