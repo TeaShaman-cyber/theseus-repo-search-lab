@@ -20,28 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
+          - source_descriptor: producer/sources/annals-challenge-marton.json
+            replay_script: scripts/replay_annals_marton.py
+            artifact_name: annals-challenge-marton-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -311,28 +292,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
+          - source_descriptor: producer/sources/annals-challenge-marton.json
+            replay_script: scripts/replay_annals_marton.py
+            artifact_name: annals-challenge-marton-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -424,14 +386,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - scenario: qa/research-smoke/zeta23-riemann-panel-v0.json
-            source_descriptor: producer/sources/zeta23.json
-            artifact_name: zeta23-repo-index-v1
-            source_id: zeta23
-          - scenario: qa/research-smoke/flt-bridge-v0.json
-            source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-            source_id: leanprover-community-flt-regular
+          - scenario: qa/research-smoke/annals-marton-seam-v0.json
+            source_descriptor: producer/sources/annals-challenge-marton.json
+            artifact_name: annals-challenge-marton-repo-index-v1
+            source_id: annals-challenge-marton
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
