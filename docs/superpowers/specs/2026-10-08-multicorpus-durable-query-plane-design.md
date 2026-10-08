@@ -138,7 +138,11 @@ The generation metadata binds at minimum:
 ### Activation concurrency and immutability
 
 A READY generation is immutable query state. Materialization never updates its
-corpus/search rows in place. Concurrent builders may create candidate generations,
+corpus/search rows in place. PostgreSQL enforces this boundary at the database
+layer: once a generation is READY, INSERT/UPDATE/DELETE against its generation row,
+`corpora`, or `search_docs` rows is rejected except for the one-way BUILDING -> READY
+transition performed by the guarded publication function. Concurrent builders may
+create candidate generations,
 but activation uses one atomic compare-and-switch from the previously observed
 active generation/catalog digest to the fully verified candidate. A loser must not
 overwrite a newer active pointer. Re-running the same accepted catalog is idempotent at the content level: it may
@@ -179,6 +183,12 @@ heavy engineering workbench
 
 A shell failure is therefore not automatically a query-plane failure. Capability
 health must be reported per surface.
+
+Pre-activation verification uses a generation-scoped read function that shares the
+same retrieval implementation as the active production query path; it differs only
+in taking an explicit generation ID. This lets a candidate be tested before the
+active pointer changes, without an ad hoc query that could miss ranking/filtering
+bugs.
 
 The initial user/agent-facing read contract should remain small and bounded. The
 future native shape is expected to resemble:
