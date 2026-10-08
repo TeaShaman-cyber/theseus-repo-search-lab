@@ -16,8 +16,8 @@ from theseus_repo_search.artifact import (
     load_artifact,
 )
 from theseus_repo_search.evidence_class import release_replay_evidence
-from theseus_repo_search.model import ArtifactManifestV2
-from theseus_repo_search.producer_config import LeanGitSource
+from theseus_repo_search.model import ArtifactManifest, ArtifactManifestV2
+from theseus_repo_search.producer_config import LeanArchiveSource, LeanGitSource
 from theseus_repo_search.replay_contract import (
     validate_registered_replay_manifest,
     validate_registered_replay_provenance,
@@ -225,15 +225,26 @@ def _validate_consumer_acceptance(
 
     if artifact.get("identity") != identity:
         raise ValueError("consumer receipt artifact identity mismatch")
-    source_repo = getattr(manifest, "source_repo", None)
-    source_commit = getattr(manifest, "source_commit", None)
-    source_subdir = getattr(manifest, "source_subdir", None)
-    if (
-        artifact.get("source_repo"),
-        artifact.get("source_commit"),
-        artifact.get("source_subdir"),
-    ) != (source_repo, source_commit, source_subdir):
-        raise ValueError("consumer receipt artifact source mismatch")
+    if isinstance(manifest, ArtifactManifestV2):
+        source = manifest.source_authority
+        expected_archive = {
+            "kind": source.kind,
+            "url": source.url,
+            "sha256": source.sha256,
+            "format": source.format,
+            "subdir": source.subdir,
+        }
+        if set(artifact) != {"identity", "name", "source"} or artifact.get("source") != expected_archive:
+            raise ValueError("consumer receipt archive source authority mismatch")
+    else:
+        if not isinstance(manifest, ArtifactManifest):
+            raise TypeError("unsupported accepted artifact authority")
+        if (
+            artifact.get("source_repo"),
+            artifact.get("source_commit"),
+            artifact.get("source_subdir"),
+        ) != (manifest.source_repo, manifest.source_commit, manifest.source_subdir):
+            raise ValueError("consumer receipt artifact source mismatch")
     if projection.get("quick_check") != "ok" or projection.get("artifact_identity") != identity:
         raise ValueError("consumer receipt projection acceptance mismatch")
     if (
@@ -286,14 +297,11 @@ def build_release_package(
         receipt=receipt,
     )
     manifest, *_ = load_artifact(artifact)
-    if isinstance(manifest, ArtifactManifestV2):
-        raise TypeError("release package pilot currently supports git-backed repo-index.v1 only")
-
     source = validate_registered_replay_manifest(
         manifest, source_descriptor, runner_path=runner_config
     )
-    if not isinstance(source, LeanGitSource):
-        raise TypeError("release package pilot currently supports Git sources only")
+    if not isinstance(source, (LeanGitSource, LeanArchiveSource)):
+        raise TypeError("unsupported accepted source authority")
 
     identity = artifact_identity(manifest)
     replay_bytes = replay.read_bytes()
@@ -365,15 +373,30 @@ def build_release_package(
     archive.parent.mkdir(parents=True, exist_ok=True)
     archive.write_bytes(package_bytes)
 
-    receipt_payload: dict[str, object] = {
-        "schema": RECEIPT_SCHEMA,
-        "source_descriptor": {
+    if isinstance(source, LeanGitSource):
+        source_receipt: dict[str, object] = {
             "sha256": _sha256(descriptor_bytes),
             "source_id": source.source_id,
             "repo": source.source_repo,
             "commit": source.source_commit,
             "subdir": source.source_subdir,
-        },
+        }
+    else:
+        source_receipt = {
+            "sha256": _sha256(descriptor_bytes),
+            "source_id": source.source_id,
+            "archive": {
+                "kind": "archive",
+                "url": source.archive_url,
+                "sha256": source.archive_sha256,
+                "format": source.archive_format,
+                "subdir": source.source_subdir,
+            },
+        }
+
+    receipt_payload: dict[str, object] = {
+        "schema": RECEIPT_SCHEMA,
+        "source_descriptor": source_receipt,
         "runner_config": {"sha256": _sha256(runner_bytes)},
         "acceptance": {
             "consumer_receipt_sha256": _sha256(consumer_receipt_bytes),
