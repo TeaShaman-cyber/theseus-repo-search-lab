@@ -1,4 +1,4 @@
-name: Minimal Lean axiom witness
+name: Marton exact-source Lean axiom witness
 
 on:
   workflow_dispatch:
@@ -7,70 +7,144 @@ permissions:
   contents: read
 
 concurrency:
-  group: lean-axiom-witness-${{ github.ref }}
+  group: marton-axiom-witness-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   witness:
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/experiment/34-marton-witness-registered-route' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 35
     env:
       PYTHONPATH: ${{ github.workspace }}/src
-      LEAN_ARCHIVE_SHA256: 48010c7d6264dc992574e9b0e09ece1f9c648e8f5106066b2cdb6834a6a60a6c
-      LEAN_EXE_SHA256: e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550
-      LEAN_RELEASE: v4.33.0-rc2
     steps:
-      - name: Checkout exact repository source
+      - name: Checkout witness code at exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      - name: Verify exact checkout and fixture
+      - name: Resolve pinned Marton source configuration
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${{ github.sha }}"
-          test "$(sha256sum tests/fixtures/lean_axioms/AxiomProbe.lean | cut -d ' ' -f 1)" = "d92d2482c12a116d254feba6e09c275dab183e4a3bf9d1ebf6aa3d48260342b7"
-          printf 'verified_checkout_sha=%s\n' "$(git rev-parse HEAD)"
+          python3 scripts/load_producer_env.py \
+            --source producer/sources/annals-challenge-marton.json \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
 
-      - name: Download and authenticate complete official Lean runtime archive
+      - name: Fetch pinned upstream without pulling entire corpus matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source --expected "$SOURCE_COMMIT"
+          test "$(sha256sum _target/source/AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean | cut -d ' ' -f 1)" = "a07d6d29b17aca763e05952382612dac0451405895deefa13bee94d9ea518fab"
+          test "$(cat _target/source/lean-toolchain)" = 'leanprover/lean4:v4.33.0-rc1'
+
+      - name: Resolve source root after pinned checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source producer/sources/annals-challenge-marton.json \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Install pinned Elan prerequisite
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --location --proto '=https' --tlsv1.2 \
-            --output "$RUNNER_TEMP/lean.tar.zst" \
-            "https://github.com/leanprover/lean4/releases/download/${LEAN_RELEASE}/lean-4.33.0-rc2-linux.tar.zst"
-          # SHA256 is independently pinned in reviewed workflow source, from
-          # the official release asset digest. Verify BEFORE extracting code.
-          echo "$LEAN_ARCHIVE_SHA256  $RUNNER_TEMP/lean.tar.zst" | sha256sum --check
-          command -v zstd
-          mkdir -p "$RUNNER_TEMP/lean-extracted"
-          tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" -C "$RUNNER_TEMP/lean-extracted"
-          lean="$RUNNER_TEMP/lean-extracted/lean-4.33.0-rc2-linux/bin/lean"
-          test -x "$lean"
-          echo "$LEAN_EXE_SHA256  $lean" | sha256sum --check
-          "$lean" --version
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Run actual Lean and capture immutable-run witness
+      - name: Compute exact Mathlib lockfile cache key
+        id: mathlib-cache-key
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/lean_axiom_witness.py capture \
-            --source tests/fixtures/lean_axioms/AxiomProbe.lean \
-            --lean "$RUNNER_TEMP/lean-extracted/lean-4.33.0-rc2-linux/bin/lean" \
-            --lean-archive-sha256 "$LEAN_ARCHIVE_SHA256" \
+          test -f "$SOURCE_ROOT/lean-toolchain"
+          test -f "$SOURCE_ROOT/lake-manifest.json"
+          lean_pin="$(sha256sum "$SOURCE_ROOT/lean-toolchain" | cut -d ' ' -f 1)"
+          lake_pin="$(sha256sum "$SOURCE_ROOT/lake-manifest.json" | cut -d ' ' -f 1)"
+          echo "key=mathlib-archives-v1-${RUNNER_OS}-${lean_pin}-${lake_pin}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore existing Mathlib download archives
+        id: mathlib-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/mathlib
+          key: ${{ steps.mathlib-cache-key.outputs.key }}
+
+      - name: Restore pinned Mathlib dependencies once
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+
+      - name: Save bounded Mathlib archive downloads
+        if: steps.mathlib-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache="$HOME/.cache/mathlib"
+          if [ -d "$cache" ]; then
+            size="$(du -sk "$cache" | awk '{print $1}')"
+            printf 'mathlib_archives_kib=%s\n' "$size"
+            if [ "$size" -gt 0 ] && [ "$size" -le 750000 ]; then
+              echo 'save=true' >> "$GITHUB_OUTPUT"
+            fi
+          fi
+        id: cache-size
+
+      - name: Persist pinned Mathlib archive cache
+        if: steps.mathlib-cache.outputs.cache-hit != 'true' && steps.cache-size.outputs.save == 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/mathlib
+          key: ${{ steps.mathlib-cache-key.outputs.key }}
+
+      - name: Compile only Marton module against restored dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+
+      - name: Capture actual Lean axiom stdout for exact theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE_ID" = annals-challenge-marton
+          lean_version="$(cd "$SOURCE_ROOT" && lake env lean --version)"
+          lean_binary="$(cd "$SOURCE_ROOT" && elan which lean)"
+          test -x "$lean_binary"
+          lean_binary_sha256="$(sha256sum "$lean_binary" | cut -d ' ' -f 1)"
+          python3 scripts/marton_axiom_witness.py capture \
+            --source-root "$SOURCE_ROOT" \
+            --probe "$GITHUB_WORKSPACE/tests/fixtures/lean_axioms/MartonProbe.lean" \
+            --out _witness/marton \
             --repository "$GITHUB_REPOSITORY" \
-            --source-commit "${{ github.sha }}" \
+            --github-head "${{ github.sha }}" \
             --run-id "$GITHUB_RUN_ID" \
             --run-attempt "$GITHUB_RUN_ATTEMPT" \
-            --out _witness
+            --lean-version "$lean_version" \
+            --lean-executable-sha256 "$lean_binary_sha256"
 
-      - name: Upload raw witness and observed hashes
+      - name: Upload bounded Marton axiom witness
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: lean-axiom-witness
-          path: _witness/
+          name: marton-axiom-witness
+          path: _witness/marton/
           if-no-files-found: warn
           retention-days: 30
