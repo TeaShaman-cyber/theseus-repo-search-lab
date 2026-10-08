@@ -182,13 +182,18 @@ git commit -m "feat: add accepted corpus catalog"
 
 **Files:**
 - Create: `src/theseus_repo_search/multicorpus.py`
+- Modify: `src/theseus_repo_search/projection.py`
+- Modify: `src/theseus_repo_search/retrieval.py`
 - Modify: `src/theseus_repo_search/cli.py`
+- Modify: `tests/test_projection.py`
+- Modify: `tests/test_retrieval.py`
 - Create: `tests/test_multicorpus.py`
 - Modify: `README.md`
 
 **Interfaces:**
 - Consumes Task 1 `AcceptedCatalog` / `AcceptedCorpus`.
 - Reuses `scripts.consume_accepted_release.verify_and_extract_release`, `projection.build_projection`, `projection.projection_fingerprint`, and `retrieval.search`.
+- Extends `retrieval.SearchHit` with `source_row_id: str | None`, populated from the already-selected `sources.id` for source-backed hits. This is projection identity, not the accepted-corpus `source_id`.
 - Produces:
 
 ```python
@@ -244,17 +249,17 @@ def search_local_catalog(
 Cache identity:
 
 ```text
-<cache_root>/<catalog_sha256>/<source_id>/<artifact_identity>/
+<cache_root>/<catalog_sha256>/<sqlite_projection_schema_version>/<source_id>/<artifact_identity>/
     release/
     index.sqlite
     verified.json
 ```
 
-`verified.json` binds catalog digest, source ID, release tag, package/receipt SHA observed by the release verifier, artifact identity, accepted fingerprint, projection fingerprint, `source_descriptor_sha256`, and `runner_config_sha256`. Warm reuse must recompute the **current** descriptor and `producer/runner.json` digests and require equality with those persisted values before serving the cache; this preserves the same producer-drift gate that a cold `verify_and_extract_release` run enforces. Cache reuse also requires successful projection provenance/fingerprint checks. Any producer-input drift, unreadable projection, or derived-state mismatch discards/rebuilds the cache from accepted authority rather than comparing bad state as authority.
+`projection.py` exposes a repository-owned `SQLITE_PROJECTION_SCHEMA_VERSION` (initial value `repo-search-sqlite-v1`) covering all behavior-affecting SQLite projection choices: table/index shape, FTS tokenizer/configuration, projection metadata contract, and retrieval assumptions that require rebuild. `verified.json` binds that current version together with catalog digest, source ID, release tag, package/receipt SHA observed by the release verifier, artifact identity, accepted fingerprint, projection fingerprint, `source_descriptor_sha256`, and `runner_config_sha256`. Warm reuse must require exact equality with the **current code's** `SQLITE_PROJECTION_SCHEMA_VERSION` and recompute the current descriptor and `producer/runner.json` digests before serving the cache; this preserves both projection-contract and producer-drift gates. Cache reuse also requires successful projection provenance/fingerprint checks. Any producer-input drift, unreadable projection, or derived-state mismatch discards/rebuilds the cache from accepted authority rather than comparing bad state as authority.
 
 - [ ] **Step 1: Write RED tests with a fake `gh` executable and tiny accepted-release fixtures**
 
-Cover cold materialization, warm reuse without a second download, catalog-digest cache separation, **source-descriptor mutation and runner-config mutation forcing `REBUILD_REQUIRED`/rebuild before reuse**, artifact/fingerprint mismatch, unreadable SQLite rebuild, and one unavailable corpus alongside one searchable corpus.
+Cover cold materialization, warm reuse without a second download, catalog-digest cache separation, **SQLite projection-version mismatch forcing rebuild**, **source-descriptor mutation and runner-config mutation forcing `REBUILD_REQUIRED`/rebuild before reuse**, artifact/fingerprint mismatch, unreadable SQLite rebuild, and one unavailable corpus alongside one searchable corpus. Add `tests/test_projection.py` coverage that pins the version constant and requires an intentional version bump whenever the persisted SQLite search contract changes.
 
 - [ ] **Step 2: Run RED**
 
@@ -272,7 +277,7 @@ Use invocation-unique staging directories under the target cache filesystem and 
 
 - [ ] **Step 5: Add federation RED tests**
 
-Require exact hits before lexical hits; otherwise sort by `local_rank`, `source_id`, `candidate_id`; never compare separate SQLite `score` values. Require `searched_corpora` and explicit `unavailable_corpora` in all results.
+Before federation, add retrieval regression coverage proving lexical hits expose the selected `sources.id` as `SearchHit.source_row_id`, including a chunk whose `declaration_id` is `None`. Build `candidate_id` as `<accepted_corpus_source_id>::<declaration_id>` when `declaration_id` exists, otherwise `<accepted_corpus_source_id>::<source_row_id>`; absence of both is `BLOCKED_PROJECTION_INTEGRITY`, never a synthesized path/line identity. Require exact hits before lexical hits; otherwise sort by `local_rank`, `source_id`, `candidate_id`; never compare separate SQLite `score` values. Require `searched_corpora` and explicit `unavailable_corpora` in all results.
 
 - [ ] **Step 6: Implement `search_local_catalog` and CLI `multicorpus-search`**
 
@@ -298,7 +303,7 @@ Record wall time, cache bytes, catalog digest, eight searched/unavailable counts
 ```bash
 ./tools/dev/check
 git diff --check
-git add src/theseus_repo_search/multicorpus.py src/theseus_repo_search/cli.py tests/test_multicorpus.py README.md
+git add src/theseus_repo_search/multicorpus.py src/theseus_repo_search/projection.py src/theseus_repo_search/retrieval.py src/theseus_repo_search/cli.py tests/test_projection.py tests/test_retrieval.py tests/test_multicorpus.py README.md
 git commit -m "feat: add recoverable multicorpus search"
 ```
 
@@ -328,15 +333,16 @@ repo_search.search_generation(generation_id text, query_text text, result_limit 
 repo_search.generation_status()
 repo_search.mark_generation_ready(generation_id text, expected_catalog_sha256 text, expected_corpus_count integer)
 repo_search.activate_generation(generation_id text, expected_previous_generation_id text)
+repo_search.gc_inactive_generation(generation_id text, expected_generation_content_sha256 text)
 ```
 
-Required generation states: `BUILDING`, `READY`. Failed BUILDING candidates may be deleted by maintenance. Database-level guards reject INSERT/UPDATE/DELETE that would mutate any READY generation or its `corpora`/`search_docs` rows; the only permitted state mutation is the guarded one-way `BUILDING -> READY` transition. The normal `search(...)` function reads only the active READY generation.
+Required generation states: `BUILDING`, `READY`. Failed BUILDING candidates may be deleted by maintenance. Database-level guards reject INSERT/UPDATE and row-level DELETE that would mutate any READY generation or its `corpora`/`search_docs` rows; the only content-state mutation is the guarded one-way `BUILDING -> READY` transition. The sole READY deletion exception is `gc_inactive_generation(...)`, which locks the active pointer and target generation, requires exact expected content identity, refuses the active generation or any externally referenced generation, and deletes the inactive generation plus its owned corpus/search rows as one transaction. The normal `search(...)` function reads only the active READY generation.
 
-`search_docs` uses PostgreSQL built-in `to_tsvector('simple', ...)` and a GIN index. No Neon search extension is enabled in v1. `search_generation(...)` is the single generation-scoped retrieval implementation and may read a specified BUILDING or READY candidate for pre-activation canaries; `search(...)` is the production wrapper that resolves the active READY generation and delegates to the same implementation. Exact declaration/candidate identity matches are returned before lexical matches. `query_mode=discovery` uses OR semantics for normalized terms; `evidence` requires all normalized terms. Ordering is deterministic with stable candidate ID tie-break.
+`search_docs` uses PostgreSQL built-in `to_tsvector('simple', ...)` and a GIN index. No Neon search extension is enabled in v1. `search_generation(...)` is the single generation-scoped retrieval implementation and may read a specified **READY** generation whether active or inactive; it refuses BUILDING generations so an acceptance canary cannot observe mutable rows. `search(...)` is the production wrapper that resolves the active READY generation and delegates to the same implementation. Exact declaration/candidate identity matches are returned before lexical matches. `query_mode=discovery` uses OR semantics for normalized terms; `evidence` requires all normalized terms. Ordering is deterministic with stable candidate ID tie-break.
 
 - [ ] **Step 1: Write structural, CAS, immutability, and candidate-query RED tests before adding SQL**
 
-Tests require exact schema version marker `repo-search-query-v1`, no `CREATE EXTENSION`, all required objects, a generated/stored `tsvector` using `simple`, a GIN index, active-generation foreign-key/state guards, explicit result-limit validation, explicit compare-and-switch parameters, rejection of a stale expected previous generation, database-level rejection of mutations to READY generation/corpus/search rows, schema-version metadata, provenance fields, and a generation-scoped canary query that does not require activation.
+Tests require exact schema version marker `repo-search-query-v1`, no `CREATE EXTENSION`, all required objects, a generated/stored `tsvector` using `simple`, a GIN index, active-generation foreign-key/state guards, explicit result-limit validation, explicit compare-and-switch parameters, rejection of a stale expected previous generation, database-level rejection of mutations to READY generation/corpus/search rows, guarded whole-generation GC that rejects active/wrong-identity/referenced targets, schema-version metadata, provenance fields, and a generation-scoped canary query that accepts inactive READY generations but rejects BUILDING generations.
 
 - [ ] **Step 2: Run RED and verify the failures are for the missing contract**
 
@@ -348,7 +354,7 @@ Expected: RED for missing schema/functions/guards; test discovery itself must su
 
 - [ ] **Step 3: Implement the minimal SQL contract**
 
-Both `generation_id` and deterministic `generation_content_sha256` are supplied by the materializer and constrained as lowercase 64-hex. `generation_content_sha256` binds catalog digest + projection schema; `generation_id` additionally binds an invocation-unique nonce so a corrupt instance can be replaced without changing accepted content identity. `activate_generation` must lock the singleton active row and compare the caller's expected previous generation before switching. A stale caller raises and leaves the active row unchanged. Database triggers/guard functions reject mutation of READY generation-scoped rows.
+Both `generation_id` and deterministic `generation_content_sha256` are supplied by the materializer and constrained as lowercase 64-hex. `generation_content_sha256` binds catalog digest + projection schema; `generation_id` additionally binds an invocation-unique nonce so a corrupt instance can be replaced without changing accepted content identity. `activate_generation` must lock the singleton active row and compare the caller's expected previous generation before switching. A stale caller raises and leaves the active row unchanged. Database triggers/guard functions reject mutation of READY generation-scoped rows. `gc_inactive_generation(...)` is the only READY deletion path: it locks/reads the active pointer and target, verifies `expected_generation_content_sha256`, refuses active or referenced targets, then deletes the generation and its owned rows transactionally; direct child-row deletion remains blocked.
 
 - [ ] **Step 4: Run the same targeted contract tests GREEN before live execution**
 
@@ -365,10 +371,12 @@ Through the native Neon development connector, create one temporary branch from 
 1. incomplete BUILDING generation cannot activate;
 2. READY generation can activate from expected previous state;
 3. second stale activator fails and does not overwrite the winner;
-4. `search_generation(...)` can exercise a non-active candidate with the same ranking/filtering implementation used by production `search(...)`;
-5. production `search(...)` reads only active READY rows;
-6. UPDATE/DELETE/late INSERT against READY generation rows is rejected at the database layer;
-7. schema/index/function definitions can be read back exactly.
+4. after completeness verification, `mark_generation_ready(...)` freezes the candidate before any acceptance search;
+5. `search_generation(...)` rejects BUILDING state and can exercise the now-immutable inactive READY candidate with the same ranking/filtering implementation used by production `search(...)`;
+6. production `search(...)` reads only active READY rows;
+7. UPDATE/late INSERT/direct child-row DELETE against READY generation rows is rejected at the database layer;
+8. `gc_inactive_generation(...)` refuses the active generation, refuses a wrong expected content identity, and removes a disposable inactive READY generation with all owned rows atomically;
+9. schema/index/function definitions can be read back exactly.
 
 Delete the temporary branch after the canary unless it is retained deliberately for the next task. Record branch ID and exact schema readback in #117.
 
@@ -408,7 +416,7 @@ def build_generation_sql(
 ) -> str: ...
 ```
 
-Every emitted corpus row binds source ID, release tag, artifact identity, accepted fingerprint, source kind/revision/authority, and catalog digest. Every search row has a stable `candidate_id = <source_id>::<artifact-node-or-source-id>` and retains evidence grade/matchable declaration/source provenance. SQL emission must escape data safely and deterministically; no source text may become executable SQL syntax.
+Every emitted corpus row binds source ID, release tag, artifact identity, accepted fingerprint, source kind/revision/authority, and catalog digest. Every search row uses the same stable identity rule as local retrieval: `candidate_id = <accepted_corpus_source_id>::<declaration_id>` when a declaration resolves, otherwise `<accepted_corpus_source_id>::<source_row_id>`. It retains evidence grade/matchable declaration/source provenance. SQL emission must escape data safely and deterministically; no source text may become executable SQL syntax.
 
 - [ ] **Step 1: Write exporter RED tests**
 
@@ -472,23 +480,27 @@ Use the same exact catalog digest for local and Neon paths. Abort candidate publ
 
 Record row counts by corpus and total Postgres relation/index bytes. Confirm the result remains under the current 1 GB Free Postgres/project limit with measured, not estimated, bytes.
 
-- [ ] **Step 4: Run the real canary before activation**
+- [ ] **Step 4: Verify completeness, then mark the candidate READY to freeze it**
 
-Query the candidate by generation ID through `repo_search.search_generation(...)`, which shares the exact ranking/filtering implementation used by production `repo_search.search(...)` but does not consult or mutate the active pointer. Compare exact corpus/source/artifact provenance against local SQLite results. Any mismatch leaves the prior active generation untouched.
+Before acceptance search, verify exact catalog digest, expected corpus count, row-count/integrity invariants, and generation content identity. Call `mark_generation_ready(...)` only after those checks pass. From this point the candidate is immutable but still inactive; a failed later canary leaves it inactive and eligible for guarded garbage collection.
 
-- [ ] **Step 5: Mark READY and atomically activate from the observed previous generation**
+- [ ] **Step 5: Run the real canary against the inactive immutable READY generation**
 
-Immediately read back `generation_status()` and the catalog digest through both native Neon and MarcoPolo `data_query`. A stale compare-and-switch must be treated as a failed activation requiring fresh readback, never an unconditional retry.
+Query the candidate by generation ID through `repo_search.search_generation(...)`, which shares the exact ranking/filtering implementation used by production `repo_search.search(...)` but does not consult or mutate the active pointer and refuses BUILDING state. Compare exact corpus/source/artifact provenance against local SQLite results. Any mismatch leaves the prior active generation untouched.
 
-- [ ] **Step 6: Exercise warm search and one explicit partial/degraded simulation without mutating authority**
+- [ ] **Step 6: Atomically activate the canaried READY generation from the observed previous generation**
 
-Use a temporary candidate generation or local fixture to prove missing corpus state is explicit. Do not corrupt the active READY generation to test failure handling.
+Only after the READY-generation canary passes, call `activate_generation(...)`. Immediately read back `generation_status()` and the catalog digest through both native Neon and MarcoPolo `data_query`. A stale compare-and-switch must be treated as a failed activation requiring fresh readback, never an unconditional retry.
 
-- [ ] **Step 7: Run canonical QA and update #117 checkpoint**
+- [ ] **Step 7: Exercise warm search, partial/degraded reporting, and guarded inactive-generation GC without mutating authority**
+
+Use a temporary candidate generation or local fixture to prove missing corpus state is explicit. Do not corrupt the active READY generation to test failure handling. Separately create or retain a disposable inactive READY generation, prove `gc_inactive_generation(...)` cannot delete the active generation, then delete the disposable inactive target and read back that its generation/corpus/search rows are gone while the active generation is unchanged.
+
+- [ ] **Step 8: Run canonical QA and update #117 checkpoint**
 
 Record exact Git head, catalog digest, generation ID, eight corpus identities/counts, measured storage, local cold/warm canary, Neon query canary through both routes, and unresolved acceptance items.
 
-- [ ] **Step 8: Commit documentation/canary fixture**
+- [ ] **Step 9: Commit documentation/canary fixture**
 
 ```bash
 git add qa/query-plane/marton-zeta-seam-v1.json README.md
@@ -507,7 +519,8 @@ After a Neon CI write credential/connection is explicitly configured and indepen
 2. uses a direct/unpooled Neon connection for schema/materialization operations as required by Neon connection semantics;
 3. builds + verifies a candidate generation, runs the canary, then compare-and-switches active generation;
 4. records `ARTIFACT_ACCEPTED / QUERY_PLANE_PENDING|READY|DEGRADED` without invalidating an already accepted immutable release when Neon is unavailable;
-5. adds exact-head hosted CI/readback acceptance.
+5. applies a bounded retention policy (at minimum active plus one known-good previous generation when space permits) and uses only guarded inactive-generation GC under measured storage pressure;
+6. adds exact-head hosted CI/readback acceptance.
 
 Issue #117 must remain OPEN until that promotion stage plus the required second execution-instance/recovery canary are VERIFIED or explicitly reported UNVERIFIED per the issue acceptance contract.
 

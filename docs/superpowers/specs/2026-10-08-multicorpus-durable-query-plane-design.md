@@ -85,8 +85,10 @@ producer QA
 -> verify receipt/provenance/fingerprint
 -> artifact acceptance
 -> materialize candidate Neon generation
--> read-only search canary + provenance readback
--> atomically mark generation READY
+-> verify completeness/identity
+-> atomically mark generation READY (freeze; still inactive)
+-> read-only search canary + provenance readback on immutable READY candidate
+-> atomically activate generation
 -> searchable-corpus promotion complete
 ```
 
@@ -115,9 +117,10 @@ READY generation N
         +--> build N+1
              -> verify accepted corpus identities
              -> build/update lexical projection
-             -> canary search
+             -> completeness/identity verification
+             -> mark N+1 READY (immutable, inactive)
+             -> canary search through generation-scoped production semantics
              -> exact provenance readback
-             -> mark N+1 READY
              -> atomically switch active_generation N -> N+1
 ```
 
@@ -139,9 +142,12 @@ The generation metadata binds at minimum:
 
 A READY generation is immutable query state. Materialization never updates its
 corpus/search rows in place. PostgreSQL enforces this boundary at the database
-layer: once a generation is READY, INSERT/UPDATE/DELETE against its generation row,
-`corpora`, or `search_docs` rows is rejected except for the one-way BUILDING -> READY
-transition performed by the guarded publication function. Concurrent builders may
+layer: once a generation is READY, INSERT/UPDATE and row-level DELETE against its
+generation, `corpora`, or `search_docs` rows is rejected except for the one-way
+BUILDING -> READY transition performed by the guarded publication function. The
+only READY deletion exception is guarded whole-generation garbage collection of an
+inactive, unreferenced generation after exact identity readback; active generations
+and partial child-row deletion remain forbidden. Concurrent builders may
 create candidate generations,
 but activation uses one atomic compare-and-switch from the previously observed
 active generation/catalog digest to the fully verified candidate. A loser must not
@@ -186,9 +192,10 @@ health must be reported per surface.
 
 Pre-activation verification uses a generation-scoped read function that shares the
 same retrieval implementation as the active production query path; it differs only
-in taking an explicit generation ID. This lets a candidate be tested before the
-active pointer changes, without an ad hoc query that could miss ranking/filtering
-bugs.
+in taking an explicit generation ID. It accepts only READY generations, so the
+candidate is frozen before the canary observes it. This lets an inactive immutable
+candidate be tested before the active pointer changes, without an ad hoc query or a
+BUILDING-to-READY mutation window that could invalidate the canary.
 
 The initial user/agent-facing read contract should remain small and bounded. The
 future native shape is expected to resemble:
@@ -236,7 +243,10 @@ Its roles are:
 
 SQLite is not required to remain alive across runtime replacement. Automatic
 materialization from accepted releases is the recovery mechanism for the local
-path.
+path. Warm-cache identity also binds a repository-owned SQLite projection schema
+version covering behavior-affecting table/index/FTS-tokenizer and retrieval-contract
+choices. A version mismatch is stale derived state and forces rebuild; a projection
+must never validate indefinitely only against its own old fingerprint.
 
 ## Search semantics
 
@@ -266,8 +276,10 @@ Every result must retain a stable identity independent of the serving backend.
 Conceptually:
 
 ```text
-candidate_id = <accepted-corpus-identity>::<declaration-or-source-id>
+candidate_id = <accepted_corpus_source_id>::<declaration_id-or-source_row_id>
 ```
+
+The local retrieval API must retain the projection `sources.id` selected for a source-backed hit. This row identity is used only when no stable declaration ID resolves; it must not be confused with the accepted corpus `source_id`. A result with neither declaration ID nor projection source-row ID fails closed instead of synthesizing identity from mutable path/line presentation fields.
 
 The result contract includes at minimum:
 
@@ -329,7 +341,11 @@ actual table/index inflation before assuming the full accepted collection fits t
 Free storage budget.
 
 Mandatory scale-to-zero is acceptable for an intermittent research query plane if
-cold-wake latency remains within the measured usability target.
+cold-wake latency remains within the measured usability target. Because each READY
+generation duplicates derived query rows, the query plane must support guarded
+whole-generation garbage collection for inactive READY generations. Retention is
+bounded and explicit rather than allowing immutable historical projections to grow
+until the Free storage ceiling blocks publication.
 
 ## Corpus acceptance integration
 
