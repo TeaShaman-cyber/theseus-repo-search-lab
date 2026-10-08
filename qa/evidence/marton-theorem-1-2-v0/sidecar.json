@@ -1,0 +1,21 @@
+{
+  "artifact": {
+    "identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+    "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8"
+  },
+  "corpus_class": "STATEMENT_CORPUS",
+  "declaration": "ConjectureOfMarton.theorem_1_2",
+  "lean_audit": {
+    "allowed_axioms": [],
+    "command": "#print axioms ConjectureOfMarton.theorem_1_2",
+    "observed_axioms": [
+      "propext",
+      "sorryAx",
+      "Classical.choice",
+      "Quot.sound"
+    ],
+    "toolchain": "leanprover/lean4:v4.33.0-rc1",
+    "transcript_sha256": "9825a128f34059fda29884850fbca3a07371d2f5faee698da4a5d843580d403d"
+  },
+  "schema": "theseus.repo-search-proof-evidence-sidecar.v1"
+}
