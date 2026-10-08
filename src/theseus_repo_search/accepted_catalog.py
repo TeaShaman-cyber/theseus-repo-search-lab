@@ -6,7 +6,6 @@ from dataclasses import asdict, dataclass
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
-
 _SCHEMA = "theseus.repo-search.accepted-catalog.v1"
 _TOP_LEVEL_FIELDS = frozenset({"schema", "release_repository", "corpora"})
 _CORPUS_FIELDS = frozenset(
@@ -44,7 +43,7 @@ class AcceptedCatalog:
 
 def _require_object(value: object, *, where: str) -> dict[str, object]:
     if not isinstance(value, dict):
-        raise ValueError(f"{where} must be a JSON object")
+        raise TypeError(f"{where} must be a JSON object")
     return value
 
 

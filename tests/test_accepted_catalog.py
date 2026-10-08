@@ -8,7 +8,6 @@ from theseus_repo_search.accepted_catalog import (
     load_accepted_catalog,
 )
 
-
 EXPECTED_SOURCE_IDS = {
     "annals-challenge-marton",
     "decreasing-diagrams-complete",
