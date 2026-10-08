@@ -22,7 +22,11 @@ from .model import (
     SourceChunk,
 )
 from .normalize import normalize_leandepviz
-from .sources import bind_manifest_backed_node_sources, filter_manifest_backed_edges
+from .sources import (
+    bind_manifest_backed_node_sources,
+    filter_manifest_backed_edges,
+    lean_module_source_path,
+)
 
 SCHEMA = "theseus.repo-index.v1"
 V2_SCHEMA = "theseus.repo-index.v2"
@@ -751,7 +755,7 @@ def load_artifact(
                 raise _integrity(f"partial node source location: {node.id}")
             if source_start_line < 1 or source_end_line < source_start_line:
                 raise _integrity(f"invalid node source range: {node.id}")
-            expected_source_path = f"{node.module.replace('.', '/')}.lean"
+            expected_source_path = lean_module_source_path(node.module)
             if source_path != expected_source_path:
                 raise _integrity(f"node source location mismatch: {node.id}")
             if sources and not (

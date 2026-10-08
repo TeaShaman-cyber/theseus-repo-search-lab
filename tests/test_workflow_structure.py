@@ -141,6 +141,28 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertNotIn("ARCHIVE_SHA256", checkout)
         self.assertNotIn("ARCHIVE_SHA256", git_readback)
 
+    def test_marton_corpus_is_added_without_replacing_existing_matrix(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        producer = text.split("  produce-and-replay:\n", 1)[1].split("  consume-artifact:\n", 1)[0]
+        consumer = text.split("  consume-artifact:\n", 1)[1].split("  research-smoke:\n", 1)[0]
+        smoke = text.split("  research-smoke:\n", 1)[1]
+        row = (
+            "- source_descriptor: producer/sources/annals-challenge-marton.json\n"
+            "            replay_script: scripts/replay_annals_marton.py\n"
+            "            artifact_name: annals-challenge-marton-repo-index-v1"
+        )
+        self.assertEqual(producer.count(row), 1)
+        self.assertEqual(consumer.count(row), 1)
+        self.assertIn("qa/research-smoke/annals-marton-seam-v0.json", smoke)
+        self.assertIn("source_id: annals-challenge-marton", smoke)
+        self.assertEqual(producer.count("- source_descriptor:"), 8)
+        self.assertEqual(consumer.count("- source_descriptor:"), 8)
+        self.assertIn("EXTRACTOR_ROOT_MODULES", producer)
+        self.assertIn('--roots "$EXTRACTOR_ROOT_MODULES"', producer)
+        self.assertIn('EXTRACTOR_ROOT_MODULES="${ROOT_MODULES_CSV//«/}"', producer)
+        self.assertIn("Restore pinned Mathlib download archives", producer)
+        self.assertTrue((ROOT / "scripts/replay_annals_marton.py").is_file())
+
     def test_prime_gaps_is_not_in_default_generic_matrix(self):
         text = GENERIC.read_text(encoding="utf-8")
         matrix = text.split("matrix:", 1)[1].split("steps:", 1)[0]

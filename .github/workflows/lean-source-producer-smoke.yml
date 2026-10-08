@@ -42,6 +42,9 @@ jobs:
             replay_script: scripts/replay_decreasing_diagrams.py
             artifact_name: decreasing-diagrams-complete-repo-index-v2
             source_kind: archive
+          - source_descriptor: producer/sources/annals-challenge-marton.json
+            replay_script: scripts/replay_annals_marton.py
+            artifact_name: annals-challenge-marton-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -277,6 +280,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _out
+          # Lean name quotes delimit syntax, not a filesystem .olean basename.
+          EXTRACTOR_ROOT_MODULES="${ROOT_MODULES_CSV//«/}"
+          EXTRACTOR_ROOT_MODULES="${EXTRACTOR_ROOT_MODULES//»/}"
           python3 scripts/producer_guard.py extract-source \
             --cwd "$SOURCE_ROOT" \
             --source-container "$GITHUB_WORKSPACE/_target/source" \
@@ -289,7 +295,7 @@ jobs:
             --producer-tool-commit "$EXTRACTOR_COMMIT" \
             --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" -- \
             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
-            --roots "$ROOT_MODULES_CSV" \
+            --roots "$EXTRACTOR_ROOT_MODULES" \
             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
 
       - name: Install repository lens package
@@ -381,6 +387,9 @@ jobs:
             replay_script: scripts/replay_decreasing_diagrams.py
             artifact_name: decreasing-diagrams-complete-repo-index-v2
             source_kind: archive
+          - source_descriptor: producer/sources/annals-challenge-marton.json
+            replay_script: scripts/replay_annals_marton.py
+            artifact_name: annals-challenge-marton-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -480,6 +489,10 @@ jobs:
             source_descriptor: producer/sources/leanprover-community-flt-regular.json
             artifact_name: leanprover-community-flt-regular-repo-index-v1
             source_id: leanprover-community-flt-regular
+          - scenario: qa/research-smoke/annals-marton-seam-v0.json
+            source_descriptor: producer/sources/annals-challenge-marton.json
+            artifact_name: annals-challenge-marton-repo-index-v1
+            source_id: annals-challenge-marton
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

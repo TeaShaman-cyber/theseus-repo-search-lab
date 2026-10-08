@@ -437,7 +437,7 @@ def bind_manifest_backed_node_sources(
 
     bound: list[Node] = []
     for node in nodes:
-        expected_path = f"{node.module.replace('.', '/')}.lean"
+        expected_path = lean_module_source_path(node.module)
         candidates = by_path.get(expected_path, [])
         if not candidates:
             raise _source_mismatch(
@@ -504,6 +504,28 @@ def filter_manifest_backed_edges(
     ]
 
 
+def lean_module_source_path(module: str) -> str:
+    """Map Lean's escaped component display name to its filesystem path."""
+    parts: list[str] = []
+    quoted = False
+    for char in module:
+        if char == "«":
+            if quoted:
+                raise ValueError("nested quoted Lean module component")
+            quoted = True
+        elif char == "»":
+            if not quoted:
+                raise ValueError("unbalanced quoted Lean module component")
+            quoted = False
+        elif char == "." and not quoted:
+            parts.append("/")
+        else:
+            parts.append(char)
+    if quoted:
+        raise ValueError("unbalanced quoted Lean module component")
+    return "".join(parts) + ".lean"
+
+
 def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Node]:
     by_path_and_name: dict[tuple[str, str], list[SourceChunk]] = {}
     for chunk in sources:
@@ -518,7 +540,7 @@ def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Nod
         if node.source_path is not None:
             bound.append(node)
             continue
-        expected_path = f"{node.module.replace('.', '/')}.lean"
+        expected_path = lean_module_source_path(node.module)
         matches = by_path_and_name.get((expected_path, node.name), [])
         if len(matches) != 1:
             bound.append(node)
