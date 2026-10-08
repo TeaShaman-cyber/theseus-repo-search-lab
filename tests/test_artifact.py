@@ -1,5 +1,7 @@
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from dataclasses import replace
@@ -851,6 +853,33 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("node outside declared root-module scope", str(caught.exception))
 
+
+    def test_malformed_quoted_module_rejects_artifact_with_structured_cli_error(self):
+        for malformed in ("Zeta23.Tiny»", "Zeta23.«Tiny", "Zeta23.««Tiny»"):
+            with self.subTest(module=malformed), tempfile.TemporaryDirectory() as d:
+                path = Path(d)
+                nodes = sample_nodes()
+                bad = replace(
+                    nodes[0],
+                    module=malformed,
+                    source_path="Zeta23/Tiny.lean",
+                    source_start_line=1,
+                    source_end_line=1,
+                )
+                write_sample_raw(path, nodes=[bad, nodes[1]])
+                with self.assertRaises(RepoSearchError) as caught:
+                    load_artifact(path)
+                self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+                result = subprocess.run(
+                    [sys.executable, "-m", "theseus_repo_search", "verify-artifact", "--artifact", str(path)],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("Traceback", result.stderr)
+                error = json.loads(result.stderr)
+                self.assertEqual(error["code"], "BLOCKED_ARTIFACT_INTEGRITY")
 
     def test_node_source_location_must_match_unique_source_chunk(self):
         with tempfile.TemporaryDirectory() as d:
