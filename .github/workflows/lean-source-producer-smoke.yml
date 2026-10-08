@@ -148,6 +148,32 @@ jobs:
             --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
           echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
 
+      # Cache compressed Mathlib downloads, not the multi-GiB source/build trees.
+      # Exact source-owned Lean toolchain + Lake lock determine cache validity.
+      - name: Compute pinned Mathlib archive cache key
+        id: mathlib-cache-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f "$SOURCE_ROOT/lean-toolchain" ] || [ ! -f "$SOURCE_ROOT/lake-manifest.json" ]; then
+            printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
+            printf 'mathlib_cache_disabled=missing_pins\n'
+            exit 0
+          fi
+          lean_pin="$(sha256sum "$SOURCE_ROOT/lean-toolchain" | cut -d ' ' -f 1)"
+          lake_pin="$(sha256sum "$SOURCE_ROOT/lake-manifest.json" | cut -d ' ' -f 1)"
+          key="mathlib-archives-v1-${RUNNER_OS}-${lean_pin}-${lake_pin}"
+          printf 'enabled=true\nkey=%s\n' "$key" >> "$GITHUB_OUTPUT"
+          printf 'mathlib_archive_cache_key=%s\n' "$key"
+
+      - name: Restore pinned Mathlib download archives
+        if: steps.mathlib-cache-key.outputs.enabled == 'true'
+        id: mathlib-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/mathlib
+          key: ${{ steps.mathlib-cache-key.outputs.key }}
+
       - name: Restore source dependency cache
         shell: bash
         run: |
@@ -170,6 +196,28 @@ jobs:
           else
             printf "source_packages_kib=0\n"
           fi
+
+      - name: Bound Mathlib cache persistence
+        id: mathlib-cache-size
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed=false
+          if [ -d "$HOME/.cache/mathlib" ]; then
+            cache_kib="$(du -sk "$HOME/.cache/mathlib" | awk '{print $1}')"
+            if [ "$cache_kib" -gt 0 ] && [ "$cache_kib" -le 750000 ]; then
+              allowed=true
+            fi
+            printf 'mathlib_download_archives_kib=%s\n' "$cache_kib"
+          fi
+          printf 'save=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
+
+      - name: Save pinned Mathlib download archives
+        if: steps.mathlib-cache-key.outputs.enabled == 'true' && steps.mathlib-cache.outputs.cache-hit != 'true' && steps.mathlib-cache-size.outputs.save == 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/mathlib
+          key: ${{ steps.mathlib-cache-key.outputs.key }}
 
       - name: Build source target
         shell: bash

@@ -31,6 +31,10 @@ Consumer execution must remain source-free: no upstream checkout, Elan/Lake setu
 
 The first verified durable corpus is `leanprover-community/flt-regular` under immutable tag `accepted-artifact/flt-regular/41bfa1d236ee59a8`. The release-backed canary in `.github/workflows/accepted-artifact-consumer-canary.yml` verifies the exact release and package, creates a fresh SQLite projection, reruns FLT replay, and reruns the versioned research-smoke scenario without rebuilding Lean. `.github/workflows/accepted-artifact-consumer-negative-canary.yml` proves producer drift requires rebuild and invalid release evidence fails closed.
 
+### Mathlib archives cache (best effort)
+
+The heavy producer stores only `$HOME/.cache/mathlib` download archives in GitHub Actions Cache, keyed by byte-level hashes of the source-owned `lean-toolchain` and `lake-manifest.json` and the runner OS. Persistence is skipped if pins are missing, the archive directory is empty, or its uncompressed size exceeds 750,000 KiB. The multi-GiB `.lake/packages` and `.lake/build` directories are **not** cached. `lake exe cache get` still runs and may restore or fetch dependencies; actual speedup requires a hosted cache-hit measurement and is not inferred from the static QA tests. Reuse of an already accepted source artifact through a source-free consumer is preferable to running the producer again when the producer fingerprint is unchanged. These download archives are operational acceleration, never source or proof authority.
+
 ## Lexical search modes
 
 `repo-search search` defaults to `--mode discovery`: multi-term lexical search may use broad OR matching and reports such hits as `CANDIDATE`. Use `--mode evidence` when all query terms must match the same source chunk; qualifying hits report `FOUND`. Exact declaration lookup remains `FOUND` in either mode.

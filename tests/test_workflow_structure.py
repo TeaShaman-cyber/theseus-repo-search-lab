@@ -156,6 +156,33 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("mathlib_cache_files=", text)
         self.assertIn("source_build_kib=", text)
 
+    def test_exact_lock_mathlib_archive_cache_is_bounded_and_not_proof_evidence(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        producer = text.split("  produce-and-replay:\n", 1)[1].split("  consume-artifact:\n", 1)[0]
+        key = producer.index("- name: Compute pinned Mathlib archive cache key")
+        restore = producer.index("- name: Restore pinned Mathlib download archives")
+        get = producer.index("- name: Restore source dependency cache")
+        measure = producer.index("- name: Bound Mathlib cache persistence")
+        save = producer.index("- name: Save pinned Mathlib download archives")
+        build = producer.index("- name: Build source target")
+        self.assertLess(key, restore)
+        self.assertLess(restore, get)
+        self.assertLess(get, measure)
+        self.assertLess(measure, save)
+        self.assertLess(save, build)
+        self.assertIn('"$SOURCE_ROOT/lean-toolchain"', producer)
+        self.assertIn('"$SOURCE_ROOT/lake-manifest.json"', producer)
+        self.assertIn("actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830", producer)
+        self.assertIn("actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830", producer)
+        self.assertIn("~/.cache/mathlib", producer)
+        self.assertIn("750000", producer)
+        self.assertIn("cache-hit != 'true'", producer)
+        self.assertNotIn(".lake/packages\n", producer[restore:save])
+        self.assertNotIn(".lake/build\n", producer[restore:save])
+        self.assertIn("lake exe cache get", producer)
+        self.assertIn("  consume-artifact:\n", text)
+        self.assertIn("  research-smoke:\n", text)
+
     def test_source_build_emits_bounded_live_heartbeat(self):
         text = GENERIC.read_text(encoding="utf-8")
         build = text.split("- name: Build source target", 1)[1].split("- name: Extract exact declaration graph", 1)[0]
