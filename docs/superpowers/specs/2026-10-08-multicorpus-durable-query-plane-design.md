@@ -209,6 +209,17 @@ candidate is frozen before the canary observes it. This lets an inactive immutab
 candidate be tested before the active pointer changes, without an ad hoc query or a
 BUILDING-to-READY mutation window that could invalidate the canary.
 
+Query behavior is part of generation identity. Stable public wrappers dispatch by the
+selected generation's stored projection schema version to an immutable versioned
+implementation (`search_generation_v1`, later `search_generation_v2`, and so on).
+Deploying a new query implementation must not redefine the behavior used by an
+already-active old-version generation. Unknown versions fail closed. A migration
+regression must demonstrate that installing a newer implementation leaves the old
+active generation's ranking/tokenization behavior unchanged until a matching newer
+generation is built, canaried, and activated.
+
+Thin query credentials are capability-separated from publication credentials. PostgreSQL default function execution is not trusted: deployment revokes both current and default function execution from `PUBLIC`, exposes only stable read wrappers/status to a NOLOGIN reader capability role, and keeps version-specific helpers, tables, activation, READY transition, and garbage collection outside that role. Reader-facing wrappers and governed mutators use `SECURITY DEFINER` only with a fixed `pg_catalog, repo_search, pg_temp` search path, no dynamic SQL, bounded arguments, and explicit ownership/readback; this lets wrappers dispatch to private version-specific implementations without widening reader grants. A separate materializer capability is granted only the guarded functions plus generation-scoped table writes needed to load/repair BUILDING candidates; READY guards remain authoritative and `active_generation` changes stay function-only. Concrete connector/login membership is an explicit authorization step and is not inferred from connector visibility or interactive owner access. A live negative test must prove a reader can search through the stable dispatcher but cannot call private helpers, any mutator, or direct table access, and a future-helper test must prove default privileges remain closed.
+
 The initial user/agent-facing read contract should remain small and bounded. The
 future native shape is expected to resemble:
 
@@ -391,8 +402,9 @@ credential/connection route. Interactive ChatGPT Neon and MarcoPolo connectors d
 not prove that GitHub Actions has that authority. Until the CI credential path is
 observed and verified, automated Neon publication is `BLOCKED_USER_SETUP` rather
 than silently falling back to a different authority or storing credentials in the
-repository. Query credentials, where exposed to native consumers, should be
-read-only.
+repository. Query credentials, where exposed to native consumers, must be bound
+only to the repository-defined reader capability and verified unable to invoke
+publication/GC functions or direct table writes.
 
 ## Implementation sequencing
 

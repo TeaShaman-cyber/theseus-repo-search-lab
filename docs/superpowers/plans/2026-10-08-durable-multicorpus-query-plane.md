@@ -48,7 +48,8 @@ src/theseus_repo_search/
 scripts/
     build_neon_generation_sql.py         verified artifacts -> candidate-generation SQL
 sql/neon/
-    001_query_plane_v1.sql               schema, indexes, read functions, activation contract
+    001_query_plane_v1.sql               schema, indexes, read/mutation functions, activation contract
+    002_query_plane_privileges.sql        explicit PUBLIC revoke + reader/writer capability roles
     queries/
         search.sql                       connector-friendly bounded read query
         generation_status.sql            active/catalog/generation readback
@@ -324,6 +325,7 @@ git commit -m "feat: add recoverable multicorpus search"
 
 **Files:**
 - Create: `sql/neon/001_query_plane_v1.sql`
+- Create: `sql/neon/002_query_plane_privileges.sql`
 - Create: `sql/neon/queries/search.sql`
 - Create: `sql/neon/queries/generation_status.sql`
 - Create: `tests/test_neon_sql_contract.py`
@@ -341,19 +343,26 @@ repo_search.search_docs
 repo_search.active_generation
 repo_search.search(query_text text, result_limit integer, query_mode text)
 repo_search.search_generation(generation_id text, query_text text, result_limit integer, query_mode text)
+repo_search.search_generation_v1(generation_id text, query_text text, result_limit integer, query_mode text)
 repo_search.generation_status()
 repo_search.mark_generation_ready(generation_id text, expected_catalog_sha256 text, expected_corpus_count integer)
 repo_search.activate_generation(generation_id text, expected_previous_generation_id text)
 repo_search.gc_inactive_generation(generation_id text, expected_generation_content_sha256 text)
+repo_search_reader NOLOGIN
+repo_search_materializer NOLOGIN
 ```
 
 Required generation states: `BUILDING`, `READY`. Failed BUILDING candidates may be deleted by maintenance. Database-level guards reject INSERT/UPDATE and row-level DELETE that would mutate any READY generation or its `corpora`/`search_docs` rows; the only content-state mutation is the guarded one-way `BUILDING -> READY` transition. The sole READY deletion exception is `gc_inactive_generation(...)`, which locks the active pointer and target generation, requires exact expected content identity, refuses the active generation or any externally referenced generation, and deletes the inactive generation plus its owned corpus/search rows as one transaction. The normal `search(...)` function reads only the active READY generation.
 
-`search_docs` uses PostgreSQL built-in `to_tsvector('simple', ...)` and a GIN index. No Neon search extension is enabled in v1. `search_generation(...)` is the single generation-scoped retrieval implementation and may read a specified **READY** generation whether active or inactive; it refuses BUILDING generations so an acceptance canary cannot observe mutable rows. `search(...)` is the production wrapper that resolves the active READY generation and delegates to the same implementation. Exact declaration/candidate identity matches are returned before lexical matches. `query_mode=discovery` uses OR semantics for normalized terms; `evidence` requires all normalized terms. Ordering is deterministic with stable candidate ID tie-break.
+`search_docs` uses PostgreSQL built-in `to_tsvector('simple', ...)` and a GIN index. No Neon search extension is enabled in v1. Query semantics are versioned with the generation, not replaced globally in place. `search_generation_v1(...)` is the immutable v1 ranking/tokenization implementation for `projection_schema_version = 'repo-search-query-v1'`. Stable wrapper `search_generation(...)` first resolves the requested READY generation, reads its exact projection schema version, and dispatches only to the matching version-specific implementation; unknown versions fail closed. Stable wrapper `search(...)` resolves the active READY generation and delegates through the same version dispatcher. A future v2 adds `search_generation_v2(...)` alongside v1 and changes dispatch, but does not redefine v1 while any READY-v1 generation may still be queried. Exact declaration/candidate identity matches are returned before lexical matches. `query_mode=discovery` uses OR semantics for normalized terms; `evidence` requires all normalized terms. Ordering is deterministic with stable candidate ID tie-break.
+
+Privilege boundary is explicit and fail-closed. `002_query_plane_privileges.sql` creates/reuses NOLOGIN capability roles `repo_search_reader` and `repo_search_materializer`, executes `REVOKE ALL ON ALL FUNCTIONS IN SCHEMA repo_search FROM PUBLIC`, and configures the object-creating schema owner with `ALTER DEFAULT PRIVILEGES IN SCHEMA repo_search REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` so a later `search_generation_v2(...)` is not accidentally public. Direct table/sequence privileges remain revoked from `repo_search_reader`. `repo_search_materializer` receives only the generation-scoped table privileges required by Task 4's deterministic candidate INSERT/maintenance path (`generations`, `corpora`, `search_docs`), with no privilege to bypass the READY guards; `active_generation` remains mutation-only through guarded functions.
+
+Reader-facing `search(...)`, `search_generation(...)`, and `generation_status()` are narrow `SECURITY DEFINER` functions owned by the schema/object owner, with a fixed safe `SET search_path = pg_catalog, repo_search, pg_temp`, no dynamic SQL, bounded inputs, and read-only bodies. That owner context permits the stable wrappers to call private version-specific helpers and read projection tables without granting those helpers/tables to the reader. Governed mutators are likewise callable only through guarded `SECURITY DEFINER` functions with the same fixed search-path discipline; the materializer capability gets only the guarded function execution plus the narrow generation-scoped table writes required to load/repair BUILDING candidates. `repo_search_reader` gets `USAGE` on schema `repo_search` plus `EXECUTE` only on the three stable read wrappers/status; version-specific helpers such as `search_generation_v1(...)` remain private. Any concrete login/connector principal receives capability-role membership only after that principal is independently identified and authorized; the schema migration must not infer a GitHub Actions or connector credential.
 
 - [ ] **Step 1: Write structural, CAS, immutability, and candidate-query RED tests before adding SQL**
 
-Tests require exact schema version marker `repo-search-query-v1`, no `CREATE EXTENSION`, all required objects, a generated/stored `tsvector` using `simple`, a GIN index, active-generation foreign-key/state guards, explicit result-limit validation, explicit compare-and-switch parameters, rejection of a stale expected previous generation, database-level rejection of mutations to READY generation/corpus/search rows, guarded whole-generation GC that rejects active/wrong-identity/referenced targets, schema-version metadata, provenance fields, and a generation-scoped canary query that accepts inactive READY generations but rejects BUILDING generations. The contract tests must also require child-write guards to lock the parent generation row before checking state and `mark_generation_ready(...)` to take a conflicting parent-row lock before completeness/state transition.
+Tests require exact schema version marker `repo-search-query-v1`, no `CREATE EXTENSION`, all required objects, a generated/stored `tsvector` using `simple`, a GIN index, active-generation foreign-key/state guards, explicit result-limit validation, explicit compare-and-switch parameters, rejection of a stale expected previous generation, database-level rejection of mutations to READY generation/corpus/search rows, guarded whole-generation GC that rejects active/wrong-identity/referenced targets, schema-version metadata, provenance fields, a version-specific `search_generation_v1(...)`, and stable wrappers that dispatch by the selected generation's stored `projection_schema_version`. Unknown query-schema versions must fail closed. Privilege RED tests must require current and default function `EXECUTE` revocation from `PUBLIC`, NOLOGIN reader/materializer capability roles, no direct table/sequence privileges for the reader, reader `EXECUTE` only on stable read wrappers/status, no reader execute on version-specific helpers or mutators, explicit materializer grants limited to generation-scoped BUILDING writes plus guarded mutation/read functions, and `SECURITY DEFINER` + fixed `search_path` ending in `pg_temp` on every granted wrapper/mutator. Tests must reject dynamic SQL in those definer functions and prove the version dispatcher can invoke a private version-specific helper without granting that helper to the reader. The contract tests must also require child-write guards to lock the parent generation row before checking state and `mark_generation_ready(...)` to take a conflicting parent-row lock before completeness/state transition.
 
 - [ ] **Step 2: Run RED and verify the failures are for the missing contract**
 
@@ -369,7 +378,7 @@ Both `generation_id` and deterministic `generation_content_sha256` are supplied 
 
 READY freeze is serialized against child-row writes, not merely checked sequentially. Before any INSERT/UPDATE/DELETE against `corpora` or `search_docs`, the guard trigger locks the parent `generations` row with `SELECT ... FOR SHARE`, then rechecks that the generation is still `BUILDING`. `mark_generation_ready(...)` locks that same parent row with `SELECT ... FOR UPDATE`, rechecks state/catalog/completeness while holding the lock, and only then performs the one-way `BUILDING -> READY` transition. Thus a child writer that acquires the lock first must commit before READY can proceed, while a writer arriving after READY waits and then fails its state recheck. Database guards continue to reject mutation of READY generation-scoped rows.
 
-`gc_inactive_generation(...)` is the only READY deletion path: it locks/reads the active pointer and target, verifies `expected_generation_content_sha256`, refuses active or referenced targets, then deletes the generation and its owned rows transactionally; direct child-row deletion remains blocked.
+`gc_inactive_generation(...)` is the only READY deletion path: it locks/reads the active pointer and target, verifies `expected_generation_content_sha256`, refuses active or referenced targets, then deletes the generation and its owned rows transactionally; direct child-row deletion remains blocked. Apply `002_query_plane_privileges.sql` only after the function set exists; it must revoke current/default `PUBLIC` execution before granting the narrow reader/materializer capability surfaces. The migration must run under the same schema/object owner used to create repo_search functions so `ALTER DEFAULT PRIVILEGES` covers future versioned helpers; every future migration also explicitly revokes `PUBLIC` on newly created functions before exposure.
 
 - [ ] **Step 4: Run the same targeted contract tests GREEN before live execution**
 
@@ -377,7 +386,7 @@ READY freeze is serialized against child-row writes, not merely checked sequenti
 python3 -m unittest tests.test_neon_sql_contract -v
 ```
 
-Expected: PASS with CAS, READY immutability, and generation-scoped canary behavior covered before the live branch probe.
+Expected: PASS with CAS, READY immutability, generation-scoped canary behavior, and version-dispatched query semantics covered before the live branch probe. Add a migration regression fixture that installs a synthetic v2 implementation/dispatcher alongside v1 and proves an active READY-v1 generation still returns the exact v1 ordering/match behavior until a READY-v2 generation is explicitly activated.
 
 - [ ] **Step 5: Execute the schema on a temporary Neon child branch and run live SQL behavior canaries**
 
@@ -387,12 +396,15 @@ Through the native Neon development connector, create one temporary branch from 
 2. READY generation can activate from expected previous state;
 3. second stale activator fails and does not overwrite the winner;
 4. after completeness verification, `mark_generation_ready(...)` freezes the candidate before any acceptance search;
-5. `search_generation(...)` rejects BUILDING state and can exercise the now-immutable inactive READY candidate with the same ranking/filtering implementation used by production `search(...)`;
-6. production `search(...)` reads only active READY rows;
-7. UPDATE/late INSERT/direct child-row DELETE against READY generation rows is rejected at the database layer;
-8. a two-session concurrency canary proves the freeze boundary: when a child writer holds the parent generation `FOR SHARE`, READY waits until that write commits; when `mark_generation_ready(...)` holds `FOR UPDATE` or has committed READY, a waiting child writer resumes only to fail the BUILDING-state recheck, leaving the READY rows unchanged;
-9. `gc_inactive_generation(...)` refuses the active generation, refuses a wrong expected content identity, and removes a disposable inactive READY generation with all owned rows atomically;
-10. schema/index/function definitions can be read back exactly.
+5. `search_generation(...)` rejects BUILDING state and dispatches the now-immutable inactive READY candidate to the implementation matching its stored projection version; production `search(...)` uses the same dispatcher;
+6. a live migration probe proves installing a synthetic/new query implementation does not change results for the still-active READY-v1 generation before a matching new-version generation is activated;
+7. production `search(...)` reads only active READY rows;
+8. UPDATE/late INSERT/direct child-row DELETE against READY generation rows is rejected at the database layer;
+9. a two-session concurrency canary proves the freeze boundary: when a child writer holds the parent generation `FOR SHARE`, READY waits until that write commits; when `mark_generation_ready(...)` holds `FOR UPDATE` or has committed READY, a waiting child writer resumes only to fail the BUILDING-state recheck, leaving the READY rows unchanged;
+10. `gc_inactive_generation(...)` refuses the active generation, refuses a wrong expected content identity, and removes a disposable inactive READY generation with all owned rows atomically;
+11. a temporary login principal granted only `repo_search_reader` can execute `search(...)`, `search_generation(...)`, and `generation_status()` through the definer wrappers, including version dispatch to private `search_generation_v1(...)`, but receives permission denied for direct table reads/writes, direct `search_generation_v1(...)`, `mark_generation_ready(...)`, `activate_generation(...)`, and `gc_inactive_generation(...)`; remove the temporary principal/member grant after the branch test;
+12. create a temporary future helper under the same schema owner and verify default privileges do not grant `PUBLIC EXECUTE`, then remove it;
+13. schema/index/function/owner/ACL/search-path definitions can be read back exactly.
 
 Delete the temporary branch after the canary unless it is retained deliberately for the next task. Record branch ID and exact schema readback in #117.
 
