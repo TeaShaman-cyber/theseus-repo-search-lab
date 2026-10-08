@@ -1,5 +1,33 @@
 # theseus-repo-search-lab
-Reproducible repository indexing, dependency graphs, and bounded LLM retrieval for Theseus research.
+
+## Purpose and scope (SEARCH-ONLY)
+
+Theseus Repository Search is a fast, dependable retrieval tool for formalized
+mathematical corpora, initially Lean. Given a question or declaration, it locates
+existing theorem statements, declarations, dependency neighborhoods, and bounded
+source context across accepted corpora, with exact provenance and evidence grades.
+Statements with `sorry` are searchable. **The tool does not prove theorems,
+certify proofs, or determine mathematical truth.**
+
+Accepted source revisions and immutable release artifacts are authoritative inputs.
+SQLite/FTS indexes are disposable, reproducible search projections. A lexical
+match or dependency path is retrieval evidence, not a proof verdict. Corpus-class
+and historical axiom evidence may prevent false proof claims, but additional
+`#print axioms` audits and proof-eligibility upgrades are **not prerequisites**
+for indexing, onboarding, or querying a corpus.
+
+The normal engineering objective is useful, fast, reliable search: one query
+across accepted corpora, exact result provenance, honest missing/partial signals,
+and automatic recovery of disposable indexes when runtimes change. Producer-side
+Lean builds may be needed to **extract** an accepted corpus; query-time consumers
+must not require Lean or fresh proof audits. Independent proof research or proof
+certification belongs to an explicitly separate task and authority domain,
+never an implicit Repository Search acceptance gate.
+
+The [Repository Lens design](docs/superpowers/specs/2026-09-16-repository-lens-design.md)
+defines the underlying retrieval architecture. The root [AGENTS.md](AGENTS.md)
+carries this permanent scope into agent work; Issues and PRs document delivery
+and historical decisions, not the enduring product definition.
 
 ## QA cadence
 
@@ -44,7 +72,8 @@ Lean axiom audit remains `UNKNOWN_NOT_PROOF_EVIDENCE`. A declared
 `evidence` metadata remain valid but return **UNKNOWN**, never a proof verdict.
 This is replay-origin classification, not independent proof/statement attestation
 or permission to publish an immutable release. Existing artifact identities do
-not change. See issue #34 for the independent source/axiom audit boundary.
+not change. Issue #34 preserves the historical evidence-class and axiom-audit
+disposition; it does not impose an audit gate on search or onboarding.
 
 ### Mathlib archives cache (best effort)
 

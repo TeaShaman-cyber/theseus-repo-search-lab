@@ -4,7 +4,7 @@
 
 `theseus-repo-search-lab` is a specialized repository-evidence tool. It indexes a repository snapshot, preserves exact provenance, exposes dependency structure where the language/runtime can prove it, and returns bounded context suitable for LLM research work.
 
-Its primary use is a repository analogue of Session Search: given a large formal-mathematics corpus, locate the declaration, theorem interface, dependency neighborhood, or load-bearing bridge relevant to the next research step without pushing the whole repository into model context. The first proving use case is modern Lean mathematics around Zeta23 / Riemann-hypothesis research. The goal is a practical research lens, not a general repository platform.
+Its primary use is a repository analogue of Session Search: given a large formal-mathematics corpus, locate the declaration, theorem interface, dependency neighborhood, or load-bearing bridge relevant to the next research step without pushing the whole repository into model context. The first application is retrieval within modern Lean mathematics around Zeta23 / Riemann-hypothesis research. The goal is a practical research lens, not a general repository platform.
 
 MarcoPolo is an initial producer/consumer runtime, not the architectural owner. The tool must remain portable to another runtime that can read the same artifacts.
 
@@ -70,7 +70,7 @@ The consumer may aggregate weaker evidence, but must not promote its grade.
             MarcoPolo                   other consumers
 ```
 
-The first language-specific exact producer is Lean. The first proving ground is `anthropics/formal-math/zeta23`.
+The first language-specific exact producer is Lean. The initial indexed corpus is `anthropics/formal-math/zeta23`.
 
 ## Producer boundary
 
@@ -300,6 +300,7 @@ This repository owns:
 
 The bootstrap does not promise:
 
+- theorem proving, proof certification, or mandatory per-theorem axiom audits as gates for indexing and searching;
 - proof verification beyond the evidence supplied by the producer;
 - semantic embeddings;
 - hosted search;
