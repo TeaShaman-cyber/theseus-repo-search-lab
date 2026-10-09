@@ -19,6 +19,10 @@ if [ -n "$(git ls-files 'mutants' 'mutants/**')" ]; then
     printf '%s\n' 'mutation-test: refusing to remove tracked mutants path' >&2
     exit 2
 fi
+if [ -e mutants ] || [ -L mutants ]; then
+    printf '%s\n' 'mutation-test: refusing to remove existing untracked mutants path' >&2
+    exit 2
+fi
 rm -rf mutants
 
 export PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}"

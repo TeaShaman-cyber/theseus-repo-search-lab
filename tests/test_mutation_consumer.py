@@ -147,6 +147,37 @@ class MutationConsumerTests(unittest.TestCase):
         self.assertNotIn("tests/property", text.split("[tool.mutmut]", 1)[1])
         self.assertNotIn("hypothesis", text.split("[tool.mutmut]", 1)[1].lower())
 
+    def test_endpoint_preserves_preexisting_untracked_mutants(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.email", "test@example.invalid"], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.name", "Test"], check=True)
+            tracked = root / "tracked.txt"
+            tracked.write_text("baseline\n", encoding="utf-8")
+            subprocess.run(["git", "-C", str(root), "add", "tracked.txt"], check=True)
+            subprocess.run(["git", "-C", str(root), "commit", "-qm", "baseline"], check=True)
+            endpoint = root / "tools" / "ci" / "mutation-test"
+            endpoint.parent.mkdir(parents=True)
+            endpoint.write_bytes(ENDPOINT.read_bytes())
+            endpoint.chmod(0o755)
+            mutants = root / "mutants"
+            mutants.mkdir()
+            sentinel = mutants / "keep-me.txt"
+            sentinel.write_text("do not delete\n", encoding="utf-8")
+            (root / "other-untracked.txt").write_text("dirty\n", encoding="utf-8")
+
+            proc = subprocess.run(
+                [str(endpoint)],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertTrue(sentinel.is_file(), proc.stdout + proc.stderr)
+
     def test_lock_and_endpoint_contract(self):
         lock = LOCK.read_text(encoding="utf-8")
         endpoint = ENDPOINT.read_text(encoding="utf-8")
