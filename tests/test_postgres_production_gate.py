@@ -81,7 +81,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
         self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
         self.assertEqual(calls, [])
 
-    def test_complete_migration_set_applied_and_read_back(self):
+    def test_missing_gc_probe_fails_closed_before_sql_apply(self):
         files = (
             "sql/neon/001_query_plane_v1.sql",
             "sql/neon/002_query_plane_privileges.sql",
@@ -89,9 +89,23 @@ class ProductionPostgresGateTests(unittest.TestCase):
             "qa/postgres/production-capabilities.sql",
         )
         result, calls = self.run_gate(files)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_complete_migration_set_applied_and_read_back(self):
+        files = (
+            "sql/neon/001_query_plane_v1.sql",
+            "sql/neon/002_query_plane_privileges.sql",
+            "qa/postgres/production-ready-search.sql",
+            "qa/postgres/production-capabilities.sql",
+            "qa/postgres/production-gc.sql",
+        )
+        result, calls = self.run_gate(files)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("PRODUCTION_POSTGRES_SCHEMA_PASS", result.stdout)
-        self.assertEqual(len(calls), 5, calls)
+        self.assertEqual(len(calls), 6, calls)
+        self.assertIn(files[4], calls[5])
         self.assertIn(files[2], calls[3])
         self.assertIn(files[3], calls[4])
         self.assertIn(files[0], calls[0])
@@ -104,6 +118,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
             "sql/neon/002_query_plane_privileges.sql",
             "qa/postgres/production-ready-search.sql",
             "qa/postgres/production-capabilities.sql",
+            "qa/postgres/production-gc.sql",
         )
         result, calls = self.run_gate(files, readback="f")
         self.assertNotEqual(result.returncode, 0)
@@ -138,6 +153,19 @@ class ProductionPostgresGateTests(unittest.TestCase):
         ):
             self.assertIn(token, sql)
         self.assertIn("qa/postgres/production-capabilities.sql",
+                      GATE.read_text(encoding="utf-8"))
+
+    def test_real_production_gc_probe_is_required(self):
+        probe = ROOT / "qa/postgres/production-gc.sql"
+        self.assertTrue(probe.is_file(), "production GC behavior fixture missing")
+        sql = probe.read_text(encoding="utf-8")
+        for token in (
+            "PRODUCTION_GC_PASS", "PRODUCTION_GC_ROLLBACK_PASS",
+            "repo_search.gc_inactive_generation", "repo_search.generation_references",
+            "SET ROLE repo_search_materializer", "WHEN SQLSTATE '55000'",
+        ):
+            self.assertIn(token, sql)
+        self.assertIn("qa/postgres/production-gc.sql",
                       GATE.read_text(encoding="utf-8"))
 
     def test_runner_invokes_production_gate(self):

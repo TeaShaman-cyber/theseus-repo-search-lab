@@ -30,6 +30,12 @@ if [ ! -f "$capabilities" ]; then
     exit 1
 fi
 
+gc_probe=qa/postgres/production-gc.sql
+if [ ! -f "$gc_probe" ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_INCOMPLETE missing_production_gc_probe' >&2
+    exit 1
+fi
+
 printf '%s\n' '== apply production PostgreSQL query-plane migrations =='
 psql -X -v ON_ERROR_STOP=1 -f "$schema"
 psql -X -v ON_ERROR_STOP=1 -f "$privileges"
@@ -56,3 +62,5 @@ printf '%s\n' '== production READY/search behavior probe =='
 psql -X -v ON_ERROR_STOP=1 -f "$behavior"
 printf '%s\n' '== production reader and materializer privileges =='
 psql -X -v ON_ERROR_STOP=1 -f "$capabilities"
+printf '%s\n' '== production guarded inactive READY GC =='
+psql -X -v ON_ERROR_STOP=1 -f "$gc_probe"
