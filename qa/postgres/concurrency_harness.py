@@ -321,6 +321,94 @@ $block$;
     print("IMMUTABLE_CHILD_GENERATION_PASS", flush=True)
 
 
+
+def expect_gc_rejected(target: str, identity: str, error: str) -> None:
+    # All fixture parameters are fixed, ASCII-only test literals.
+    for literal in (target, identity, error):
+        if not literal.replace('-', '').replace(' ', '').isalnum():
+            raise HarnessError(f"unsafe GC fixture value: {literal!r}")
+    one_shot(f"""
+DO $block$
+BEGIN
+    BEGIN
+        PERFORM heavy_pg_concurrency.gc_inactive_generation(
+            '{target}', '{identity}');
+        RAISE EXCEPTION 'GC unexpectedly succeeded';
+    EXCEPTION
+        WHEN SQLSTATE '55000' THEN
+            IF SQLERRM <> '{error}' THEN
+                RAISE;
+            END IF;
+    END;
+END
+$block$;
+""")
+
+
+def guarded_inactive_ready_gc() -> None:
+    print("CONCURRENCY_CASE guarded-inactive-ready-gc begin", flush=True)
+    assert_scalar(
+        "SELECT count(*) FROM heavy_pg_concurrency.children "
+        "WHERE generation_id = 'gc-disposable'", "2", "GC fixture child count",
+    )
+    assert_scalar(
+        "SELECT active_generation_id FROM heavy_pg_concurrency.active_slot "
+        "WHERE slot_id = 1", "cas-winner", "GC precondition active generation",
+    )
+
+    expect_gc_rejected("cas-winner", "fixture-digest", "cannot GC active generation")
+    expect_gc_rejected("gc-disposable", "wrong-digest", "GC identity mismatch")
+    expect_gc_rejected("gc-referenced", "gc-digest-2", "GC target referenced")
+    expect_gc_rejected("gc-building", "fixture-digest", "GC target not READY")
+    expect_gc_rejected("unknown", "fixture-digest", "GC target missing")
+
+    # Direct row-level DELETE of a READY child remains forbidden.
+    one_shot("""
+DO $block$
+BEGIN
+    BEGIN
+        DELETE FROM heavy_pg_concurrency.children
+        WHERE child_id = 'gc-child-1';
+        RAISE EXCEPTION 'READY child unexpectedly deleted';
+    EXCEPTION
+        WHEN SQLSTATE '55000' THEN
+            IF SQLERRM <> 'generation gc-disposable is not BUILDING' THEN
+                RAISE;
+            END IF;
+    END;
+END
+$block$;
+""")
+    assert_scalar(
+        "SELECT count(*) FROM heavy_pg_concurrency.children "
+        "WHERE generation_id = 'gc-disposable'", "2", "GC rejected attempts intact",
+    )
+
+    result = scalar(
+        "SELECT heavy_pg_concurrency.gc_inactive_generation("
+        "'gc-disposable', 'gc-digest-1')"
+    )
+    if result != "t":
+        raise HarnessError(f"GC disposable generation: expected 't', got {result!r}")
+    assert_scalar(
+        "SELECT count(*) FROM heavy_pg_concurrency.generations "
+        "WHERE generation_id = 'gc-disposable'", "0", "GC removed parent",
+    )
+    assert_scalar(
+        "SELECT count(*) FROM heavy_pg_concurrency.children "
+        "WHERE generation_id = 'gc-disposable'", "0", "GC removed children",
+    )
+    assert_scalar(
+        "SELECT active_generation_id FROM heavy_pg_concurrency.active_slot "
+        "WHERE slot_id = 1", "cas-winner", "GC retained active pointer",
+    )
+    assert_scalar(
+        "SELECT count(*) FROM heavy_pg_concurrency.generations "
+        "WHERE generation_id = 'gc-referenced'", "1", "GC preserved referenced generation",
+    )
+    print("GC_INACTIVE_READY_PASS", flush=True)
+
+
 def main() -> int:
     sessions = [
         PsqlSession("heavy-pg-writer-a"),
@@ -334,12 +422,14 @@ def main() -> int:
         print("READY_WRITE_SERIALIZATION_PASS", flush=True)
         stale_cas_activation(sessions[0], sessions[1])
         immutable_child_generation()
+        guarded_inactive_ready_gc()
         return 0
     finally:
         for session in sessions:
             session.close()
         try:
-            one_shot("DROP SCHEMA IF EXISTS heavy_pg_concurrency CASCADE;")
+            one_shot("DROP SCHEMA IF EXISTS heavy_pg_concurrency CASCADE; "
+                     "DROP ROLE IF EXISTS heavy_pg_gc_owner;")
         except subprocess.CalledProcessError as exc:
             print(
                 f"CONCURRENCY_CLEANUP_FAILED rc={exc.returncode}",
