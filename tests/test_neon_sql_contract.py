@@ -89,6 +89,35 @@ class NeonQueryPlaneSchemaTests(unittest.TestCase):
         self.assertIn("GRANT EXECUTE ON FUNCTION repo_search.lock_generation_state(text)", privileges)
         self.assertNotIn("GRANT UPDATE ON repo_search.generations", privileges)
 
+    def test_neon_migration_executor_has_explicit_noninherited_owner_set_right(self):
+        sql = PRIVILEGES.read_text(encoding="utf-8")
+        owner = sql.index("CREATE ROLE repo_search_owner NOLOGIN;")
+        membership = sql.index(
+            "GRANT repo_search_owner TO CURRENT_USER WITH INHERIT FALSE, SET TRUE;"
+        )
+        ownership = sql.index("ALTER SCHEMA repo_search OWNER TO repo_search_owner;")
+        self.assertLess(owner, membership)
+        self.assertLess(membership, ownership)
+
+    def test_default_function_acl_configured_as_noninherited_schema_owner(self):
+        sql = PRIVILEGES.read_text(encoding="utf-8")
+        role_switch = sql.index("SET LOCAL ROLE repo_search_owner;")
+        default_acl = sql.index("ALTER DEFAULT PRIVILEGES FOR ROLE repo_search_owner")
+        restore = sql.index("RESET ROLE;")
+        self.assertLess(role_switch, default_acl)
+        self.assertLess(default_acl, restore)
+        self.assertIn("REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC", sql)
+
+    def test_all_capability_revokes_and_grants_run_as_real_owner(self):
+        sql = PRIVILEGES.read_text(encoding="utf-8")
+        switched = sql.index("SET LOCAL ROLE repo_search_owner;")
+        revoke = sql.index("REVOKE ALL ON ALL FUNCTIONS IN SCHEMA repo_search FROM PUBLIC")
+        grant = sql.index("GRANT EXECUTE ON FUNCTION repo_search.generation_status()")
+        reset = sql.index("RESET ROLE;")
+        self.assertLess(switched, revoke)
+        self.assertLess(revoke, grant)
+        self.assertLess(grant, reset)
+
     def test_privilege_migration_and_roles_are_explicit(self):
         self.assertTrue(PRIVILEGES.is_file(), "Task 3 privilege migration missing")
         sql = PRIVILEGES.read_text(encoding="utf-8")
