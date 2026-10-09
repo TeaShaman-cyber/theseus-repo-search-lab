@@ -35,4 +35,7 @@ psql -X -v ON_ERROR_STOP=1 -Atqc \
 printf '%s\n' '== runner rollback smoke =='
 psql -X -v ON_ERROR_STOP=1 -f qa/postgres/runner-smoke.sql
 
-printf '%s\n' 'HEAVY_POSTGRES_PASS substrate=postgresql-17 smoke=rollback'
+printf '%s\n' '== security capability contract =='
+psql -X -v ON_ERROR_STOP=1 -f qa/postgres/security-contract.sql
+
+printf '%s\n' 'HEAVY_POSTGRES_PASS substrate=postgresql-17 smoke=rollback security=capabilities'

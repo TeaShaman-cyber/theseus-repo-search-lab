@@ -370,3 +370,20 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("BEGIN;", smoke_text)
         self.assertIn("ROLLBACK;", smoke_text)
         self.assertIn("HEAVY_POSTGRES_SMOKE_PASS", smoke_text)
+
+        security = ROOT / "qa" / "postgres" / "security-contract.sql"
+        self.assertTrue(security.is_file())
+        security_text = security.read_text(encoding="utf-8")
+        self.assertIn("SECURITY DEFINER", security_text)
+        self.assertIn(
+            "SET search_path = pg_catalog, heavy_pg_contract, pg_temp",
+            security_text,
+        )
+        self.assertIn("REVOKE ALL ON FUNCTION", security_text)
+        self.assertIn("FROM PUBLIC", security_text)
+        self.assertIn("ALTER DEFAULT PRIVILEGES", security_text)
+        self.assertIn("SET ROLE heavy_pg_reader", security_text)
+        self.assertIn("SET ROLE heavy_pg_materializer", security_text)
+        self.assertIn("CREATE TEMP TABLE secret", security_text)
+        self.assertIn("HEAVY_POSTGRES_SECURITY_PASS", security_text)
+        self.assertIn("qa/postgres/security-contract.sql", endpoint_text)
