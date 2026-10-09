@@ -416,3 +416,5 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("wait_event_type", harness_text)
         self.assertIn("threading.Thread", harness_text)
         self.assertIn("READY_WRITE_SERIALIZATION_PASS", harness_text)
+        self.assertIn("activate_if_current", probe_text)
+        self.assertIn("CAS_STALE_ACTIVATOR_PASS", harness_text)

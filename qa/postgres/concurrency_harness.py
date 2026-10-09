@@ -250,6 +250,39 @@ $block$;
     print("CONCURRENCY_CASE ready-first pass", flush=True)
 
 
+def stale_cas_activation(winner: PsqlSession, stale: PsqlSession) -> None:
+    print("CONCURRENCY_CASE cas-stale-activator begin", flush=True)
+    winner.step("BEGIN;", "cas_winner_begin")
+    result = winner.step(
+        "SELECT heavy_pg_concurrency.activate_if_current("
+        "'cas-base', 'cas-winner');",
+        "cas_winner_activate",
+    )
+    if result != ["t"]:
+        raise HarnessError(f"CAS winner: expected ['t'], got {result!r}")
+
+    stale_thread, stale_result = async_step(
+        stale,
+        "SELECT heavy_pg_concurrency.activate_if_current("
+        "'cas-base', 'cas-stale');",
+        "cas_stale_waits",
+    )
+    wait = wait_for_lock(stale.application_name)
+    print(f"CONCURRENCY_OBSERVED cas_stale_wait={wait}", flush=True)
+
+    winner.step("COMMIT;", "cas_winner_commit")
+    outcome = join_step(stale_thread, stale_result, "CAS stale activator")
+    if outcome != ["f"]:
+        raise HarnessError(f"CAS stale: expected ['f'], got {outcome!r}")
+    assert_scalar(
+        "SELECT active_generation_id FROM heavy_pg_concurrency.active_slot "
+        "WHERE slot_id = 1",
+        "cas-winner",
+        "CAS winner remains active",
+    )
+    print("CAS_STALE_ACTIVATOR_PASS", flush=True)
+
+
 def main() -> int:
     sessions = [
         PsqlSession("heavy-pg-writer-a"),
@@ -261,6 +294,7 @@ def main() -> int:
         writer_first(sessions[0], sessions[1])
         ready_first(sessions[2], sessions[3])
         print("READY_WRITE_SERIALIZATION_PASS", flush=True)
+        stale_cas_activation(sessions[0], sessions[1])
         return 0
     finally:
         for session in sessions:

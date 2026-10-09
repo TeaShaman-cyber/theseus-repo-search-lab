@@ -104,9 +104,46 @@ BEGIN
 END
 $$;
 
+CREATE TABLE heavy_pg_concurrency.active_slot (
+    slot_id integer PRIMARY KEY CHECK (slot_id = 1),
+    active_generation_id text NOT NULL
+        REFERENCES heavy_pg_concurrency.generations(generation_id)
+);
+
+CREATE FUNCTION heavy_pg_concurrency.activate_if_current(
+    expected_generation_id text,
+    candidate_generation_id text
+)
+RETURNS boolean
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    changed integer;
+BEGIN
+    PERFORM 1 FROM heavy_pg_concurrency.generations
+    WHERE generation_id = candidate_generation_id AND state = 'READY';
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+            USING ERRCODE = '55000', MESSAGE = 'candidate is not READY';
+    END IF;
+
+    UPDATE heavy_pg_concurrency.active_slot
+    SET active_generation_id = candidate_generation_id
+    WHERE slot_id = 1 AND active_generation_id = expected_generation_id;
+    GET DIAGNOSTICS changed = ROW_COUNT;
+    RETURN changed = 1;
+END
+$$;
+
 INSERT INTO heavy_pg_concurrency.generations (generation_id, state)
 VALUES
     ('writer-first', 'BUILDING'),
-    ('ready-first', 'BUILDING');
+    ('ready-first', 'BUILDING'),
+    ('cas-base', 'READY'),
+    ('cas-winner', 'READY'),
+    ('cas-stale', 'READY');
+
+INSERT INTO heavy_pg_concurrency.active_slot
+    (slot_id, active_generation_id) VALUES (1, 'cas-base');
 
 \echo HEAVY_POSTGRES_CONCURRENCY_PROBE_READY
