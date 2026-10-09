@@ -113,7 +113,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
         self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
         self.assertEqual(calls, [])
 
-    def test_complete_migration_set_applied_and_read_back(self):
+    def test_missing_owner_acl_probe_fails_before_migration(self):
         files = (
             "sql/neon/001_query_plane_v1.sql",
             "sql/neon/002_query_plane_privileges.sql",
@@ -123,10 +123,26 @@ class ProductionPostgresGateTests(unittest.TestCase):
             "qa/postgres/production_concurrency_harness.py",
         )
         result, calls = self.run_gate(files)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_complete_migration_set_applied_and_read_back(self):
+        files = (
+            "sql/neon/001_query_plane_v1.sql",
+            "sql/neon/002_query_plane_privileges.sql",
+            "qa/postgres/production-ready-search.sql",
+            "qa/postgres/production-capabilities.sql",
+            "qa/postgres/production-gc.sql",
+            "qa/postgres/production_concurrency_harness.py",
+            "qa/postgres/production-catalog-acl.sql",
+        )
+        result, calls = self.run_gate(files)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("PRODUCTION_POSTGRES_SCHEMA_PASS", result.stdout)
-        self.assertEqual(len(calls), 7, calls)
-        self.assertIn(files[5], calls[6])
+        self.assertEqual(len(calls), 8, calls)
+        self.assertIn(files[6], calls[6])
+        self.assertIn(files[5], calls[7])
         self.assertIn(files[4], calls[5])
         self.assertIn(files[2], calls[3])
         self.assertIn(files[3], calls[4])
@@ -142,6 +158,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
             "qa/postgres/production-capabilities.sql",
             "qa/postgres/production-gc.sql",
             "qa/postgres/production_concurrency_harness.py",
+            "qa/postgres/production-catalog-acl.sql",
         )
         result, calls = self.run_gate(files, readback="f")
         self.assertNotEqual(result.returncode, 0)
@@ -203,6 +220,19 @@ class ProductionPostgresGateTests(unittest.TestCase):
         ):
             self.assertIn(marker, source)
         self.assertIn("qa/postgres/production_concurrency_harness.py",
+                      GATE.read_text(encoding="utf-8"))
+
+    def test_real_production_owner_acl_probe_is_required(self):
+        fixture = ROOT / "qa/postgres/production-catalog-acl.sql"
+        self.assertTrue(fixture.is_file(), "real production catalog and ACL proof missing")
+        sql = fixture.read_text(encoding="utf-8")
+        for fragment in (
+            "pg_proc", "pg_default_acl", "aclexplode", "repo_search_owner",
+            "prosecdef", "proconfig", "SET ROLE repo_search_owner",
+            "PRODUCTION_CATALOG_ACL_PASS", "PRODUCTION_CATALOG_ACL_ROLLBACK_PASS",
+        ):
+            self.assertIn(fragment, sql)
+        self.assertIn("qa/postgres/production-catalog-acl.sql",
                       GATE.read_text(encoding="utf-8"))
 
     def test_runner_invokes_production_gate(self):

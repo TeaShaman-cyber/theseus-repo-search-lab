@@ -42,6 +42,12 @@ if [ ! -f "$concurrency_probe" ]; then
     exit 1
 fi
 
+catalog_acl=qa/postgres/production-catalog-acl.sql
+if [ ! -f "$catalog_acl" ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_INCOMPLETE missing_production_catalog_acl_probe' >&2
+    exit 1
+fi
+
 printf '%s\n' '== apply production PostgreSQL query-plane migrations =='
 psql -X -v ON_ERROR_STOP=1 -f "$schema"
 psql -X -v ON_ERROR_STOP=1 -f "$privileges"
@@ -70,5 +76,7 @@ printf '%s\n' '== production reader and materializer privileges =='
 psql -X -v ON_ERROR_STOP=1 -f "$capabilities"
 printf '%s\n' '== production guarded inactive READY GC =='
 psql -X -v ON_ERROR_STOP=1 -f "$gc_probe"
+printf '%s\n' '== production owner, ACL and future-function default privilege readback =='
+psql -X -v ON_ERROR_STOP=1 -f "$catalog_acl"
 printf '%s\n' '== production two-session READY/write concurrency =='
 python3 "$concurrency_probe"
