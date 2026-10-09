@@ -24,6 +24,7 @@ class GraphResult:
     source_authority: dict[str, object] | None
     created_from_authoritative_source: bool
     found: bool
+    evidence_boundary: str = "ELABORATED_DEPENDENCY"
 
     @property
     def created_from_authoritative_commit(self) -> bool:
@@ -73,8 +74,14 @@ def _require_elaborated_graph(producer_kind: str) -> None:
     if producer_kind == "lexical_only":
         raise RepoSearchError(
             "UNAVAILABLE_EVIDENCE_GRADE",
-            "artifact does not contain elaborated dependency evidence",
+            "artifact does not contain dependency graph evidence",
         )
+
+
+def _graph_evidence_boundary(producer_kind: str) -> tuple[str, bool]:
+    if producer_kind == "source-static-deps":
+        return "STATIC_REFERENCE", False
+    return "ELABORATED_DEPENDENCY", True
 
 
 def _resolve_name(conn: sqlite3.Connection, name: str) -> str:
@@ -144,6 +151,7 @@ def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphRe
     with sqlite3.connect(db_path) as conn:
         roots, boundary, producer_kind, provenance = _metadata(conn)
         _require_elaborated_graph(producer_kind)
+        evidence_boundary, complete_within_scope = _graph_evidence_boundary(producer_kind)
         start = _resolve_name(conn, name)
 
         visited_nodes = {start}
@@ -175,12 +183,13 @@ def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphRe
         edges=tuple(result_edges),
         scope_root_modules=roots,
         dependency_boundary=boundary,
-        complete_within_scope=True,
+        complete_within_scope=complete_within_scope,
         source_kind=provenance.source_kind,
         source_revision=provenance.source_revision,
         source_authority=provenance.source_authority,
         created_from_authoritative_source=provenance.created_from_authoritative_source,
         found=True,
+        evidence_boundary=evidence_boundary,
     )
 
 
@@ -203,6 +212,7 @@ def path(
     with sqlite3.connect(db_path) as conn:
         roots, boundary, producer_kind, provenance = _metadata(conn)
         _require_elaborated_graph(producer_kind)
+        evidence_boundary, complete_within_scope = _graph_evidence_boundary(producer_kind)
         source_id = _resolve_name(conn, source)
         target_id = _resolve_name(conn, target)
 
@@ -242,10 +252,11 @@ def path(
         edges=tuple(path_edges),
         scope_root_modules=roots,
         dependency_boundary=boundary,
-        complete_within_scope=True,
+        complete_within_scope=complete_within_scope,
         source_kind=provenance.source_kind,
         source_revision=provenance.source_revision,
         source_authority=provenance.source_authority,
         created_from_authoritative_source=provenance.created_from_authoritative_source,
         found=path_found,
+        evidence_boundary=evidence_boundary,
     )

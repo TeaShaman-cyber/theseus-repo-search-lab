@@ -42,6 +42,7 @@ class GraphTests(unittest.TestCase):
     def build_db(
         self, root: Path, *, ambiguous_a: bool = False, exact_suffix_shadow: bool = False,
         lexical_only: bool = False, authoritative: bool = False,
+        static_reference: bool = False,
     ) -> Path:
         artifact = root / "artifact"
         db = root / "projection.db"
@@ -67,9 +68,23 @@ class GraphTests(unittest.TestCase):
                 edge("Zeta23.G.D", "Zeta23.G.C"),
                 edge("Zeta23.G.C", "Zeta23.G.A"),
             ]
+            if static_reference:
+                edges = [
+                    Edge(
+                        source_id=item.source_id,
+                        target_id=item.target_id,
+                        relation="static_reference",
+                        evidence_grade=EvidenceGrade.STATIC_REFERENCE,
+                        producer="TeaShaman-cyber/theseus-repo-search-lab@deadbeef",
+                    )
+                    for item in edges
+                ]
             producer = ProducerPin(
-                kind="lean-dep-viz",
-                tool_repo="cameronfreer/LeanDepViz",
+                kind="source-static-deps" if static_reference else "lean-dep-viz",
+                tool_repo=(
+                    "TeaShaman-cyber/theseus-repo-search-lab"
+                    if static_reference else "cameronfreer/LeanDepViz"
+                ),
                 tool_commit="deadbeef",
                 tool_hash="f" * 64,
             )
@@ -141,6 +156,19 @@ class GraphTests(unittest.TestCase):
             same = path(db, "A", "A", max_depth=1)
             self.assertTrue(same.found)
             self.assertEqual(same.edges, ())
+
+    def test_static_reference_graph_stays_traversable_but_is_not_complete(self):
+        with tempfile.TemporaryDirectory() as d:
+            db = self.build_db(Path(d), static_reference=True)
+            result = dependencies(db, "A", depth=1)
+            self.assertTrue(result.edges)
+            self.assertEqual(result.evidence_boundary, "STATIC_REFERENCE")
+            self.assertFalse(result.complete_within_scope)
+            self.assertTrue(all(edge["evidence_grade"] == "STATIC_REFERENCE" for edge in result.edges))
+            path_result = path(db, "A", "C", max_depth=2)
+            self.assertTrue(path_result.found)
+            self.assertEqual(path_result.evidence_boundary, "STATIC_REFERENCE")
+            self.assertFalse(path_result.complete_within_scope)
 
     def test_scope_metadata_is_explicit(self):
         with tempfile.TemporaryDirectory() as d:
