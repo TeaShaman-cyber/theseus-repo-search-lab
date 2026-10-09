@@ -51,4 +51,7 @@ if [ "$cleanup_ok" != t ]; then
 fi
 printf '%s\n' 'HEAVY_POSTGRES_CLEANUP_PASS'
 
+printf '%s\n' '== production PostgreSQL integration =='
+tools/ci/postgres-production
+
 printf '%s\n' 'HEAVY_POSTGRES_PASS substrate=postgresql-17 smoke=rollback security=capabilities concurrency=ready-write,cas-stale immutability=child-generation gc=inactive-ready dispatch=v1-v2 envelope=zero-hit-atomic bounds=query,terms,results migration=rollback'

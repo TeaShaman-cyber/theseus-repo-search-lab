@@ -1,0 +1,42 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '%s\n' 'production-postgres: not inside a Git worktree' >&2
+    exit 2
+}
+cd "$ROOT"
+
+schema=sql/neon/001_query_plane_v1.sql
+privileges=sql/neon/002_query_plane_privileges.sql
+if [ ! -e "$schema" ] && [ ! -e "$privileges" ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_PENDING reason=task3_sql_absent'
+    exit 0
+fi
+if [ ! -f "$schema" ] || [ ! -f "$privileges" ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_INCOMPLETE missing_required_migration' >&2
+    exit 1
+fi
+
+printf '%s\n' '== apply production PostgreSQL query-plane migrations =='
+psql -X -v ON_ERROR_STOP=1 -f "$schema"
+psql -X -v ON_ERROR_STOP=1 -f "$privileges"
+
+printf '%s\n' '== production query-plane catalog readback =='
+verified=$(psql -X -v ON_ERROR_STOP=1 -Atqc "SELECT
+    to_regnamespace('repo_search') IS NOT NULL
+    AND to_regclass('repo_search.generations') IS NOT NULL
+    AND to_regclass('repo_search.corpora') IS NOT NULL
+    AND to_regclass('repo_search.search_docs') IS NOT NULL
+    AND to_regclass('repo_search.active_generation') IS NOT NULL
+    AND to_regprocedure('repo_search.search(text,integer,text)') IS NOT NULL
+    AND to_regprocedure('repo_search.search_generation(text,text,integer,text)') IS NOT NULL
+    AND to_regprocedure('repo_search.generation_status()') IS NOT NULL
+    AND (SELECT count(*) FROM pg_roles
+         WHERE rolname IN ('repo_search_owner', 'repo_search_reader',
+                           'repo_search_materializer') AND NOT rolcanlogin) = 3;")
+if [ "$verified" != t ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_SCHEMA_FAILED catalog_readback' >&2
+    exit 1
+fi
+printf '%s\n' 'PRODUCTION_POSTGRES_SCHEMA_PASS'
