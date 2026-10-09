@@ -381,7 +381,15 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         )
         self.assertIn("REVOKE ALL ON FUNCTION", security_text)
         self.assertIn("FROM PUBLIC", security_text)
-        self.assertIn("ALTER DEFAULT PRIVILEGES", security_text)
+        self.assertIn(
+            "ALTER DEFAULT PRIVILEGES FOR ROLE heavy_pg_owner\n"
+            "    REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC",
+            security_text,
+        )
+        self.assertNotIn(
+            "IN SCHEMA heavy_pg_contract\n    REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC",
+            security_text,
+        )
         self.assertIn("SET ROLE heavy_pg_reader", security_text)
         self.assertIn("SET ROLE heavy_pg_materializer", security_text)
         self.assertIn("CREATE TEMP TABLE secret", security_text)

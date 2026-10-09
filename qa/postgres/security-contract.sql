@@ -19,7 +19,6 @@ GRANT USAGE ON SCHEMA heavy_pg_contract
     TO heavy_pg_reader, heavy_pg_materializer;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE heavy_pg_owner
-    IN SCHEMA heavy_pg_contract
     REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
 SET ROLE heavy_pg_owner;
