@@ -49,6 +49,23 @@ CREATE TABLE repo_search.generation_references (
     generation_id text NOT NULL REFERENCES repo_search.generations(generation_id)
 );
 -- Guard child writes against READY, and forbid reparenting even while BUILDING.
+-- Definer-owned lock only; callers never receive generation UPDATE rights.
+CREATE FUNCTION repo_search.lock_generation_state(target_generation_id text)
+RETURNS text LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog, repo_search, pg_temp
+AS $$
+DECLARE
+    observed_state text;
+BEGIN
+    SELECT state INTO observed_state
+    FROM repo_search.generations
+    WHERE generation_id = target_generation_id FOR SHARE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'generation does not exist' USING ERRCODE = '23503';
+    END IF;
+    RETURN observed_state;
+END
+$$;
 CREATE FUNCTION repo_search.guard_child_write()
 RETURNS trigger LANGUAGE plpgsql
 SET search_path = pg_catalog, repo_search, pg_temp
@@ -66,11 +83,7 @@ BEGIN
     ELSE
         target_generation_id := NEW.generation_id;
     END IF;
-    SELECT state INTO parent_state FROM repo_search.generations
-    WHERE generation_id = target_generation_id FOR SHARE;
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'generation does not exist' USING ERRCODE = '23503';
-    END IF;
+    parent_state := repo_search.lock_generation_state(target_generation_id);
     IF parent_state <> 'BUILDING' AND NOT (TG_OP = 'DELETE' AND current_user = 'repo_search_owner') THEN
         RAISE EXCEPTION 'generation not BUILDING' USING ERRCODE = '55000';
     END IF;

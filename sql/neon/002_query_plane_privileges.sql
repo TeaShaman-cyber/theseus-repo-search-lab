@@ -12,6 +12,7 @@ ALTER TABLE repo_search.search_docs OWNER TO repo_search_owner;
 ALTER TABLE repo_search.active_generation OWNER TO repo_search_owner;
 ALTER TABLE repo_search.generation_references OWNER TO repo_search_owner;
 
+ALTER FUNCTION repo_search.lock_generation_state(text) OWNER TO repo_search_owner;
 ALTER FUNCTION repo_search.guard_child_write() OWNER TO repo_search_owner;
 ALTER FUNCTION repo_search.mark_generation_ready(text,text,integer) OWNER TO repo_search_owner;
 ALTER FUNCTION repo_search.activate_generation(text,text) OWNER TO repo_search_owner;
@@ -32,6 +33,8 @@ GRANT USAGE ON SCHEMA repo_search TO repo_search_reader, repo_search_materialize
 GRANT SELECT, INSERT ON repo_search.generations TO repo_search_materializer;
 GRANT SELECT, INSERT, UPDATE, DELETE ON repo_search.corpora TO repo_search_materializer;
 GRANT SELECT, INSERT, UPDATE, DELETE ON repo_search.search_docs TO repo_search_materializer;
+GRANT EXECUTE ON FUNCTION repo_search.lock_generation_state(text)
+    TO repo_search_materializer;
 GRANT EXECUTE ON FUNCTION repo_search.mark_generation_ready(text,text,integer)
     TO repo_search_materializer;
 GRANT EXECUTE ON FUNCTION repo_search.activate_generation(text,text)

@@ -78,6 +78,17 @@ class NeonQueryPlaneSchemaTests(unittest.TestCase):
         self.assertIn("GRANT EXECUTE ON FUNCTION repo_search.gc_inactive_generation(", sql)
         self.assertNotIn("GRANT SELECT ON repo_search.search_docs TO repo_search_reader", sql)
 
+    def test_materializer_parent_lock_uses_narrow_definer_helper(self):
+        schema = SCHEMA.read_text(encoding="utf-8")
+        privileges = PRIVILEGES.read_text(encoding="utf-8")
+        self.assertIn("CREATE FUNCTION repo_search.lock_generation_state(", schema)
+        self.assertIn("SECURITY DEFINER", schema)
+        self.assertIn("parent_state := repo_search.lock_generation_state(target_generation_id)", schema)
+        self.assertIn("FOR SHARE", schema)
+        self.assertIn("ALTER FUNCTION repo_search.lock_generation_state(text) OWNER TO repo_search_owner", privileges)
+        self.assertIn("GRANT EXECUTE ON FUNCTION repo_search.lock_generation_state(text)", privileges)
+        self.assertNotIn("GRANT UPDATE ON repo_search.generations", privileges)
+
     def test_privilege_migration_and_roles_are_explicit(self):
         self.assertTrue(PRIVILEGES.is_file(), "Task 3 privilege migration missing")
         sql = PRIVILEGES.read_text(encoding="utf-8")

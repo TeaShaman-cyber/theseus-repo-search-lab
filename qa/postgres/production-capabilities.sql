@@ -67,6 +67,11 @@ BEGIN
     EXCEPTION WHEN SQLSTATE '42501' THEN NULL;
     END;
     BEGIN
+        PERFORM repo_search.lock_generation_state(repeat('1',64));
+        RAISE EXCEPTION 'reader internal lock helper unexpectedly allowed';
+    EXCEPTION WHEN SQLSTATE '42501' THEN NULL;
+    END;
+    BEGIN
         PERFORM repo_search.mark_generation_ready(repeat('1',64), repeat('3',64), 1);
         RAISE EXCEPTION 'reader READY mutator unexpectedly allowed';
     EXCEPTION WHEN SQLSTATE '42501' THEN NULL;
@@ -96,6 +101,9 @@ BEGIN
     found := repo_search.generation_status();
     IF found->>'generation_id' <> repeat('1',64) THEN
         RAISE EXCEPTION 'materializer status unavailable';
+    END IF;
+    IF repo_search.lock_generation_state(repeat('1',64)) <> 'READY' THEN
+        RAISE EXCEPTION 'materializer parent lock helper failed';
     END IF;
     found := repo_search.search_generation(repeat('1',64), 'needle', 3, 'evidence');
     IF jsonb_array_length(found->'hits') <> 1 THEN
