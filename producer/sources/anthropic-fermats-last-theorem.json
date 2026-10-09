@@ -1,0 +1,15 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "anthropic-fermats-last-theorem",
+  "source_repo": "anthropics/fermats-last-theorem",
+  "source_commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+  "source_subdir": "",
+  "root_modules": ["Theorems"],
+  "build_target": "FinalCheck",
+  "exclude_source_prefixes": [
+    "Definitions/",
+    "P2M/",
+    "verification/",
+    "tools/"
+  ]
+}

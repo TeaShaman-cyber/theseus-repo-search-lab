@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERIC = ROOT / ".github/workflows/lean-source-producer-smoke.yml"
+STATIC_SOURCE = ROOT / ".github/workflows/static-source-producer-smoke.yml"
 LEGACY = ROOT / ".github/workflows/zeta23-producer-smoke.yml"
 LEGACY_CONFIG = ROOT / "producer/zeta23.json"
 ALL_REPLAYS = (
@@ -33,6 +34,25 @@ REQUIRED = (
 
 
 class WorkflowStructureTests(unittest.TestCase):
+    def test_static_source_workflow_skips_lean_build_and_keeps_fresh_consumer(self):
+        self.assertTrue(STATIC_SOURCE.is_file())
+        text = STATIC_SOURCE.read_text(encoding="utf-8")
+        trigger = text.split("permissions:", 1)[0]
+        self.assertIn("workflow_dispatch:", trigger)
+        self.assertNotIn("pull_request:", trigger)
+        self.assertNotIn("push:", trigger)
+        self.assertIn("producer/sources/anthropic-fermats-last-theorem.json", text)
+        self.assertIn("scripts/extract_anthropic_flt_static_graph.py", text)
+        self.assertIn("scripts/replay_anthropic_flt.py", text)
+        self.assertIn("source-static-deps", text)
+        self.assertIn("build-source-artifact", text)
+        self.assertIn("consume-artifact:", text)
+        self.assertNotIn("lake build", text)
+        self.assertNotIn("lake exe cache get", text)
+        consumer = text.split("  consume-artifact:\n", 1)[1]
+        self.assertNotIn("_target/source", consumer)
+        self.assertNotIn("producer_guard.py checkout", consumer)
+
     def test_heavy_workflow_is_explicit_acceptance_dispatch_only(self):
         text = GENERIC.read_text(encoding="utf-8")
         trigger = text.split("permissions:", 1)[0]

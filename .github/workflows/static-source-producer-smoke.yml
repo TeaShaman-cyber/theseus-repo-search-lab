@@ -1,0 +1,172 @@
+name: Static source dependency producer smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: static-source-repo-lens-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  produce-and-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/sources/anthropic-fermats-last-theorem.json
+      ARTIFACT_NAME: anthropic-fermats-last-theorem-repo-index-static-v1
+      PRODUCER_KIND: source-static-deps
+      PRODUCER_TOOL_REPO: TeaShaman-cyber/theseus-repo-search-lab
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout pinned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+
+      - name: Verify exact source readback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+          printf 'source_readback=%s\n' "$(git -C _target/source rev-parse HEAD)"
+
+      - name: Resolve canonical source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Bind static extractor identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'PRODUCER_TOOL_COMMIT=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          printf 'PRODUCER_TOOL_HASH=%s\n' "$(sha256sum scripts/extract_anthropic_flt_static_graph.py | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
+
+      - name: Extract source-derived theorem graph without Lean build
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          python3 scripts/producer_guard.py extract-source \
+            --cwd "$SOURCE_ROOT" \
+            --source-container "$GITHUB_WORKSPACE/_target/source" \
+            --source "$SOURCE_DESCRIPTOR" \
+            --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
+            --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
+            --producer-kind "$PRODUCER_KIND" \
+            --producer-tool-repo "$PRODUCER_TOOL_REPO" \
+            --producer-tool-commit "$PRODUCER_TOOL_COMMIT" \
+            --producer-tool-hash "$PRODUCER_TOOL_HASH" -- \
+            python3 "$GITHUB_WORKSPACE/scripts/extract_anthropic_flt_static_graph.py" \
+            --source-root "$SOURCE_ROOT" \
+            --out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Build normalized static-reference artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m theseus_repo_search build-source-artifact \
+            --source "$SOURCE_DESCRIPTOR" \
+            --source-root "$SOURCE_ROOT" \
+            --source-container "$GITHUB_WORKSPACE/_target/source" \
+            --raw-depgraph _out/raw-depgraph.json \
+            --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
+            --producer-kind "$PRODUCER_KIND" \
+            --producer-tool-repo "$PRODUCER_TOOL_REPO" \
+            --producer-tool-commit "$PRODUCER_TOOL_COMMIT" \
+            --producer-tool-hash "$PRODUCER_TOOL_HASH" \
+            --out "_out/${SOURCE_ID}-artifact"
+          test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
+
+      - name: Verify producer artifact and replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m theseus_repo_search verify-artifact --artifact "_out/${SOURCE_ID}-artifact"
+          python3 -m theseus_repo_search build-index \
+            --artifact "_out/${SOURCE_ID}-artifact" \
+            --db "_out/${SOURCE_ID}.sqlite"
+          python3 scripts/replay_anthropic_flt.py \
+            --db "_out/${SOURCE_ID}.sqlite" \
+            --artifact "_out/${SOURCE_ID}-artifact" \
+            --descriptor "$SOURCE_DESCRIPTOR" \
+            --out "_out/${SOURCE_ID}-replay.json"
+
+      - name: Upload static normalized artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            _out/*-artifact/
+            _out/*-replay.json
+          if-no-files-found: error
+          retention-days: 1
+
+  consume-artifact:
+    needs: produce-and-replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/sources/anthropic-fermats-last-theorem.json
+      SOURCE_ID: anthropic-fermats-last-theorem
+      ARTIFACT_NAME: anthropic-fermats-last-theorem-repo-index-static-v1
+    steps:
+      - name: Checkout repository lens only
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Download normalized artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: _consumer/download
+
+      - name: Fresh source-free projection and replay
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="_consumer/download/${SOURCE_ID}-artifact"
+          db="_consumer/${SOURCE_ID}.sqlite"
+          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
+          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
+          python3 scripts/replay_anthropic_flt.py \
+            --db "$db" \
+            --artifact "$artifact" \
+            --descriptor "$SOURCE_DESCRIPTOR" \
+            --out "_consumer/${SOURCE_ID}-replay.json"
