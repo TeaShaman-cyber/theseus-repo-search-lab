@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 import threading
 import time
 from dataclasses import dataclass, field
@@ -736,11 +735,9 @@ def main() -> int:
             one_shot("DROP SCHEMA IF EXISTS heavy_pg_concurrency CASCADE; "
                      "DROP ROLE IF EXISTS heavy_pg_gc_owner;")
         except subprocess.CalledProcessError as exc:
-            print(
-                f"CONCURRENCY_CLEANUP_FAILED rc={exc.returncode}",
-                file=sys.stderr,
-                flush=True,
-            )
+            raise HarnessError(
+                f"CONCURRENCY_CLEANUP_FAILED rc={exc.returncode}"
+            ) from exc
 
 
 if __name__ == "__main__":
