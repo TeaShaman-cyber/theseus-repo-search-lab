@@ -647,6 +647,69 @@ def bounded_query_inputs() -> None:
     print("QUERY_INPUT_BOUNDS_PASS", flush=True)
 
 
+
+def failed_migration_rollback() -> None:
+    print("CONCURRENCY_CASE failed-migration-rollback begin", flush=True)
+    v2_definition_sql = (
+        "SELECT md5(pg_get_functiondef("
+        "'heavy_pg_concurrency.search_generation_v2(text,text)'::regprocedure))"
+    )
+    original_definition = scalar(v2_definition_sql)
+    original_envelope = scalar(
+        "SELECT heavy_pg_concurrency.search_envelope('match', 2)::text"
+    )
+    check_envelope(original_envelope, "v2", ["v2-b", "v2-a"])
+
+    completed = subprocess.run(
+        ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-f",
+         "qa/postgres/failed-migration.sql"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode == 0:
+        raise HarnessError("failed migration unexpectedly exited zero")
+    if "INTENTIONAL_MIGRATION_FAILURE" not in completed.stderr:
+        raise HarnessError(
+            "wrong failure cause in migration: "
+            f"rc={completed.returncode} stdout={completed.stdout!r} "
+            f"stderr={completed.stderr!r}"
+        )
+    if "ERROR_BAD_MIGRATION_COMMITTED" in completed.stdout:
+        raise HarnessError("failed migration reached COMMIT")
+
+    assert_scalar(
+        "SELECT to_regclass('heavy_pg_concurrency.failed_migration_marker') "
+        "IS NULL",
+        "t", "failed migration created no lingering relation",
+    )
+    assert_scalar(
+        v2_definition_sql,
+        original_definition,
+        "failed migration restored version-specific function definition",
+    )
+    assert_scalar(
+        "SELECT catalog_sha256 FROM heavy_pg_concurrency.generations "
+        "WHERE generation_id = 'dispatch-v2'",
+        "catalog-v2", "failed migration restored catalog digest",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_generation('dispatch-v1', 'match')",
+        "v1-a,v1-b", "v1 remains usable after failed migration",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_generation('dispatch-v2', 'match')",
+        "v2-b,v2-a", "v2 remains usable after failed migration",
+    )
+    after = scalar(
+        "SELECT heavy_pg_concurrency.search_envelope('match', 2)::text"
+    )
+    check_envelope(after, "v2", ["v2-b", "v2-a"])
+    if after != original_envelope:
+        raise HarnessError("atomic search response changed after failed migration")
+    print("FAILED_MIGRATION_ROLLBACK_PASS", flush=True)
+
+
 def main() -> int:
     sessions = [
         PsqlSession("heavy-pg-writer-a"),
@@ -664,6 +727,7 @@ def main() -> int:
         version_dispatch_v1_v2()
         zero_hit_atomic_envelope()
         bounded_query_inputs()
+        failed_migration_rollback()
         return 0
     finally:
         for session in sessions:

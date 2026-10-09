@@ -434,3 +434,7 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("QUERY_INPUT_BOUNDS_PASS", harness_text)
         self.assertIn("normalized_term_count", probe_text)
         self.assertIn("result_limit integer DEFAULT", probe_text)
+        broken_migration = ROOT / "qa" / "postgres" / "failed-migration.sql"
+        self.assertTrue(broken_migration.is_file())
+        self.assertIn("ON_ERROR_STOP", broken_migration.read_text(encoding="utf-8"))
+        self.assertIn("FAILED_MIGRATION_ROLLBACK_PASS", harness_text)

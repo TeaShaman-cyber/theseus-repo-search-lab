@@ -42,4 +42,4 @@ printf '%s\n' '== READY/write concurrency contract =='
 psql -X -v ON_ERROR_STOP=1 -f qa/postgres/concurrency-probe.sql
 python3 qa/postgres/concurrency_harness.py
 
-printf '%s\n' 'HEAVY_POSTGRES_PASS substrate=postgresql-17 smoke=rollback security=capabilities concurrency=ready-write,cas-stale immutability=child-generation gc=inactive-ready dispatch=v1-v2 envelope=zero-hit-atomic bounds=query,terms,results'
+printf '%s\n' 'HEAVY_POSTGRES_PASS substrate=postgresql-17 smoke=rollback security=capabilities concurrency=ready-write,cas-stale immutability=child-generation gc=inactive-ready dispatch=v1-v2 envelope=zero-hit-atomic bounds=query,terms,results migration=rollback'
