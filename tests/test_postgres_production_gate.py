@@ -27,6 +27,13 @@ class ProductionPostgresGateTests(unittest.TestCase):
                 encoding="utf-8",
             )
             fake.chmod(0o755)
+            fakepy = fakebin / "python3"
+            fakepy.write_text(
+                "#!/bin/sh\n"
+                'printf "PY3 %s\\n" "$*" >> "$CALL_LOG"\n',
+                encoding="utf-8",
+            )
+            fakepy.chmod(0o755)
             call_log = workspace / "psql-calls"
             env = {**os.environ, "PATH": str(fakebin) + ":" + os.environ["PATH"],
                    "CALL_LOG": str(call_log), "FAKE_READBACK": readback}
@@ -37,7 +44,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
             calls = []
             if call_log.exists():
                 for line in call_log.read_text(encoding="utf-8").splitlines():
-                    if line.startswith("-X -v "):
+                    if line.startswith(("-X -v ", "PY3 ")):
                         calls.append(line)
                     elif calls:
                         calls[-1] += " " + line
@@ -93,7 +100,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
         self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
         self.assertEqual(calls, [])
 
-    def test_complete_migration_set_applied_and_read_back(self):
+    def test_missing_concurrency_harness_fails_closed(self):
         files = (
             "sql/neon/001_query_plane_v1.sql",
             "sql/neon/002_query_plane_privileges.sql",
@@ -102,9 +109,24 @@ class ProductionPostgresGateTests(unittest.TestCase):
             "qa/postgres/production-gc.sql",
         )
         result, calls = self.run_gate(files)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_complete_migration_set_applied_and_read_back(self):
+        files = (
+            "sql/neon/001_query_plane_v1.sql",
+            "sql/neon/002_query_plane_privileges.sql",
+            "qa/postgres/production-ready-search.sql",
+            "qa/postgres/production-capabilities.sql",
+            "qa/postgres/production-gc.sql",
+            "qa/postgres/production_concurrency_harness.py",
+        )
+        result, calls = self.run_gate(files)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("PRODUCTION_POSTGRES_SCHEMA_PASS", result.stdout)
-        self.assertEqual(len(calls), 6, calls)
+        self.assertEqual(len(calls), 7, calls)
+        self.assertIn(files[5], calls[6])
         self.assertIn(files[4], calls[5])
         self.assertIn(files[2], calls[3])
         self.assertIn(files[3], calls[4])
@@ -119,6 +141,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
             "qa/postgres/production-ready-search.sql",
             "qa/postgres/production-capabilities.sql",
             "qa/postgres/production-gc.sql",
+            "qa/postgres/production_concurrency_harness.py",
         )
         result, calls = self.run_gate(files, readback="f")
         self.assertNotEqual(result.returncode, 0)
@@ -166,6 +189,20 @@ class ProductionPostgresGateTests(unittest.TestCase):
         ):
             self.assertIn(token, sql)
         self.assertIn("qa/postgres/production-gc.sql",
+                      GATE.read_text(encoding="utf-8"))
+
+    def test_real_production_two_session_lock_probe_is_required(self):
+        probe = ROOT / "qa/postgres/production_concurrency_harness.py"
+        self.assertTrue(probe.is_file(), "real production concurrency harness missing")
+        source = probe.read_text(encoding="utf-8")
+        for marker in (
+            "PsqlSession", "wait_for_lock", "async_step", "join_step",
+            "repo_search_materializer", "repo_search.mark_generation_ready",
+            "PRODUCTION_READY_WRITE_SERIALIZATION_PASS",
+            "PRODUCTION_READY_WRITE_CLEANUP_PASS",
+        ):
+            self.assertIn(marker, source)
+        self.assertIn("qa/postgres/production_concurrency_harness.py",
                       GATE.read_text(encoding="utf-8"))
 
     def test_runner_invokes_production_gate(self):

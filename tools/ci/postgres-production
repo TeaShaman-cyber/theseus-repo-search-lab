@@ -36,6 +36,12 @@ if [ ! -f "$gc_probe" ]; then
     exit 1
 fi
 
+concurrency_probe=qa/postgres/production_concurrency_harness.py
+if [ ! -f "$concurrency_probe" ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_INCOMPLETE missing_production_concurrency_probe' >&2
+    exit 1
+fi
+
 printf '%s\n' '== apply production PostgreSQL query-plane migrations =='
 psql -X -v ON_ERROR_STOP=1 -f "$schema"
 psql -X -v ON_ERROR_STOP=1 -f "$privileges"
@@ -64,3 +70,5 @@ printf '%s\n' '== production reader and materializer privileges =='
 psql -X -v ON_ERROR_STOP=1 -f "$capabilities"
 printf '%s\n' '== production guarded inactive READY GC =='
 psql -X -v ON_ERROR_STOP=1 -f "$gc_probe"
+printf '%s\n' '== production two-session READY/write concurrency =='
+python3 "$concurrency_probe"
