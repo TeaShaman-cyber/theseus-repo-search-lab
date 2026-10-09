@@ -11,6 +11,12 @@ not a replacement for that scope.
   text and bounded dependency graphs; return provenance and honest evidence
   boundaries. Optimize actual search usefulness, latency, multi-corpus access,
   and disposable-index recovery.
+- **Research purpose:** expose formal mathematical structure for downstream
+  research: decompositions, dependency cones, invariants, reductions, bridge
+  theorems, and justified structural correspondences/isomorphisms. Landmark solved
+  formalizations (for example FLT and Poincare) are control/reference corpora for
+  testing those methods. Human discovery history is not required input and must
+  not be substituted for formal source structure.
 - **Do not:** attempt to prove theorems, introduce proof certification, or
   require theorem-level axiom audits as a condition for indexing, searching,
   onboarding, or accepting a search-runtime improvement. Historical audit
