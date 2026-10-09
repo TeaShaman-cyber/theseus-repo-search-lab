@@ -24,6 +24,12 @@ if [ ! -f "$behavior" ]; then
     exit 1
 fi
 
+capabilities=qa/postgres/production-capabilities.sql
+if [ ! -f "$capabilities" ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_INCOMPLETE missing_production_capability_probe' >&2
+    exit 1
+fi
+
 printf '%s\n' '== apply production PostgreSQL query-plane migrations =='
 psql -X -v ON_ERROR_STOP=1 -f "$schema"
 psql -X -v ON_ERROR_STOP=1 -f "$privileges"
@@ -48,3 +54,5 @@ fi
 printf '%s\n' 'PRODUCTION_POSTGRES_SCHEMA_PASS'
 printf '%s\n' '== production READY/search behavior probe =='
 psql -X -v ON_ERROR_STOP=1 -f "$behavior"
+printf '%s\n' '== production reader and materializer privileges =='
+psql -X -v ON_ERROR_STOP=1 -f "$capabilities"

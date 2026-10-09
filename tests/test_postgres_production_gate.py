@@ -70,17 +70,30 @@ class ProductionPostgresGateTests(unittest.TestCase):
         self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
         self.assertEqual(calls, [])
 
-    def test_complete_migration_set_applied_and_read_back(self):
+    def test_missing_role_probe_fails_closed_before_sql_apply(self):
         files = (
             "sql/neon/001_query_plane_v1.sql",
             "sql/neon/002_query_plane_privileges.sql",
             "qa/postgres/production-ready-search.sql",
         )
         result, calls = self.run_gate(files)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_complete_migration_set_applied_and_read_back(self):
+        files = (
+            "sql/neon/001_query_plane_v1.sql",
+            "sql/neon/002_query_plane_privileges.sql",
+            "qa/postgres/production-ready-search.sql",
+            "qa/postgres/production-capabilities.sql",
+        )
+        result, calls = self.run_gate(files)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("PRODUCTION_POSTGRES_SCHEMA_PASS", result.stdout)
-        self.assertEqual(len(calls), 4, calls)
+        self.assertEqual(len(calls), 5, calls)
         self.assertIn(files[2], calls[3])
+        self.assertIn(files[3], calls[4])
         self.assertIn(files[0], calls[0])
         self.assertIn(files[1], calls[1])
         self.assertIn("to_regclass", calls[2])
@@ -90,6 +103,7 @@ class ProductionPostgresGateTests(unittest.TestCase):
             "sql/neon/001_query_plane_v1.sql",
             "sql/neon/002_query_plane_privileges.sql",
             "qa/postgres/production-ready-search.sql",
+            "qa/postgres/production-capabilities.sql",
         )
         result, calls = self.run_gate(files, readback="f")
         self.assertNotEqual(result.returncode, 0)
@@ -108,6 +122,23 @@ class ProductionPostgresGateTests(unittest.TestCase):
         self.assertIn("'hits'", content)
         endpoint = GATE.read_text(encoding="utf-8")
         self.assertIn("qa/postgres/production-ready-search.sql", endpoint)
+
+    def test_production_capability_probe_is_required(self):
+        fixture = ROOT / "qa/postgres/production-capabilities.sql"
+        self.assertTrue(fixture.is_file(), "real role canary missing")
+        sql = fixture.read_text(encoding="utf-8")
+        for token in (
+            "SET ROLE repo_search_reader",
+            "SET ROLE repo_search_materializer",
+            "WHEN SQLSTATE '42501'",
+            "repo_search.search_generation_v1",
+            "repo_search.mark_generation_ready",
+            "PRODUCTION_CAPABILITIES_PASS",
+            "PRODUCTION_CAPABILITIES_ROLLBACK_PASS",
+        ):
+            self.assertIn(token, sql)
+        self.assertIn("qa/postgres/production-capabilities.sql",
+                      GATE.read_text(encoding="utf-8"))
 
     def test_runner_invokes_production_gate(self):
         endpoint = (ROOT / "tools/ci/heavy-postgres").read_text(encoding="utf-8")
