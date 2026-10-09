@@ -11,23 +11,61 @@ jobs:
   heavy-postgres:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: repo_search_contract
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d repo_search_contract"
-          --health-interval 2s
-          --health-timeout 5s
-          --health-retries 20
+    env:
+      POSTGRES_IMAGE_SOURCE: public.ecr.aws/docker/library/postgres@sha256:3cec7eb015ba8adb28139fa5c83b8489cdf0e666e53dfdf20f598ae0cc8739e3
+      POSTGRES_IMAGE_LOCAL: repo-search-postgres:17.11-trixie
+      POSTGRES_IMAGE_TAR: /tmp/repo-search-postgres-17.11-trixie-amd64.tar
     steps:
       - name: Checkout exact PR head
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Restore cached PostgreSQL 17.11 image
+        id: postgres-image-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: /tmp/repo-search-postgres-17.11-trixie-amd64.tar
+          key: repo-search-postgres-${{ runner.os }}-${{ runner.arch }}-17.11-trixie-3cec7eb015ba8adb28139fa5c83b8489cdf0e666e53dfdf20f598ae0cc8739e3
+
+      - name: Load or seed PostgreSQL image cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.postgres-image-cache.outputs.cache-hit }}" = "true" ]; then
+            docker load --input "$POSTGRES_IMAGE_TAR"
+          else
+            docker pull "$POSTGRES_IMAGE_SOURCE"
+            docker tag "$POSTGRES_IMAGE_SOURCE" "$POSTGRES_IMAGE_LOCAL"
+            docker save --output "$POSTGRES_IMAGE_TAR" "$POSTGRES_IMAGE_LOCAL"
+          fi
+          docker image inspect "$POSTGRES_IMAGE_LOCAL" >/dev/null
+
+      - name: Save PostgreSQL image cache
+        if: steps.postgres-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: /tmp/repo-search-postgres-17.11-trixie-amd64.tar
+          key: repo-search-postgres-${{ runner.os }}-${{ runner.arch }}-17.11-trixie-3cec7eb015ba8adb28139fa5c83b8489cdf0e666e53dfdf20f598ae0cc8739e3
+
+      - name: Start cached PostgreSQL 17.11
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --pull=never \
+            --name repo-search-postgres \
+            --publish 127.0.0.1:5432:5432 \
+            --env POSTGRES_USER=postgres \
+            --env POSTGRES_PASSWORD=postgres \
+            --env POSTGRES_DB=repo_search_contract \
+            "$POSTGRES_IMAGE_LOCAL"
+          for attempt in $(seq 1 30); do
+            if docker exec repo-search-postgres \
+              pg_isready -U postgres -d repo_search_contract >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs repo-search-postgres >&2
+          exit 1
 
       - name: Install PostgreSQL client
         run: |
@@ -42,3 +80,7 @@ jobs:
           PGPASSWORD: postgres
           PGDATABASE: repo_search_contract
         run: tools/ci/heavy-postgres
+
+      - name: Stop PostgreSQL container
+        if: always()
+        run: docker rm --force repo-search-postgres >/dev/null 2>&1 || true
