@@ -8,6 +8,7 @@ import sys
 import tempfile
 from hashlib import sha256
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.producer_config import (
@@ -17,7 +18,9 @@ from theseus_repo_search.producer_config import (
     load_lean_source,
 )
 
-if __package__:
+if TYPE_CHECKING:
+    from scripts.materialize_archive_source import verify_materialized_archive_members
+elif __package__:
     from .materialize_archive_source import verify_materialized_archive_members
 else:
     from materialize_archive_source import verify_materialized_archive_members

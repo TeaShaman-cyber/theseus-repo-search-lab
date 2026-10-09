@@ -194,6 +194,7 @@ class RetrievalTests(unittest.TestCase):
             self.assertEqual(hits[0].declaration_id, "lean:Zeta23.Tiny.lemmaR_tight_two")
             self.assertEqual(hits[0].declaration_hint, "lemmaR_tight_two")
             self.assertEqual(hits[0].source_path, "Zeta23/Tiny.lean")
+            self.assertEqual(hits[0].source_row_id, "src:Zeta23/Tiny.lean:1:2")
             self.assertEqual(hits[0].evidence_grade, EvidenceGrade.LEXICAL_HIT)
 
     def test_query_results_preserve_authoritative_readback_attestation(self):
@@ -267,6 +268,49 @@ class RetrievalTests(unittest.TestCase):
 
             evidence = search(db, "truth predicate", mode="evidence")
             self.assertEqual(evidence, [])
+
+    def test_lexical_hit_exposes_source_row_id_without_declaration(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = root / "artifact"
+            db = root / "projection.db"
+            text = "orphan lexical seam token\n"
+            source = SourceChunk(
+                id="src:Pkg/Loose.lean:7:7",
+                source_commit=COMMIT,
+                source_path="Pkg/Loose.lean",
+                source_start_line=7,
+                source_end_line=7,
+                declaration_hint=None,
+                text=text,
+                content_sha256=sha256(text.encode()).hexdigest(),
+            )
+            write_artifact(
+                artifact,
+                nodes=[],
+                edges=[],
+                sources=[source],
+                source_repo="example/repo",
+                source_commit=COMMIT,
+                source_subdir="",
+                producer=ProducerPin(
+                    kind="lexical_only",
+                    tool_repo="TeaShaman-cyber/theseus-repo-search-lab",
+                    tool_commit="deadbeef",
+                    tool_hash="f" * 64,
+                ),
+                scope=ArtifactScope(
+                    root_modules=("Pkg",), dependency_boundary="internal_only"
+                ),
+                created_from_authoritative_commit=False,
+            )
+            build_projection(artifact, db)
+
+            hits = search(db, "orphan lexical seam")
+
+            self.assertEqual(len(hits), 1)
+            self.assertIsNone(hits[0].declaration_id)
+            self.assertEqual(hits[0].source_row_id, "src:Pkg/Loose.lean:7:7")
 
     def test_unicode_query_reaches_fts5_unicode61(self):
         with tempfile.TemporaryDirectory() as d:

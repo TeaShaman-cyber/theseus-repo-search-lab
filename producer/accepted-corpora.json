@@ -1,0 +1,78 @@
+{
+  "schema": "theseus.repo-search.accepted-catalog.v1",
+  "release_repository": "TeaShaman-cyber/theseus-repo-search-lab",
+  "corpora": [
+    {
+      "source_id": "annals-challenge-marton",
+      "release_tag": "accepted-artifact/annals-challenge-marton/1d0d8ce2fbeb279f",
+      "package_asset": "annals-challenge-marton-accepted.tar.gz",
+      "receipt_asset": "annals-challenge-marton-release-receipt.json",
+      "source_descriptor": "producer/sources/annals-challenge-marton.json",
+      "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+      "fingerprint_sha256": "034c0ab9a11e5e03145372158a78fd388494a84da46df4d18b3a7dd8bacfc03b"
+    },
+    {
+      "source_id": "decreasing-diagrams-complete",
+      "release_tag": "accepted-artifact/decreasing-diagrams-complete/abd7c1b4e2586c8c",
+      "package_asset": "decreasing-diagrams-complete-accepted.tar.gz",
+      "receipt_asset": "decreasing-diagrams-complete-release-receipt.json",
+      "source_descriptor": "producer/sources/decreasing-diagrams-complete.json",
+      "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+      "fingerprint_sha256": "c3a52418f50906ebd70c5c84a1d8086ecde0ddb3af665c946d709e9944c58d0e"
+    },
+    {
+      "source_id": "leanprover-community-con-nf",
+      "release_tag": "accepted-artifact/leanprover-community-con-nf/e6bf117b57945fd4",
+      "package_asset": "leanprover-community-con-nf-accepted.tar.gz",
+      "receipt_asset": "leanprover-community-con-nf-release-receipt.json",
+      "source_descriptor": "producer/sources/leanprover-community-con-nf.json",
+      "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+      "fingerprint_sha256": "ab9a5553d1239ec304cd7c1de3caf972ca3ac41644045fc59f5b8afbb3480cd1"
+    },
+    {
+      "source_id": "leanprover-community-flt-regular",
+      "release_tag": "accepted-artifact/flt-regular/41bfa1d236ee59a8",
+      "package_asset": "leanprover-community-flt-regular-accepted.tar.gz",
+      "receipt_asset": "leanprover-community-flt-regular-release-receipt.json",
+      "source_descriptor": "producer/sources/leanprover-community-flt-regular.json",
+      "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+      "fingerprint_sha256": "07a937f3c7f05444ed3390c85476ca696f14c111e9e41386aa7243d3e7f70a7b"
+    },
+    {
+      "source_id": "openai-cdc-lean",
+      "release_tag": "accepted-artifact/openai-cdc-lean/154e254c84a94b26",
+      "package_asset": "openai-cdc-lean-accepted.tar.gz",
+      "receipt_asset": "openai-cdc-lean-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-cdc-lean.json",
+      "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+      "fingerprint_sha256": "3471bd170728e2d5c72505f4eb8a1dbafd16a3c953a70f71f7664d55c94f42ee"
+    },
+    {
+      "source_id": "openai-long-gaps",
+      "release_tag": "accepted-artifact/openai-long-gaps/9c062327474441f8",
+      "package_asset": "openai-long-gaps-accepted.tar.gz",
+      "receipt_asset": "openai-long-gaps-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-long-gaps.json",
+      "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+      "fingerprint_sha256": "045ff1531967daadf3c3eed435e917db0e7b1eb579227be812e959d6786b7604"
+    },
+    {
+      "source_id": "openai-ten-proofs-multicolor",
+      "release_tag": "accepted-artifact/openai-ten-proofs-multicolor/3f2d8edd1077cc4d",
+      "package_asset": "openai-ten-proofs-multicolor-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-multicolor-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-multicolor.json",
+      "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+      "fingerprint_sha256": "c5bf25665d4d22b943e30df80f83773bbb0dc7135ff241ba1056618663ff7d51"
+    },
+    {
+      "source_id": "zeta23",
+      "release_tag": "accepted-artifact/zeta23/786b5ab339dd85b7",
+      "package_asset": "zeta23-accepted.tar.gz",
+      "receipt_asset": "zeta23-release-receipt.json",
+      "source_descriptor": "producer/sources/zeta23.json",
+      "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+      "fingerprint_sha256": "dbd76221cda67976adca51a61aefe7f888225bba606b9298ab5984319436bcc0"
+    }
+  ]
+}

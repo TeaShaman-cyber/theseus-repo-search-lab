@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from hashlib import sha256
 from pathlib import Path
+from unittest import mock
 
 from theseus_repo_search.artifact import load_artifact
 from theseus_repo_search.cli import (
@@ -791,6 +792,79 @@ class CliTests(unittest.TestCase):
             payload = json.loads(result.stderr)
             self.assertEqual(payload["code"], "UNAVAILABLE_PROJECTION")
             self.assertNotIn("Traceback", result.stderr)
+
+    def test_multicorpus_search_parser_accepts_documented_surface(self):
+        from theseus_repo_search.cli import build_parser
+
+        args = build_parser().parse_args(
+            [
+                "multicorpus-search",
+                "--catalog",
+                "producer/accepted-corpora.json",
+                "--cache-dir",
+                "/tmp/cache",
+                "--query",
+                "needle",
+                "--limit",
+                "20",
+                "--mode",
+                "discovery",
+            ]
+        )
+        self.assertEqual(args.command, "multicorpus-search")
+        self.assertEqual(args.limit, 20)
+        self.assertEqual(args.mode, "discovery")
+
+    def test_multicorpus_search_emits_single_json_envelope(self):
+        from theseus_repo_search.accepted_catalog import AcceptedCatalog
+        from theseus_repo_search.cli import main
+        from theseus_repo_search.multicorpus import MultiCorpusResult, UnavailableCorpus
+
+        catalog = AcceptedCatalog(
+            schema="theseus.repo-search.accepted-catalog.v1",
+            release_repository="TeaShaman-cyber/theseus-repo-search-lab",
+            corpora=(),
+        )
+        unavailable = (
+            UnavailableCorpus(
+                source_id="missing", code="UNAVAILABLE_PROJECTION", message="missing"
+            ),
+        )
+        result = MultiCorpusResult(
+            catalog_sha256="d" * 64,
+            searched_corpora=0,
+            unavailable_corpora=unavailable,
+            hits=(),
+        )
+        with tempfile.TemporaryDirectory() as d, mock.patch(
+            "theseus_repo_search.cli.load_accepted_catalog", return_value=catalog
+        ), mock.patch(
+            "theseus_repo_search.cli.ensure_local_catalog", return_value=((), unavailable)
+        ), mock.patch(
+            "theseus_repo_search.cli.search_local_catalog", return_value=result
+        ), mock.patch("theseus_repo_search.cli._emit") as emit:
+            catalog_path = Path(d) / "producer" / "accepted-corpora.json"
+            rc = main(
+                [
+                    "multicorpus-search",
+                    "--catalog",
+                    str(catalog_path),
+                    "--cache-dir",
+                    str(Path(d) / "cache"),
+                    "--query",
+                    "needle",
+                ]
+            )
+
+        self.assertEqual(rc, 0)
+        emit.assert_called_once()
+        payload = emit.call_args.args[0]
+        self.assertEqual(payload["status"], "UNAVAILABLE")
+        self.assertEqual(payload["catalog_sha256"], "d" * 64)
+        self.assertEqual(payload["searched_corpora"], 0)
+        self.assertEqual(payload["unavailable_corpora"], 1)
+        self.assertEqual(payload["unavailable"][0]["source_id"], "missing")
+        self.assertEqual(payload["hits"], [])
 
     def test_search_no_hit_is_unknown_but_successful_process(self):
         with tempfile.TemporaryDirectory() as d:

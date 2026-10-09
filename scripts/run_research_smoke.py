@@ -10,25 +10,13 @@ from typing import Any, cast
 from theseus_repo_search.artifact import artifact_identity, load_artifact
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.graph import dependencies, reverse_dependencies
+from theseus_repo_search.json_contract import strict_json_loads
 from theseus_repo_search.model import ArtifactManifestV2
 from theseus_repo_search.retrieval import SearchMode, search
 
 SCENARIO_SCHEMA = "theseus.repo-search-research-smoke.v1"
 RECEIPT_SCHEMA = "theseus.repo-search-research-smoke-receipt.v1"
 ALLOWED_KINDS = {"search", "deps", "rdeps", "declared_boundary"}
-
-
-def _reject_nonstandard_constant(value: str):
-    raise ValueError(f"non-standard JSON constant: {value}")
-
-
-def _unique_object(pairs):
-    result = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(f"duplicate JSON object key: {key}")
-        result[key] = value
-    return result
 
 
 def _require_str(value: object, field: str) -> str:
@@ -45,11 +33,10 @@ def _require_str_list(value: object, field: str) -> list[str]:
 
 def load_scenario(path: Path) -> dict[str, Any]:
     raw = path.read_bytes()
-    data = json.loads(
-        raw.decode("utf-8"),
-        parse_constant=_reject_nonstandard_constant,
-        object_pairs_hook=_unique_object,
-    )
+    parsed = strict_json_loads(raw.decode("utf-8"))
+    if not isinstance(parsed, dict):
+        raise TypeError("scenario root must be a JSON object")
+    data = cast(dict[str, Any], parsed)
     if data.get("schema") != SCENARIO_SCHEMA:
         raise ValueError(f"unsupported scenario schema: {data.get('schema')}")
     _require_str(data.get("scenario_id"), "scenario_id")

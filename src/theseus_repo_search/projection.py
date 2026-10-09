@@ -12,6 +12,8 @@ from .artifact import artifact_identity, load_artifact
 from .errors import RepoSearchError
 from .model import ArtifactManifest, ArtifactManifestV2
 
+SQLITE_PROJECTION_SCHEMA_VERSION = "repo-search-sqlite-v1"
+
 _V1_SCHEMA_STATEMENTS = (
     """
     CREATE TABLE meta (
@@ -257,8 +259,10 @@ def _canonical_json(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
-    fts_schema = conn.execute(
+def _logical_fingerprint_context(
+    conn: sqlite3.Connection,
+) -> tuple[str | None, str | None, str]:
+    fts_schema_row = conn.execute(
         "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'sources_fts'"
     ).fetchone()
     conn.execute(
@@ -293,6 +297,19 @@ def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
         )
         raise ValueError(f"orphan FTS document without source row: {orphan_id}")
 
+    fts_averages_row = conn.execute(
+        "SELECT hex(block) FROM sources_fts_data WHERE id=1"
+    ).fetchone()
+    provenance = read_projection_provenance(conn)
+    return (
+        None if fts_schema_row is None else str(fts_schema_row[0]),
+        None if fts_averages_row is None else str(fts_averages_row[0]),
+        provenance.revision_column,
+    )
+
+
+def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
+    fts_schema, fts_averages, revision_column = _logical_fingerprint_context(conn)
     fts_postings = conn.execute(
         """
         SELECT s.id,v.term,v.col,v.offset
@@ -309,14 +326,8 @@ def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
         ORDER BY s.id
         """
     ).fetchall()
-    fts_averages_row = conn.execute(
-        "SELECT hex(block) FROM sources_fts_data WHERE id=1"
-    ).fetchone()
-    fts_averages = None if fts_averages_row is None else fts_averages_row[0]
-    provenance = read_projection_provenance(conn)
-    revision_column = provenance.revision_column
     return {
-        "fts_schema": None if fts_schema is None else fts_schema[0],
+        "fts_schema": fts_schema,
         "fts_postings": fts_postings,
         "fts_docsize": fts_docsize,
         "fts_averages": fts_averages,
@@ -339,10 +350,98 @@ def _logical_payload(conn: sqlite3.Connection) -> dict[str, object]:
     }
 
 
+def _hash_json_rows(digest, rows) -> None:
+    digest.update(b"[")
+    first = True
+    for row in rows:
+        if first:
+            first = False
+        else:
+            digest.update(b",")
+        digest.update(_canonical_json(row))
+    digest.update(b"]")
+
+
+def _hash_json_member(digest, key: str, *, first: bool) -> None:
+    if not first:
+        digest.update(b",")
+    digest.update(_canonical_json(key))
+    digest.update(b":")
+
+
 def projection_fingerprint(db_path: Path) -> str:
     with sqlite3.connect(db_path) as conn:
-        payload = _logical_payload(conn)
-    return sha256(_canonical_json(payload)).hexdigest()
+        fts_schema, fts_averages, revision_column = _logical_fingerprint_context(conn)
+        digest = sha256()
+        digest.update(b"{")
+
+        _hash_json_member(digest, "edges", first=True)
+        _hash_json_rows(
+            digest,
+            conn.execute(
+                "SELECT source_id, target_id, relation, evidence_grade, producer "
+                "FROM edges ORDER BY source_id, target_id, relation, producer"
+            ),
+        )
+
+        _hash_json_member(digest, "fts_averages", first=False)
+        digest.update(_canonical_json(fts_averages))
+
+        _hash_json_member(digest, "fts_docsize", first=False)
+        _hash_json_rows(
+            digest,
+            conn.execute(
+                """
+                SELECT s.id,hex(d.sz)
+                FROM sources_fts_docsize d
+                JOIN sources s ON s.rowid=d.id
+                ORDER BY s.id
+                """
+            ),
+        )
+
+        _hash_json_member(digest, "fts_postings", first=False)
+        _hash_json_rows(
+            digest,
+            conn.execute(
+                """
+                SELECT s.id,v.term,v.col,v.offset
+                FROM temp.sources_fts_vocab v
+                JOIN sources s ON s.rowid=v.doc
+                ORDER BY s.id,v.term,v.col,v.offset
+                """
+            ),
+        )
+
+        _hash_json_member(digest, "fts_schema", first=False)
+        digest.update(_canonical_json(fts_schema))
+
+        _hash_json_member(digest, "meta", first=False)
+        _hash_json_rows(
+            digest,
+            conn.execute("SELECT key, value FROM meta ORDER BY key"),
+        )
+
+        _hash_json_member(digest, "nodes", first=False)
+        _hash_json_rows(
+            digest,
+            conn.execute(
+                "SELECT id, name, kind, module, source_path, source_start_line, "
+                f"source_end_line, {revision_column} FROM nodes ORDER BY id"
+            ),
+        )
+
+        _hash_json_member(digest, "sources", first=False)
+        _hash_json_rows(
+            digest,
+            conn.execute(
+                f"SELECT id, {revision_column}, source_path, source_start_line, "
+                "source_end_line, declaration_hint, text, content_sha256 "
+                "FROM sources ORDER BY id"
+            ),
+        )
+        digest.update(b"}")
+        return digest.hexdigest()
 
 
 def _populate_projection(artifact_dir: Path, db_path: Path) -> None:
