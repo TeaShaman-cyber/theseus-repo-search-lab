@@ -9,6 +9,32 @@ source context across accepted corpora, with exact provenance and evidence grade
 Statements with `sorry` are searchable. **The tool does not prove theorems,
 certify proofs, or determine mathematical truth.**
 
+### Mathematical research purpose
+
+Repository Search exists to make the **formal structure of existing mathematics**
+queryable for research. The useful object is the machine-readable mathematical
+structure itself: theorem/declaration interfaces, proof dependencies, bounded
+dependency cones, decompositions into subproblems, explicit reductions, preserved
+invariants, bridge theorems, and mathematically justified structural
+correspondences or isomorphisms. These structures can be compared across corpora
+to generate and falsify candidate transfers to other mathematical problems. A
+structural analogy is not a bridge unless its assumptions and evidence survive
+that comparison.
+
+Formalizations of difficult solved problems are therefore valuable **control and
+reference corpora**. In particular, complete or substantial formalizations around
+landmark results such as Fermat's Last Theorem and the Poincare theorem, plus
+formalized Millennium Prize problem work where available, let the research layer
+test whether decomposition, invariant, reduction, and bridge-retrieval methods
+recover useful formal structure. Unsolved-problem corpora provide a separate test:
+can the same lens expose bounded missing seams or candidate correspondences without
+claiming a proof.
+
+The historical human path by which a theorem was discovered is **not required**
+for this research objective and is not a Repository Search acceptance input. It
+may be retained as external historical context, but it must not replace or distort
+the formal dependency/reduction structure extracted from the mathematical source.
+
 Accepted source revisions and immutable release artifacts are authoritative inputs.
 SQLite/FTS indexes are disposable, reproducible search projections. A lexical
 match or dependency path is retrieval evidence, not a proof verdict. Corpus-class
