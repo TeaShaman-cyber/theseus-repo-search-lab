@@ -431,3 +431,6 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("CREATE FUNCTION heavy_pg_concurrency.search_envelope", probe_text)
         self.assertIn("WITH selected_generation AS MATERIALIZED", probe_text)
         self.assertIn("ZERO_HIT_ATOMIC_ENVELOPE_PASS", harness_text)
+        self.assertIn("QUERY_INPUT_BOUNDS_PASS", harness_text)
+        self.assertIn("normalized_term_count", probe_text)
+        self.assertIn("result_limit integer DEFAULT", probe_text)

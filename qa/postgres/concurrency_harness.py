@@ -592,6 +592,61 @@ def zero_hit_atomic_envelope() -> None:
         reader.close()
 
 
+
+def reject_bounded_query(query: str | None, limit: int | None, reason: str) -> None:
+    query_sql = "NULL" if query is None else "'" + query.replace("'", "''") + "'"
+    limit_sql = "NULL" if limit is None else str(limit)
+    one_shot(f"""
+DO $block$
+BEGIN
+    BEGIN
+        PERFORM heavy_pg_concurrency.search_envelope({query_sql}, {limit_sql});
+        RAISE EXCEPTION 'invalid query unexpectedly accepted';
+    EXCEPTION
+        WHEN SQLSTATE '22023' THEN
+            IF SQLERRM <> '{reason}' THEN
+                RAISE;
+            END IF;
+    END;
+END
+$block$;
+""")
+
+
+def bounded_query_inputs() -> None:
+    print("CONCURRENCY_CASE query-input-bounds begin", flush=True)
+    reject_bounded_query(None, 1, "query text empty")
+    reject_bounded_query("   ", 1, "query text empty")
+    reject_bounded_query("x" * 65, 1, "query text too long")
+    reject_bounded_query("one two three four five", 1, "too many normalized terms")
+    reject_bounded_query("match", None, "result limit out of bounds")
+    reject_bounded_query("match", 0, "result limit out of bounds")
+    reject_bounded_query("match", 11, "result limit out of bounds")
+
+    # At every accepted boundary, preserve the exact generation metadata.
+    check_envelope(
+        scalar("SELECT heavy_pg_concurrency.search_envelope('match', 1)::text"),
+        "v2", ["v2-b"],
+    )
+    check_envelope(
+        scalar("SELECT heavy_pg_concurrency.search_envelope('match', 2)::text"),
+        "v2", ["v2-b", "v2-a"],
+    )
+    check_envelope(
+        scalar("SELECT heavy_pg_concurrency.search_envelope('match', 10)::text"),
+        "v2", ["v2-b", "v2-a"],
+    )
+    check_envelope(
+        scalar("SELECT heavy_pg_concurrency.search_envelope('" + "x" * 64 + "', 1)::text"),
+        "v2", [],
+    )
+    check_envelope(
+        scalar("SELECT heavy_pg_concurrency.search_envelope('one two three four', 1)::text"),
+        "v2", [],
+    )
+    print("QUERY_INPUT_BOUNDS_PASS", flush=True)
+
+
 def main() -> int:
     sessions = [
         PsqlSession("heavy-pg-writer-a"),
@@ -608,6 +663,7 @@ def main() -> int:
         guarded_inactive_ready_gc()
         version_dispatch_v1_v2()
         zero_hit_atomic_envelope()
+        bounded_query_inputs()
         return 0
     finally:
         for session in sessions:

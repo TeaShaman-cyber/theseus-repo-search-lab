@@ -288,10 +288,38 @@ $$;
 
 -- One SQL statement and one PostgreSQL statement snapshot supplies both
 -- hit array and selected generation/corpus metadata, including zero hits.
-CREATE FUNCTION heavy_pg_concurrency.search_envelope(query_term text)
+-- The following bounds are synthetic fixture limits, not production defaults.
+-- Validate all caller-controlled inputs before invoking the versioned query.
+CREATE FUNCTION heavy_pg_concurrency.search_envelope(
+    query_term text, result_limit integer DEFAULT 10
+)
 RETURNS jsonb
-LANGUAGE sql STABLE
+LANGUAGE plpgsql STABLE
 AS $$
+DECLARE
+    normalized_term_count integer;
+    response jsonb;
+BEGIN
+    IF query_term IS NULL OR btrim(query_term) = '' THEN
+        RAISE EXCEPTION USING ERRCODE = '22023',
+            MESSAGE = 'query text empty';
+    END IF;
+    IF char_length(query_term) > 64 THEN
+        RAISE EXCEPTION USING ERRCODE = '22023',
+            MESSAGE = 'query text too long';
+    END IF;
+    normalized_term_count := cardinality(regexp_split_to_array(
+        lower(btrim(query_term)), '[[:space:]]+'));
+    IF normalized_term_count > 4 THEN
+        RAISE EXCEPTION USING ERRCODE = '22023',
+            MESSAGE = 'too many normalized terms';
+    END IF;
+    IF result_limit IS NULL OR result_limit < 1 OR result_limit > 10 THEN
+        RAISE EXCEPTION USING ERRCODE = '22023',
+            MESSAGE = 'result limit out of bounds';
+    END IF;
+
+    -- One statement snapshot binds hits and metadata to the same generation.
     WITH selected_generation AS MATERIALIZED (
         SELECT g.generation_id, g.catalog_sha256,
                g.content_identity, g.projection_schema_version
@@ -318,14 +346,17 @@ AS $$
             WHERE c.generation_id = g.generation_id
               AND c.availability = 'UNAVAILABLE'
         ),
-        'hits', coalesce(
-            to_jsonb(string_to_array(nullif(
+        'hits', to_jsonb(ARRAY(
+            SELECT hit FROM unnest(string_to_array(nullif(
                 heavy_pg_concurrency.search_generation(
-                    g.generation_id, query_term), ''), ',')),
-            '[]'::jsonb
-        )
-    )
+                    g.generation_id, query_term), ''), ','))
+            WITH ORDINALITY AS ordered_hits(hit, rank)
+            ORDER BY rank LIMIT result_limit
+        ))
+    ) INTO response
     FROM selected_generation AS g;
+    RETURN response;
+END
 $$;
 
 INSERT INTO heavy_pg_concurrency.generations (generation_id, state)
