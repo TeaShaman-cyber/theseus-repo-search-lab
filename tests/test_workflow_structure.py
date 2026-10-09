@@ -418,3 +418,5 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("READY_WRITE_SERIALIZATION_PASS", harness_text)
         self.assertIn("activate_if_current", probe_text)
         self.assertIn("CAS_STALE_ACTIVATOR_PASS", harness_text)
+        self.assertIn("IMMUTABLE_CHILD_GENERATION_PASS", harness_text)
+        self.assertIn("child generation_id is immutable", probe_text)

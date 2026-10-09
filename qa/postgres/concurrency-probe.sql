@@ -24,6 +24,14 @@ DECLARE
     target_generation_id text;
     parent_state text;
 BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.generation_id IS DISTINCT FROM OLD.generation_id THEN
+            RAISE EXCEPTION
+                USING ERRCODE = '55000',
+                      MESSAGE = 'child generation_id is immutable';
+        END IF;
+    END IF;
+
     IF TG_OP = 'DELETE' THEN
         target_generation_id := OLD.generation_id;
     ELSE
@@ -141,9 +149,15 @@ VALUES
     ('ready-first', 'BUILDING'),
     ('cas-base', 'READY'),
     ('cas-winner', 'READY'),
-    ('cas-stale', 'READY');
+    ('cas-stale', 'READY'),
+    ('immutable-from', 'BUILDING'),
+    ('immutable-to', 'BUILDING');
 
 INSERT INTO heavy_pg_concurrency.active_slot
     (slot_id, active_generation_id) VALUES (1, 'cas-base');
+
+INSERT INTO heavy_pg_concurrency.children
+    (child_id, generation_id, payload)
+VALUES ('immutable-child', 'immutable-from', 'original');
 
 \echo HEAVY_POSTGRES_CONCURRENCY_PROBE_READY

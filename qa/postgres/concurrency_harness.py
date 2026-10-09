@@ -283,6 +283,44 @@ def stale_cas_activation(winner: PsqlSession, stale: PsqlSession) -> None:
     print("CAS_STALE_ACTIVATOR_PASS", flush=True)
 
 
+def immutable_child_generation() -> None:
+    print("CONCURRENCY_CASE immutable-child-generation begin", flush=True)
+    one_shot("""
+DO $block$
+BEGIN
+    BEGIN
+        UPDATE heavy_pg_concurrency.children
+        SET generation_id = 'immutable-to'
+        WHERE child_id = 'immutable-child';
+        RAISE EXCEPTION 'generation_id mutation unexpectedly succeeded';
+    EXCEPTION
+        WHEN SQLSTATE '55000' THEN
+            IF SQLERRM <> 'child generation_id is immutable' THEN
+                RAISE;
+            END IF;
+    END;
+END
+$block$;
+""")
+    assert_scalar(
+        "SELECT generation_id FROM heavy_pg_concurrency.children "
+        "WHERE child_id = 'immutable-child'",
+        "immutable-from",
+        "immutable child remains with original parent",
+    )
+    one_shot(
+        "UPDATE heavy_pg_concurrency.children SET payload = 'changed' "
+        "WHERE child_id = 'immutable-child';"
+    )
+    assert_scalar(
+        "SELECT payload FROM heavy_pg_concurrency.children "
+        "WHERE child_id = 'immutable-child'",
+        "changed",
+        "non-key update remains permitted",
+    )
+    print("IMMUTABLE_CHILD_GENERATION_PASS", flush=True)
+
+
 def main() -> int:
     sessions = [
         PsqlSession("heavy-pg-writer-a"),
@@ -295,6 +333,7 @@ def main() -> int:
         ready_first(sessions[2], sessions[3])
         print("READY_WRITE_SERIALIZATION_PASS", flush=True)
         stale_cas_activation(sessions[0], sessions[1])
+        immutable_child_generation()
         return 0
     finally:
         for session in sessions:
