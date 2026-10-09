@@ -60,15 +60,27 @@ class ProductionPostgresGateTests(unittest.TestCase):
                 self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
                 self.assertEqual(calls, [])
 
-    def test_complete_migration_set_applied_and_read_back(self):
+    def test_complete_migrations_without_behavior_fixture_fail_closed(self):
         files = (
             "sql/neon/001_query_plane_v1.sql",
             "sql/neon/002_query_plane_privileges.sql",
         )
         result, calls = self.run_gate(files)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("PRODUCTION_POSTGRES_INCOMPLETE", result.stderr)
+        self.assertEqual(calls, [])
+
+    def test_complete_migration_set_applied_and_read_back(self):
+        files = (
+            "sql/neon/001_query_plane_v1.sql",
+            "sql/neon/002_query_plane_privileges.sql",
+            "qa/postgres/production-ready-search.sql",
+        )
+        result, calls = self.run_gate(files)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("PRODUCTION_POSTGRES_SCHEMA_PASS", result.stdout)
-        self.assertEqual(len(calls), 3, calls)
+        self.assertEqual(len(calls), 4, calls)
+        self.assertIn(files[2], calls[3])
         self.assertIn(files[0], calls[0])
         self.assertIn(files[1], calls[1])
         self.assertIn("to_regclass", calls[2])
@@ -77,11 +89,25 @@ class ProductionPostgresGateTests(unittest.TestCase):
         files = (
             "sql/neon/001_query_plane_v1.sql",
             "sql/neon/002_query_plane_privileges.sql",
+            "qa/postgres/production-ready-search.sql",
         )
         result, calls = self.run_gate(files, readback="f")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("PRODUCTION_POSTGRES_SCHEMA_FAILED", result.stderr)
         self.assertEqual(len(calls), 3)
+
+    def test_production_ready_search_fixture_is_required(self):
+        fixture = ROOT / "qa/postgres/production-ready-search.sql"
+        self.assertTrue(fixture.is_file(), "real production search probe missing")
+        content = fixture.read_text(encoding="utf-8")
+        self.assertIn("PRODUCTION_READY_SEARCH_PASS", content)
+        self.assertIn("PRODUCTION_READY_SEARCH_ROLLBACK_PASS", content)
+        self.assertIn("repo_search.mark_generation_ready", content)
+        self.assertIn("repo_search.activate_generation", content)
+        self.assertIn("repo_search.search(", content)
+        self.assertIn("'hits'", content)
+        endpoint = GATE.read_text(encoding="utf-8")
+        self.assertIn("qa/postgres/production-ready-search.sql", endpoint)
 
     def test_runner_invokes_production_gate(self):
         endpoint = (ROOT / "tools/ci/heavy-postgres").read_text(encoding="utf-8")

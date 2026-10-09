@@ -18,6 +18,12 @@ if [ ! -f "$schema" ] || [ ! -f "$privileges" ]; then
     exit 1
 fi
 
+behavior=qa/postgres/production-ready-search.sql
+if [ ! -f "$behavior" ]; then
+    printf '%s\n' 'PRODUCTION_POSTGRES_INCOMPLETE missing_production_behavior_probe' >&2
+    exit 1
+fi
+
 printf '%s\n' '== apply production PostgreSQL query-plane migrations =='
 psql -X -v ON_ERROR_STOP=1 -f "$schema"
 psql -X -v ON_ERROR_STOP=1 -f "$privileges"
@@ -40,3 +46,5 @@ if [ "$verified" != t ]; then
     exit 1
 fi
 printf '%s\n' 'PRODUCTION_POSTGRES_SCHEMA_PASS'
+printf '%s\n' '== production READY/search behavior probe =='
+psql -X -v ON_ERROR_STOP=1 -f "$behavior"
