@@ -422,3 +422,9 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("child generation_id is immutable", probe_text)
         self.assertIn("gc_inactive_generation", probe_text)
         self.assertIn("GC_INACTIVE_READY_PASS", harness_text)
+        version_upgrade = ROOT / "qa" / "postgres" / "version-dispatch-v2.sql"
+        self.assertTrue(version_upgrade.is_file())
+        self.assertIn("projection_schema_version", probe_text)
+        self.assertIn("search_generation_v1", probe_text)
+        self.assertIn("search_generation_v2", version_upgrade.read_text(encoding="utf-8"))
+        self.assertIn("VERSION_DISPATCH_V1_V2_PASS", harness_text)

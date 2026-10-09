@@ -409,6 +409,105 @@ $block$;
     print("GC_INACTIVE_READY_PASS", flush=True)
 
 
+def assert_search_rejected(generation_id: str, expected_error: str) -> None:
+    if not generation_id.replace('-', '').isalnum():
+        raise HarnessError(f"invalid search fixture id: {generation_id!r}")
+    if not expected_error.replace(' ', '').isalnum():
+        raise HarnessError(f"invalid search fixture error: {expected_error!r}")
+    one_shot(f"""
+DO $block$
+BEGIN
+    BEGIN
+        PERFORM heavy_pg_concurrency.search_generation('{generation_id}', 'match');
+        RAISE EXCEPTION 'search unexpectedly succeeded';
+    EXCEPTION
+        WHEN SQLSTATE '55000' THEN
+            IF SQLERRM <> '{expected_error}' THEN
+                RAISE;
+            END IF;
+    END;
+END
+$block$;
+""")
+
+
+def version_dispatch_v1_v2() -> None:
+    print("CONCURRENCY_CASE version-dispatch-v1-v2 begin", flush=True)
+    v1_definition_sql = (
+        "SELECT md5(pg_get_functiondef("
+        "'heavy_pg_concurrency.search_generation_v1(text,text)'::regprocedure))"
+    )
+    original_v1_definition = scalar(v1_definition_sql)
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_generation('dispatch-v1', 'match')",
+        "v1-a,v1-b", "v1 baseline ordering",
+    )
+    assert_scalar(
+        "SELECT to_regprocedure("
+        "'heavy_pg_concurrency.search_generation_v2(text,text)') IS NULL",
+        "t", "v2 not yet installed",
+    )
+    assert_search_rejected("dispatch-v2", "unsupported projection schema version")
+    assert_search_rejected("dispatch-unknown", "unsupported projection schema version")
+    assert_search_rejected("gc-building", "search generation not READY")
+    assert_search_rejected("missing-generation", "search generation missing")
+
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.activate_if_current("
+        "'cas-winner', 'dispatch-v1')",
+        "t", "activate v1",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_active('match')",
+        "v1-a,v1-b", "v1 active before migration",
+    )
+
+    completed = subprocess.run(
+        ["psql", "-X", "-v", "ON_ERROR_STOP=1", "-f",
+         "qa/postgres/version-dispatch-v2.sql"],
+        check=False, capture_output=True, text=True,
+    )
+    if completed.returncode != 0:
+        raise HarnessError(
+            "v2 migration failed: " + completed.stdout + completed.stderr
+        )
+    if "HEAVY_POSTGRES_VERSION_V2_MIGRATION_PASS" not in completed.stdout:
+        raise HarnessError("v2 migration success marker missing")
+
+    assert_scalar(
+        v1_definition_sql, original_v1_definition,
+        "v1 implementation unchanged after migration",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_active('match')",
+        "v1-a,v1-b", "active v1 unchanged after v2 installation",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_generation('dispatch-v1', 'match')",
+        "v1-a,v1-b", "inactive/active v1 direct dispatch",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_generation('dispatch-v2', 'match')",
+        "v2-b,v2-a", "inactive v2 dispatch ordering",
+    )
+    assert_search_rejected("dispatch-unknown", "unsupported projection schema version")
+    assert_search_rejected("gc-building", "search generation not READY")
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.activate_if_current("
+        "'dispatch-v1', 'dispatch-v2')",
+        "t", "activate v2",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_active('match')",
+        "v2-b,v2-a", "active v2 after CAS",
+    )
+    assert_scalar(
+        "SELECT heavy_pg_concurrency.search_generation('dispatch-v1', 'match')",
+        "v1-a,v1-b", "historical v1 preserved after v2 activation",
+    )
+    print("VERSION_DISPATCH_V1_V2_PASS", flush=True)
+
+
 def main() -> int:
     sessions = [
         PsqlSession("heavy-pg-writer-a"),
@@ -423,6 +522,7 @@ def main() -> int:
         stale_cas_activation(sessions[0], sessions[1])
         immutable_child_generation()
         guarded_inactive_ready_gc()
+        version_dispatch_v1_v2()
         return 0
     finally:
         for session in sessions:

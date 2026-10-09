@@ -9,7 +9,8 @@ CREATE ROLE heavy_pg_gc_owner NOLOGIN;
 CREATE TABLE heavy_pg_concurrency.generations (
     generation_id text PRIMARY KEY,
     state text NOT NULL CHECK (state IN ('BUILDING', 'READY')),
-    content_identity text NOT NULL DEFAULT 'fixture-digest'
+    content_identity text NOT NULL DEFAULT 'fixture-digest',
+    projection_schema_version text NOT NULL DEFAULT 'repo-search-query-v1'
 );
 
 CREATE TABLE heavy_pg_concurrency.children (
@@ -219,6 +220,60 @@ ALTER FUNCTION heavy_pg_concurrency.gc_inactive_generation(text, text)
 REVOKE ALL ON FUNCTION heavy_pg_concurrency.gc_inactive_generation(text, text)
     FROM PUBLIC;
 
+-- Synthetic v1 semantics intentionally sort lexical matches ascending.
+-- Later v2 will change this order without replacing this implementation.
+CREATE FUNCTION heavy_pg_concurrency.search_generation_v1(
+    target_generation_id text, query_term text
+)
+RETURNS text
+LANGUAGE sql STABLE
+AS $$
+    SELECT coalesce(string_agg(child_id, ',' ORDER BY child_id ASC), '')
+    FROM heavy_pg_concurrency.children
+    WHERE generation_id = target_generation_id
+      AND position(query_term IN payload) > 0;
+$$;
+
+CREATE FUNCTION heavy_pg_concurrency.search_generation(
+    target_generation_id text, query_term text
+)
+RETURNS text
+LANGUAGE plpgsql STABLE
+AS $$
+DECLARE
+    generation_state text;
+    generation_version text;
+BEGIN
+    SELECT state, projection_schema_version
+    INTO generation_state, generation_version
+    FROM heavy_pg_concurrency.generations
+    WHERE generation_id = target_generation_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION USING ERRCODE = '55000',
+            MESSAGE = 'search generation missing';
+    END IF;
+    IF generation_state <> 'READY' THEN
+        RAISE EXCEPTION USING ERRCODE = '55000',
+            MESSAGE = 'search generation not READY';
+    END IF;
+    IF generation_version = 'repo-search-query-v1' THEN
+        RETURN heavy_pg_concurrency.search_generation_v1(
+            target_generation_id, query_term);
+    END IF;
+    RAISE EXCEPTION USING ERRCODE = '55000',
+        MESSAGE = 'unsupported projection schema version';
+END
+$$;
+
+CREATE FUNCTION heavy_pg_concurrency.search_active(query_term text)
+RETURNS text
+LANGUAGE sql STABLE
+AS $$
+    SELECT heavy_pg_concurrency.search_generation(
+        active_generation_id, query_term)
+    FROM heavy_pg_concurrency.active_slot WHERE slot_id = 1;
+$$;
+
 INSERT INTO heavy_pg_concurrency.generations (generation_id, state)
 VALUES
     ('writer-first', 'BUILDING'),
@@ -230,7 +285,17 @@ VALUES
     ('immutable-to', 'BUILDING'),
     ('gc-disposable', 'BUILDING'),
     ('gc-referenced', 'READY'),
-    ('gc-building', 'BUILDING');
+    ('gc-building', 'BUILDING'),
+    ('dispatch-v1', 'BUILDING'),
+    ('dispatch-v2', 'BUILDING'),
+    ('dispatch-unknown', 'READY');
+
+UPDATE heavy_pg_concurrency.generations
+SET projection_schema_version = 'repo-search-query-v2'
+WHERE generation_id = 'dispatch-v2';
+UPDATE heavy_pg_concurrency.generations
+SET projection_schema_version = 'unknown-query-version'
+WHERE generation_id = 'dispatch-unknown';
 
 UPDATE heavy_pg_concurrency.generations
 SET content_identity = 'gc-digest-1'
@@ -255,5 +320,14 @@ SELECT heavy_pg_concurrency.mark_ready('gc-disposable');
 INSERT INTO heavy_pg_concurrency.external_references
     (reference_id, generation_id)
 VALUES ('pinned', 'gc-referenced');
+
+INSERT INTO heavy_pg_concurrency.children
+    (child_id, generation_id, payload)
+VALUES ('v1-a', 'dispatch-v1', 'lexical match'),
+       ('v1-b', 'dispatch-v1', 'lexical match'),
+       ('v2-a', 'dispatch-v2', 'lexical match'),
+       ('v2-b', 'dispatch-v2', 'lexical match');
+SELECT heavy_pg_concurrency.mark_ready('dispatch-v1');
+SELECT heavy_pg_concurrency.mark_ready('dispatch-v2');
 
 \echo HEAVY_POSTGRES_CONCURRENCY_PROBE_READY
