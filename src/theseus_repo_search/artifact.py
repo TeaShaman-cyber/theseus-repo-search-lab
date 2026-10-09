@@ -34,6 +34,7 @@ V2_SCHEMA = "theseus.repo-index.v2"
 _DEPENDENCY_GRADE_BY_RELATION = {
     "type_dependency": EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
     "value_dependency": EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+    "static_reference": EvidenceGrade.STATIC_REFERENCE,
 }
 
 
