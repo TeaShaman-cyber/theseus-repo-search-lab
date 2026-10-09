@@ -428,3 +428,6 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("search_generation_v1", probe_text)
         self.assertIn("search_generation_v2", version_upgrade.read_text(encoding="utf-8"))
         self.assertIn("VERSION_DISPATCH_V1_V2_PASS", harness_text)
+        self.assertIn("CREATE FUNCTION heavy_pg_concurrency.search_envelope", probe_text)
+        self.assertIn("WITH selected_generation AS MATERIALIZED", probe_text)
+        self.assertIn("ZERO_HIT_ATOMIC_ENVELOPE_PASS", harness_text)

@@ -10,6 +10,7 @@ CREATE TABLE heavy_pg_concurrency.generations (
     generation_id text PRIMARY KEY,
     state text NOT NULL CHECK (state IN ('BUILDING', 'READY')),
     content_identity text NOT NULL DEFAULT 'fixture-digest',
+    catalog_sha256 text NOT NULL DEFAULT 'fixture-catalog',
     projection_schema_version text NOT NULL DEFAULT 'repo-search-query-v1'
 );
 
@@ -18,6 +19,17 @@ CREATE TABLE heavy_pg_concurrency.children (
     generation_id text NOT NULL
         REFERENCES heavy_pg_concurrency.generations(generation_id),
     payload text NOT NULL
+);
+
+-- Synthetic corpus availability binds metadata to a specific generation.
+CREATE TABLE heavy_pg_concurrency.corpus_status (
+    generation_id text NOT NULL
+        REFERENCES heavy_pg_concurrency.generations(generation_id),
+    source_id text NOT NULL,
+    availability text NOT NULL
+        CHECK (availability IN ('SEARCHABLE', 'UNAVAILABLE')),
+    reason text,
+    PRIMARY KEY (generation_id, source_id)
 );
 
 CREATE FUNCTION heavy_pg_concurrency.guard_child_write()
@@ -274,6 +286,48 @@ AS $$
     FROM heavy_pg_concurrency.active_slot WHERE slot_id = 1;
 $$;
 
+-- One SQL statement and one PostgreSQL statement snapshot supplies both
+-- hit array and selected generation/corpus metadata, including zero hits.
+CREATE FUNCTION heavy_pg_concurrency.search_envelope(query_term text)
+RETURNS jsonb
+LANGUAGE sql STABLE
+AS $$
+    WITH selected_generation AS MATERIALIZED (
+        SELECT g.generation_id, g.catalog_sha256,
+               g.content_identity, g.projection_schema_version
+        FROM heavy_pg_concurrency.active_slot AS a
+        JOIN heavy_pg_concurrency.generations AS g
+          ON g.generation_id = a.active_generation_id
+        WHERE a.slot_id = 1 AND g.state = 'READY'
+    )
+    SELECT jsonb_build_object(
+        'generation_id', g.generation_id,
+        'catalog_sha256', g.catalog_sha256,
+        'generation_content_sha256', g.content_identity,
+        'projection_schema_version', g.projection_schema_version,
+        'searched_corpora', (
+            SELECT count(*) FROM heavy_pg_concurrency.corpus_status AS c
+            WHERE c.generation_id = g.generation_id
+              AND c.availability = 'SEARCHABLE'
+        ),
+        'unavailable_corpora', (
+            SELECT coalesce(jsonb_agg(
+                jsonb_build_object('source_id', c.source_id, 'reason', c.reason)
+                ORDER BY c.source_id), '[]'::jsonb)
+            FROM heavy_pg_concurrency.corpus_status AS c
+            WHERE c.generation_id = g.generation_id
+              AND c.availability = 'UNAVAILABLE'
+        ),
+        'hits', coalesce(
+            to_jsonb(string_to_array(nullif(
+                heavy_pg_concurrency.search_generation(
+                    g.generation_id, query_term), ''), ',')),
+            '[]'::jsonb
+        )
+    )
+    FROM selected_generation AS g;
+$$;
+
 INSERT INTO heavy_pg_concurrency.generations (generation_id, state)
 VALUES
     ('writer-first', 'BUILDING'),
@@ -296,6 +350,20 @@ WHERE generation_id = 'dispatch-v2';
 UPDATE heavy_pg_concurrency.generations
 SET projection_schema_version = 'unknown-query-version'
 WHERE generation_id = 'dispatch-unknown';
+
+UPDATE heavy_pg_concurrency.generations
+SET catalog_sha256 = 'catalog-v1', content_identity = 'content-v1'
+WHERE generation_id = 'dispatch-v1';
+UPDATE heavy_pg_concurrency.generations
+SET catalog_sha256 = 'catalog-v2', content_identity = 'content-v2'
+WHERE generation_id = 'dispatch-v2';
+
+INSERT INTO heavy_pg_concurrency.corpus_status
+    (generation_id, source_id, availability, reason)
+VALUES ('dispatch-v1', 'source-v1', 'SEARCHABLE', NULL),
+       ('dispatch-v1', 'missing-v1', 'UNAVAILABLE', 'unavailable fixture'),
+       ('dispatch-v2', 'source-v2', 'SEARCHABLE', NULL),
+       ('dispatch-v2', 'missing-v2', 'UNAVAILABLE', 'unavailable fixture');
 
 UPDATE heavy_pg_concurrency.generations
 SET content_identity = 'gc-digest-1'

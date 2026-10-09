@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -508,6 +509,89 @@ def version_dispatch_v1_v2() -> None:
     print("VERSION_DISPATCH_V1_V2_PASS", flush=True)
 
 
+
+def check_envelope(payload: str, version: str, hits: list[str]) -> None:
+    try:
+        envelope = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise HarnessError(f"zero-hit envelope is not JSON: {payload!r}") from exc
+    expected = {
+        "generation_id": f"dispatch-{version}",
+        "catalog_sha256": f"catalog-{version}",
+        "generation_content_sha256": f"content-{version}",
+        "projection_schema_version": f"repo-search-query-{version}",
+        "searched_corpora": 1,
+        "unavailable_corpora": [
+            {"source_id": f"missing-{version}", "reason": "unavailable fixture"}
+        ],
+        "hits": hits,
+    }
+    if envelope != expected:
+        raise HarnessError(
+            f"{version} atomic envelope mismatch: "
+            f"expected={expected!r} got={envelope!r}"
+        )
+
+
+def zero_hit_atomic_envelope() -> None:
+    print("CONCURRENCY_CASE zero-hit-atomic-envelope begin", flush=True)
+    reader = PsqlSession("heavy-pg-envelope-reader")
+    query = "SELECT heavy_pg_concurrency.search_envelope('absent-term')::text;"
+    try:
+        # Active v2 after the preceding version dispatch contract.
+        reader.step("BEGIN ISOLATION LEVEL REPEATABLE READ;", "envelope_snapshot_begin")
+        snapshot = reader.step(query, "v2_snapshot")
+        if len(snapshot) != 1:
+            raise HarnessError(f"v2 envelope expected one row, got {snapshot!r}")
+        check_envelope(snapshot[0], "v2", [])
+
+        # Concurrent CAS changes the pointer; snapshot-bound reader must
+        # still see consistent v2 metadata and hits in one result envelope.
+        assert_scalar(
+            "SELECT heavy_pg_concurrency.activate_if_current("
+            "'dispatch-v2', 'dispatch-v1')",
+            "t", "envelope concurrent switch to v1",
+        )
+        repeated = reader.step(query, "v2_snapshot_after_activation")
+        if repeated != snapshot:
+            raise HarnessError(
+                f"snapshot changed after activation: {snapshot!r} -> {repeated!r}"
+            )
+        reader.step("COMMIT;", "envelope_snapshot_commit")
+
+        fresh_v1 = reader.step(query, "fresh_v1_zero_hit")
+        if len(fresh_v1) != 1:
+            raise HarnessError(f"v1 envelope expected one row, got {fresh_v1!r}")
+        check_envelope(fresh_v1[0], "v1", [])
+        v1_hits = reader.step(
+            "SELECT heavy_pg_concurrency.search_envelope('match')::text;",
+            "fresh_v1_hits",
+        )
+        if len(v1_hits) != 1:
+            raise HarnessError(f"v1 hits expected one row, got {v1_hits!r}")
+        check_envelope(v1_hits[0], "v1", ["v1-a", "v1-b"])
+
+        assert_scalar(
+            "SELECT heavy_pg_concurrency.activate_if_current("
+            "'dispatch-v1', 'dispatch-v2')",
+            "t", "envelope switch back to v2",
+        )
+        fresh_v2 = reader.step(query, "fresh_v2_zero_hit")
+        if len(fresh_v2) != 1:
+            raise HarnessError(f"v2 envelope expected one row, got {fresh_v2!r}")
+        check_envelope(fresh_v2[0], "v2", [])
+        v2_hits = reader.step(
+            "SELECT heavy_pg_concurrency.search_envelope('match')::text;",
+            "fresh_v2_hits",
+        )
+        if len(v2_hits) != 1:
+            raise HarnessError(f"v2 hits expected one row, got {v2_hits!r}")
+        check_envelope(v2_hits[0], "v2", ["v2-b", "v2-a"])
+        print("ZERO_HIT_ATOMIC_ENVELOPE_PASS", flush=True)
+    finally:
+        reader.close()
+
+
 def main() -> int:
     sessions = [
         PsqlSession("heavy-pg-writer-a"),
@@ -523,6 +607,7 @@ def main() -> int:
         immutable_child_generation()
         guarded_inactive_ready_gc()
         version_dispatch_v1_v2()
+        zero_hit_atomic_envelope()
         return 0
     finally:
         for session in sessions:
