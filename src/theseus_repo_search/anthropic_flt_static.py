@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from itertools import pairwise
 
 from .errors import RepoSearchError
 
@@ -76,7 +77,7 @@ def parse_static_export(meta_text: str, edges_text: str) -> dict[str, object]:
         raise _integrity("Anthropic FLT edge offsets length does not match theorem count")
     if not off or off[0] != 0:
         raise _integrity("Anthropic FLT edge offsets must start at zero")
-    if any(value < 0 for value in off) or any(a > b for a, b in zip(off, off[1:])):
+    if any(value < 0 for value in off) or any(a > b for a, b in pairwise(off)):
         raise _integrity("Anthropic FLT edge offsets must be non-negative and monotone")
     if off[-1] != len(dst):
         raise _integrity("Anthropic FLT final edge offset does not match destination count")
