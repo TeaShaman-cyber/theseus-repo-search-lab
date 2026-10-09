@@ -395,3 +395,24 @@ class HeavyPostgresWorkflowTests(unittest.TestCase):
         self.assertIn("CREATE TEMP TABLE secret", security_text)
         self.assertIn("HEAVY_POSTGRES_SECURITY_PASS", security_text)
         self.assertIn("qa/postgres/security-contract.sql", endpoint_text)
+
+        concurrency_sql = ROOT / "qa" / "postgres" / "concurrency-probe.sql"
+        concurrency_harness = ROOT / "qa" / "postgres" / "concurrency_harness.py"
+        self.assertTrue(concurrency_sql.is_file())
+        self.assertTrue(concurrency_harness.is_file())
+        self.assertIn("qa/postgres/concurrency-probe.sql", endpoint_text)
+        self.assertIn("qa/postgres/concurrency_harness.py", endpoint_text)
+
+        probe_text = concurrency_sql.read_text(encoding="utf-8")
+        self.assertIn("FOR SHARE", probe_text)
+        self.assertIn("FOR UPDATE", probe_text)
+        self.assertIn("BUILDING", probe_text)
+        self.assertIn("READY", probe_text)
+
+        harness_text = concurrency_harness.read_text(encoding="utf-8")
+        self.assertIn("subprocess.Popen", harness_text)
+        self.assertIn("PGAPPNAME", harness_text)
+        self.assertIn("pg_stat_activity", harness_text)
+        self.assertIn("wait_event_type", harness_text)
+        self.assertIn("threading.Thread", harness_text)
+        self.assertIn("READY_WRITE_SERIALIZATION_PASS", harness_text)
