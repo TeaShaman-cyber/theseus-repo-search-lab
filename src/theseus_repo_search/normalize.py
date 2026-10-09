@@ -6,6 +6,7 @@ from .model import Edge, EvidenceGrade, Node
 RELATION_BY_KIND = {
     "type": ("type_dependency", EvidenceGrade.ELABORATED_TYPE_DEPENDENCY),
     "value": ("value_dependency", EvidenceGrade.ELABORATED_VALUE_DEPENDENCY),
+    "static": ("static_reference", EvidenceGrade.STATIC_REFERENCE),
 }
 
 

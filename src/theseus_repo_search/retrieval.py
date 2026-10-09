@@ -390,6 +390,7 @@ def context(
         "scope_root_modules": list(graph_result.scope_root_modules),
         "dependency_boundary": graph_result.dependency_boundary,
         "complete_within_scope": graph_result.complete_within_scope,
+        "evidence_boundary": graph_result.evidence_boundary,
     }
     if graph_result.source_kind == "git":
         result["created_from_authoritative_commit"] = (

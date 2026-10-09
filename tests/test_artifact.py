@@ -1065,6 +1065,20 @@ class StructuralIntegrityTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("relation/evidence mismatch", str(caught.exception))
 
+    def test_static_reference_artifact_is_accepted(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d)
+            edge = Edge(
+                source_id="lean:Zeta23.Tiny.b",
+                target_id="lean:Zeta23.Tiny.a",
+                relation="static_reference",
+                evidence_grade=EvidenceGrade.STATIC_REFERENCE,
+                producer="cameronfreer/LeanDepViz@deadbeef",
+            )
+            write_sample_raw(path, edges=[edge])
+            _, _, edges, _ = load_artifact(path)
+            self.assertEqual(edges, [edge])
+
     def test_unknown_dependency_relation_is_blocked(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
