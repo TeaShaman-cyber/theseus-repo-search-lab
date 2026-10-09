@@ -44,8 +44,7 @@ python3 qa/postgres/concurrency_harness.py
 
 printf '%s\n' '== ephemeral fixture cleanup readback =='
 cleanup_ok=$(psql -X -v ON_ERROR_STOP=1 -Atqc \
-    "SELECT to_regnamespace('heavy_pg_concurrency') IS NULL AND NOT EXISTS ("\
-    "SELECT 1 FROM pg_roles WHERE rolname = 'heavy_pg_gc_owner');")
+    "SELECT to_regnamespace('heavy_pg_concurrency') IS NULL AND NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'heavy_pg_gc_owner');")
 if [ "$cleanup_ok" != t ]; then
     printf '%s\n' 'HEAVY_POSTGRES_CLEANUP_FAILED schema_or_role_remains' >&2
     exit 1

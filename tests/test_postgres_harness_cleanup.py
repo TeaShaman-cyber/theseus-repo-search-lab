@@ -1,6 +1,8 @@
 import importlib.util
+import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from contextlib import ExitStack
 from pathlib import Path
@@ -10,6 +12,32 @@ HARNESS_PATH = Path(__file__).resolve().parents[1] / "qa/postgres/concurrency_ha
 
 
 class PostgresHarnessCleanupTests(unittest.TestCase):
+    def test_cleanup_readback_passes_one_complete_sql_argument(self):
+        runner = HARNESS_PATH.parents[2] / "tools/ci/heavy-postgres"
+        text = runner.read_text(encoding="utf-8")
+        begin = text.index("cleanup_ok=$(psql")
+        end = text.index("printf '%s\\n' 'HEAVY_POSTGRES_CLEANUP_PASS'", begin)
+        shell_fragment = text[begin:end] + "printf 'POSTFLIGHT_DONE\\n'\n"
+        with tempfile.TemporaryDirectory() as directory:
+            fake_psql = Path(directory) / "psql"
+            fake_psql.write_text(
+                "#!/bin/sh\n"
+                '[ "$#" -eq 5 ] || exit 40\n'
+                'case "$5" in\n'
+                "  *to_regnamespace*pg_roles*) printf 't\\n';;\n"
+                "  *) exit 41;;\n"
+                "esac\n",
+                encoding="utf-8",
+            )
+            fake_psql.chmod(0o755)
+            env = {**os.environ, "PATH": directory + ":" + os.environ["PATH"]}
+            proc = subprocess.run(
+                ["sh", "-c", shell_fragment], env=env,
+                capture_output=True, text=True, check=False,
+            )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("POSTFLIGHT_DONE", proc.stdout)
+
     def test_failed_cleanup_must_not_report_harness_success(self):
         name = "postgres_harness_cleanup_test_module"
         spec = importlib.util.spec_from_file_location(name, HARNESS_PATH)
