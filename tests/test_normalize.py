@@ -24,6 +24,7 @@ class NormalizeLeanDepVizTests(unittest.TestCase):
             [node.id for node in nodes],
             ["lean:Zeta23.Tiny.a", "lean:Zeta23.Tiny.b"],
         )
+        self.assertEqual([node.name for node in nodes], ["a", "b"])
         self.assertEqual(len(edges), 1)
         self.assertEqual(edges[0].source_id, "lean:Zeta23.Tiny.b")
         self.assertEqual(edges[0].target_id, "lean:Zeta23.Tiny.a")

@@ -1,0 +1,15 @@
+name: Mutation test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation-test:
+    uses: TeaShaman-cyber/marcopolo-cookbook/.github/workflows/reusable-mutation-test.yml@974088cff24b54e23e40ea0ca80b7ddd59fec502
+    with:
+      python_version: "3.11"
+      requirements_file: requirements/ci-mutation.txt
+      mutation_endpoint: tools/ci/mutation-test
