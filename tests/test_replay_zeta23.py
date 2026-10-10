@@ -1,19 +1,29 @@
 import json
 import os
+import subprocess
 import sys
 import tempfile
-import subprocess
 import unittest
 from hashlib import sha256
 from pathlib import Path
 
 from scripts.replay_zeta23 import run_replay
-from theseus_repo_search.artifact import write_artifact
-from theseus_repo_search.model import ArtifactScope, Edge, EvidenceGrade, Node, ProducerPin, SourceChunk
+from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
+from theseus_repo_search.artifact import (
+    artifact_identity,
+    load_artifact,
+    write_artifact,
+)
+from theseus_repo_search.model import (
+    ArtifactScope,
+    Edge,
+    EvidenceGrade,
+    Node,
+    ProducerPin,
+    SourceChunk,
+)
 from theseus_repo_search.producer_config import load_lean_git_source, load_runner_pins
 from theseus_repo_search.projection import build_projection
-from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
-
 
 DESCRIPTOR = Path("producer/sources/zeta23.json")
 RUNNER = load_runner_pins(Path("producer/runner.json"))
@@ -205,6 +215,7 @@ class ReplayZeta23Tests(unittest.TestCase):
 
             result = run_replay(db, artifact, DESCRIPTOR, source_root)
             self.assertEqual(result["status"], "PASS")
+            self.assertEqual(result["artifact_identity"], artifact_identity(load_artifact(artifact)[0]))
             self.assertEqual(result["provenance"], {
                 "repo": "anthropics/formal-math",
                 "commit": COMMIT,

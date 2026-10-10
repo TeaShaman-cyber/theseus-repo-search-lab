@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .errors import RepoSearchError
-
+from .projection import ProjectionProvenance, read_projection_provenance
 
 MAX_DEPTH = 5
 
@@ -19,8 +19,19 @@ class GraphResult:
     scope_root_modules: tuple[str, ...]
     dependency_boundary: str
     complete_within_scope: bool
-    created_from_authoritative_commit: bool
+    source_kind: str
+    source_revision: str
+    source_authority: dict[str, object] | None
+    created_from_authoritative_source: bool
     found: bool
+
+    @property
+    def created_from_authoritative_commit(self) -> bool:
+        if self.source_kind != "git":
+            raise AttributeError(
+                "archive graph provenance has no created_from_authoritative_commit field"
+            )
+        return self.created_from_authoritative_source
 
 
 def _validate_depth(depth: int) -> None:
@@ -30,20 +41,31 @@ def _validate_depth(depth: int) -> None:
         raise RepoSearchError("UNKNOWN", "depth exceeds v1 maximum of 5")
 
 
-def _metadata(conn: sqlite3.Connection) -> tuple[tuple[str, ...], str, str, bool]:
-    meta = dict(conn.execute("SELECT key, value FROM meta"))
-    root_modules = tuple(str(item) for item in json.loads(meta["root_modules"]))
-    authoritative = json.loads(meta["created_from_authoritative_commit"])
-    if not isinstance(authoritative, bool):
+def _metadata(
+    conn: sqlite3.Connection,
+) -> tuple[tuple[str, ...], str, str, ProjectionProvenance]:
+    meta = {str(key): str(value) for key, value in conn.execute("SELECT key, value FROM meta")}
+    try:
+        root_modules_raw = json.loads(meta["root_modules"])
+        boundary = meta["dependency_boundary"]
+        producer_kind = meta["producer.kind"]
+    except (KeyError, json.JSONDecodeError) as exc:
         raise RepoSearchError(
             "BLOCKED_PROJECTION_INTEGRITY",
-            "invalid created_from_authoritative_commit projection metadata",
+            "missing or invalid graph projection metadata",
+        ) from exc
+    if not isinstance(root_modules_raw, list) or not all(
+        isinstance(item, str) for item in root_modules_raw
+    ):
+        raise RepoSearchError(
+            "BLOCKED_PROJECTION_INTEGRITY",
+            "invalid root_modules projection metadata",
         )
     return (
-        root_modules,
-        meta["dependency_boundary"],
-        meta["producer.kind"],
-        authoritative,
+        tuple(root_modules_raw),
+        boundary,
+        producer_kind,
+        read_projection_provenance(conn),
     )
 
 
@@ -120,7 +142,7 @@ def _edge_record(
 def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphResult:
     _validate_depth(depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind, authoritative = _metadata(conn)
+        roots, boundary, producer_kind, provenance = _metadata(conn)
         _require_elaborated_graph(producer_kind)
         start = _resolve_name(conn, name)
 
@@ -154,7 +176,10 @@ def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphRe
         scope_root_modules=roots,
         dependency_boundary=boundary,
         complete_within_scope=True,
-        created_from_authoritative_commit=authoritative,
+        source_kind=provenance.source_kind,
+        source_revision=provenance.source_revision,
+        source_authority=provenance.source_authority,
+        created_from_authoritative_source=provenance.created_from_authoritative_source,
         found=True,
     )
 
@@ -176,7 +201,7 @@ def path(
 ) -> GraphResult:
     _validate_depth(max_depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind, authoritative = _metadata(conn)
+        roots, boundary, producer_kind, provenance = _metadata(conn)
         _require_elaborated_graph(producer_kind)
         source_id = _resolve_name(conn, source)
         target_id = _resolve_name(conn, target)
@@ -186,7 +211,9 @@ def path(
             path_found = True
         else:
             path_edges = []
-            queue = deque([(source_id, tuple(), 0)])
+            queue: deque[tuple[str, tuple[dict[str, object], ...], int]] = deque(
+                [(source_id, (), 0)]
+            )
             visited = {source_id}
             found_path: tuple[dict[str, object], ...] | None = None
 
@@ -216,6 +243,9 @@ def path(
         scope_root_modules=roots,
         dependency_boundary=boundary,
         complete_within_scope=True,
-        created_from_authoritative_commit=authoritative,
+        source_kind=provenance.source_kind,
+        source_revision=provenance.source_revision,
+        source_authority=provenance.source_authority,
+        created_from_authoritative_source=provenance.created_from_authoritative_source,
         found=path_found,
     )

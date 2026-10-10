@@ -1,0 +1,40 @@
+{
+  "schema": "theseus.repo-search-research-smoke.v1",
+  "scenario_id": "annals-marton-seam-v0",
+  "version": 0,
+  "research_refs": [
+    "TeaShaman-cyber/theseus-math-research-lab#56",
+    "TeaShaman-cyber/theseus-math-research-lab#18",
+    "TeaShaman-cyber/theseus-math-research-lab#20"
+  ],
+  "source_repo": "ImperialCollegeLondon/AnnalsChallenge",
+  "evidence_classes": [
+    "FORMAL_STATEMENT_NOT_PROOF",
+    "ADDITIVE_COMBINATORICS_COVERING_CANDIDATES",
+    "EXTERNAL_FORMAL_BRIDGE_UNVERIFIED"
+  ],
+  "probes": [
+    {
+      "id": "marton-formalized-statement",
+      "kind": "search",
+      "query": "Marton",
+      "query_mode": "evidence",
+      "limit": 10,
+      "regression_guard": false
+    },
+    {
+      "id": "additive-covering-lemma-candidates",
+      "kind": "search",
+      "query": "CovByVAdd",
+      "query_mode": "discovery",
+      "limit": 10,
+      "regression_guard": false
+    },
+    {
+      "id": "formal-proof-not-provided-by-source",
+      "kind": "declared_boundary",
+      "basis": "In pinned AnnalsChallenge source e32eb1411db0d700ca874dd695aea92f78699db8, ConjectureOfMarton.theorem_1_2 is `by sorry`. This statement corpus supplies a formalized target, not a formal proof. A bridge from a different corpus must be independently researched and verified.",
+      "regression_guard": false
+    }
+  ]
+}

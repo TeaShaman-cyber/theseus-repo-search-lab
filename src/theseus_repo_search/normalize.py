@@ -3,7 +3,6 @@ from __future__ import annotations
 from .errors import RepoSearchError
 from .model import Edge, EvidenceGrade, Node
 
-
 RELATION_BY_KIND = {
     "type": ("type_dependency", EvidenceGrade.ELABORATED_TYPE_DEPENDENCY),
     "value": ("value_dependency", EvidenceGrade.ELABORATED_VALUE_DEPENDENCY),

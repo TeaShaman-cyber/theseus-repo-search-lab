@@ -4,7 +4,32 @@
 
 `theseus-repo-search-lab` is a specialized repository-evidence tool. It indexes a repository snapshot, preserves exact provenance, exposes dependency structure where the language/runtime can prove it, and returns bounded context suitable for LLM research work.
 
-Its primary use is a repository analogue of Session Search: given a large formal-mathematics corpus, locate the declaration, theorem interface, dependency neighborhood, or load-bearing bridge relevant to the next research step without pushing the whole repository into model context. The first proving use case is modern Lean mathematics around Zeta23 / Riemann-hypothesis research. The goal is a practical research lens, not a general repository platform.
+Its primary use is a repository analogue of Session Search: given a large formal-mathematics corpus, locate the declaration, theorem interface, dependency neighborhood, or load-bearing bridge relevant to the next research step without pushing the whole repository into model context. The first application is retrieval within modern Lean mathematics around Zeta23 / Riemann-hypothesis research. The goal is a practical research lens, not a general repository platform.
+
+### Research object: formal mathematical structure
+
+The research target is the formalized mathematical structure itself, not the
+historical sequence by which a human discovered the proof. Repository Search
+should make it possible to inspect and compare exact theorem interfaces, proof and
+type dependencies, decomposition boundaries, invariant-preserving transformations,
+reductions, bridge theorems, and justified structural correspondences/isomorphisms
+across accepted corpora. The purpose of such comparisons is to generate bounded,
+falsifiable candidate transfers to other mathematical problems while preserving
+assumptions and provenance. Similar-looking graphs or analogies are not evidence of
+a valid mathematical bridge.
+
+Formalized landmark solved problems are control/reference material for this
+methodology. Fermat's Last Theorem and the Poincare theorem are important examples;
+formalized Millennium Prize problem work is valuable for the same reason where it
+exists. The control question is whether the lens recovers useful formal
+decomposition, invariants, reductions, and bridges from known mathematics. The
+open-problem question is whether those validated structural motifs expose a bounded
+missing seam or candidate correspondence elsewhere. Neither question authorizes
+Repository Search to claim a new theorem or certify an upstream proof.
+
+Human discovery history may be studied separately for history or methodology, but
+it is neither a prerequisite nor an authority source for this formal-structure
+research path.
 
 MarcoPolo is an initial producer/consumer runtime, not the architectural owner. The tool must remain portable to another runtime that can read the same artifacts.
 
@@ -70,7 +95,7 @@ The consumer may aggregate weaker evidence, but must not promote its grade.
             MarcoPolo                   other consumers
 ```
 
-The first language-specific exact producer is Lean. The first proving ground is `anthropics/formal-math/zeta23`.
+The first language-specific exact producer is Lean. The initial indexed corpus is `anthropics/formal-math/zeta23`.
 
 ## Producer boundary
 
@@ -300,6 +325,7 @@ This repository owns:
 
 The bootstrap does not promise:
 
+- theorem proving, proof certification, or mandatory per-theorem axiom audits as gates for indexing and searching;
 - proof verification beyond the evidence supplied by the producer;
 - semantic embeddings;
 - hosted search;

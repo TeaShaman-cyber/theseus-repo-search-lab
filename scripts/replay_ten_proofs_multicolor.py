@@ -4,8 +4,13 @@ import argparse
 import json
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+    require_context_chunks,
+)
 from theseus_repo_search.retrieval import context, search
 
 TARGET = "ErdosProblems.MulticolourTriangleRamsey.erdos_183"
@@ -36,16 +41,14 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         raise AssertionError("grounded ten-proofs lexical query missed erdos_183")
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "erdos_183" for chunk in ctx["chunks"]):
+    chunks = require_context_chunks(ctx)
+    if not any(chunk["declaration_hint"] == "erdos_183" for chunk in chunks):
         raise AssertionError("bounded context omitted ten-proofs endpoint source")
 
     return {
         "status": "PASS",
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "artifact_identity": artifact_identity(manifest),
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "exact": {
             "target": TARGET,
             "source_path": exact_hits[0].source_path,
@@ -54,7 +57,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         },
         "graph": {"edge_count": len(graph.edges), "edges": list(graph.edges)},
         "lexical": {"query": LEXICAL_QUERY, "hits": [hit.declaration_hint for hit in lexical]},
-        "context": {"estimated_tokens": ctx["estimated_tokens"], "chunks": ctx["chunks"]},
+        "context": {"estimated_tokens": ctx["estimated_tokens"], "chunks": chunks},
     }
 
 

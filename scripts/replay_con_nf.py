@@ -4,9 +4,13 @@ import argparse
 import json
 from pathlib import Path
 
-from theseus_repo_search.artifact import load_artifact
+from theseus_repo_search.artifact import artifact_identity, load_artifact
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+    require_context_chunks,
+)
 from theseus_repo_search.retrieval import context, search
 
 TARGET = "ConNF.subset'_spec"
@@ -51,19 +55,17 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         raise AssertionError("grounded ConNF lexical query missed subset'_spec")
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "subset'_spec" for chunk in ctx["chunks"]):
+    chunks = require_context_chunks(ctx)
+    if not any(chunk["declaration_hint"] == "subset'_spec" for chunk in chunks):
         raise AssertionError("bounded context omitted ConNF result endpoint source")
 
-    if any(str(chunk.get("source_path", "")).startswith("Old/") for chunk in ctx["chunks"]):
+    if any(str(chunk.get("source_path", "")).startswith("Old/") for chunk in chunks):
         raise AssertionError("licensed ConNF replay included unlicensed Old/ source")
 
     return {
         "status": "PASS",
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "artifact_identity": artifact_identity(manifest),
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "license_scope": {"excluded_prefixes": ["Old/"]},
         "exact": {
             "target": TARGET,
@@ -73,7 +75,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         },
         "graph": {"edge_count": len(graph.edges), "edges": list(graph.edges)},
         "lexical": {"query": LEXICAL_QUERY, "hits": [hit.declaration_hint for hit in lexical]},
-        "context": {"estimated_tokens": ctx["estimated_tokens"], "chunks": ctx["chunks"]},
+        "context": {"estimated_tokens": ctx["estimated_tokens"], "chunks": chunks},
     }
 
 

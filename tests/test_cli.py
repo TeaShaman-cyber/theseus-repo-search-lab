@@ -4,13 +4,17 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from pathlib import Path
 from hashlib import sha256
+from pathlib import Path
+from unittest import mock
 
 from theseus_repo_search.artifact import load_artifact
-from theseus_repo_search.cli import _verify_raw_depgraph_receipt
+from theseus_repo_search.cli import (
+    _verify_archive_raw_depgraph_receipt,
+    _verify_raw_depgraph_receipt,
+)
 from theseus_repo_search.errors import RepoSearchError
-
+from theseus_repo_search.producer_config import LeanArchiveSource
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "tests" / "fixtures" / "raw_leandepviz.json"
@@ -72,6 +76,79 @@ class RawDepgraphReceiptTests(unittest.TestCase):
                     with self.assertRaises(RepoSearchError) as caught:
                         verify(payload)
                     self.assertEqual(caught.exception.code, code)
+    def test_archive_v3_receipt_binds_structured_authority_and_materialization(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            raw = root / "raw.json"
+            raw.write_bytes(b'{"nodes":[],"edges":[]}\n')
+            receipt = root / "receipt.json"
+            source = LeanArchiveSource.from_dict({
+                "schema": "theseus.lean-archive-source.v1",
+                "source_id": "fixture-archive",
+                "archive_url": "https://example.invalid/source.zip",
+                "archive_sha256": "a" * 64,
+                "archive_format": "zip",
+                "source_subdir": "pkg",
+                "root_modules": ["Main"],
+                "build_target": "Main",
+                "exclude_source_prefixes": [],
+            })
+            base = {
+                "schema": "theseus.raw-depgraph-receipt.v3",
+                "source": {
+                    "kind": "archive",
+                    "url": source.archive_url,
+                    "sha256": source.archive_sha256,
+                    "format": source.archive_format,
+                    "subdir": source.source_subdir,
+                },
+                "materialization": {
+                    "tree_sha256": "d" * 64,
+                    "member_manifest_sha256": "e" * 64,
+                },
+                "scope": {"root_modules": ["Main"]},
+                "producer": {
+                    "kind": "lean-dep-viz",
+                    "tool_repo": "cameronfreer/LeanDepViz",
+                    "tool_commit": "b" * 40,
+                    "tool_hash": "c" * 64,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.30.0"},
+                "raw_depgraph": {"sha256": sha256(raw.read_bytes()).hexdigest()},
+            }
+
+            def verify(payload):
+                receipt.write_text(json.dumps(payload), encoding="utf-8")
+                _verify_archive_raw_depgraph_receipt(
+                    receipt,
+                    raw,
+                    source=source,
+                    tree_sha256="d" * 64,
+                    member_manifest_sha256="e" * 64,
+                    producer_kind="lean-dep-viz",
+                    producer_tool_repo="cameronfreer/LeanDepViz",
+                    producer_tool_commit="b" * 40,
+                    producer_tool_hash="c" * 64,
+                )
+
+            verify(base)
+            for label, mutate, code in (
+                ("fake-git", lambda x: x["source"].__setitem__("commit", "f" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("archive-sha", lambda x: x["source"].__setitem__("sha256", "f" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("tree", lambda x: x["materialization"].__setitem__("tree_sha256", "f" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("members", lambda x: x["materialization"].__setitem__("member_manifest_sha256", "f" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("producer", lambda x: x["producer"].__setitem__("tool_commit", "f" * 40), "BLOCKED_SOURCE_MISMATCH"),
+                ("raw", lambda x: x["raw_depgraph"].__setitem__("sha256", "0" * 64), "BLOCKED_SOURCE_MISMATCH"),
+                ("observed-missing", lambda x: x.pop("observed"), "BLOCKED_SOURCE_BINDING"),
+                ("observed-extra", lambda x: x["observed"].__setitem__("publisher", "example"), "BLOCKED_SOURCE_BINDING"),
+            ):
+                with self.subTest(label=label):
+                    payload = json.loads(json.dumps(base))
+                    mutate(payload)
+                    with self.assertRaises(RepoSearchError) as caught:
+                        verify(payload)
+                    self.assertEqual(caught.exception.code, code)
+
 
 
 class CliTests(unittest.TestCase):
@@ -84,7 +161,319 @@ class CliTests(unittest.TestCase):
             env=env,
             capture_output=True,
             text=True,
+            check=False,
         )
+
+    def write_archive_build_fixture(
+        self,
+        root: Path,
+        *,
+        unbacked_node: bool = False,
+        generated_descendant: bool = False,
+        structure_driver: bool = False,
+    ):
+        materialized = root / "materialized"
+        (materialized / "Pkg").mkdir(parents=True)
+        main_bytes = (
+            b"structure Driver where\n  aleph0_le : True\n"
+            if structure_driver
+            else b"theorem ok : True := by trivial\n"
+        )
+        toolchain_bytes = b"leanprover/lean4:v4.30.0\n"
+        (materialized / "Pkg" / "Main.lean").write_bytes(main_bytes)
+        (materialized / "lean-toolchain").write_bytes(toolchain_bytes)
+        (materialized / "Pkg" / "Generated.lean").write_text(
+            "theorem injected : True := by trivial\n", encoding="utf-8"
+        )
+
+        archive_sha = "a" * 64
+        source_payload = {
+            "schema": "theseus.lean-archive-source.v1",
+            "source_id": "task-five-fixture",
+            "archive_url": "https://example.invalid/source.zip",
+            "archive_sha256": archive_sha,
+            "archive_format": "zip",
+            "source_subdir": ".",
+            "root_modules": ["Pkg"],
+            "build_target": "Pkg",
+            "exclude_source_prefixes": [],
+        }
+        descriptor = root / "source.json"
+        descriptor.write_text(json.dumps(source_payload), encoding="utf-8")
+        source_identity = {
+            "kind": "archive",
+            "url": source_payload["archive_url"],
+            "sha256": archive_sha,
+            "format": "zip",
+            "subdir": ".",
+        }
+        file_hashes = sorted(
+            [
+                ("Pkg/Main.lean", sha256(main_bytes).hexdigest()),
+                ("lean-toolchain", sha256(toolchain_bytes).hexdigest()),
+            ]
+        )
+        tree_sha = sha256(
+            json.dumps(file_hashes, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        member_payload = {
+            "schema": "theseus.archive-member-manifest.v1",
+            "source": source_identity,
+            "source_root_relative": ".",
+            "members": [
+                {
+                    "path": "Pkg/Main.lean",
+                    "source_path": "Pkg/Main.lean",
+                    "sha256": sha256(main_bytes).hexdigest(),
+                },
+                {
+                    "path": "lean-toolchain",
+                    "source_path": "lean-toolchain",
+                    "sha256": sha256(toolchain_bytes).hexdigest(),
+                },
+            ],
+        }
+        member_bytes = (
+            json.dumps(member_payload, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        member_manifest = root / "members.json"
+        member_manifest.write_bytes(member_bytes)
+        member_sha = sha256(member_bytes).hexdigest()
+        materialization_receipt = root / "materialization.json"
+        materialization_receipt.write_text(
+            json.dumps(
+                {
+                    "schema": "theseus.archive-materialization-receipt.v1",
+                    "source": source_identity,
+                    "materialized": {
+                        "file_count": 2,
+                        "tree_sha256": tree_sha,
+                        "member_manifest_sha256": member_sha,
+                        "source_root_relative": ".",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        raw_nodes = [
+            (
+                {
+                    "module": "Pkg.Main",
+                    "fullName": "Pkg.Driver.aleph0_le",
+                    "name": "aleph0_le",
+                    "kind": "def",
+                }
+                if structure_driver
+                else {
+                    "module": "Pkg.Main",
+                    "fullName": "Pkg.Main.ok",
+                    "name": "ok",
+                    "kind": "thm",
+                }
+            )
+        ]
+        authoritative_name = (
+            "Pkg.Driver.aleph0_le" if structure_driver else "Pkg.Main.ok"
+        )
+        raw_edges = []
+        if unbacked_node:
+            raw_nodes.append(
+                {
+                    "module": "Pkg.Generated",
+                    "fullName": "Pkg.Generated.injected",
+                    "name": "injected",
+                    "kind": "thm",
+                }
+            )
+            raw_edges.append(
+                {
+                    "kind": "value",
+                    "source": "Pkg.Generated.injected",
+                    "target": authoritative_name,
+                }
+            )
+        if generated_descendant:
+            generated_name = (
+                "Pkg.Driver.mk.inj" if structure_driver else "Pkg.Main.ok._proof_1"
+            )
+            raw_nodes.append(
+                {
+                    "module": "Pkg.Main",
+                    "fullName": generated_name,
+                    "name": "inj" if structure_driver else "_proof_1",
+                    "kind": "thm",
+                }
+            )
+            raw_edges.append(
+                {
+                    "kind": "value",
+                    "source": generated_name,
+                    "target": authoritative_name,
+                }
+            )
+        raw = root / "raw.json"
+        raw_bytes = (
+            json.dumps(
+                {"nodes": raw_nodes, "edges": raw_edges},
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode("utf-8")
+        raw.write_bytes(raw_bytes)
+        raw_receipt = root / "raw-receipt.json"
+        raw_receipt.write_text(
+            json.dumps(
+                {
+                    "schema": "theseus.raw-depgraph-receipt.v3",
+                    "source": source_identity,
+                    "materialization": {
+                        "tree_sha256": tree_sha,
+                        "member_manifest_sha256": member_sha,
+                    },
+                    "scope": {"root_modules": ["Pkg"]},
+                    "producer": {
+                        "kind": "lean-dep-viz",
+                        "tool_repo": "cameronfreer/LeanDepViz",
+                        "tool_commit": TOOL_COMMIT,
+                        "tool_hash": TOOL_HASH,
+                    },
+                    "observed": {"lean_toolchain": "leanprover/lean4:v4.30.0"},
+                    "raw_depgraph": {"sha256": sha256(raw_bytes).hexdigest()},
+                }
+            ),
+            encoding="utf-8",
+        )
+        return {
+            "materialized": materialized,
+            "descriptor": descriptor,
+            "materialization_receipt": materialization_receipt,
+            "member_manifest": member_manifest,
+            "raw": raw,
+            "raw_receipt": raw_receipt,
+        }
+
+    def build_archive(self, fixture, out: Path):
+        return self.run_cli(
+            "build-archive-artifact",
+            "--source", fixture["descriptor"],
+            "--materialization-root", fixture["materialized"],
+            "--materialization-receipt", fixture["materialization_receipt"],
+            "--member-manifest", fixture["member_manifest"],
+            "--raw-depgraph", fixture["raw"],
+            "--raw-depgraph-receipt", fixture["raw_receipt"],
+            "--producer-kind", "lean-dep-viz",
+            "--producer-tool-repo", "cameronfreer/LeanDepViz",
+            "--producer-tool-commit", TOOL_COMMIT,
+            "--producer-tool-hash", TOOL_HASH,
+            "--out", out,
+        )
+
+    def test_build_source_artifact_dispatches_archive_without_git_fields(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            out = root / "generic-artifact"
+            result = self.run_cli(
+                "build-source-artifact",
+                "--source", fixture["descriptor"],
+                "--source-root", fixture["materialized"],
+                "--source-container", fixture["materialized"],
+                "--materialization-receipt", fixture["materialization_receipt"],
+                "--member-manifest", fixture["member_manifest"],
+                "--raw-depgraph", fixture["raw"],
+                "--raw-depgraph-receipt", fixture["raw_receipt"],
+                "--producer-kind", "lean-dep-viz",
+                "--producer-tool-repo", "cameronfreer/LeanDepViz",
+                "--producer-tool-commit", TOOL_COMMIT,
+                "--producer-tool-hash", TOOL_HASH,
+                "--out", out,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            manifest, *_ = load_artifact(out)
+            self.assertEqual(manifest.schema, "theseus.repo-index.v2")
+            self.assertNotIn("source_commit", (out / "manifest.json").read_text())
+
+    def test_build_archive_artifact_uses_only_manifest_backed_sources(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            manifest, nodes, edges, sources = load_artifact(out)
+            self.assertEqual(manifest.schema, "theseus.repo-index.v2")
+            self.assertTrue(manifest.created_from_authoritative_source)
+            self.assertEqual(manifest.source_revision, "a" * 64)
+            self.assertEqual([chunk.source_path for chunk in sources], ["Pkg/Main.lean"])
+            self.assertEqual([node.source_path for node in nodes], ["Pkg/Main.lean"])
+            self.assertEqual(edges, [])
+            self.assertNotIn("Generated.lean", (out / "sources.jsonl").read_text())
+            self.assertNotIn("source_commit", (out / "nodes.jsonl").read_text())
+
+    def test_authoritative_v2_loader_rejects_node_without_source_binding(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            nodes_path = out / "nodes.jsonl"
+            node = json.loads(nodes_path.read_text())
+            node["source_path"] = None
+            node["source_start_line"] = None
+            node["source_end_line"] = None
+            nodes_bytes = (
+                json.dumps(node, sort_keys=True, separators=(",", ":")) + "\n"
+            ).encode()
+            nodes_path.write_bytes(nodes_bytes)
+            manifest_path = out / "manifest.json"
+            manifest = json.loads(manifest_path.read_text())
+            manifest["members"]["nodes"]["sha256"] = sha256(nodes_bytes).hexdigest()
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(RepoSearchError, "lacks source binding"):
+                load_artifact(out)
+
+    def test_build_archive_artifact_drops_generated_descendant_and_edges(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(
+                root, generated_descendant=True, structure_driver=True
+            )
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            _manifest, nodes, edges, _sources = load_artifact(out)
+            self.assertEqual(
+                [node.full_name for node in nodes], ["Pkg.Driver.aleph0_le"]
+            )
+            self.assertEqual([node.source_path for node in nodes], ["Pkg/Main.lean"])
+            self.assertEqual(edges, [])
+
+    def test_build_archive_artifact_rejects_source_mutation_after_raw_receipt(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root)
+            (fixture["materialized"] / "Pkg" / "Main.lean").write_text(
+                "theorem ok : False := by contradiction\n", encoding="utf-8"
+            )
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(json.loads(result.stderr)["code"], "BLOCKED_SOURCE_MISMATCH")
+            self.assertFalse(out.exists())
+
+    def test_build_archive_artifact_rejects_unmanifested_node_and_edge(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            fixture = self.write_archive_build_fixture(root, unbacked_node=True)
+            out = root / "artifact"
+            result = self.build_archive(fixture, out)
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stderr)
+            self.assertEqual(payload["code"], "BLOCKED_SOURCE_MISMATCH")
+            self.assertIn("Pkg.Generated.injected", payload["message"])
+            self.assertFalse(out.exists())
 
     def build_exact(self, out: Path):
         result = self.run_cli(
@@ -404,6 +793,79 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["code"], "UNAVAILABLE_PROJECTION")
             self.assertNotIn("Traceback", result.stderr)
 
+    def test_multicorpus_search_parser_accepts_documented_surface(self):
+        from theseus_repo_search.cli import build_parser
+
+        args = build_parser().parse_args(
+            [
+                "multicorpus-search",
+                "--catalog",
+                "producer/accepted-corpora.json",
+                "--cache-dir",
+                "/tmp/cache",
+                "--query",
+                "needle",
+                "--limit",
+                "20",
+                "--mode",
+                "discovery",
+            ]
+        )
+        self.assertEqual(args.command, "multicorpus-search")
+        self.assertEqual(args.limit, 20)
+        self.assertEqual(args.mode, "discovery")
+
+    def test_multicorpus_search_emits_single_json_envelope(self):
+        from theseus_repo_search.accepted_catalog import AcceptedCatalog
+        from theseus_repo_search.cli import main
+        from theseus_repo_search.multicorpus import MultiCorpusResult, UnavailableCorpus
+
+        catalog = AcceptedCatalog(
+            schema="theseus.repo-search.accepted-catalog.v1",
+            release_repository="TeaShaman-cyber/theseus-repo-search-lab",
+            corpora=(),
+        )
+        unavailable = (
+            UnavailableCorpus(
+                source_id="missing", code="UNAVAILABLE_PROJECTION", message="missing"
+            ),
+        )
+        result = MultiCorpusResult(
+            catalog_sha256="d" * 64,
+            searched_corpora=0,
+            unavailable_corpora=unavailable,
+            hits=(),
+        )
+        with tempfile.TemporaryDirectory() as d, mock.patch(
+            "theseus_repo_search.cli.load_accepted_catalog", return_value=catalog
+        ), mock.patch(
+            "theseus_repo_search.cli.ensure_local_catalog", return_value=((), unavailable)
+        ), mock.patch(
+            "theseus_repo_search.cli.search_local_catalog", return_value=result
+        ), mock.patch("theseus_repo_search.cli._emit") as emit:
+            catalog_path = Path(d) / "producer" / "accepted-corpora.json"
+            rc = main(
+                [
+                    "multicorpus-search",
+                    "--catalog",
+                    str(catalog_path),
+                    "--cache-dir",
+                    str(Path(d) / "cache"),
+                    "--query",
+                    "needle",
+                ]
+            )
+
+        self.assertEqual(rc, 0)
+        emit.assert_called_once()
+        payload = emit.call_args.args[0]
+        self.assertEqual(payload["status"], "UNAVAILABLE")
+        self.assertEqual(payload["catalog_sha256"], "d" * 64)
+        self.assertEqual(payload["searched_corpora"], 0)
+        self.assertEqual(payload["unavailable_corpora"], 1)
+        self.assertEqual(payload["unavailable"][0]["source_id"], "missing")
+        self.assertEqual(payload["hits"], [])
+
     def test_search_no_hit_is_unknown_but_successful_process(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -442,8 +904,20 @@ class CliTests(unittest.TestCase):
             result = self.run_cli("search", "--db", db, "--query", "rank trace tightness")
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual(payload["status"], "FOUND")
+            self.assertEqual(payload["status"], "CANDIDATE")
+            self.assertEqual(payload["query_mode"], "discovery")
+            self.assertEqual(payload["hits"][0]["match_mode"], "any_terms")
             self.assertEqual(payload["hits"][0]["declaration_hint"], "lemmaR_tight_two")
+
+            evidence = self.run_cli(
+                "search", "--db", db, "--query", "rank trace tightness",
+                "--mode", "evidence",
+            )
+            self.assertEqual(evidence.returncode, 0, evidence.stderr)
+            evidence_payload = json.loads(evidence.stdout)
+            self.assertEqual(evidence_payload["status"], "FOUND")
+            self.assertEqual(evidence_payload["query_mode"], "evidence")
+            self.assertEqual(evidence_payload["hits"][0]["match_mode"], "all_terms")
 
     def test_deps_on_lexical_only_projection_returns_unavailable_grade(self):
         with tempfile.TemporaryDirectory() as d:

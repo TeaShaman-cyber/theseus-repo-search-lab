@@ -14,6 +14,7 @@ ALL_REPLAYS = (
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
     "scripts/replay_ten_proofs_multicolor.py",
+    "scripts/replay_decreasing_diagrams.py",
 )
 ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_zeta23.py",
@@ -22,6 +23,7 @@ ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
     "scripts/replay_ten_proofs_multicolor.py",
+    "scripts/replay_decreasing_diagrams.py",
 )
 REQUIRED = (
     "scripts/producer_guard.py",
@@ -61,14 +63,105 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertNotIn("_out/raw-depgraph-receipt.json", upload)
         self.assertIn("authority-receipt.json", text)
 
-    def test_source_exclusions_are_wired_only_into_artifact_build(self):
+    def test_source_exclusions_are_descriptor_driven_after_generic_dispatch(self):
         text = GENERIC.read_text(encoding="utf-8")
-        extract = text.split("- name: Extract exact declaration graph", 1)[1].split("- name: Install repository lens package", 1)[0]
-        build = text.split("- name: Build normalized artifact", 1)[1].split("- name: Verify project and replay selected source", 1)[0]
+        extract = text.split("- name: Extract exact declaration graph", 1)[1].split(
+            "- name: Install repository lens package", 1
+        )[0]
+        build = text.split("- name: Build normalized artifact", 1)[1].split(
+            "- name: Verify project and replay selected source", 1
+        )[0]
         self.assertNotIn("exclude_args", extract)
-        self.assertIn("exclude_args=()", build)
-        self.assertIn("--exclude-source-prefix", build)
-        self.assertIn('"${exclude_args[@]}"', build)
+        self.assertNotIn("exclude_args", build)
+        self.assertNotIn("--exclude-source-prefix", build)
+        self.assertIn("build-source-artifact", build)
+        self.assertIn('"${{ matrix.source_descriptor }}"', build)
+
+    def test_archive_row_and_source_kind_acquisition_dispatch_are_explicit(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        producer = text.split("  produce-and-replay:\n", 1)[1].split("  consume-artifact:\n", 1)[0]
+        consumer = text.split("  consume-artifact:\n", 1)[1]
+
+        archive_row = (
+            "producer/sources/decreasing-diagrams-complete.json",
+            "scripts/replay_decreasing_diagrams.py",
+            "decreasing-diagrams-complete-repo-index-v2",
+        )
+        pattern = re.compile(
+            r"- source_descriptor:\s*(\S+)\n\s*replay_script:\s*(\S+)\n\s*artifact_name:\s*(\S+)"
+        )
+        producer_rows = pattern.findall(producer)
+        consumer_rows = pattern.findall(consumer)
+        self.assertIn(archive_row, producer_rows)
+        self.assertIn(archive_row, consumer_rows)
+        self.assertEqual(producer.count("source_kind: archive"), 1)
+        self.assertEqual(consumer.count("source_kind: archive"), 1)
+
+        expected_git_rows = [
+            ("producer/sources/zeta23.json", "scripts/replay_zeta23.py", "zeta23-repo-index-v1"),
+            ("producer/sources/openai-long-gaps.json", "scripts/replay_long_gaps.py", "openai-long-gaps-repo-index-v1"),
+            ("producer/sources/leanprover-community-flt-regular.json", "scripts/replay_flt_regular.py", "leanprover-community-flt-regular-repo-index-v1"),
+            ("producer/sources/openai-cdc-lean.json", "scripts/replay_cdc_lean.py", "openai-cdc-lean-repo-index-v1"),
+            ("producer/sources/leanprover-community-con-nf.json", "scripts/replay_con_nf.py", "leanprover-community-con-nf-repo-index-v1"),
+            ("producer/sources/openai-ten-proofs-multicolor.json", "scripts/replay_ten_proofs_multicolor.py", "openai-ten-proofs-multicolor-repo-index-v1"),
+        ]
+        self.assertEqual(producer_rows[:6], expected_git_rows)
+        self.assertEqual(consumer_rows[:6], expected_git_rows)
+
+        checkout = producer.split("- name: Checkout pinned source", 1)[1].split(
+            "- name: Materialize pinned archive source", 1
+        )[0]
+        materialize = producer.split("- name: Materialize pinned archive source", 1)[1].split(
+            "- name: Verify exact source readback", 1
+        )[0]
+        git_readback = producer.split("- name: Verify exact source readback", 1)[1].split(
+            "- name: Verify archive materialization readback", 1
+        )[0]
+        archive_readback = producer.split(
+            "- name: Verify archive materialization readback", 1
+        )[1].split("- name: Resolve canonical source root", 1)[0]
+        self.assertIn("if: matrix.source_kind != 'archive'", checkout)
+        self.assertIn("if: matrix.source_kind == 'archive'", materialize)
+        self.assertIn("scripts/materialize_archive_source.py", materialize)
+        self.assertIn('"${{ matrix.source_descriptor }}"', materialize)
+        self.assertIn("if: matrix.source_kind != 'archive'", git_readback)
+        self.assertIn("if: matrix.source_kind == 'archive'", archive_readback)
+        self.assertIn("verify_materialized_archive_members", archive_readback)
+
+        shared = producer.split("- name: Resolve canonical source root", 1)[1]
+        self.assertNotIn("if: matrix.source_kind", shared)
+        self.assertNotIn("if: env.SOURCE_KIND", shared)
+        self.assertNotIn('case "$SOURCE_KIND"', shared)
+        self.assertNotIn("SOURCE_COMMIT", shared)
+        self.assertNotIn("SOURCE_REPO", shared)
+        self.assertIn("extract-source", shared)
+        self.assertIn("build-source-artifact", shared)
+        self.assertNotRegex(materialize, r"SOURCE_COMMIT|--commit|--expected")
+        self.assertNotRegex(archive_readback, r"SOURCE_COMMIT|--commit|--expected")
+        self.assertNotIn("ARCHIVE_SHA256", checkout)
+        self.assertNotIn("ARCHIVE_SHA256", git_readback)
+
+    def test_marton_corpus_is_added_without_replacing_existing_matrix(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        producer = text.split("  produce-and-replay:\n", 1)[1].split("  consume-artifact:\n", 1)[0]
+        consumer = text.split("  consume-artifact:\n", 1)[1].split("  research-smoke:\n", 1)[0]
+        smoke = text.split("  research-smoke:\n", 1)[1]
+        row = (
+            "- source_descriptor: producer/sources/annals-challenge-marton.json\n"
+            "            replay_script: scripts/replay_annals_marton.py\n"
+            "            artifact_name: annals-challenge-marton-repo-index-v1"
+        )
+        self.assertEqual(producer.count(row), 1)
+        self.assertEqual(consumer.count(row), 1)
+        self.assertIn("qa/research-smoke/annals-marton-seam-v0.json", smoke)
+        self.assertIn("source_id: annals-challenge-marton", smoke)
+        self.assertEqual(producer.count("- source_descriptor:"), 8)
+        self.assertEqual(consumer.count("- source_descriptor:"), 8)
+        self.assertIn("EXTRACTOR_ROOT_MODULES", producer)
+        self.assertIn('--roots "$EXTRACTOR_ROOT_MODULES"', producer)
+        self.assertIn('EXTRACTOR_ROOT_MODULES="${ROOT_MODULES_CSV//«/}"', producer)
+        self.assertIn("Restore pinned Mathlib download archives", producer)
+        self.assertTrue((ROOT / "scripts/replay_annals_marton.py").is_file())
 
     def test_prime_gaps_is_not_in_default_generic_matrix(self):
         text = GENERIC.read_text(encoding="utf-8")
@@ -84,6 +177,33 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("source_build_seconds=", text)
         self.assertIn("mathlib_cache_files=", text)
         self.assertIn("source_build_kib=", text)
+
+    def test_exact_lock_mathlib_archive_cache_is_bounded_and_not_proof_evidence(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        producer = text.split("  produce-and-replay:\n", 1)[1].split("  consume-artifact:\n", 1)[0]
+        key = producer.index("- name: Compute pinned Mathlib archive cache key")
+        restore = producer.index("- name: Restore pinned Mathlib download archives")
+        get = producer.index("- name: Restore source dependency cache")
+        measure = producer.index("- name: Bound Mathlib cache persistence")
+        save = producer.index("- name: Save pinned Mathlib download archives")
+        build = producer.index("- name: Build source target")
+        self.assertLess(key, restore)
+        self.assertLess(restore, get)
+        self.assertLess(get, measure)
+        self.assertLess(measure, save)
+        self.assertLess(save, build)
+        self.assertIn('"$SOURCE_ROOT/lean-toolchain"', producer)
+        self.assertIn('"$SOURCE_ROOT/lake-manifest.json"', producer)
+        self.assertIn("actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830", producer)
+        self.assertIn("actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830", producer)
+        self.assertIn("~/.cache/mathlib", producer)
+        self.assertIn("750000", producer)
+        self.assertIn("cache-hit != 'true'", producer)
+        self.assertNotIn(".lake/packages\n", producer[restore:save])
+        self.assertNotIn(".lake/build\n", producer[restore:save])
+        self.assertIn("lake exe cache get", producer)
+        self.assertIn("  consume-artifact:\n", text)
+        self.assertIn("  research-smoke:\n", text)
 
     def test_source_build_emits_bounded_live_heartbeat(self):
         text = GENERIC.read_text(encoding="utf-8")
@@ -114,6 +234,10 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("needs: produce-and-replay", consumer)
         self.assertIn("actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c", consumer)
         self.assertIn("scripts/write_consumer_receipt.py", consumer)
+        self.assertIn('--source-descriptor "${{ matrix.source_descriptor }}"', consumer)
+        self.assertIn('--source-descriptor-path "${{ matrix.source_descriptor }}"', consumer)
+        self.assertIn('--runner-config producer/runner.json', consumer)
+        self.assertIn('--runner-config-path producer/runner.json', consumer)
         self.assertIn("PRAGMA quick_check", consumer)
 
         forbidden = (
@@ -137,3 +261,186 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertIn("-consumer-receipt", consumer)
         self.assertIn("_consumer/*-consumer-receipt.json", consumer)
         self.assertIn("if-no-files-found: error", consumer)
+
+    def test_research_smoke_job_is_fresh_source_free_and_bounded(self):
+        text = GENERIC.read_text(encoding="utf-8")
+        self.assertIn("  research-smoke:\n", text)
+        smoke = text.split("  research-smoke:\n", 1)[1]
+        self.assertIn("needs: consume-artifact", smoke)
+        self.assertIn("qa/research-smoke/zeta23-riemann-panel-v0.json", smoke)
+        self.assertIn("qa/research-smoke/flt-bridge-v0.json", smoke)
+        self.assertIn("scripts/run_research_smoke.py", smoke)
+        self.assertIn("-research-smoke-receipt", smoke)
+        self.assertIn("Verify exact research smoke checkout", smoke)
+        self.assertIn("git rev-parse HEAD", smoke)
+        self.assertIn('expected="${{ github.sha }}"', smoke)
+        self.assertIn("RESEARCH_SMOKE_TOOL_COMMIT", smoke)
+        self.assertIn('\"$RESEARCH_SMOKE_TOOL_COMMIT\"', smoke)
+        self.assertIn("source_id: zeta23", smoke)
+        self.assertIn("source_id: leanprover-community-flt-regular", smoke)
+        for token in (
+            "Checkout pinned source",
+            "elan",
+            "lake ",
+            "--source-root",
+            "gh codespace",
+        ):
+            with self.subTest(token=token):
+                self.assertNotIn(token, smoke)
+
+class ReleaseConsumerCanaryWorkflowTests(unittest.TestCase):
+    def test_release_consumer_canary_is_source_free_and_reruns_fresh_consumers(self):
+        path = ROOT / ".github" / "workflows" / "accepted-artifact-consumer-canary.yml"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("accepted-artifact/flt-regular/41bfa1d236ee59a8", text)
+        self.assertIn("gh release verify", text)
+        self.assertIn("gh release verify-asset", text)
+        self.assertIn('git/ref/tags/$RELEASE_TAG', text)
+        self.assertIn('.acceptance.repository_head', text)
+        self.assertIn("scripts/consume_accepted_release.py", text)
+        self.assertIn("python3 -m theseus_repo_search build-index", text)
+        self.assertIn("scripts/replay_flt_regular.py", text)
+        self.assertIn("scripts/run_research_smoke.py", text)
+        for forbidden in (
+            "Checkout pinned source",
+            "Build source target",
+            "LeanDepViz",
+            "elan",
+            "lake ",
+            "_target/source",
+            "producer_guard.py checkout",
+        ):
+            with self.subTest(token=forbidden):
+                self.assertNotIn(forbidden, text)
+
+class ReleaseConsumerNegativeCanaryWorkflowTests(unittest.TestCase):
+    def test_negative_canary_requires_rebuild_and_fails_closed(self):
+        path = ROOT / ".github" / "workflows" / "accepted-artifact-consumer-negative-canary.yml"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("REBUILD_REQUIRED", text)
+        self.assertIn("RELEASE_EVIDENCE_INVALID", text)
+        self.assertIn("producer/sources/leanprover-community-flt-regular.json", text)
+        self.assertIn("consume_accepted_release.py", text)
+        self.assertIn("missing-package.tar.gz", text)
+        self.assertNotIn("build-index", text)
+        self.assertNotIn("replay_flt_regular.py", text)
+        self.assertNotIn("run_research_smoke.py", text)
+        for forbidden in (
+            "Checkout pinned source",
+            "Build source target",
+            "LeanDepViz",
+            "elan",
+            "lake ",
+            "_target/source",
+        ):
+            with self.subTest(token=forbidden):
+                self.assertNotIn(forbidden, text)
+
+class HeavyPostgresWorkflowTests(unittest.TestCase):
+    def test_heavy_postgres_runner_contract_is_repo_local_and_ephemeral(self):
+        workflow = ROOT / ".github" / "workflows" / "heavy-postgres.yml"
+        endpoint = ROOT / "tools" / "ci" / "heavy-postgres"
+        smoke = ROOT / "qa" / "postgres" / "runner-smoke.sql"
+
+        self.assertTrue(workflow.is_file())
+        self.assertTrue(endpoint.is_file())
+        self.assertTrue(smoke.is_file())
+        self.assertTrue(endpoint.stat().st_mode & 0o111)
+
+        workflow_text = workflow.read_text(encoding="utf-8")
+        trigger = workflow_text.split("permissions:", 1)[0]
+        self.assertIn("pull_request:", trigger)
+        self.assertIn("workflow_dispatch:", trigger)
+        self.assertIn("postgres:17.11", workflow_text)
+        self.assertIn("actions/cache/restore@", workflow_text)
+        self.assertIn("actions/cache/save@", workflow_text)
+        self.assertIn("docker load", workflow_text)
+        self.assertIn("docker save", workflow_text)
+        self.assertIn("public.ecr.aws/docker/library/postgres@sha256:", workflow_text)
+        self.assertIn("pg_isready", workflow_text)
+        self.assertIn("tools/ci/heavy-postgres", workflow_text)
+        self.assertIn("postgresql-client", workflow_text)
+        self.assertNotIn("services:", workflow_text)
+        self.assertNotIn("docker.io", workflow_text)
+        self.assertNotIn("NEON", workflow_text.upper())
+
+        endpoint_text = endpoint.read_text(encoding="utf-8")
+        self.assertIn("psql", endpoint_text)
+        self.assertIn("ON_ERROR_STOP=1", endpoint_text)
+        self.assertIn("qa/postgres/runner-smoke.sql", endpoint_text)
+        self.assertIn("server_version_num", endpoint_text)
+        self.assertIn("expected PostgreSQL 17", endpoint_text)
+        self.assertIn("HEAVY_POSTGRES_PASS", endpoint_text)
+
+        smoke_text = smoke.read_text(encoding="utf-8")
+        self.assertIn("BEGIN;", smoke_text)
+        self.assertIn("ROLLBACK;", smoke_text)
+        self.assertIn("HEAVY_POSTGRES_SMOKE_PASS", smoke_text)
+
+        security = ROOT / "qa" / "postgres" / "security-contract.sql"
+        self.assertTrue(security.is_file())
+        security_text = security.read_text(encoding="utf-8")
+        self.assertIn("SECURITY DEFINER", security_text)
+        self.assertIn(
+            "SET search_path = pg_catalog, heavy_pg_contract, pg_temp",
+            security_text,
+        )
+        self.assertIn("REVOKE ALL ON FUNCTION", security_text)
+        self.assertIn("FROM PUBLIC", security_text)
+        self.assertIn(
+            "ALTER DEFAULT PRIVILEGES FOR ROLE heavy_pg_owner\n"
+            "    REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC",
+            security_text,
+        )
+        self.assertNotIn(
+            "IN SCHEMA heavy_pg_contract\n    REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC",
+            security_text,
+        )
+        self.assertIn("SET ROLE heavy_pg_reader", security_text)
+        self.assertIn("SET ROLE heavy_pg_materializer", security_text)
+        self.assertIn("CREATE TEMP TABLE secret", security_text)
+        self.assertIn("HEAVY_POSTGRES_SECURITY_PASS", security_text)
+        self.assertIn("qa/postgres/security-contract.sql", endpoint_text)
+
+        concurrency_sql = ROOT / "qa" / "postgres" / "concurrency-probe.sql"
+        concurrency_harness = ROOT / "qa" / "postgres" / "concurrency_harness.py"
+        self.assertTrue(concurrency_sql.is_file())
+        self.assertTrue(concurrency_harness.is_file())
+        self.assertIn("qa/postgres/concurrency-probe.sql", endpoint_text)
+        self.assertIn("qa/postgres/concurrency_harness.py", endpoint_text)
+
+        probe_text = concurrency_sql.read_text(encoding="utf-8")
+        self.assertIn("FOR SHARE", probe_text)
+        self.assertIn("FOR UPDATE", probe_text)
+        self.assertIn("BUILDING", probe_text)
+        self.assertIn("READY", probe_text)
+
+        harness_text = concurrency_harness.read_text(encoding="utf-8")
+        self.assertIn("subprocess.Popen", harness_text)
+        self.assertIn("PGAPPNAME", harness_text)
+        self.assertIn("pg_stat_activity", harness_text)
+        self.assertIn("wait_event_type", harness_text)
+        self.assertIn("threading.Thread", harness_text)
+        self.assertIn("READY_WRITE_SERIALIZATION_PASS", harness_text)
+        self.assertIn("activate_if_current", probe_text)
+        self.assertIn("CAS_STALE_ACTIVATOR_PASS", harness_text)
+        self.assertIn("IMMUTABLE_CHILD_GENERATION_PASS", harness_text)
+        self.assertIn("child generation_id is immutable", probe_text)
+        self.assertIn("gc_inactive_generation", probe_text)
+        self.assertIn("GC_INACTIVE_READY_PASS", harness_text)
+        version_upgrade = ROOT / "qa" / "postgres" / "version-dispatch-v2.sql"
+        self.assertTrue(version_upgrade.is_file())
+        self.assertIn("projection_schema_version", probe_text)
+        self.assertIn("search_generation_v1", probe_text)
+        self.assertIn("search_generation_v2", version_upgrade.read_text(encoding="utf-8"))
+        self.assertIn("VERSION_DISPATCH_V1_V2_PASS", harness_text)
+        self.assertIn("CREATE FUNCTION heavy_pg_concurrency.search_envelope", probe_text)
+        self.assertIn("WITH selected_generation AS MATERIALIZED", probe_text)
+        self.assertIn("ZERO_HIT_ATOMIC_ENVELOPE_PASS", harness_text)
+        self.assertIn("QUERY_INPUT_BOUNDS_PASS", harness_text)
+        self.assertIn("normalized_term_count", probe_text)
+        self.assertIn("result_limit integer DEFAULT", probe_text)
+        broken_migration = ROOT / "qa" / "postgres" / "failed-migration.sql"
+        self.assertTrue(broken_migration.is_file())
+        self.assertIn("ON_ERROR_STOP", broken_migration.read_text(encoding="utf-8"))
+        self.assertIn("FAILED_MIGRATION_ROLLBACK_PASS", harness_text)

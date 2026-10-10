@@ -1,0 +1,88 @@
+name: Accepted artifact consumer negative canary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  negative-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: accepted-artifact/flt-regular/41bfa1d236ee59a8
+      PACKAGE_ASSET: leanprover-community-flt-regular-accepted.tar.gz
+      RECEIPT_ASSET: leanprover-community-flt-regular-release-receipt.json
+      SOURCE_DESCRIPTOR: producer/sources/leanprover-community-flt-regular.json
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Download verified accepted release evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _release
+          gh release verify "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$PACKAGE_ASSET" \
+            --pattern "$RECEIPT_ASSET" \
+            --dir _release
+          gh release verify-asset "$RELEASE_TAG" "_release/$PACKAGE_ASSET" --repo "$GITHUB_REPOSITORY"
+          gh release verify-asset "$RELEASE_TAG" "_release/$RECEIPT_ASSET" --repo "$GITHUB_REPOSITORY"
+
+      - name: Producer fingerprint drift requires rebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$SOURCE_DESCRIPTOR" _release/drifted-source.json
+          printf '\n' >> _release/drifted-source.json
+          set +e
+          python3 scripts/consume_accepted_release.py \
+            --archive "_release/$PACKAGE_ASSET" \
+            --receipt "_release/$RECEIPT_ASSET" \
+            --source-descriptor _release/drifted-source.json \
+            --runner-config producer/runner.json \
+            --dest _negative/drift >_release/drift.out 2>&1
+          rc=$?
+          set -e
+          test "$rc" -ne 0
+          grep -q 'REBUILD_REQUIRED' _release/drift.out
+          test ! -e _negative/drift
+          printf 'negative_control=REBUILD_REQUIRED\n'
+
+      - name: Missing release evidence fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          python3 scripts/consume_accepted_release.py \
+            --archive _release/missing-package.tar.gz \
+            --receipt "_release/$RECEIPT_ASSET" \
+            --source-descriptor "$SOURCE_DESCRIPTOR" \
+            --runner-config producer/runner.json \
+            --dest _negative/missing >_release/missing.out 2>&1
+          rc=$?
+          set -e
+          test "$rc" -ne 0
+          grep -q 'RELEASE_EVIDENCE_INVALID' _release/missing.out
+          test ! -e _negative/missing
+          printf 'negative_control=RELEASE_EVIDENCE_INVALID\n'
+
+      - name: Unverifiable release tag has no fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing_tag='accepted-artifact/flt-regular/does-not-exist'
+          if gh release verify "$missing_tag" --repo "$GITHUB_REPOSITORY" >_release/tag.out 2>&1; then
+            echo 'unexpected verification success for missing release tag' >&2
+            exit 1
+          fi
+          test ! -e _negative/fallback
+          printf 'negative_control=UNVERIFIABLE_RELEASE_FAIL_CLOSED\n'

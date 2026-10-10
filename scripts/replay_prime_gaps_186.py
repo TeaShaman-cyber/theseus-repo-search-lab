@@ -4,10 +4,14 @@ import argparse
 import json
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+    require_context_chunks,
+)
 from theseus_repo_search.retrieval import context, search
-
 
 TARGET = "PrimeGap186.primeGapLiminf_le_186"
 LEXICAL_QUERY = "consecutive prime gaps"
@@ -30,16 +34,14 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         raise AssertionError("grounded prime-gap lexical query missed primeGapLiminf_le_186")
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "primeGapLiminf_le_186" for chunk in ctx["chunks"]):
+    chunks = require_context_chunks(ctx)
+    if not any(chunk["declaration_hint"] == "primeGapLiminf_le_186" for chunk in chunks):
         raise AssertionError("bounded context omitted target theorem source")
 
     return {
         "status": "PASS",
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "artifact_identity": artifact_identity(manifest),
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "exact": {
             "target": TARGET,
             "source_path": exact_hits[0].source_path,
@@ -53,7 +55,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         },
         "context": {
             "estimated_tokens": ctx["estimated_tokens"],
-            "chunks": ctx["chunks"],
+            "chunks": chunks,
         },
         "descriptor": {
             "source_id": source.source_id,

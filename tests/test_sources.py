@@ -1,15 +1,46 @@
 import os
-import tempfile
 import subprocess
+import tempfile
 import unittest
 from hashlib import sha256
 from pathlib import Path
 
-from theseus_repo_search.model import Node
-from theseus_repo_search.sources import bind_node_sources, scan_lean_sources
-
+from theseus_repo_search.model import Node, SourceChunk
+from theseus_repo_search.sources import (
+    bind_node_sources,
+    scan_lean_sources,
+    scan_manifest_backed_lean_sources,
+)
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "lean_src"
+
+
+class LeanQuotedModuleSourcePathTests(unittest.TestCase):
+    def test_marton_declaration_binds_to_unquoted_filesystem_name(self):
+        module = "AnnalsChallenge.AnnalsOfMathematics.«2025-201-2-ConjectureOfMarton»"
+        path = "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean"
+        name = "theorem_1_2"
+        body = "theorem theorem_1_2 : True := by sorry\n"
+        node = Node.from_lean(
+            full_name="ConjectureOfMarton.theorem_1_2",
+            name=name,
+            kind="thm",
+            module=module,
+            source_commit="a" * 40,
+        )
+        chunk = SourceChunk(
+            id=f"src:{path}:1:1",
+            source_commit="a" * 40,
+            source_path=path,
+            source_start_line=1,
+            source_end_line=1,
+            declaration_hint=name,
+            text=body,
+            content_sha256=sha256(body.encode()).hexdigest(),
+        )
+        result = bind_node_sources([node], [chunk])
+        self.assertEqual(result[0].source_path, path)
+        self.assertEqual(result[0].source_start_line, 1)
 
 
 class SourceChunkTests(unittest.TestCase):
@@ -151,6 +182,400 @@ class SourceChunkTests(unittest.TestCase):
             bound = bind_node_sources([node], chunks)[0]
             self.assertEqual(bound.source_path, "Zeta23/A.lean")
             self.assertEqual((bound.source_start_line, bound.source_end_line), (1, 1))
+
+    def test_lexical_chunks_preserve_unicode_identifier_suffixes(self):
+        from theseus_repo_search.sources import _chunks_from_text
+
+        chunks = _chunks_from_text(
+            "Regular.lean",
+            "def below : Nat := 0\ndef below₂ : Nat := 0\n",
+            source_revision="a" * 64,
+        )
+        self.assertEqual(
+            [chunk.declaration_hint for chunk in chunks],
+            ["below", "below₂"],
+        )
+
+    def test_manifest_backed_scan_ignores_generated_unmanifested_lean(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            authoritative = root / "Main.lean"
+            authoritative_bytes = b"theorem authoritative : True := by trivial\n"
+            authoritative.write_bytes(authoritative_bytes)
+            generated = root / "Generated.lean"
+            generated.write_text(
+                "theorem generated : True := by trivial\n", encoding="utf-8"
+            )
+            member_manifest = root / "members.json"
+            member_manifest.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.archive-member-manifest.v1",
+                        "source": {
+                            "kind": "archive",
+                            "url": "https://example.invalid/source.zip",
+                            "sha256": "a" * 64,
+                            "format": "zip",
+                            "subdir": ".",
+                        },
+                        "source_root_relative": ".",
+                        "members": [
+                            {
+                                "path": "Main.lean",
+                                "source_path": "Main.lean",
+                                "sha256": sha256(authoritative_bytes).hexdigest(),
+                            }
+                        ],
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                {chunk.declaration_hint for chunk in scan_lean_sources(root, source_commit="a" * 64)},
+                {"authoritative", "generated"},
+            )
+            chunks = scan_manifest_backed_lean_sources(
+                root,
+                source_revision="a" * 64,
+                member_manifest_path=member_manifest,
+            )
+            self.assertEqual([chunk.declaration_hint for chunk in chunks], ["authoritative"])
+            self.assertEqual([chunk.source_path for chunk in chunks], ["Main.lean"])
+            self.assertTrue(all(chunk.source_revision == "a" * 64 for chunk in chunks))
+
+    def test_manifest_backed_scan_rejects_member_changed_before_consumption(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            authoritative = root / "Main.lean"
+            original = b"theorem authoritative : True := by trivial\n"
+            authoritative.write_bytes(original)
+            member_manifest = root / "members.json"
+            member_manifest.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.archive-member-manifest.v1",
+                        "source": {
+                            "kind": "archive",
+                            "url": "https://example.invalid/source.zip",
+                            "sha256": "a" * 64,
+                            "format": "zip",
+                            "subdir": ".",
+                        },
+                        "source_root_relative": ".",
+                        "members": [
+                            {
+                                "path": "Main.lean",
+                                "source_path": "Main.lean",
+                                "sha256": sha256(original).hexdigest(),
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            authoritative.write_text(
+                "theorem authoritative : False := by contradiction\n",
+                encoding="utf-8",
+            )
+
+            from theseus_repo_search.errors import RepoSearchError
+
+            with self.assertRaises(RepoSearchError) as caught:
+                scan_manifest_backed_lean_sources(
+                    root,
+                    source_revision="a" * 64,
+                    member_manifest_path=member_manifest,
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+            self.assertIn("Main.lean", str(caught.exception))
+
+    def test_manifest_backed_scan_rejects_type_changed_source_at_consumption(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            target = root / "Main.lean"
+            data = b"theorem authoritative : True := by trivial\n"
+            target.write_bytes(data)
+            manifest_path = root / "members.json"
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "theseus.archive-member-manifest.v1",
+                        "source": {
+                            "kind": "archive",
+                            "url": "https://example.invalid/source.zip",
+                            "sha256": "a" * 64,
+                            "format": "zip",
+                            "subdir": ".",
+                        },
+                        "source_root_relative": ".",
+                        "members": [
+                            {
+                                "path": "Main.lean",
+                                "source_path": "Main.lean",
+                                "sha256": sha256(data).hexdigest(),
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            target.unlink()
+            target.mkdir()
+            from theseus_repo_search.errors import RepoSearchError
+
+            with self.assertRaises(RepoSearchError) as caught:
+                scan_manifest_backed_lean_sources(
+                    root,
+                    source_revision="a" * 64,
+                    member_manifest_path=manifest_path,
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+
+    def test_manifest_backed_scan_rejects_changed_member_manifest_bytes(self):
+        import json
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            data = b"theorem authoritative : True := by trivial\n"
+            (root / "Main.lean").write_bytes(data)
+            manifest_path = root / "members.json"
+            payload = {
+                "schema": "theseus.archive-member-manifest.v1",
+                "source": {
+                    "kind": "archive",
+                    "url": "https://example.invalid/source.zip",
+                    "sha256": "a" * 64,
+                    "format": "zip",
+                    "subdir": ".",
+                },
+                "source_root_relative": ".",
+                "members": [
+                    {
+                        "path": "Main.lean",
+                        "source_path": "Main.lean",
+                        "sha256": sha256(data).hexdigest(),
+                    }
+                ],
+            }
+            original = (
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n"
+            ).encode()
+            manifest_path.write_bytes(original)
+            expected = sha256(original).hexdigest()
+            payload["members"].append(
+                {
+                    "path": "Generated.lean",
+                    "source_path": "Generated.lean",
+                    "sha256": "0" * 64,
+                }
+            )
+            manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            from theseus_repo_search.errors import RepoSearchError
+
+            with self.assertRaises(RepoSearchError) as caught:
+                scan_manifest_backed_lean_sources(
+                    root,
+                    source_revision="a" * 64,
+                    member_manifest_path=manifest_path,
+                    expected_manifest_sha256=expected,
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+
+    def test_manifest_backed_binding_accepts_qualified_declaration_hint_suffix(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "lemma AlmostDetSeq.det_prepend : True := by trivial\n"
+        source = SourceChunk(
+            id="src:Regular.lean:1:1",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=1,
+            source_end_line=1,
+            declaration_hint="AlmostDetSeq.det_prepend",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.AlmostDetSeq.det_prepend",
+            name="det_prepend",
+            kind="lemma",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+
+        bound = bind_manifest_backed_node_sources([node], [source])
+        self.assertEqual(bound[0].source_path, "Regular.lean")
+        self.assertEqual(bound[0].source_start_line, 1)
+
+    def test_manifest_backed_binding_rejects_ambiguous_suffix_matches(self):
+        from theseus_repo_search.errors import RepoSearchError
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        chunks = [
+            SourceChunk(
+                id=f"src:Regular.lean:{line}:{line}",
+                source_commit="a" * 64,
+                source_path="Regular.lean",
+                source_start_line=line,
+                source_end_line=line,
+                declaration_hint="det_prepend",
+                text="lemma det_prepend : True := by trivial\n",
+                content_sha256=sha256(b"lemma det_prepend : True := by trivial\n").hexdigest(),
+            )
+            for line in (1, 10)
+        ]
+        node = Node.from_lean(
+            full_name="DCR.AlmostDetSeq.det_prepend",
+            name="det_prepend",
+            kind="lemma",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+
+        with self.assertRaises(RepoSearchError) as caught:
+            bind_manifest_backed_node_sources([node], chunks)
+        self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+
+    def test_manifest_backed_binding_accepts_immediate_enclosing_declaration(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = (
+            "structure Driver where\n"
+            "  aleph0_le : True\n"
+        )
+        source = SourceChunk(
+            id="src:Regular.lean:553:570",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=553,
+            source_end_line=570,
+            declaration_hint="Driver",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.Driver.aleph0_le",
+            name="aleph0_le",
+            kind="def",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+
+        bound = bind_manifest_backed_node_sources([node], [source])
+        self.assertEqual(bound[0].source_path, "Regular.lean")
+        self.assertEqual(bound[0].source_start_line, 553)
+        self.assertEqual(bound[0].source_end_line, 570)
+
+    def test_manifest_backed_binding_does_not_use_non_immediate_ancestor(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "structure Outer where\n  marker : True\n"
+        source = SourceChunk(
+            id="src:Regular.lean:1:2",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=1,
+            source_end_line=2,
+            declaration_hint="Outer",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.Outer.Inner.field",
+            name="field",
+            kind="def",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+
+        self.assertEqual(
+            bind_manifest_backed_node_sources([node], [source]),
+            [],
+        )
+
+    def test_manifest_backed_binding_drops_unwritten_immediate_member(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "structure Driver where\n  aleph0_le : True\n"
+        source = SourceChunk(
+            id="src:Regular.lean:1:2",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=1,
+            source_end_line=2,
+            declaration_hint="Driver",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.Driver.synthetic",
+            name="synthetic",
+            kind="def",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+        self.assertEqual(bind_manifest_backed_node_sources([node], [source]), [])
+
+    def test_manifest_backed_binding_drops_compiler_generated_descendant(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "structure Driver where\n  aleph0_le : True\n"
+        source = SourceChunk(
+            id="src:Regular.lean:1:2",
+            source_commit="a" * 64,
+            source_path="Regular.lean",
+            source_start_line=1,
+            source_end_line=2,
+            declaration_hint="Driver",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        node = Node.from_lean(
+            full_name="DCR.Driver.mk.inj",
+            name="inj",
+            kind="thm",
+            module="Regular",
+            source_commit="a" * 64,
+        )
+        self.assertEqual(bind_manifest_backed_node_sources([node], [source]), [])
+
+    def test_manifest_backed_binding_rejects_unbacked_node_module(self):
+        from theseus_repo_search.errors import RepoSearchError
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = "theorem authoritative : True := by trivial\n"
+        source = SourceChunk(
+            id="src:Main.lean:1:1",
+            source_commit="a" * 64,
+            source_path="Main.lean",
+            source_start_line=1,
+            source_end_line=1,
+            declaration_hint="authoritative",
+            text=text,
+            content_sha256=sha256(text.encode()).hexdigest(),
+        )
+        generated = Node.from_lean(
+            full_name="Generated.injected",
+            name="injected",
+            kind="thm",
+            module="Generated",
+            source_commit="a" * 64,
+        )
+        with self.assertRaises(RepoSearchError) as caught:
+            bind_manifest_backed_node_sources([generated], [source])
+        self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+        self.assertIn("Generated.injected", str(caught.exception))
 
     def test_tracked_only_scan_excludes_lake_and_untracked_lean_files(self):
         with tempfile.TemporaryDirectory() as d:

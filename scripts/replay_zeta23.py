@@ -5,11 +5,14 @@ import json
 import re
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies, reverse_dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+)
 from theseus_repo_search.retrieval import search
 from theseus_repo_search.sources import tracked_lean_files
-
 
 TIGHT_QUERY = "tight pairs extremal"
 CHEBYSHEV_QUERY = "Chebyshev Mertens"
@@ -18,7 +21,7 @@ BASELINE_RE = re.compile(r"certificate|trace|frobenius|moment", re.IGNORECASE)
 
 def _top10_contains(db_path: Path, query: str, declaration_hint: str) -> tuple[bool, list[dict[str, object]]]:
     hits = search(db_path, query, limit=10)
-    payload = [
+    payload: list[dict[str, object]] = [
         {
             "rank": index + 1,
             "declaration_id": hit.declaration_id,
@@ -58,7 +61,7 @@ def run_replay(
     descriptor_path: Path,
     source_root: Path | None = None,
 ) -> dict[str, object]:
-    manifest, source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
+    manifest, _source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
     tight_deps = dependencies(db_path, "lemmaR_tight_two", depth=1)
     tight_targets = {str(edge["target_id"]) for edge in tight_deps.edges}
     required_tight = "lean:Zeta23.ZeroSide.TightMult.lemmaR_tight"
@@ -101,11 +104,8 @@ def run_replay(
 
     return {
         "status": "PASS",
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "artifact_identity": artifact_identity(manifest),
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "graph": {
             "lemmaR_tight_two": {
                 "required_target": required_tight,

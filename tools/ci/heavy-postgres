@@ -1,0 +1,57 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    printf '%s\n' 'heavy-postgres: not inside a Git worktree' >&2
+    exit 2
+}
+cd "$ROOT"
+
+: "${PGHOST:=127.0.0.1}"
+: "${PGPORT:=5432}"
+: "${PGUSER:=postgres}"
+: "${PGDATABASE:=repo_search_contract}"
+export PGHOST PGPORT PGUSER PGDATABASE
+
+command -v psql >/dev/null 2>&1 || {
+    printf '%s\n' 'heavy-postgres: psql not found' >&2
+    exit 2
+}
+
+printf '%s\n' '== PostgreSQL server =='
+server_version_num=$(psql -X -v ON_ERROR_STOP=1 -Atqc \
+    "SELECT current_setting('server_version_num');")
+case "$server_version_num" in
+    17????) ;;
+    *)
+        printf 'heavy-postgres: expected PostgreSQL 17, got server_version_num=%s\n' \
+            "$server_version_num" >&2
+        exit 2
+        ;;
+esac
+psql -X -v ON_ERROR_STOP=1 -Atqc \
+    "SELECT current_setting('server_version'), current_database(), current_user;"
+
+printf '%s\n' '== runner rollback smoke =='
+psql -X -v ON_ERROR_STOP=1 -f qa/postgres/runner-smoke.sql
+
+printf '%s\n' '== security capability contract =='
+psql -X -v ON_ERROR_STOP=1 -f qa/postgres/security-contract.sql
+
+printf '%s\n' '== READY/write concurrency contract =='
+psql -X -v ON_ERROR_STOP=1 -f qa/postgres/concurrency-probe.sql
+python3 qa/postgres/concurrency_harness.py
+
+printf '%s\n' '== ephemeral fixture cleanup readback =='
+cleanup_ok=$(psql -X -v ON_ERROR_STOP=1 -Atqc \
+    "SELECT to_regnamespace('heavy_pg_concurrency') IS NULL AND NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'heavy_pg_gc_owner');")
+if [ "$cleanup_ok" != t ]; then
+    printf '%s\n' 'HEAVY_POSTGRES_CLEANUP_FAILED schema_or_role_remains' >&2
+    exit 1
+fi
+printf '%s\n' 'HEAVY_POSTGRES_CLEANUP_PASS'
+
+printf '%s\n' '== production PostgreSQL integration =='
+tools/ci/postgres-production
+
+printf '%s\n' 'HEAVY_POSTGRES_PASS substrate=postgresql-17 smoke=rollback security=capabilities concurrency=ready-write,cas-stale immutability=child-generation gc=inactive-ready dispatch=v1-v2 envelope=zero-hit-atomic bounds=query,terms,results migration=rollback'

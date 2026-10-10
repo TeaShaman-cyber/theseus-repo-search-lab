@@ -6,7 +6,11 @@ from pathlib import Path
 
 from scripts.load_producer_env import environment_mapping, main
 from theseus_repo_search.errors import RepoSearchError
-from theseus_repo_search.producer_config import LeanGitSource, RunnerPins
+from theseus_repo_search.producer_config import (
+    LeanArchiveSource,
+    LeanGitSource,
+    RunnerPins,
+)
 
 
 class ProducerEnvTests(unittest.TestCase):
@@ -32,6 +36,33 @@ class ProducerEnvTests(unittest.TestCase):
         self.assertEqual(env["ROOT_MODULES_CSV"], "Fixture.A,Fixture.B")
         self.assertEqual(env["SOURCE_SUBDIR"], "formal")
         self.assertEqual(env["BUILD_TARGET"], "Fixture")
+
+
+    def test_mapping_exposes_archive_authority_without_git_fields(self):
+        source = LeanArchiveSource.from_dict({
+            "schema": "theseus.lean-archive-source.v1",
+            "source_id": "archive-fixture",
+            "archive_url": "https://example.invalid/source.zip",
+            "archive_sha256": "e" * 64,
+            "archive_format": "zip",
+            "source_subdir": "pkg",
+            "root_modules": ["Main"],
+            "build_target": "Main",
+            "exclude_source_prefixes": [],
+        })
+        runner = RunnerPins.from_dict({
+            "schema": "theseus.lean-producer-runner.v1",
+            "extractor_repo": "cameronfreer/LeanDepViz",
+            "extractor_commit": "b" * 40,
+            "extractor_main_sha256": "c" * 64,
+            "elan_version": "v4.2.3",
+            "elan_sha256": "d" * 64,
+        })
+        env = environment_mapping(source, runner)
+        self.assertEqual(env["SOURCE_KIND"], "archive")
+        self.assertEqual(env["ARCHIVE_SHA256"], "e" * 64)
+        self.assertNotIn("SOURCE_COMMIT", env)
+        self.assertNotIn("SOURCE_REPO", env)
 
 
 class ProducerEnvCliTests(unittest.TestCase):

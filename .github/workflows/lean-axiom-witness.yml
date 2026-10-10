@@ -1,0 +1,76 @@
+name: Minimal Lean axiom witness
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-axiom-witness-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  witness:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      LEAN_ARCHIVE_SHA256: 48010c7d6264dc992574e9b0e09ece1f9c648e8f5106066b2cdb6834a6a60a6c
+      LEAN_EXE_SHA256: e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550
+      LEAN_RELEASE: v4.33.0-rc2
+    steps:
+      - name: Checkout exact repository source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Verify exact checkout and fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
+          test "$(sha256sum tests/fixtures/lean_axioms/AxiomProbe.lean | cut -d ' ' -f 1)" = "d92d2482c12a116d254feba6e09c275dab183e4a3bf9d1ebf6aa3d48260342b7"
+          printf 'verified_checkout_sha=%s\n' "$(git rev-parse HEAD)"
+
+      - name: Download and authenticate complete official Lean runtime archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "$RUNNER_TEMP/lean.tar.zst" \
+            "https://github.com/leanprover/lean4/releases/download/${LEAN_RELEASE}/lean-4.33.0-rc2-linux.tar.zst"
+          # SHA256 is independently pinned in reviewed workflow source, from
+          # the official release asset digest. Verify BEFORE extracting code.
+          echo "$LEAN_ARCHIVE_SHA256  $RUNNER_TEMP/lean.tar.zst" | sha256sum --check
+          command -v zstd
+          mkdir -p "$RUNNER_TEMP/lean-extracted"
+          tar --zstd -xf "$RUNNER_TEMP/lean.tar.zst" -C "$RUNNER_TEMP/lean-extracted"
+          lean="$RUNNER_TEMP/lean-extracted/lean-4.33.0-rc2-linux/bin/lean"
+          test -x "$lean"
+          echo "$LEAN_EXE_SHA256  $lean" | sha256sum --check
+          "$lean" --version
+
+      - name: Run actual Lean and capture immutable-run witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/lean_axiom_witness.py capture \
+            --source tests/fixtures/lean_axioms/AxiomProbe.lean \
+            --lean "$RUNNER_TEMP/lean-extracted/lean-4.33.0-rc2-linux/bin/lean" \
+            --lean-archive-sha256 "$LEAN_ARCHIVE_SHA256" \
+            --repository "$GITHUB_REPOSITORY" \
+            --source-commit "${{ github.sha }}" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --out _witness
+
+      - name: Upload raw witness and observed hashes
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lean-axiom-witness
+          path: _witness/
+          if-no-files-found: warn
+          retention-days: 30

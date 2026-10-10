@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
+import json
+import os
 import re
+import stat
 import subprocess
 from dataclasses import replace
 from hashlib import sha256
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
-from .model import Node, SourceChunk
-
+from .errors import RepoSearchError
+from .model import Edge, Node, SourceChunk
 
 DECL_RE = re.compile(
     r"^\s*(?:protected\s+|private\s+|noncomputable\s+|unsafe\s+)*"
     r"(?:theorem|lemma|def|abbrev|structure|class|inductive|instance)\s+"
-    r"(?P<name>[A-Za-z_][A-Za-z0-9_'\.]*)"
+    r"(?P<name>[^\W\d][\w']*(?:\.[^\W\d][\w']*)*)"
 )
 
 
@@ -192,6 +195,196 @@ def tracked_lean_files(
         files.append(path)
     return sorted(files, key=lambda path: path.relative_to(source_root).as_posix())
 
+def _chunks_from_text(
+    relative_path: str,
+    text: str,
+    *,
+    source_revision: str,
+) -> list[SourceChunk]:
+    lines = text.splitlines(keepends=True)
+    code_lines = _code_lines(lines)
+    declarations: list[tuple[int, str]] = []
+    for index, line in enumerate(code_lines):
+        match = DECL_RE.match(line)
+        if match:
+            declarations.append((index, match.group("name")))
+    if not declarations:
+        return []
+
+    declaration_lines = [index for index, _ in declarations]
+    starts = _chunk_starts(lines, declaration_lines)
+    chunks: list[SourceChunk] = []
+    for position, ((_, declaration_name), start) in enumerate(zip(declarations, starts)):
+        end = starts[position + 1] - 1 if position + 1 < len(starts) else len(lines) - 1
+        chunk_text = "".join(lines[start : end + 1])
+        start_line = start + 1
+        end_line = end + 1
+        chunks.append(
+            SourceChunk(
+                id=f"src:{relative_path}:{start_line}:{end_line}",
+                source_commit=source_revision,
+                source_path=relative_path,
+                source_start_line=start_line,
+                source_end_line=end_line,
+                declaration_hint=declaration_name,
+                text=chunk_text,
+                content_sha256=sha256(chunk_text.encode()).hexdigest(),
+            )
+        )
+    return chunks
+
+
+def _source_mismatch(message: str) -> RepoSearchError:
+    return RepoSearchError("BLOCKED_SOURCE_MISMATCH", message)
+
+
+def _read_stable_regular_bytes(target: Path, source_path: str) -> bytes:
+    try:
+        before = target.lstat()
+    except OSError as exc:
+        raise _source_mismatch(f"authoritative archive source missing: {source_path}") from exc
+    if not stat.S_ISREG(before.st_mode):
+        raise _source_mismatch(f"authoritative archive source type changed: {source_path}")
+    try:
+        with target.open("rb") as fh:
+            opened = os.fstat(fh.fileno())
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or opened.st_dev != before.st_dev
+                or opened.st_ino != before.st_ino
+            ):
+                raise _source_mismatch(
+                    f"authoritative archive source changed while opening: {source_path}"
+                )
+            return fh.read()
+    except RepoSearchError:
+        raise
+    except OSError as exc:
+        raise _source_mismatch(f"cannot read authoritative archive source: {source_path}") from exc
+
+
+def scan_manifest_backed_lean_sources(
+    source_root: Path,
+    *,
+    source_revision: str,
+    member_manifest_path: Path,
+    expected_manifest_sha256: str | None = None,
+    exclude_prefixes: tuple[str, ...] = (),
+) -> list[SourceChunk]:
+    source_root = source_root.resolve()
+    try:
+        manifest_bytes = member_manifest_path.read_bytes()
+        if (
+            expected_manifest_sha256 is not None
+            and sha256(manifest_bytes).hexdigest() != expected_manifest_sha256
+        ):
+            raise _source_mismatch(
+                "archive member manifest changed before source consumption"
+            )
+        manifest = json.loads(manifest_bytes.decode("utf-8"))
+    except RepoSearchError:
+        raise
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            f"invalid archive member manifest: {exc}",
+        ) from exc
+    if not isinstance(manifest, dict):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive member manifest root must be an object",
+        )
+    if manifest.get("schema") != "theseus.archive-member-manifest.v1":
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "unsupported archive member manifest schema",
+        )
+    source = manifest.get("source")
+    if not isinstance(source, dict) or source.get("kind") != "archive":
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive member manifest source must be explicit archive authority",
+        )
+    if source.get("sha256") != source_revision:
+        raise _source_mismatch("archive member manifest revision does not match source revision")
+    members = manifest.get("members")
+    if not isinstance(members, list):
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "archive member manifest members must be an array",
+        )
+
+    chunks: list[SourceChunk] = []
+    seen_source_paths: set[str] = set()
+    for item in members:
+        if not isinstance(item, dict) or set(item) != {"path", "source_path", "sha256"}:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "archive member manifest entry has invalid fields",
+            )
+        source_path = item.get("source_path")
+        expected_sha256 = item.get("sha256")
+        if source_path is None:
+            continue
+        if not isinstance(source_path, str) or not source_path:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "archive member manifest source_path must be a string or null",
+            )
+        relative = PurePosixPath(source_path)
+        if (
+            relative.is_absolute()
+            or ".." in relative.parts
+            or relative.as_posix() != source_path
+        ):
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                f"unsafe archive member source_path: {source_path}",
+            )
+        if source_path in seen_source_paths:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                f"duplicate archive member source_path: {source_path}",
+            )
+        seen_source_paths.add(source_path)
+        if not source_path.endswith(".lean"):
+            continue
+        if any(source_path.startswith(prefix) for prefix in exclude_prefixes):
+            continue
+        if (
+            not isinstance(expected_sha256, str)
+            or len(expected_sha256) != 64
+            or any(ch not in "0123456789abcdef" for ch in expected_sha256)
+        ):
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                f"invalid archive member hash for {source_path}",
+            )
+        target = source_root.joinpath(*relative.parts)
+        data = _read_stable_regular_bytes(target, source_path)
+        if sha256(data).hexdigest() != expected_sha256:
+            raise _source_mismatch(f"authoritative archive source hash mismatch: {source_path}")
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                f"authoritative Lean source is not UTF-8: {source_path}",
+            ) from exc
+        chunks.extend(
+            _chunks_from_text(
+                source_path,
+                text,
+                source_revision=source_revision,
+            )
+        )
+
+    return sorted(
+        chunks,
+        key=lambda chunk: (chunk.source_path, chunk.source_start_line, chunk.id),
+    )
+
+
 def scan_lean_sources(
     source_root: Path, *, source_commit: str, tracked_only: bool = False,
     exclude_prefixes: tuple[str, ...] = (),
@@ -213,37 +406,124 @@ def scan_lean_sources(
 
     for path in files:
         relative_path = path.relative_to(source_root).as_posix()
-        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
-        code_lines = _code_lines(lines)
-        declarations: list[tuple[int, str]] = []
-        for index, line in enumerate(code_lines):
-            match = DECL_RE.match(line)
-            if match:
-                declarations.append((index, match.group("name")))
-        if not declarations:
-            continue
-
-        declaration_lines = [index for index, _ in declarations]
-        starts = _chunk_starts(lines, declaration_lines)
-        for position, ((_, declaration_name), start) in enumerate(zip(declarations, starts)):
-            end = starts[position + 1] - 1 if position + 1 < len(starts) else len(lines) - 1
-            text = "".join(lines[start : end + 1])
-            start_line = start + 1
-            end_line = end + 1
-            chunks.append(
-                SourceChunk(
-                    id=f"src:{relative_path}:{start_line}:{end_line}",
-                    source_commit=source_commit,
-                    source_path=relative_path,
-                    source_start_line=start_line,
-                    source_end_line=end_line,
-                    declaration_hint=declaration_name,
-                    text=text,
-                    content_sha256=sha256(text.encode()).hexdigest(),
-                )
+        text = path.read_text(encoding="utf-8")
+        chunks.extend(
+            _chunks_from_text(
+                relative_path,
+                text,
+                source_revision=source_commit,
             )
+        )
 
     return sorted(chunks, key=lambda chunk: (chunk.source_path, chunk.source_start_line, chunk.id))
+
+
+def _full_name_matches_hint(full_name: str, hint: str) -> bool:
+    return full_name == hint or full_name.endswith(f".{hint}")
+
+
+def _chunk_declares_member(chunk: SourceChunk, name: str) -> bool:
+    return re.search(rf"(?m)^[ \t]*{re.escape(name)}[ \t]*:", chunk.text) is not None
+
+
+def bind_manifest_backed_node_sources(
+    nodes: list[Node], sources: list[SourceChunk]
+) -> list[Node]:
+    by_path: dict[str, list[SourceChunk]] = {}
+    for chunk in sources:
+        if chunk.declaration_hint is None:
+            continue
+        by_path.setdefault(chunk.source_path, []).append(chunk)
+
+    bound: list[Node] = []
+    for node in nodes:
+        expected_path = lean_module_source_path(node.module)
+        candidates = by_path.get(expected_path, [])
+        if not candidates:
+            raise _source_mismatch(
+                "archive node belongs to a module with no manifest-backed source chunks: "
+                f"{node.full_name} -> {expected_path}"
+            )
+
+        matches = [
+            chunk
+            for chunk in candidates
+            if chunk.declaration_hint is not None
+            and _full_name_matches_hint(node.full_name, chunk.declaration_hint)
+        ]
+        if len(matches) > 1:
+            raise _source_mismatch(
+                "archive node is ambiguously backed by authoritative source chunks: "
+                f"{node.full_name} -> {expected_path}"
+            )
+
+        if not matches and "." in node.full_name:
+            parent_name = node.full_name.rsplit(".", 1)[0]
+            matches = [
+                chunk
+                for chunk in candidates
+                if chunk.declaration_hint is not None
+                and _full_name_matches_hint(parent_name, chunk.declaration_hint)
+                and _chunk_declares_member(chunk, node.name)
+            ]
+            if len(matches) > 1:
+                raise _source_mismatch(
+                    "archive node member is ambiguously backed by authoritative source chunks: "
+                    f"{node.full_name} -> {expected_path}"
+                )
+
+        if not matches:
+            # The module itself is manifest-backed, but this declaration has no lexical
+            # source evidence. Compiler-generated helpers must not inherit archive authority.
+            continue
+
+        chunk = matches[0]
+        if chunk.source_revision != node.source_revision:
+            raise _source_mismatch(
+                f"archive node/source revision mismatch: {node.full_name}"
+            )
+        bound.append(
+            replace(
+                node,
+                source_path=chunk.source_path,
+                source_start_line=chunk.source_start_line,
+                source_end_line=chunk.source_end_line,
+            )
+        )
+    return bound
+
+
+def filter_manifest_backed_edges(
+    edges: list[Edge], bound_nodes: list[Node]
+) -> list[Edge]:
+    node_ids = {node.id for node in bound_nodes}
+    return [
+        edge
+        for edge in edges
+        if edge.source_id in node_ids and edge.target_id in node_ids
+    ]
+
+
+def lean_module_source_path(module: str) -> str:
+    """Map Lean's escaped component display name to its filesystem path."""
+    parts: list[str] = []
+    quoted = False
+    for char in module:
+        if char == "«":
+            if quoted:
+                raise RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", "nested quoted Lean module component")
+            quoted = True
+        elif char == "»":
+            if not quoted:
+                raise RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", "unbalanced quoted Lean module component")
+            quoted = False
+        elif char == "." and not quoted:
+            parts.append("/")
+        else:
+            parts.append(char)
+    if quoted:
+        raise RepoSearchError("BLOCKED_ARTIFACT_INTEGRITY", "unbalanced quoted Lean module component")
+    return "".join(parts) + ".lean"
 
 
 def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Node]:
@@ -260,7 +540,7 @@ def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Nod
         if node.source_path is not None:
             bound.append(node)
             continue
-        expected_path = f"{node.module.replace('.', '/')}.lean"
+        expected_path = lean_module_source_path(node.module)
         matches = by_path_and_name.get((expected_path, node.name), [])
         if len(matches) != 1:
             bound.append(node)

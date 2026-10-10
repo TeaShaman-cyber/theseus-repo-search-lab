@@ -7,12 +7,27 @@ import sqlite3
 from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity, load_artifact
+from theseus_repo_search.model import ArtifactManifest, ArtifactManifestV2
+from theseus_repo_search.projection import read_projection_provenance
+from theseus_repo_search.replay_contract import validate_registered_replay_provenance
 
-SCHEMA = "theseus.repo-search-consumer-receipt.v1"
+SCHEMA = "theseus.repo-search-consumer-receipt.v2"
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _config_evidence(path: Path, logical_path: str, label: str) -> dict[str, str]:
+    logical = Path(logical_path)
+    if (
+        not logical_path
+        or logical.is_absolute()
+        or ".." in logical.parts
+        or logical.as_posix() != logical_path
+    ):
+        raise ValueError(f"{label} path must be normalized repository-relative POSIX text")
+    return {"path": logical_path, "sha256": _sha256(path)}
 
 
 def build_receipt(
@@ -20,6 +35,10 @@ def build_receipt(
     artifact: Path,
     db: Path,
     replay: Path,
+    source_descriptor: Path,
+    source_descriptor_path: str,
+    runner_config: Path,
+    runner_config_path: str,
     artifact_name: str,
     repository_head: str,
     workflow_run_id: str,
@@ -34,6 +53,7 @@ def build_receipt(
         quick_row = conn.execute("PRAGMA quick_check").fetchone()
         quick_check = None if quick_row is None else str(quick_row[0])
         projection_meta = dict(conn.execute("SELECT key, value FROM meta"))
+        projection_provenance = read_projection_provenance(conn)
 
     if quick_check != "ok":
         raise ValueError(f"SQLite quick_check failed: {quick_check}")
@@ -45,10 +65,73 @@ def build_receipt(
             f"expected={expected_identity} observed={projected_identity}"
         )
 
+    if isinstance(manifest, ArtifactManifestV2):
+        authority = manifest.source_authority
+        expected_projection_authority = {
+            "kind": "archive",
+            "url": authority.url,
+            "sha256": authority.sha256,
+            "format": authority.format,
+            "subdir": authority.subdir,
+        }
+        if (
+            projection_provenance.source_kind != "archive"
+            or projection_provenance.source_revision != manifest.source_revision
+            or projection_provenance.source_authority != expected_projection_authority
+            or projection_provenance.created_from_authoritative_source
+            != manifest.created_from_authoritative_source
+        ):
+            raise ValueError("projection provenance mismatch for archive artifact")
+    elif isinstance(manifest, ArtifactManifest):
+        if (
+            projection_provenance.source_kind != "git"
+            or projection_provenance.source_revision != manifest.source_commit
+            or projection_provenance.created_from_authoritative_source
+            != manifest.created_from_authoritative_commit
+        ):
+            raise ValueError("projection provenance mismatch for Git artifact")
+    else:
+        raise TypeError("unsupported artifact manifest type")
+
     replay_payload = json.loads(replay.read_text(encoding="utf-8"))
     replay_status = replay_payload.get("status")
     if replay_status != "PASS":
         raise ValueError(f"replay status is not PASS: {replay_status}")
+    replay_identity = replay_payload.get("artifact_identity")
+    if not isinstance(replay_identity, str) or not replay_identity:
+        raise ValueError("replay artifact identity is missing or invalid")
+    if replay_identity != expected_identity:
+        raise ValueError(
+            "replay artifact identity mismatch: "
+            f"expected={expected_identity} observed={replay_identity}"
+        )
+
+    if isinstance(manifest, ArtifactManifestV2):
+        validate_registered_replay_provenance(
+            artifact, manifest, replay_payload.get("provenance")
+        )
+        authority = manifest.source_authority
+        artifact_payload: dict[str, object] = {
+            "name": artifact_name,
+            "identity": expected_identity,
+            "source": {
+                "kind": "archive",
+                "url": authority.url,
+                "sha256": authority.sha256,
+                "format": authority.format,
+                "subdir": authority.subdir,
+            },
+        }
+    elif isinstance(manifest, ArtifactManifest):
+        artifact_payload = {
+            "name": artifact_name,
+            "identity": expected_identity,
+            "source_repo": manifest.source_repo,
+            "source_commit": manifest.source_commit,
+            "source_subdir": manifest.source_subdir,
+        }
+    else:
+        raise TypeError("unsupported artifact manifest type")
 
     return {
         "schema": SCHEMA,
@@ -60,12 +143,14 @@ def build_receipt(
             "workflow_ref": workflow_ref,
             "workflow_sha": workflow_sha,
         },
-        "artifact": {
-            "name": artifact_name,
-            "identity": expected_identity,
-            "source_repo": manifest.source_repo,
-            "source_commit": manifest.source_commit,
-            "source_subdir": manifest.source_subdir,
+        "artifact": artifact_payload,
+        "producer_config": {
+            "source_descriptor": _config_evidence(
+                source_descriptor, source_descriptor_path, "source descriptor"
+            ),
+            "runner_config": _config_evidence(
+                runner_config, runner_config_path, "runner config"
+            ),
         },
         "projection": {
             "quick_check": quick_check,
@@ -74,6 +159,7 @@ def build_receipt(
         },
         "replay": {
             "status": replay_status,
+            "artifact_identity": replay_identity,
             "sha256": _sha256(replay),
         },
     }
@@ -84,6 +170,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--artifact", type=Path, required=True)
     parser.add_argument("--db", type=Path, required=True)
     parser.add_argument("--replay", type=Path, required=True)
+    parser.add_argument("--source-descriptor", type=Path, required=True)
+    parser.add_argument("--source-descriptor-path", required=True)
+    parser.add_argument("--runner-config", type=Path, required=True)
+    parser.add_argument("--runner-config-path", required=True)
     parser.add_argument("--artifact-name", required=True)
     parser.add_argument("--repository-head", required=True)
     parser.add_argument("--workflow-run-id", required=True)
@@ -100,6 +190,10 @@ def main(argv: list[str] | None = None) -> int:
         artifact=args.artifact,
         db=args.db,
         replay=args.replay,
+        source_descriptor=args.source_descriptor,
+        source_descriptor_path=args.source_descriptor_path,
+        runner_config=args.runner_config,
+        runner_config_path=args.runner_config_path,
         artifact_name=args.artifact_name,
         repository_head=args.repository_head,
         workflow_run_id=args.workflow_run_id,

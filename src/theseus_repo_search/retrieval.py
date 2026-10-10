@@ -2,54 +2,60 @@ from __future__ import annotations
 
 import re
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from math import ceil
 from pathlib import Path
+from typing import Literal
 
 from .errors import RepoSearchError
 from .graph import dependencies
 from .model import EvidenceGrade
+from .projection import ProjectionProvenance, read_projection_provenance
+from .sources import lean_module_source_path
+
+SearchMode = Literal["discovery", "evidence"]
+SearchMatchMode = Literal["exact", "single_term", "any_terms", "all_terms"]
 
 
 @dataclass(frozen=True)
 class SearchHit:
     declaration_id: str | None
     declaration_hint: str | None
-    source_commit: str
+    source_kind: str
+    source_revision: str
+    source_authority: dict[str, object] | None
     source_path: str | None
     source_start_line: int | None
     source_end_line: int | None
     evidence_grade: EvidenceGrade
     score: float
     text: str | None
-    created_from_authoritative_commit: bool
+    created_from_authoritative_source: bool
+    query_mode: SearchMode = "discovery"
+    match_mode: SearchMatchMode = "exact"
+    source_row_id: str | None = None
+
+    @property
+    def source_commit(self) -> str:
+        if self.source_kind != "git":
+            raise AttributeError("archive search provenance has no source_commit field")
+        return self.source_revision
+
+    @property
+    def created_from_authoritative_commit(self) -> bool:
+        if self.source_kind != "git":
+            raise AttributeError(
+                "archive search provenance has no created_from_authoritative_commit field"
+            )
+        return self.created_from_authoritative_source
 
 
-def _authoritative_attestation(conn: sqlite3.Connection) -> bool:
-    row = conn.execute(
-        "SELECT value FROM meta WHERE key = ?",
-        ("created_from_authoritative_commit",),
-    ).fetchone()
-    if row is None:
-        raise RepoSearchError(
-            "BLOCKED_PROJECTION_INTEGRITY",
-            "missing created_from_authoritative_commit projection metadata",
-        )
-    import json
-
-    value = json.loads(str(row[0]))
-    if not isinstance(value, bool):
-        raise RepoSearchError(
-            "BLOCKED_PROJECTION_INTEGRITY",
-            "invalid created_from_authoritative_commit projection metadata",
-        )
-    return value
-
-
-def _node_row_by_id(conn: sqlite3.Connection, node_id: str):
+def _node_row_by_id(
+    conn: sqlite3.Connection, node_id: str, *, revision_column: str
+):
     return conn.execute(
-        "SELECT id, name, source_path, source_start_line, source_end_line, source_commit, module "
-        "FROM nodes WHERE id = ?",
+        "SELECT id, name, source_path, source_start_line, source_end_line, "
+        f"{revision_column}, module FROM nodes WHERE id = ?",
         (node_id,),
     ).fetchone()
 
@@ -102,11 +108,13 @@ def _required_node_id(conn: sqlite3.Connection, query: str) -> str:
     raise RepoSearchError("UNKNOWN", f"declaration not found: {query}")
 
 
-def _source_row_for_node(conn: sqlite3.Connection, node_row):
-    _, name, source_path, source_start_line, source_end_line, _, module = node_row
+def _source_row_for_node(
+    conn: sqlite3.Connection, node_row, *, revision_column: str
+):
+    _, name, source_path, source_start_line, _source_end_line, _, module = node_row
     if source_path is not None:
         rows = conn.execute(
-            "SELECT id, source_commit, source_path, source_start_line, source_end_line, "
+            f"SELECT id, {revision_column}, source_path, source_start_line, source_end_line, "
             "declaration_hint, text FROM sources WHERE source_path = ? "
             "ORDER BY source_start_line, id",
             (source_path,),
@@ -123,10 +131,10 @@ def _source_row_for_node(conn: sqlite3.Connection, node_row):
             return rows[0]
 
     fallback_path = (
-        source_path if source_path is not None else f"{str(module).replace('.', '/')}.lean"
+        source_path if source_path is not None else lean_module_source_path(str(module))
     )
     rows = conn.execute(
-        "SELECT id, source_commit, source_path, source_start_line, source_end_line, "
+        f"SELECT id, {revision_column}, source_path, source_start_line, source_end_line, "
         "declaration_hint, text FROM sources WHERE source_path = ? AND declaration_hint = ? "
         "ORDER BY source_start_line, id",
         (fallback_path, name),
@@ -135,38 +143,47 @@ def _source_row_for_node(conn: sqlite3.Connection, node_row):
 
 
 def _exact_hit(
-    conn: sqlite3.Connection, query: str, *, authoritative: bool
+    conn: sqlite3.Connection, query: str, *, provenance: ProjectionProvenance
 ) -> SearchHit | None:
     node_id = _unique_node_id(conn, query)
     if node_id is None:
         return None
-    node_row = _node_row_by_id(conn, node_id)
+    node_row = _node_row_by_id(
+        conn, node_id, revision_column=provenance.revision_column
+    )
     assert node_row is not None
-    source_row = _source_row_for_node(conn, node_row)
+    source_row = _source_row_for_node(
+        conn, node_row, revision_column=provenance.revision_column
+    )
     if source_row is None:
         return SearchHit(
             declaration_id=node_id,
             declaration_hint=str(node_row[1]),
-            source_commit=str(node_row[5]),
+            source_kind=provenance.source_kind,
+            source_revision=str(node_row[5]),
+            source_authority=provenance.source_authority,
             source_path=None if node_row[2] is None else str(node_row[2]),
             source_start_line=node_row[3],
             source_end_line=node_row[4],
             evidence_grade=EvidenceGrade.LEXICAL_HIT,
             score=0.0,
             text=None,
-            created_from_authoritative_commit=authoritative,
+            created_from_authoritative_source=provenance.created_from_authoritative_source,
         )
     return SearchHit(
         declaration_id=node_id,
         declaration_hint=None if source_row[5] is None else str(source_row[5]),
-        source_commit=str(source_row[1]),
+        source_kind=provenance.source_kind,
+        source_revision=str(source_row[1]),
+        source_authority=provenance.source_authority,
         source_path=str(source_row[2]),
         source_start_line=int(source_row[3]),
         source_end_line=int(source_row[4]),
         evidence_grade=EvidenceGrade.LEXICAL_HIT,
         score=0.0,
         text=str(source_row[6]),
-        created_from_authoritative_commit=authoritative,
+        created_from_authoritative_source=provenance.created_from_authoritative_source,
+        source_row_id=str(source_row[0]),
     )
 
 
@@ -216,21 +233,38 @@ def _declaration_id_for_hit(
     return ids[0] if len(ids) == 1 else None
 
 
-def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
+def search(
+    db_path: Path,
+    query: str,
+    *,
+    limit: int = 10,
+    mode: SearchMode = "discovery",
+) -> list[SearchHit]:
+    if mode not in {"discovery", "evidence"}:
+        raise ValueError(f"unsupported search mode: {mode}")
     if limit <= 0:
         return []
     with sqlite3.connect(db_path) as conn:
-        authoritative = _authoritative_attestation(conn)
-        exact = _exact_hit(conn, query, authoritative=authoritative)
+        provenance = read_projection_provenance(conn)
+        exact = _exact_hit(conn, query, provenance=provenance)
         if exact is not None:
-            return [exact]
+            return [replace(exact, query_mode=mode, match_mode="exact")]
 
         terms = re.findall(r"\w+", query, flags=re.UNICODE)
         if not terms:
             return []
-        fts_query = " OR ".join(f'"{term}"' for term in terms)
+        if len(terms) == 1:
+            operator = " OR "
+            match_mode: SearchMatchMode = "single_term"
+        elif mode == "evidence":
+            operator = " AND "
+            match_mode = "all_terms"
+        else:
+            operator = " OR "
+            match_mode = "any_terms"
+        fts_query = operator.join(f'"{term}"' for term in terms)
         rows = conn.execute(
-            "SELECT s.id, s.source_commit, s.source_path, s.source_start_line, "
+            f"SELECT s.id, s.{provenance.revision_column}, s.source_path, s.source_start_line, "
             "s.source_end_line, s.declaration_hint, s.text, bm25(sources_fts) AS rank "
             "FROM sources_fts JOIN sources s ON s.rowid = sources_fts.rowid "
             "WHERE sources_fts MATCH ? "
@@ -247,30 +281,43 @@ def search(db_path: Path, query: str, *, limit: int = 10) -> list[SearchHit]:
                     source_end_line=int(row[4]),
                 ),
                 declaration_hint=None if row[5] is None else str(row[5]),
-                source_commit=str(row[1]),
+                source_kind=provenance.source_kind,
+                source_revision=str(row[1]),
+                source_authority=provenance.source_authority,
                 source_path=str(row[2]),
                 source_start_line=int(row[3]),
                 source_end_line=int(row[4]),
                 evidence_grade=EvidenceGrade.LEXICAL_HIT,
                 score=float(row[7]),
                 text=str(row[6]),
-                created_from_authoritative_commit=authoritative,
+                created_from_authoritative_source=provenance.created_from_authoritative_source,
+                query_mode=mode,
+                match_mode=match_mode,
+                source_row_id=str(row[0]),
             )
             for row in rows
         ]
 
 
-def _context_chunk(conn: sqlite3.Connection, node_id: str, distance: int):
-    node_row = _node_row_by_id(conn, node_id)
+def _context_chunk(
+    conn: sqlite3.Connection, node_id: str, distance: int, *, provenance: ProjectionProvenance
+):
+    node_row = _node_row_by_id(
+        conn, node_id, revision_column=provenance.revision_column
+    )
     if node_row is None:
         return None
-    source_row = _source_row_for_node(conn, node_row)
+    source_row = _source_row_for_node(
+        conn, node_row, revision_column=provenance.revision_column
+    )
     if source_row is None:
         return None
     return {
         "declaration_id": node_id,
         "declaration_hint": None if source_row[5] is None else str(source_row[5]),
-        "source_commit": str(source_row[1]),
+        "source_kind": provenance.source_kind,
+        "source_revision": str(source_row[1]),
+        "source_authority": provenance.source_authority,
         "source_path": str(source_row[2]),
         "source_start_line": int(source_row[3]),
         "source_end_line": int(source_row[4]),
@@ -289,16 +336,23 @@ def context(
 ) -> dict[str, object]:
     graph_result = dependencies(db_path, name, depth=depth)
     with sqlite3.connect(db_path) as conn:
+        provenance = read_projection_provenance(conn)
         target_id = _required_node_id(conn, name)
         distances: dict[str, int] = {target_id: 0}
         for edge in graph_result.edges:
             target = str(edge["target_id"])
-            edge_depth = int(edge["depth"])
+            edge_depth_raw = edge["depth"]
+            if isinstance(edge_depth_raw, bool) or not isinstance(edge_depth_raw, int):
+                raise RepoSearchError(
+                    "BLOCKED_PROJECTION_INTEGRITY",
+                    "graph edge depth must be an integer",
+                )
+            edge_depth = edge_depth_raw
             distances[target] = min(distances.get(target, edge_depth), edge_depth)
 
         candidates = []
         for node_id, distance in distances.items():
-            chunk = _context_chunk(conn, node_id, distance)
+            chunk = _context_chunk(conn, node_id, distance, provenance=provenance)
             if chunk is not None:
                 candidates.append(chunk)
 
@@ -321,7 +375,12 @@ def context(
         selected.append(chunk)
         total_chars = candidate_chars
 
-    return {
+    if graph_result.source_kind == "git":
+        for chunk in selected:
+            chunk["source_commit"] = chunk.pop("source_revision")
+            chunk.pop("source_kind", None)
+            chunk.pop("source_authority", None)
+    result: dict[str, object] = {
         "query": name,
         "target_id": target_id,
         "chunks": selected,
@@ -331,5 +390,20 @@ def context(
         "scope_root_modules": list(graph_result.scope_root_modules),
         "dependency_boundary": graph_result.dependency_boundary,
         "complete_within_scope": graph_result.complete_within_scope,
-        "created_from_authoritative_commit": graph_result.created_from_authoritative_commit,
     }
+    if graph_result.source_kind == "git":
+        result["created_from_authoritative_commit"] = (
+            graph_result.created_from_authoritative_source
+        )
+    else:
+        result.update(
+            {
+                "source_kind": graph_result.source_kind,
+                "source_revision": graph_result.source_revision,
+                "source_authority": graph_result.source_authority,
+                "created_from_authoritative_source": (
+                    graph_result.created_from_authoritative_source
+                ),
+            }
+        )
+    return result

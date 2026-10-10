@@ -1,0 +1,119 @@
+name: Accepted artifact consumer canary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: accepted-artifact-consumer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  consume-flt-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: accepted-artifact/flt-regular/41bfa1d236ee59a8
+      PACKAGE_ASSET: leanprover-community-flt-regular-accepted.tar.gz
+      RECEIPT_ASSET: leanprover-community-flt-regular-release-receipt.json
+      SOURCE_DESCRIPTOR: producer/sources/leanprover-community-flt-regular.json
+      SOURCE_ID: leanprover-community-flt-regular
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Verify exact consumer checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git rev-parse HEAD)"
+          test "$observed" = "${{ github.sha }}"
+          printf 'consumer_checkout_sha=%s\n' "$observed"
+
+      - name: Verify immutable release and download exact assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _release
+          gh release verify "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$PACKAGE_ASSET" \
+            --pattern "$RECEIPT_ASSET" \
+            --dir _release
+          gh release verify-asset "$RELEASE_TAG" "_release/$PACKAGE_ASSET" --repo "$GITHUB_REPOSITORY"
+          gh release verify-asset "$RELEASE_TAG" "_release/$RECEIPT_ASSET" --repo "$GITHUB_REPOSITORY"
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')"
+          receipt_head="$(jq -r '.acceptance.repository_head' "_release/$RECEIPT_ASSET")"
+          test "$tag_sha" = "$receipt_head"
+          printf 'release_tag_sha=%s\n' "$tag_sha"
+
+      - name: Install repository lens package
+        run: python3 -m pip install -e .
+
+      - name: Verify accepted package against current producer fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/consume_accepted_release.py \
+            --archive "_release/$PACKAGE_ASSET" \
+            --receipt "_release/$RECEIPT_ASSET" \
+            --source-descriptor "$SOURCE_DESCRIPTOR" \
+            --runner-config producer/runner.json \
+            --dest _consumer/release \
+            --out _consumer/release-consumer-verification.json
+
+      - name: Build fresh disposable projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="_consumer/release/artifact"
+          db="_consumer/${SOURCE_ID}.sqlite"
+          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
+          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
+          python3 - "$db" <<'PY_SQLITE'
+          import sqlite3
+          import sys
+          with sqlite3.connect(sys.argv[1]) as conn:
+              observed = conn.execute("PRAGMA quick_check").fetchone()[0]
+          if observed != "ok":
+              raise SystemExit(f"SQLite quick_check failed: {observed}")
+          print(f"sqlite_quick_check={observed}")
+          PY_SQLITE
+
+      - name: Replay accepted artifact with current consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/replay_flt_regular.py \
+            --db "_consumer/${SOURCE_ID}.sqlite" \
+            --artifact _consumer/release/artifact \
+            --descriptor "$SOURCE_DESCRIPTOR" \
+            --out "_consumer/${SOURCE_ID}-replay.json"
+
+      - name: Run fresh FLT research smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/run_research_smoke.py \
+            --db "_consumer/${SOURCE_ID}.sqlite" \
+            --artifact _consumer/release/artifact \
+            --scenario qa/research-smoke/flt-bridge-v0.json \
+            --tool-commit "${{ github.sha }}" \
+            --out "_consumer/${SOURCE_ID}-research-smoke-receipt.json"
+
+      - name: Upload consumer-only canary receipts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: flt-accepted-release-consumer-canary
+          path: |
+            _consumer/release-consumer-verification.json
+            _consumer/*-replay.json
+            _consumer/*-research-smoke-receipt.json
+          if-no-files-found: error

@@ -42,6 +42,58 @@ class EvidenceGrade(str, Enum):
 
 
 @dataclass(frozen=True)
+class GitAuthority:
+    repo: str
+    commit: str
+    subdir: str
+
+    @property
+    def kind(self) -> str:
+        return "git"
+
+    @property
+    def source_revision(self) -> str:
+        return self.commit
+
+
+@dataclass(frozen=True)
+class ArchiveAuthority:
+    url: str
+    sha256: str
+    format: str
+    subdir: str
+
+    @property
+    def kind(self) -> str:
+        return "archive"
+
+    @property
+    def source_revision(self) -> str:
+        return self.sha256
+
+
+SourceAuthority = GitAuthority | ArchiveAuthority
+
+
+def source_authority_from_dict(data: dict[str, object]) -> SourceAuthority:
+    kind = _require_str(data.get("kind"), "source.kind")
+    if kind == "git":
+        return GitAuthority(
+            repo=_require_str(data.get("repo"), "source.repo"),
+            commit=_require_str(data.get("commit"), "source.commit"),
+            subdir=_require_str(data.get("subdir"), "source.subdir"),
+        )
+    if kind == "archive":
+        return ArchiveAuthority(
+            url=_require_str(data.get("url"), "source.url"),
+            sha256=_require_str(data.get("sha256"), "source.sha256"),
+            format=_require_str(data.get("format"), "source.format"),
+            subdir=_require_str(data.get("subdir"), "source.subdir"),
+        )
+    raise ValueError(f"unsupported source authority kind: {kind}")
+
+
+@dataclass(frozen=True)
 class Node:
     id: str
     full_name: str
@@ -62,7 +114,7 @@ class Node:
         kind: str,
         module: str,
         source_commit: str,
-    ) -> "Node":
+    ) -> Node:
         return cls(
             id=f"lean:{full_name}",
             full_name=full_name,
@@ -74,6 +126,10 @@ class Node:
             source_end_line=None,
             source_commit=source_commit,
         )
+
+    @property
+    def source_revision(self) -> str:
+        return self.source_commit
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -117,6 +173,10 @@ class SourceChunk:
     declaration_hint: str | None
     text: str
     content_sha256: str
+
+    @property
+    def source_revision(self) -> str:
+        return self.source_commit
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -162,6 +222,22 @@ class ArtifactManifest:
     created_from_authoritative_commit: bool
     authority_receipt_sha256: str | None = None
 
+    @property
+    def source_authority(self) -> GitAuthority:
+        return GitAuthority(
+            repo=self.source_repo,
+            commit=self.source_commit,
+            subdir=self.source_subdir,
+        )
+
+    @property
+    def source_revision(self) -> str:
+        return self.source_commit
+
+    @property
+    def created_from_authoritative_source(self) -> bool:
+        return self.created_from_authoritative_commit
+
     def to_dict(self) -> dict[str, object]:
         return {
             "schema": self.schema,
@@ -195,7 +271,7 @@ class ArtifactManifest:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, object]) -> "ArtifactManifest":
+    def from_dict(cls, data: dict[str, object]) -> ArtifactManifest:
         source = _require_dict(data["source"], "source")
         producer = _require_dict(data["producer"], "producer")
         scope = _require_dict(data["scope"], "scope")
@@ -252,3 +328,124 @@ class ArtifactManifest:
                 "members.authority_receipt.sha256",
             ),
         )
+
+@dataclass(frozen=True)
+class ArtifactManifestV2:
+    schema: str
+    source_authority: ArchiveAuthority
+    producer: ProducerPin
+    scope: ArtifactScope
+    nodes_sha256: str
+    edges_sha256: str
+    sources_sha256: str | None
+    nodes_count: int
+    edges_count: int
+    created_from_authoritative_source: bool
+    authority_receipt_sha256: str | None = None
+
+    @property
+    def source_revision(self) -> str:
+        return self.source_authority.source_revision
+
+    def to_dict(self) -> dict[str, object]:
+        source = self.source_authority
+        return {
+            "schema": self.schema,
+            "source": {
+                "kind": source.kind,
+                "url": source.url,
+                "sha256": source.sha256,
+                "format": source.format,
+                "subdir": source.subdir,
+            },
+            "producer": {
+                "kind": self.producer.kind,
+                "tool_repo": self.producer.tool_repo,
+                "tool_commit": self.producer.tool_commit,
+                "tool_hash": self.producer.tool_hash,
+            },
+            "scope": {
+                "root_modules": list(self.scope.root_modules),
+                "dependency_boundary": self.scope.dependency_boundary,
+                **({"exclude_source_prefixes": list(self.scope.exclude_source_prefixes)} if self.scope.exclude_source_prefixes else {}),
+            },
+            "members": {
+                "nodes": {"sha256": self.nodes_sha256},
+                "edges": {"sha256": self.edges_sha256},
+                "sources": {"sha256": self.sources_sha256},
+                "authority_receipt": {"sha256": self.authority_receipt_sha256},
+            },
+            "counts": {
+                "nodes": self.nodes_count,
+                "edges": self.edges_count,
+            },
+            "created_from_authoritative_source": self.created_from_authoritative_source,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> ArtifactManifestV2:
+        if "created_from_authoritative_commit" in data:
+            raise TypeError("repo-index.v2 must not use created_from_authoritative_commit")
+        source_data = _require_dict(data["source"], "source")
+        expected_source_keys = {"kind", "url", "sha256", "format", "subdir"}
+        if set(source_data) != expected_source_keys:
+            raise TypeError("repo-index.v2 archive source fields must be explicit and exact")
+        source = source_authority_from_dict(source_data)
+        if not isinstance(source, ArchiveAuthority):
+            raise TypeError("repo-index.v2 currently requires archive source authority")
+        producer = _require_dict(data["producer"], "producer")
+        scope = _require_dict(data["scope"], "scope")
+        members = _require_dict(data["members"], "members")
+        counts = _require_dict(data["counts"], "counts")
+        nodes_member = _require_dict(members["nodes"], "members.nodes")
+        edges_member = _require_dict(members["edges"], "members.edges")
+        sources_member = _require_dict(members["sources"], "members.sources")
+        authority_receipt_member = _require_dict(
+            members.get("authority_receipt", {"sha256": None}),
+            "members.authority_receipt",
+        )
+        roots = scope["root_modules"]
+        if not isinstance(roots, list) or not all(isinstance(item, str) for item in roots):
+            raise TypeError("scope.root_modules must be an array of strings")
+        exclude_prefixes = scope.get("exclude_source_prefixes", [])
+        if not isinstance(exclude_prefixes, list) or not all(isinstance(item, str) for item in exclude_prefixes):
+            raise TypeError("scope.exclude_source_prefixes must be an array of strings")
+        nodes_count = _require_int(counts["nodes"], "counts.nodes")
+        edges_count = _require_int(counts["edges"], "counts.edges")
+        if nodes_count < 0 or edges_count < 0:
+            raise ValueError("artifact counts must be non-negative")
+        return cls(
+            schema=_require_str(data["schema"], "schema"),
+            source_authority=source,
+            producer=ProducerPin(
+                kind=_require_str(producer["kind"], "producer.kind"),
+                tool_repo=_require_str(producer["tool_repo"], "producer.tool_repo"),
+                tool_commit=_require_str(producer["tool_commit"], "producer.tool_commit"),
+                tool_hash=_require_str(producer["tool_hash"], "producer.tool_hash"),
+            ),
+            scope=ArtifactScope(
+                root_modules=tuple(roots),
+                dependency_boundary=_require_str(
+                    scope["dependency_boundary"], "scope.dependency_boundary"
+                ),
+                exclude_source_prefixes=tuple(exclude_prefixes),
+            ),
+            nodes_sha256=_require_str(nodes_member["sha256"], "members.nodes.sha256"),
+            edges_sha256=_require_str(edges_member["sha256"], "members.edges.sha256"),
+            sources_sha256=_require_optional_str(
+                sources_member["sha256"], "members.sources.sha256"
+            ),
+            nodes_count=nodes_count,
+            edges_count=edges_count,
+            created_from_authoritative_source=_require_bool(
+                data["created_from_authoritative_source"],
+                "created_from_authoritative_source",
+            ),
+            authority_receipt_sha256=_require_optional_str(
+                authority_receipt_member["sha256"],
+                "members.authority_receipt.sha256",
+            ),
+        )
+
+
+ArtifactManifestAny = ArtifactManifest | ArtifactManifestV2

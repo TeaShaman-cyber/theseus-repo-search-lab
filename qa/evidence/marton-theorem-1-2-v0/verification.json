@@ -1,0 +1,15 @@
+{
+  "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+  "observed_axioms": [
+    "propext",
+    "sorryAx",
+    "Classical.choice",
+    "Quot.sound"
+  ],
+  "proof_eligibility": "NOT_PROOF_EVIDENCE",
+  "result": "PASS",
+  "run_attempt": "1",
+  "run_id": "37784601371",
+  "sidecar_sha256": "2c4c3acb01249b3fee52510122dd9c9a85ae3919b8cdaa43d0960861fe0f463a",
+  "witness_head": "b41bd07d876f42e818d121c8b466bc77024e8903"
+}

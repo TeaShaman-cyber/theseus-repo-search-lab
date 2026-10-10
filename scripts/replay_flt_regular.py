@@ -4,10 +4,14 @@ import argparse
 import json
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+    require_context_chunks,
+)
 from theseus_repo_search.retrieval import context, search
-
 
 TARGET = "flt_regular"
 LEXICAL_QUERY = "Fermat last theorem regular primes"
@@ -15,7 +19,7 @@ EXPECTED_DEPENDENCIES = {"lean:FltRegular.caseI", "lean:FltRegular.caseII"}
 
 
 def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
-    manifest, source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
+    manifest, _source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1 or exact_hits[0].source_path != "FltRegular/FltRegular.lean":
         raise AssertionError("flt_regular did not resolve to exact source provenance")
@@ -38,16 +42,14 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         raise AssertionError("grounded FLT lexical query missed flt_regular")
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "flt_regular" for chunk in ctx["chunks"]):
+    chunks = require_context_chunks(ctx)
+    if not any(chunk["declaration_hint"] == "flt_regular" for chunk in chunks):
         raise AssertionError("bounded context omitted flt_regular source")
 
     return {
         "status": "PASS",
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "artifact_identity": artifact_identity(manifest),
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "exact": {
             "target": TARGET,
             "source_path": exact_hits[0].source_path,
@@ -61,7 +63,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         },
         "context": {
             "estimated_tokens": ctx["estimated_tokens"],
-            "chunks": ctx["chunks"],
+            "chunks": chunks,
         },
     }
 

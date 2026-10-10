@@ -1,0 +1,25 @@
+{
+  "schema": "theseus.marton-hosted-axiom-snapshot.v0",
+  "run": {
+    "id": 37784601371,
+    "attempt": 1,
+    "head_sha": "b41bd07d876f42e818d121c8b466bc77024e8903",
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "workflow_id": 378295728
+  },
+  "provider_artifact": {
+    "id": 11554180914,
+    "name": "marton-axiom-witness",
+    "sha256": "bce65fc293535be403e93249fb3f6d0f5a594cdf9dcb35df390066da5561e98a"
+  },
+  "accepted_artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+  "source": {
+    "repo": "ImperialCollegeLondon/AnnalsChallenge",
+    "commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+    "path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+    "sha256": "a07d6d29b17aca763e05952382612dac0451405895deefa13bee94d9ea518fab",
+    "toolchain": "leanprover/lean4:v4.33.0-rc1"
+  },
+  "proof_eligibility": "NOT_PROOF_EVIDENCE"
+}

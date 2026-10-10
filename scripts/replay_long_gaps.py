@@ -4,17 +4,21 @@ import argparse
 import json
 from pathlib import Path
 
+from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
-from theseus_repo_search.replay_contract import prepare_registered_replay
+from theseus_repo_search.replay_contract import (
+    prepare_registered_replay,
+    registered_replay_provenance,
+    require_context_chunks,
+)
 from theseus_repo_search.retrieval import context, search
-
 
 TARGET = "LongGapsBetweenPrimes.long_gap_theorem"
 LEXICAL_QUERY = "unconditional long gap bound"
 
 
 def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
-    manifest, source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
+    manifest, _source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1 or exact_hits[0].source_path != "LongGapsBetweenPrimes.lean":
         raise AssertionError("main theorem did not resolve to exact source provenance")
@@ -30,16 +34,14 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         raise AssertionError("grounded long-gap lexical query missed long_gap_theorem")
 
     ctx = context(db_path, TARGET, depth=1, token_budget=4000)
-    if not any(chunk["declaration_hint"] == "long_gap_theorem" for chunk in ctx["chunks"]):
+    chunks = require_context_chunks(ctx)
+    if not any(chunk["declaration_hint"] == "long_gap_theorem" for chunk in chunks):
         raise AssertionError("bounded context omitted target theorem source")
 
     return {
         "status": "PASS",
-        "provenance": {
-            "repo": manifest.source_repo,
-            "commit": manifest.source_commit,
-            "subdir": manifest.source_subdir,
-        },
+        "artifact_identity": artifact_identity(manifest),
+        "provenance": registered_replay_provenance(artifact_path, manifest),
         "exact": {
             "target": TARGET,
             "source_path": exact_hits[0].source_path,
@@ -53,7 +55,7 @@ def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dic
         },
         "context": {
             "estimated_tokens": ctx["estimated_tokens"],
-            "chunks": ctx["chunks"],
+            "chunks": chunks,
         },
     }
 
