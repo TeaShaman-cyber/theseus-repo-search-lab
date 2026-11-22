@@ -54,8 +54,12 @@ jobs:
           "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
-          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
-          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
+          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py             --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean"             --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s
+' "$adapted_sha" >> "$GITHUB_ENV"
 
       - name: Restore Mathlib and lazy RH cache mappings
         id: cache
@@ -100,7 +104,7 @@ jobs:
           set -euo pipefail
           mkdir -p _out
           started="$(date +%s)"
-          python3 scripts/producer_guard.py extract-source             --cwd "$SOURCE_ROOT"             --source-container "$GITHUB_WORKSPACE/_target/source"             --source "$SOURCE_DESCRIPTOR"             --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json"             --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json"             --producer-kind lean-dep-viz             --producer-tool-repo "$EXTRACTOR_REPO"             --producer-tool-commit "$EXTRACTOR_COMMIT"             --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" --             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean"             --roots "$ROOT_MODULES_CSV"             --include-prefix "$PROJECT_PREFIXES"             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          python3 scripts/producer_guard.py extract-source             --cwd "$SOURCE_ROOT"             --source-container "$GITHUB_WORKSPACE/_target/source"             --source "$SOURCE_DESCRIPTOR"             --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json"             --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json"             --producer-kind lean-dep-viz             --producer-tool-repo "$GITHUB_REPOSITORY"             --producer-tool-commit "$GITHUB_SHA"             --producer-tool-hash "$ADAPTED_EXTRACTOR_SHA256" --             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean"             --roots "$ROOT_MODULES_CSV"             --include-prefix "$PROJECT_PREFIXES"             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
           finished="$(date +%s)"
           printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
 
@@ -111,7 +115,7 @@ jobs:
           set -euo pipefail
           started="$(date +%s)"
           python3 -m pip install -e .
-          python3 -m theseus_repo_search build-source-artifact             --source "$SOURCE_DESCRIPTOR"             --source-root "$SOURCE_ROOT"             --source-container "$GITHUB_WORKSPACE/_target/source"             --raw-depgraph _out/raw-depgraph.json             --raw-depgraph-receipt _out/raw-depgraph-receipt.json             --producer-kind lean-dep-viz             --producer-tool-repo "$EXTRACTOR_REPO"             --producer-tool-commit "$EXTRACTOR_COMMIT"             --producer-tool-hash "$EXTRACTOR_MAIN_SHA256"             --out _out/lemmata-artifact
+          python3 -m theseus_repo_search build-source-artifact             --source "$SOURCE_DESCRIPTOR"             --source-root "$SOURCE_ROOT"             --source-container "$GITHUB_WORKSPACE/_target/source"             --raw-depgraph _out/raw-depgraph.json             --raw-depgraph-receipt _out/raw-depgraph-receipt.json             --producer-kind lean-dep-viz             --producer-tool-repo "$GITHUB_REPOSITORY"             --producer-tool-commit "$GITHUB_SHA"             --producer-tool-hash "$ADAPTED_EXTRACTOR_SHA256"             --out _out/lemmata-artifact
           python3 -m theseus_repo_search verify-artifact --artifact _out/lemmata-artifact
           python3 -m theseus_repo_search build-index             --artifact _out/lemmata-artifact             --db _out/lemmata.sqlite
           finished="$(date +%s)"
@@ -164,6 +168,14 @@ jobs:
                   "build":int(os.environ["BUILD_SECONDS"]),
                   "extract":int(os.environ["EXTRACT_SECONDS"]),
                   "project":int(os.environ["PROJECT_SECONDS"]),
+              },
+              "extractor":{
+                  "upstream_repo":os.environ["EXTRACTOR_REPO"],
+                  "upstream_commit":os.environ["EXTRACTOR_COMMIT"],
+                  "upstream_sha256":os.environ["EXTRACTOR_MAIN_SHA256"],
+                  "adapter_repo":os.environ["GITHUB_REPOSITORY"],
+                  "adapter_commit":os.environ["GITHUB_SHA"],
+                  "adapted_sha256":os.environ["ADAPTED_EXTRACTOR_SHA256"],
               },
               "sqlite_quick_check":quick,
           }
