@@ -18,6 +18,13 @@ class RiemannShardConformanceWorkflowTests(unittest.TestCase):
         self.assertIn("needs: extract", text)
         self.assertIn("CONFORMANCE_PASS", text)
 
+    def test_full_lemmata_build_is_direct_only(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        build = text.split("- name: Build Lemmata through lazy project cache", 1)[1].split(
+            "- name: Prepare synthetic shard root", 1
+        )[0]
+        self.assertIn("if: matrix.mode == 'direct'", build)
+
     def test_shard_roots_are_synthetic_and_untracked(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("Lemmata.TheseusShard", text)
