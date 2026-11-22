@@ -232,8 +232,7 @@ def _verify_raw_depgraph_receipt(
 
     authority_receipt = dict(receipt)
     authority_receipt.pop("observed")
-    expected = {
-        "schema": "theseus.raw-depgraph-receipt.v2",
+    common = {
         "source": {
             "repo": source_repo,
             "commit": source_commit,
@@ -248,11 +247,71 @@ def _verify_raw_depgraph_receipt(
         },
         "raw_depgraph": {"sha256": raw_hash},
     }
-    if authority_receipt != expected:
+    schema = authority_receipt.get("schema")
+    if schema == "theseus.raw-depgraph-receipt.v2":
+        expected = {"schema": schema, **common}
+        if authority_receipt != expected:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_MISMATCH",
+                "raw dependency graph receipt does not match source, producer, scope, or graph hash",
+            )
+        return
+
+    if schema != "theseus.raw-depgraph-receipt.v4":
         raise RepoSearchError(
             "BLOCKED_SOURCE_MISMATCH",
             "raw dependency graph receipt does not match source, producer, scope, or graph hash",
         )
+    if set(authority_receipt) != {"schema", *common, "shards"}:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "sharded raw dependency graph receipt has unexpected fields",
+        )
+    for key, value in common.items():
+        if authority_receipt.get(key) != value:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_MISMATCH",
+                "raw dependency graph receipt does not match source, producer, scope, or graph hash",
+            )
+
+    shards = authority_receipt.get("shards")
+    if not isinstance(shards, list) or not shards:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "sharded raw dependency graph receipt must contain non-empty shards",
+        )
+    hexchars = set("0123456789abcdef")
+    for index, shard in enumerate(shards):
+        if (
+            not isinstance(shard, dict)
+            or set(shard) != {"index", "raw_depgraph_sha256", "receipt_sha256", "root_modules"}
+            or shard.get("index") != index
+        ):
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "sharded raw dependency graph receipt has invalid shard ordering or fields",
+            )
+        roots = shard.get("root_modules")
+        if (
+            not isinstance(roots, list)
+            or not roots
+            or not all(isinstance(root, str) and root for root in roots)
+        ):
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "sharded raw dependency graph receipt has invalid shard root_modules",
+            )
+        for field in ("raw_depgraph_sha256", "receipt_sha256"):
+            value = shard.get(field)
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(char not in hexchars for char in value)
+            ):
+                raise RepoSearchError(
+                    "BLOCKED_SOURCE_BINDING",
+                    f"sharded raw dependency graph receipt has invalid {field}",
+                )
 
 
 def _verify_archive_raw_depgraph_receipt_bytes(
