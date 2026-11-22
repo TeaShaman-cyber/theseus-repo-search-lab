@@ -57,6 +57,15 @@
       "fingerprint_sha256": "045ff1531967daadf3c3eed435e917db0e7b1eb579227be812e959d6786b7604"
     },
     {
+      "source_id": "openai-navier-stokes",
+      "release_tag": "accepted-artifact/openai-navier-stokes/83408cf0626503c2",
+      "package_asset": "openai-navier-stokes-accepted.tar.gz",
+      "receipt_asset": "openai-navier-stokes-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-navier-stokes.json",
+      "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+      "fingerprint_sha256": "9d8564138fd2574a67cb978fef3ad0fcdc8db3c725f4184726929363e2a59ca1"
+    },
+    {
       "source_id": "openai-ten-proofs-multicolor",
       "release_tag": "accepted-artifact/openai-ten-proofs-multicolor/3f2d8edd1077cc4d",
       "package_asset": "openai-ten-proofs-multicolor-accepted.tar.gz",

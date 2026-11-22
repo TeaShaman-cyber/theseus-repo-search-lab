@@ -15,6 +15,7 @@ EXPECTED_SOURCE_IDS = {
     "leanprover-community-flt-regular",
     "openai-cdc-lean",
     "openai-long-gaps",
+    "openai-navier-stokes",
     "openai-ten-proofs-multicolor",
     "zeta23",
 }
@@ -121,13 +122,13 @@ class AcceptedCatalogTests(unittest.TestCase):
         right = self._load(right_payload)
         self.assertEqual(accepted_catalog_sha256(left), accepted_catalog_sha256(right))
 
-    def test_repository_catalog_has_exact_sorted_eight_sources(self):
+    def test_repository_catalog_has_exact_sorted_nine_sources(self):
         path = Path(__file__).resolve().parents[1] / "producer" / "accepted-corpora.json"
         catalog = load_accepted_catalog(path)
         source_ids = [entry.source_id for entry in catalog.corpora]
         self.assertEqual(set(source_ids), EXPECTED_SOURCE_IDS)
         self.assertEqual(source_ids, sorted(source_ids))
-        self.assertEqual(len(source_ids), 8)
+        self.assertEqual(len(source_ids), 9)
 
 
 if __name__ == "__main__":
