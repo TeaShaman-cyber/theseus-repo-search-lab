@@ -166,15 +166,12 @@
   ],
   "build_target": "Lemmata",
   "exclude_source_prefixes": [
-    "Challenge.lean",
-    "CompanionTheory/",
-    "Development/",
-    "Formalism/",
-    "GroundTheory/",
-    "Main.lean",
-    "PositivityTheory/",
-    "ReciprocityTheory/",
-    "Statements.lean",
-    "Supplements/"
+    "src/CompanionTheory/",
+    "src/Development/",
+    "src/Formalism/",
+    "src/GroundTheory/",
+    "src/PositivityTheory/",
+    "src/ReciprocityTheory/",
+    "src/Supplements/"
   ]
 }
