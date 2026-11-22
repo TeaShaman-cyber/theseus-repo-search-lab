@@ -14,6 +14,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo-root", type=Path, required=True)
     parser.add_argument("--source-prefix", required=True)
+    parser.add_argument("--module-prefix", default="")
     parser.add_argument("--shard-count", type=int, required=True)
     parser.add_argument("--out", type=Path, required=True)
     return parser.parse_args()
@@ -50,6 +51,9 @@ def main() -> int:
             continue
         size = int(size_text)
         module = path[len(prefix) : -len(".lean")].replace("/", ".")
+        module_prefix = args.module_prefix.strip(".")
+        if module_prefix:
+            module = f"{module_prefix}.{module}"
         modules.append(ModuleWeight(module=module, size_bytes=size))
 
     if not modules:
@@ -60,6 +64,7 @@ def main() -> int:
         "schema": "theseus.lean-module-shards.v1",
         "source_commit": source_commit,
         "source_prefix": source_prefix,
+        "module_prefix": args.module_prefix.strip("."),
         "shard_count": len(shards),
         "module_count": len(modules),
         "total_bytes": sum(item.size_bytes for item in modules),
