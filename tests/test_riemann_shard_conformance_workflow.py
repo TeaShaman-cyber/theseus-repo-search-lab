@@ -13,6 +13,7 @@ class RiemannShardConformanceWorkflowTests(unittest.TestCase):
         self.assertIn("shard_index: 0", text)
         self.assertIn("shard_index: 1", text)
         self.assertIn("scripts/plan_lean_shards.py", text)
+        self.assertIn("--module-prefix Lemmata", text)
         self.assertIn("scripts/merge_raw_depgraph_shards.py", text)
         self.assertIn("needs: extract", text)
         self.assertIn("CONFORMANCE_PASS", text)

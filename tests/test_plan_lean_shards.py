@@ -58,6 +58,42 @@ class PlanLeanShardsTests(unittest.TestCase):
                 [150, 150],
             )
 
+    def test_cli_can_restore_module_namespace_for_nested_source_prefix(self):
+        with tempfile.TemporaryDirectory() as d:
+            repo = Path(d) / "repo"
+            repo.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+            src = repo / "src" / "Lemmata"
+            src.mkdir(parents=True)
+            (src / "Foo.lean").write_text("x" * 10, encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "fixture"], cwd=repo, check=True)
+
+            out = Path(d) / "plan.json"
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(ROOT / "src")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "plan_lean_shards.py"),
+                    "--repo-root", str(repo),
+                    "--source-prefix", "src/Lemmata",
+                    "--module-prefix", "Lemmata",
+                    "--shard-count", "1",
+                    "--out", str(out),
+                ],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            plan = json.loads(out.read_text())
+            self.assertEqual(plan["shards"][0]["modules"], ["Lemmata.Foo"])
+
 
 if __name__ == "__main__":
     unittest.main()

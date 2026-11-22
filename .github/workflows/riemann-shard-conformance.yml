@@ -102,7 +102,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p _out
-          python3 scripts/plan_lean_shards.py             --repo-root "$SOURCE_ROOT"             --source-prefix src/Lemmata             --shard-count 2             --out _out/shard-plan.json
+          python3 scripts/plan_lean_shards.py             --repo-root "$SOURCE_ROOT"             --source-prefix src/Lemmata             --module-prefix Lemmata             --shard-count 2             --out _out/shard-plan.json
 
           suffix="$(printf '%03d' "$SHARD_INDEX")"
           shard_root="Lemmata.TheseusShard${suffix}"
