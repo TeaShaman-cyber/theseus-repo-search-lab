@@ -7,7 +7,11 @@ from pathlib import Path
 
 from scripts.replay_navier_stokes import run_replay
 from tests.raw_fixture import raw_depgraph_bytes, receipt_bytes
-from theseus_repo_search.artifact import artifact_identity, load_artifact, write_artifact
+from theseus_repo_search.artifact import (
+    artifact_identity,
+    load_artifact,
+    write_artifact,
+)
 from theseus_repo_search.model import (
     ArtifactScope,
     Edge,
@@ -73,7 +77,6 @@ def write_fixture(root: Path, *, authoritative: bool = True, producer: ProducerP
     )
     producer_ref = f"{producer.tool_repo}@{producer.tool_commit}"
 
-    names = [R3, PERIODIC, R3_BRIDGE, PERIODIC_BRIDGE]
     nodes = [
         node(R3, "NavierStokes.ComparatorSolution", source.source_commit),
         node(PERIODIC, "NavierStokes.ComparatorSolution", source.source_commit),
