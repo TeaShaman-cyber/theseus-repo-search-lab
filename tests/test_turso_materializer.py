@@ -368,6 +368,67 @@ class TursoHttpClientTests(unittest.TestCase):
         self.assertTrue(connection.closed)
 
 
+    def test_projection_readback_uses_extended_verification_timeout(self):
+        from unittest import mock
+
+        from theseus_repo_search.turso_materializer import TursoHttpClient
+
+        def ok_scalar(value):
+            kind = "integer" if isinstance(value, int) else "text"
+            cell = {"type": kind, "value": str(value) if kind == "integer" else value}
+            return {
+                "type": "ok",
+                "response": {"result": {"rows": [[cell]]}},
+            }
+
+        payload = {
+            "results": [
+                ok_scalar("a" * 64),
+                ok_scalar(1),
+                ok_scalar(2),
+                ok_scalar(3),
+                ok_scalar(3),
+                ok_scalar("ok"),
+                ok_scalar("ok"),
+                ok_scalar(4096),
+                ok_scalar(10),
+                ok_scalar("wal"),
+                {"type": "ok", "response": {"result": {"rows": []}}},
+            ]
+        }
+        client = TursoHttpClient(organization="example")
+        with mock.patch.object(
+            client,
+            "_json_request",
+            return_value=payload,
+        ) as request:
+            result = client.read_projection_state(
+                "fixture.example.turso.io",
+                "database-token",
+            )
+
+        self.assertEqual(result["edges_count"], 2)
+        _args, kwargs = request.call_args
+        self.assertEqual(kwargs["timeout_seconds"], 300.0)
+
+    def test_json_request_wraps_socket_timeout_as_repo_search_error(self):
+        from unittest import mock
+
+        from theseus_repo_search.turso_materializer import TursoHttpClient
+
+        client = TursoHttpClient(organization="example")
+        with (
+            mock.patch(
+                "theseus_repo_search.turso_materializer.urllib.request.urlopen",
+                side_effect=TimeoutError("timed out"),
+            ),
+            self.assertRaises(RepoSearchError) as caught,
+        ):
+            client._json_request("GET", "https://example.invalid")
+
+        self.assertEqual(caught.exception.code, "TURSO_HTTP_ERROR")
+
+
 class TursoCliTests(unittest.TestCase):
     def test_materialize_turso_cli_uses_one_corpus_and_provider_proxy_without_token(self):
         import argparse

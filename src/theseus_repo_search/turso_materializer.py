@@ -326,11 +326,13 @@ class TursoHttpClient:
         platform_base_url: str = "https://api.turso.tech",
         platform_token: str | None = None,
         timeout_seconds: float = 30.0,
+        verification_timeout_seconds: float = 300.0,
     ):
         self.organization = organization
         self.platform_base_url = platform_base_url.rstrip("/")
         self.platform_token = platform_token
         self.timeout_seconds = timeout_seconds
+        self.verification_timeout_seconds = verification_timeout_seconds
 
     def _platform_url(self, suffix: str) -> str:
         org = urllib.parse.quote(self.organization, safe="")
@@ -344,6 +346,7 @@ class TursoHttpClient:
         payload: object | None = None,
         token: str | None = None,
         allow_not_found: bool = False,
+        timeout_seconds: float | None = None,
     ) -> object | None:
         headers = {"Accept": "application/json"}
         bearer = token if token is not None else self.platform_token
@@ -356,9 +359,10 @@ class TursoHttpClient:
         request = urllib.request.Request(
             url, data=data, headers=headers, method=method
         )
+        timeout = self.timeout_seconds if timeout_seconds is None else timeout_seconds
         try:
             with urllib.request.urlopen(
-                request, timeout=self.timeout_seconds
+                request, timeout=timeout
             ) as response:
                 body = response.read()
         except urllib.error.HTTPError as exc:
@@ -369,7 +373,7 @@ class TursoHttpClient:
                 "TURSO_HTTP_ERROR",
                 f"Turso HTTP {exc.code} for {method} {url}: {detail}",
             ) from exc
-        except urllib.error.URLError as exc:
+        except (urllib.error.URLError, TimeoutError) as exc:
             raise RepoSearchError(
                 "TURSO_HTTP_ERROR", f"Turso request failed for {method} {url}: {exc}"
             ) from exc
@@ -528,6 +532,7 @@ class TursoHttpClient:
             f"https://{hostname}/v2/pipeline",
             payload={"requests": requests},
             token=token,
+            timeout_seconds=self.verification_timeout_seconds,
         )
         if not isinstance(payload, dict) or not isinstance(
             payload.get("results"), list
