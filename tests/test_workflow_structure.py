@@ -14,6 +14,7 @@ ALL_REPLAYS = (
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
     "scripts/replay_ten_proofs_multicolor.py",
+    "scripts/replay_navier_stokes.py",
     "scripts/replay_decreasing_diagrams.py",
 )
 ACTIVE_MATRIX_REPLAYS = (
@@ -23,6 +24,7 @@ ACTIVE_MATRIX_REPLAYS = (
     "scripts/replay_cdc_lean.py",
     "scripts/replay_con_nf.py",
     "scripts/replay_ten_proofs_multicolor.py",
+    "scripts/replay_navier_stokes.py",
     "scripts/replay_decreasing_diagrams.py",
 )
 REQUIRED = (
@@ -104,9 +106,10 @@ class WorkflowStructureTests(unittest.TestCase):
             ("producer/sources/openai-cdc-lean.json", "scripts/replay_cdc_lean.py", "openai-cdc-lean-repo-index-v1"),
             ("producer/sources/leanprover-community-con-nf.json", "scripts/replay_con_nf.py", "leanprover-community-con-nf-repo-index-v1"),
             ("producer/sources/openai-ten-proofs-multicolor.json", "scripts/replay_ten_proofs_multicolor.py", "openai-ten-proofs-multicolor-repo-index-v1"),
+            ("producer/sources/openai-navier-stokes.json", "scripts/replay_navier_stokes.py", "openai-navier-stokes-repo-index-v1"),
         ]
-        self.assertEqual(producer_rows[:6], expected_git_rows)
-        self.assertEqual(consumer_rows[:6], expected_git_rows)
+        self.assertEqual(producer_rows[:7], expected_git_rows)
+        self.assertEqual(consumer_rows[:7], expected_git_rows)
 
         checkout = producer.split("- name: Checkout pinned source", 1)[1].split(
             "- name: Materialize pinned archive source", 1
@@ -155,8 +158,8 @@ class WorkflowStructureTests(unittest.TestCase):
         self.assertEqual(consumer.count(row), 1)
         self.assertIn("qa/research-smoke/annals-marton-seam-v0.json", smoke)
         self.assertIn("source_id: annals-challenge-marton", smoke)
-        self.assertEqual(producer.count("- source_descriptor:"), 8)
-        self.assertEqual(consumer.count("- source_descriptor:"), 8)
+        self.assertEqual(producer.count("- source_descriptor:"), 9)
+        self.assertEqual(consumer.count("- source_descriptor:"), 9)
         self.assertIn("EXTRACTOR_ROOT_MODULES", producer)
         self.assertIn('--roots "$EXTRACTOR_ROOT_MODULES"', producer)
         self.assertIn('EXTRACTOR_ROOT_MODULES="${ROOT_MODULES_CSV//«/}"', producer)

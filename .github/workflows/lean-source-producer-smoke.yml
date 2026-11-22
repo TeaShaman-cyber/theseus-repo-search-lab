@@ -38,6 +38,9 @@ jobs:
           - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
             replay_script: scripts/replay_ten_proofs_multicolor.py
             artifact_name: openai-ten-proofs-multicolor-repo-index-v1
+          - source_descriptor: producer/sources/openai-navier-stokes.json
+            replay_script: scripts/replay_navier_stokes.py
+            artifact_name: openai-navier-stokes-repo-index-v1
           - source_descriptor: producer/sources/decreasing-diagrams-complete.json
             replay_script: scripts/replay_decreasing_diagrams.py
             artifact_name: decreasing-diagrams-complete-repo-index-v2
@@ -383,6 +386,9 @@ jobs:
           - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
             replay_script: scripts/replay_ten_proofs_multicolor.py
             artifact_name: openai-ten-proofs-multicolor-repo-index-v1
+          - source_descriptor: producer/sources/openai-navier-stokes.json
+            replay_script: scripts/replay_navier_stokes.py
+            artifact_name: openai-navier-stokes-repo-index-v1
           - source_descriptor: producer/sources/decreasing-diagrams-complete.json
             replay_script: scripts/replay_decreasing_diagrams.py
             artifact_name: decreasing-diagrams-complete-repo-index-v2
