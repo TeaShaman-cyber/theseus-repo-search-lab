@@ -124,6 +124,37 @@ python3 -m theseus_repo_search multicorpus-search \
 
 The command verifies accepted release evidence, rebuilds disposable SQLite/FTS5 projections when the identity-bound cache is absent or stale, and federates results without comparing raw BM25 scores across corpora. Exact matches sort before lexical candidates; other ordering uses corpus-local rank, accepted `source_id`, and stable candidate identity. The JSON result always reports the catalog digest, searched-corpus count, explicit unavailable-corpus reasons, and provenance-rich hits. A partial corpus failure is reported as `DEGRADED`; it is never silently omitted.
 
+### Durable Turso/libSQL projection
+
+Accepted immutable GitHub Releases remain corpus authority. A durable hosted query
+copy can be materialized directly from the same canonical SQLite/FTS5 projections
+without translating them to PostgreSQL:
+
+```text
+PYTHONPATH=src:. TURSO_PLATFORM_API_BASE=https://turso.int.exe.xyz \
+  python3 scripts/materialize_turso_catalog.py \
+    --catalog producer/accepted-corpora.json \
+    --cache-dir <path> \
+    --group repo-search
+```
+
+On exe.dev, `https://turso.int.exe.xyz` is the provider-held Turso Platform API
+proxy; no platform token is stored in the guest. Outside that runtime, the script
+uses `https://api.turso.tech` by default and reads the platform token only from
+`TURSO_API_TOKEN` (or the environment variable named by `--platform-token-env`).
+
+The materializer first verifies and reconstructs the complete accepted catalog
+through the existing release consumer. It performs no Turso writes if any corpus
+is unavailable or any derived database name is invalid. For a missing corpus DB it
+creates an upload-seeded libSQL database, uploads a WAL-prepared copy of the exact
+SQLite projection, reads back artifact identity, FTS schema, row counts, integrity,
+journal mode and page size/count, then enables delete protection. An existing DB
+with the same accepted artifact is verified and reused; a different artifact
+identity fails closed rather than being overwritten.
+
+Turso is a durable derived query projection, not corpus authority. The immutable
+accepted Release and versioned accepted catalog remain the recovery source.
+
 ## Live research smoke
 
 After significant corpus acceptance, Repository Search can run a bounded versioned research-smoke panel on fresh hosted consumers, including release-backed consumers when the producer fingerprint is unchanged. Smoke scenarios ask for evidence classes and record grounded observations; they do not encode a desired mathematical conclusion.
