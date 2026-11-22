@@ -58,8 +58,7 @@ jobs:
           echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
           python3 scripts/adapt_leandepviz_lean436.py             --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean"             --output "$RUNNER_TEMP/LeanDepVizMain.lean"
           adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
-          printf 'ADAPTED_EXTRACTOR_SHA256=%s
-' "$adapted_sha" >> "$GITHUB_ENV"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s\n' "$adapted_sha" >> "$GITHUB_ENV"
 
       - name: Restore Mathlib and lazy RH cache mappings
         id: cache
