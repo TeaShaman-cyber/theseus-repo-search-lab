@@ -136,7 +136,6 @@ jobs:
           raw_path=Path("_out/raw-depgraph.json")
           raw=json.loads(raw_path.read_text())
           artifact=Path("_out/lemmata-artifact")
-          manifest=json.loads((artifact/"manifest.json").read_text())
           db=Path("_out/lemmata.sqlite")
           with sqlite3.connect(db) as conn:
               counts={name:conn.execute(f"select count(*) from {name}").fetchone()[0]
@@ -154,8 +153,8 @@ jobs:
               "source_bytes":source_bytes,
               "raw_nodes":len(raw["nodes"]),
               "raw_edges":len(raw["edges"]),
-              "normalized_nodes":manifest["nodes_count"],
-              "normalized_edges":manifest["edges_count"],
+              "normalized_nodes":counts["nodes"],
+              "normalized_edges":counts["edges"],
               "source_chunks":counts["sources"],
               "sqlite_bytes":db.stat().st_size,
               "artifact_bytes":{
