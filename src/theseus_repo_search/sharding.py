@@ -75,7 +75,28 @@ def merge_raw_depgraph_shards(shards: Iterable[dict[str, object]]) -> RawDepgrap
                 raise ValueError("raw dependency graph node.fullName must be non-empty")
             existing = nodes_by_name.get(full_name)
             if existing is not None and existing != row:
-                raise ValueError(f"conflicting duplicate node: {full_name}")
+                existing_without_module = {
+                    key: value for key, value in existing.items() if key != "module"
+                }
+                row_without_module = {
+                    key: value for key, value in row.items() if key != "module"
+                }
+                existing_module = existing.get("module")
+                row_module = row.get("module")
+                if (
+                    existing_without_module != row_without_module
+                    or not isinstance(existing_module, str)
+                    or not existing_module
+                    or not isinstance(row_module, str)
+                    or not row_module
+                ):
+                    raise ValueError(f"conflicting duplicate node: {full_name}")
+                chosen = min(existing_module, row_module)
+                if chosen != existing_module:
+                    canonical = dict(row)
+                    canonical["module"] = chosen
+                    nodes_by_name[full_name] = canonical
+                continue
             nodes_by_name[full_name] = dict(row)
 
         for row in _require_rows(shard, "edges"):

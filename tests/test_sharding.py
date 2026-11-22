@@ -61,6 +61,34 @@ class RawShardMergeTests(unittest.TestCase):
             ],
         )
 
+    def test_merge_canonicalizes_module_only_duplicate_to_lexicographic_min(self):
+        a = {
+            "nodes": [
+                {
+                    "module": "Formalism.Z",
+                    "fullName": "Formalism.HN.muMax.congr_simp",
+                    "name": "congr_simp",
+                    "kind": "thm",
+                    "axioms": [],
+                }
+            ],
+            "edges": [],
+        }
+        b = {
+            "nodes": [
+                {
+                    "module": "Formalism.A",
+                    "fullName": "Formalism.HN.muMax.congr_simp",
+                    "name": "congr_simp",
+                    "kind": "thm",
+                    "axioms": [],
+                }
+            ],
+            "edges": [],
+        }
+        merged = merge_raw_depgraph_shards([a, b])
+        self.assertEqual(merged["nodes"][0]["module"], "Formalism.A")
+
     def test_merge_rejects_conflicting_duplicate_node(self):
         a = {
             "nodes": [
