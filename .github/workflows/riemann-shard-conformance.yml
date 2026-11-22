@@ -87,6 +87,7 @@ jobs:
           )
 
       - name: Build Lemmata through lazy project cache
+        if: matrix.mode == 'direct'
         shell: bash
         run: |
           set -euo pipefail
