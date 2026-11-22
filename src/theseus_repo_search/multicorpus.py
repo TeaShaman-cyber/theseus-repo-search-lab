@@ -540,6 +540,53 @@ def _ensure_one(
             shutil.rmtree(stage)
 
 
+def ensure_local_corpus(
+    catalog: AcceptedCatalog,
+    source_id: str,
+    *,
+    repository_root: Path,
+    cache_root: Path,
+    gh_executable: str = "gh",
+) -> LocalCorpusState:
+    corpus = next(
+        (item for item in catalog.corpora if item.source_id == source_id),
+        None,
+    )
+    if corpus is None:
+        raise RepoSearchError(
+            "BLOCKED_ACCEPTED_CATALOG",
+            f"source_id is not present in accepted catalog: {source_id}",
+        )
+
+    digest = accepted_catalog_sha256(catalog)
+    try:
+        return _ensure_one(
+            catalog,
+            corpus,
+            repository_root=repository_root,
+            cache_root=cache_root,
+            gh_executable=gh_executable,
+            catalog_sha256=digest,
+        )
+    except RebuildRequired as exc:
+        raise RepoSearchError(
+            "BLOCKED_REBUILD_REQUIRED",
+            str(exc),
+        ) from exc
+    except ReleaseEvidenceInvalid as exc:
+        raise RepoSearchError(
+            "BLOCKED_RELEASE_EVIDENCE_INVALID",
+            str(exc),
+        ) from exc
+    except RepoSearchError:
+        raise
+    except (OSError, subprocess.SubprocessError, TypeError, ValueError) as exc:
+        raise RepoSearchError(
+            "UNAVAILABLE_LOCAL_CACHE",
+            str(exc),
+        ) from exc
+
+
 def ensure_local_catalog(
     catalog: AcceptedCatalog,
     *,

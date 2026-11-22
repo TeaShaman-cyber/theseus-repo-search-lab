@@ -124,6 +124,42 @@ python3 -m theseus_repo_search multicorpus-search \
 
 The command verifies accepted release evidence, rebuilds disposable SQLite/FTS5 projections when the identity-bound cache is absent or stale, and federates results without comparing raw BM25 scores across corpora. Exact matches sort before lexical candidates; other ordering uses corpus-local rank, accepted `source_id`, and stable candidate identity. The JSON result always reports the catalog digest, searched-corpus count, explicit unavailable-corpus reasons, and provenance-rich hits. A partial corpus failure is reported as `DEGRADED`; it is never silently omitted.
 
+### Durable Turso/libSQL projection
+
+Accepted immutable releases remain corpus authority. A verified local SQLite/FTS5
+projection can additionally be copied to Turso/libSQL so searchable state survives
+loss of a workbench runtime without translating the query representation to
+PostgreSQL.
+
+Sync the full accepted catalog with one command:
+
+```text
+python3 -m theseus_repo_search sync-turso-catalog \
+  --catalog producer/accepted-corpora.json \
+  --cache-dir <path> \
+  --organization <turso-organization> \
+  --group <turso-group> \
+  [--platform-base-url <url>] \
+  [--platform-token-env <environment-variable>]
+```
+
+The command reuses the normal accepted-release verification and local projection
+cache, creates missing Turso databases with `seed.type=database_upload`, uploads
+the exact prepared SQLite file, verifies artifact identity, table/FTS counts,
+SQLite integrity and page geometry, then enables delete protection. Existing
+matching databases return `REUSED`; default database names are bound to the
+accepted artifact identity so a newly accepted revision is published beside the
+old immutable query copy rather than overwriting it. An identity or projection
+mismatch fails closed. The JSON envelope reports every accepted corpus and explicit failures, so
+a partial sync is `DEGRADED`, never silently complete.
+
+`materialize-turso` provides the same path for one `--source-id`. Direct Turso API
+use supplies a platform token through an environment variable, never a command
+argument. A credential-injecting provider proxy may instead be selected with
+`--platform-base-url` and no local platform token. Turso is a derived query copy:
+it does not replace immutable accepted releases or the versioned accepted-corpus
+catalog.
+
 ## Live research smoke
 
 After significant corpus acceptance, Repository Search can run a bounded versioned research-smoke panel on fresh hosted consumers, including release-backed consumers when the producer fingerprint is unchanged. Smoke scenarios ask for evidence classes and record grounded observations; they do not encode a desired mathematical conclusion.
