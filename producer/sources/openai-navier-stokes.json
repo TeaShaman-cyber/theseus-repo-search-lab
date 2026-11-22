@@ -1,0 +1,9 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "openai-navier-stokes",
+  "source_repo": "openai/NavierStokesAndEuler",
+  "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+  "source_subdir": "",
+  "root_modules": ["NavierStokes"],
+  "build_target": "NavierStokes"
+}
