@@ -76,6 +76,62 @@ class RawDepgraphReceiptTests(unittest.TestCase):
                     with self.assertRaises(RepoSearchError) as caught:
                         verify(payload)
                     self.assertEqual(caught.exception.code, code)
+    def test_sharded_v4_receipt_binds_merged_graph_and_shard_evidence(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            raw = root / "raw.json"
+            raw.write_bytes(b'{"nodes":[],"edges":[]}\n')
+            receipt = root / "receipt.json"
+            base = {
+                "schema": "theseus.raw-depgraph-receipt.v4",
+                "source": {"repo": "example/repo", "commit": "a" * 40, "subdir": ""},
+                "scope": {"root_modules": ["A", "B"]},
+                "producer": {
+                    "kind": "lean-dep-viz-shard-merge",
+                    "tool_repo": "example/producer",
+                    "tool_commit": "b" * 40,
+                    "tool_hash": "c" * 64,
+                },
+                "observed": {"lean_toolchain": "leanprover/lean4:v4.36.0"},
+                "raw_depgraph": {"sha256": sha256(raw.read_bytes()).hexdigest()},
+                "shards": [
+                    {
+                        "index": 0,
+                        "raw_depgraph_sha256": "1" * 64,
+                        "receipt_sha256": "2" * 64,
+                        "root_modules": ["Shard0"],
+                    },
+                    {
+                        "index": 1,
+                        "raw_depgraph_sha256": "3" * 64,
+                        "receipt_sha256": "4" * 64,
+                        "root_modules": ["Shard1"],
+                    },
+                ],
+            }
+
+            def verify(payload):
+                receipt.write_text(json.dumps(payload), encoding="utf-8")
+                _verify_raw_depgraph_receipt(
+                    receipt,
+                    raw,
+                    source_repo="example/repo",
+                    source_commit="a" * 40,
+                    source_subdir="",
+                    root_modules=("A", "B"),
+                    producer_kind="lean-dep-viz-shard-merge",
+                    producer_tool_repo="example/producer",
+                    producer_tool_commit="b" * 40,
+                    producer_tool_hash="c" * 64,
+                )
+
+            verify(base)
+            malformed = json.loads(json.dumps(base))
+            malformed["shards"][1]["receipt_sha256"] = "not-a-hash"
+            with self.assertRaises(RepoSearchError) as caught:
+                verify(malformed)
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
+
     def test_archive_v3_receipt_binds_structured_authority_and_materialization(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
