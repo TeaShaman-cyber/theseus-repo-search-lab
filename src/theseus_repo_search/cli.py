@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -27,7 +28,7 @@ from .model import (
     Node,
     ProducerPin,
 )
-from .multicorpus import ensure_local_catalog, search_local_catalog
+from .multicorpus import ensure_local_catalog, ensure_local_corpus, search_local_catalog
 from .normalize import normalize_leandepviz
 from .producer_config import (
     LeanArchiveSource,
@@ -46,6 +47,7 @@ from .sources import (
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
 )
+from .turso_materializer import TursoHttpClient, TursoMaterializer
 
 
 def _emit(payload: dict[str, object], *, stream=sys.stdout) -> None:
@@ -742,6 +744,107 @@ def _multicorpus_status(result, *, mode: str) -> str:
     return "CANDIDATE"
 
 
+def _turso_platform_token(args: argparse.Namespace) -> str | None:
+    if args.platform_token_env is None:
+        return None
+    token = os.environ.get(args.platform_token_env)
+    if not token:
+        raise RepoSearchError(
+            "BLOCKED_TURSO_PLATFORM_AUTH",
+            f"environment variable is empty or missing: {args.platform_token_env}",
+        )
+    return token
+
+
+def _turso_client(args: argparse.Namespace) -> TursoHttpClient:
+    return TursoHttpClient(
+        organization=args.organization,
+        platform_base_url=args.platform_base_url,
+        platform_token=_turso_platform_token(args),
+    )
+
+
+def _cmd_materialize_turso(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_ACCEPTED_CATALOG",
+            f"accepted corpus catalog invalid: {exc}",
+        ) from exc
+
+    repository_root = args.catalog.resolve().parent.parent
+    state = ensure_local_corpus(
+        catalog,
+        args.source_id,
+        repository_root=repository_root,
+        cache_root=args.cache_dir,
+    )
+    client = _turso_client(args)
+    result = TursoMaterializer(client).materialize(
+        state,
+        group=args.group,
+        database=args.database,
+        size_limit=args.size_limit,
+        token_expiration=args.token_expiration,
+    )
+    _emit(asdict(result))
+    return 0
+
+
+def _cmd_sync_turso_catalog(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_ACCEPTED_CATALOG",
+            f"accepted corpus catalog invalid: {exc}",
+        ) from exc
+
+    repository_root = args.catalog.resolve().parent.parent
+    materializer = TursoMaterializer(_turso_client(args))
+    results: list[dict[str, object]] = []
+    failures: list[dict[str, str]] = []
+
+    for corpus in catalog.corpora:
+        try:
+            state = ensure_local_corpus(
+                catalog,
+                corpus.source_id,
+                repository_root=repository_root,
+                cache_root=args.cache_dir,
+            )
+            result = materializer.materialize(
+                state,
+                group=args.group,
+                size_limit=args.size_limit,
+                token_expiration=args.token_expiration,
+            )
+        except RepoSearchError as exc:
+            failures.append(
+                {
+                    "source_id": corpus.source_id,
+                    "code": exc.code,
+                    "message": str(exc),
+                }
+            )
+            continue
+        results.append(asdict(result))
+
+    _emit(
+        {
+            "status": "READY" if not failures else "DEGRADED",
+            "catalog_sha256": accepted_catalog_sha256(catalog),
+            "total_corpora": len(catalog.corpora),
+            "synced_corpora": len(results),
+            "failed_corpora": len(failures),
+            "failures": failures,
+            "results": results,
+        }
+    )
+    return 0 if not failures else 2
+
+
 def _cmd_multicorpus_search(args: argparse.Namespace) -> int:
     try:
         catalog = load_accepted_catalog(args.catalog)
@@ -906,6 +1009,42 @@ def build_parser() -> argparse.ArgumentParser:
     index.add_argument("--artifact", type=Path, required=True)
     index.add_argument("--db", type=Path, required=True)
     index.set_defaults(func=_cmd_build_index)
+
+    turso = subparsers.add_parser("materialize-turso")
+    turso.add_argument("--catalog", type=Path, required=True)
+    turso.add_argument("--cache-dir", type=Path, required=True)
+    turso.add_argument("--source-id", required=True)
+    turso.add_argument("--organization", required=True)
+    turso.add_argument("--group", required=True)
+    turso.add_argument("--database")
+    turso.add_argument("--size-limit")
+    turso.add_argument("--token-expiration", default="15m")
+    turso.add_argument(
+        "--platform-base-url",
+        default="https://api.turso.tech",
+    )
+    turso.add_argument(
+        "--platform-token-env",
+        help="environment variable containing the Turso Platform API token",
+    )
+    turso.set_defaults(func=_cmd_materialize_turso)
+
+    turso_sync = subparsers.add_parser("sync-turso-catalog")
+    turso_sync.add_argument("--catalog", type=Path, required=True)
+    turso_sync.add_argument("--cache-dir", type=Path, required=True)
+    turso_sync.add_argument("--organization", required=True)
+    turso_sync.add_argument("--group", required=True)
+    turso_sync.add_argument("--size-limit")
+    turso_sync.add_argument("--token-expiration", default="15m")
+    turso_sync.add_argument(
+        "--platform-base-url",
+        default="https://api.turso.tech",
+    )
+    turso_sync.add_argument(
+        "--platform-token-env",
+        help="environment variable containing the Turso Platform API token",
+    )
+    turso_sync.set_defaults(func=_cmd_sync_turso_catalog)
 
     multicorpus_search = subparsers.add_parser("multicorpus-search")
     multicorpus_search.add_argument("--catalog", type=Path, required=True)
