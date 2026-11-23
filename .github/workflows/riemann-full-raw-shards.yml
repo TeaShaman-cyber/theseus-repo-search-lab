@@ -1,0 +1,245 @@
+name: Riemann full raw shards
+
+on:
+  workflow_dispatch:
+    inputs:
+      only_shard:
+        description: "-1 runs all shards; otherwise run one shard index 0..31"
+        required: true
+        default: "-1"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-full-raw-shards-${{ github.ref }}-${{ inputs.only_shard }}
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    if: ${{ inputs.only_shard == '-1' || matrix.shard_index == fromJSON(inputs.only_shard) }}
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard_index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
+      SHARD_INDEX: ${{ matrix.shard_index }}
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Install pinned runner and adapted extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py \
+            --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s\n' "$adapted_sha" >> "$GITHUB_ENV"
+
+      - name: Restore Mathlib and lazy RH cache mappings
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4 \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+              lake exe mathlib/cache get
+          (
+            cd "$SOURCE_ROOT"
+            source scripts/cache-env.sh
+            lake cache get \
+              --repo leanprover-community/riemann-hypothesis \
+              --mappings-only
+          )
+
+      - name: Plan exact 32-way source partition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          python3 scripts/plan_lean_shards.py \
+            --repo-root "$SOURCE_ROOT" \
+            --source-prefix src \
+            --shard-count 32 \
+            --out _out/shard-plan.json
+
+      - name: Materialize this shard through Lake
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          suffix="$(printf '%03d' "$SHARD_INDEX")"
+          shard_root="Development.TheseusShard${suffix}"
+          shard_file="$SOURCE_ROOT/src/Development/TheseusShard${suffix}.lean"
+
+          python3 - "$SHARD_INDEX" _out/shard-plan.json "$shard_file" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          index = int(sys.argv[1])
+          plan = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          modules = plan["shards"][index]["modules"]
+          Path(sys.argv[3]).write_text(
+              "".join(f"import {module}\n" for module in modules),
+              encoding="utf-8",
+          )
+          PY
+
+          printf 'SHARD_ROOT=%s\n' "$shard_root" >> "$GITHUB_ENV"
+          started="$(date +%s)"
+          (
+            cd "$SOURCE_ROOT"
+            source scripts/cache-env.sh
+            lake build "$shard_root"
+          )
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+          df -h /
+
+      - name: Extract shard dependency graph
+        id: extract
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py extract \
+            --cwd "$SOURCE_ROOT" \
+            --repo-dir "$GITHUB_WORKSPACE/_target/source" \
+            --expected "$SOURCE_COMMIT" \
+            --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
+            --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
+            --source-repo "$SOURCE_REPO" \
+            --source-subdir "$SOURCE_SUBDIR" \
+            --root-module "$SHARD_ROOT" \
+            --producer-kind lean-dep-viz \
+            --producer-tool-repo "$GITHUB_REPOSITORY" \
+            --producer-tool-commit "$GITHUB_SHA" \
+            --producer-tool-hash "$ADAPTED_EXTRACTOR_SHA256" -- \
+            lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
+            --roots "$SHARD_ROOT" \
+            --include-prefix "$ROOT_MODULES_CSV" \
+            --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+
+      - name: Write shard metrics
+        shell: bash
+        env:
+          BUILD_SECONDS: ${{ steps.build.outputs.seconds }}
+          EXTRACT_SECONDS: ${{ steps.extract.outputs.seconds }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from hashlib import sha256
+          from pathlib import Path
+
+          index = int(os.environ["SHARD_INDEX"])
+          plan = json.loads(Path("_out/shard-plan.json").read_text(encoding="utf-8"))
+          shard = plan["shards"][index]
+          raw_path = Path("_out/raw-depgraph.json")
+          receipt_path = Path("_out/raw-depgraph-receipt.json")
+          raw = json.loads(raw_path.read_text(encoding="utf-8"))
+          metrics = {
+              "schema": "theseus.riemann-full-raw-shard.v1",
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "shard_index": index,
+              "shard_count": 32,
+              "module_count": shard["module_count"],
+              "source_bytes": shard["total_bytes"],
+              "nodes": len(raw["nodes"]),
+              "edges": len(raw["edges"]),
+              "raw_bytes": raw_path.stat().st_size,
+              "raw_sha256": sha256(raw_path.read_bytes()).hexdigest(),
+              "receipt_sha256": sha256(receipt_path.read_bytes()).hexdigest(),
+              "build_seconds": int(os.environ["BUILD_SECONDS"]),
+              "extract_seconds": int(os.environ["EXTRACT_SECONDS"]),
+          }
+          Path("_out/shard-metrics.json").write_text(
+              json.dumps(metrics, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(metrics, sort_keys=True))
+          PY
+
+      - name: Upload raw shard evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-rh-raw-shard-${{ matrix.shard_index }}
+          path: |
+            _out/raw-depgraph.json
+            _out/raw-depgraph-receipt.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload shard metrics
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-rh-metrics-shard-${{ matrix.shard_index }}
+          path: _out/shard-metrics.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove disposable source and build outputs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out
