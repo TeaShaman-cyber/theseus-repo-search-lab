@@ -14,9 +14,16 @@ class RiemannTargetedCachePilotWorkflowTests(unittest.TestCase):
 
     def test_pilot_runs_leandepviz_directly_on_original_shard_modules(self):
         text = WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn('SHARD_ROOTS_CSV=', text)
+        self.assertIn("_out/shard-roots.csv", text)
+        self.assertIn('SHARD_ROOTS_CSV="$(cat _out/shard-roots.csv)"', text)
         self.assertIn('--roots "$SHARD_ROOTS_CSV"', text)
+        self.assertNotIn("printf 'SHARD_ROOTS_CSV=%s", text)
         self.assertIn("LeanDepVizMain.lean", text)
+
+    def test_pilot_bounds_and_measures_direct_root_argument(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("524288", text)
+        self.assertIn('"roots_csv_bytes"', text)
 
     def test_pilot_records_comparable_restore_and_extraction_metrics(self):
         text = WORKFLOW.read_text(encoding="utf-8")
