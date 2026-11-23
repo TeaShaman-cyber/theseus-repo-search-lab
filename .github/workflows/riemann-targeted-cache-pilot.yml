@@ -117,12 +117,13 @@ jobs:
           Path(sys.argv[3]).write_text("\n".join(modules) + "\n", encoding="utf-8")
           PY
 
-          SHARD_ROOTS_CSV="$(paste -sd, _out/shard-modules.txt)"
-          if [ "${#SHARD_ROOTS_CSV}" -gt 100000 ]; then
-            echo "direct roots CSV exceeds bounded pilot limit" >&2
+          paste -sd, _out/shard-modules.txt > _out/shard-roots.csv
+          roots_csv_bytes="$(wc -c < _out/shard-roots.csv)"
+          if [ "$roots_csv_bytes" -gt 524288 ]; then
+            echo "direct roots CSV exceeds bounded 512 KiB pilot limit: $roots_csv_bytes bytes" >&2
             exit 2
           fi
-          printf 'SHARD_ROOTS_CSV=%s\n' "$SHARD_ROOTS_CSV" >> "$GITHUB_ENV"
+          printf 'direct_roots_csv_bytes=%s\n' "$roots_csv_bytes"
 
       - name: Compute project import closure from source
         shell: bash
@@ -147,6 +148,7 @@ jobs:
         run: |
           set -euo pipefail
           started="$(date +%s)"
+          SHARD_ROOTS_CSV="$(cat _out/shard-roots.csv)"
           python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean"             --roots "$SHARD_ROOTS_CSV"             --include-prefix "$ROOT_MODULES_CSV"             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
           finished="$(date +%s)"
           printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
@@ -180,6 +182,7 @@ jobs:
               "shard_index": int(os.environ["SHARD_INDEX"]),
               "shard_source_modules": len(shard["modules"]),
               "source_bytes": shard["total_bytes"],
+              "roots_csv_bytes": Path("_out/shard-roots.csv").stat().st_size,
               "closure_project_modules": len(closure),
               "validated_manifest_modules": cache["validated_manifest_modules"],
               "selected_project_modules": cache["selected_project_modules"],
@@ -207,6 +210,7 @@ jobs:
             _out/cache-restore-metrics.json
             _out/project-closure.txt
             _out/shard-modules.txt
+            _out/shard-roots.csv
           if-no-files-found: error
           retention-days: 30
 
