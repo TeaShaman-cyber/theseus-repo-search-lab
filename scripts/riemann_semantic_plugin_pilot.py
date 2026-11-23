@@ -110,18 +110,39 @@ def load_fact_jsonl(path: Path) -> list[SemanticFact]:
     return sorted(facts, key=lambda row: (row["module"], row["full_name"]))
 
 
+def _plugin_canonical_id(fact: SemanticFact) -> str:
+    raw_name = fact["full_name"]
+    module = fact["module"]
+    if "." in raw_name or module == "_unknown_" or not module:
+        return raw_name
+    return f"{module}.{raw_name}"
+
+
+def _plugin_identity_map(facts: Iterable[SemanticFact]) -> dict[str, str]:
+    identities: dict[str, str] = {}
+    canonical_names: set[str] = set()
+    for fact in facts:
+        kernel_name = fact["full_name"]
+        canonical_name = _plugin_canonical_id(fact)
+        if canonical_name in canonical_names:
+            raise ValueError(f"duplicate canonical plugin identity: {canonical_name}")
+        identities[kernel_name] = canonical_name
+        canonical_names.add(canonical_name)
+    return identities
+
+
 def _plugin_edges(facts: Iterable[SemanticFact]) -> set[tuple[str, str, str]]:
     rows = list(facts)
-    local_names = {row["full_name"] for row in rows}
+    identities = _plugin_identity_map(rows)
     edges: set[tuple[str, str, str]] = set()
     for row in rows:
-        dependent = row["full_name"]
+        dependent = identities[row["full_name"]]
         for dependency in row["type_dependencies"]:
-            if dependency in local_names:
-                edges.add((dependent, dependency, "type_dependency"))
+            if dependency in identities:
+                edges.add((dependent, identities[dependency], "type_dependency"))
         for dependency in row["value_dependencies"]:
-            if dependency in local_names:
-                edges.add((dependent, dependency, "value_dependency"))
+            if dependency in identities:
+                edges.add((dependent, identities[dependency], "value_dependency"))
     return edges
 
 
@@ -212,8 +233,9 @@ def compare_plugin_facts_to_leandepviz(
         raise ValueError("source commit must be non-empty")
     if not root_modules:
         raise ValueError("root modules must be non-empty")
+    identities = _plugin_identity_map(facts)
     plugin_edges = _plugin_edges(facts)
-    local_names = {row["full_name"] for row in facts}
+    local_names = set(identities.values())
     leandepviz_edges = _leandepviz_edges(raw, local_names)
     common = plugin_edges & leandepviz_edges
     plugin_only = plugin_edges - leandepviz_edges
