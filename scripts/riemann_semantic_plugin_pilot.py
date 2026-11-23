@@ -5,12 +5,22 @@ import argparse
 import hashlib
 import json
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
+from typing import TypedDict, cast
 
 FACT_SCHEMA = "theseus.lean-semantic-fact.v1"
 FACT_MARKER = "THESEUS_FACT\t"
 _MORE_LEAN_ARGS = re.compile(r"(?m)^(moreLeanArgs\s*=\s*)\[(.*)\](\s*)$")
+
+
+class SemanticFact(TypedDict):
+    schema: str
+    module: str
+    full_name: str
+    kind: str
+    type_dependencies: list[str]
+    value_dependencies: list[str]
 
 
 def _sha256(data: bytes) -> str:
@@ -37,69 +47,75 @@ def make_overlay(canonical: str, plugin_path: str) -> str:
 def _require_str(row: dict[str, object], key: str) -> str:
     value = row.get(key)
     if not isinstance(value, str) or not value:
-        raise ValueError(f"semantic fact {key} must be a non-empty string")
+        raise TypeError(f"semantic fact {key} must be a non-empty string")
     return value
 
 
 def _require_names(row: dict[str, object], key: str) -> list[str]:
     value = row.get(key)
-    if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
-        raise ValueError(f"semantic fact {key} must be an array of non-empty strings")
-    return sorted(set(value))
+    if not isinstance(value, list):
+        raise TypeError(f"semantic fact {key} must be an array of non-empty strings")
+    names: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item:
+            raise TypeError(f"semantic fact {key} must be an array of non-empty strings")
+        names.append(item)
+    return sorted(set(names))
 
 
-def _canonical_fact(value: object) -> dict[str, object]:
+def _canonical_fact(value: object) -> SemanticFact:
     if not isinstance(value, dict):
-        raise ValueError("semantic fact must be a JSON object")
-    if value.get("schema") != FACT_SCHEMA:
-        raise ValueError(f"unsupported semantic fact schema: {value.get('schema')!r}")
+        raise TypeError("semantic fact must be a JSON object")
+    row = cast(dict[str, object], value)
+    if row.get("schema") != FACT_SCHEMA:
+        raise ValueError(f"unsupported semantic fact schema: {row.get('schema')!r}")
     return {
         "schema": FACT_SCHEMA,
-        "module": _require_str(value, "module"),
-        "full_name": _require_str(value, "full_name"),
-        "kind": _require_str(value, "kind"),
-        "type_dependencies": _require_names(value, "type_dependencies"),
-        "value_dependencies": _require_names(value, "value_dependencies"),
+        "module": _require_str(row, "module"),
+        "full_name": _require_str(row, "full_name"),
+        "kind": _require_str(row, "kind"),
+        "type_dependencies": _require_names(row, "type_dependencies"),
+        "value_dependencies": _require_names(row, "value_dependencies"),
     }
 
 
-def parse_fact_log(text: str) -> list[dict[str, object]]:
-    by_name: dict[str, dict[str, object]] = {}
+def parse_fact_log(text: str) -> list[SemanticFact]:
+    by_name: dict[str, SemanticFact] = {}
     for line in text.splitlines():
         marker = line.find(FACT_MARKER)
         if marker < 0:
             continue
         payload = line[marker + len(FACT_MARKER) :].strip()
         fact = _canonical_fact(json.loads(payload))
-        name = str(fact["full_name"])
+        name = fact["full_name"]
         previous = by_name.get(name)
         if previous is not None and previous != fact:
             raise ValueError(f"conflicting semantic fact for declaration: {name}")
         by_name[name] = fact
     if not by_name:
         raise ValueError("semantic fact log contains no facts")
-    return sorted(by_name.values(), key=lambda row: (str(row["module"]), str(row["full_name"])))
+    return sorted(by_name.values(), key=lambda row: (row["module"], row["full_name"]))
 
 
-def load_fact_jsonl(path: Path) -> list[dict[str, object]]:
-    facts: list[dict[str, object]] = []
+def load_fact_jsonl(path: Path) -> list[SemanticFact]:
+    facts: list[SemanticFact] = []
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.strip():
             facts.append(_canonical_fact(json.loads(line)))
     if not facts:
         raise ValueError("semantic fact jsonl contains no facts")
-    names = [str(row["full_name"]) for row in facts]
+    names = [row["full_name"] for row in facts]
     if len(set(names)) != len(names):
         raise ValueError("semantic fact jsonl contains duplicate declarations")
-    return sorted(facts, key=lambda row: (str(row["module"]), str(row["full_name"])))
+    return sorted(facts, key=lambda row: (row["module"], row["full_name"]))
 
 
-def _plugin_edges(facts: Iterable[dict[str, object]]) -> set[tuple[str, str, str]]:
+def _plugin_edges(facts: Iterable[SemanticFact]) -> set[tuple[str, str, str]]:
     rows = list(facts)
-    local_names = {str(row["full_name"]) for row in rows}
+    local_names = {row["full_name"] for row in rows}
     edges: set[tuple[str, str, str]] = set()
     for row in rows:
-        dependent = str(row["full_name"])
+        dependent = row["full_name"]
         for dependency in row["type_dependencies"]:
             if dependency in local_names:
                 edges.add((dependent, dependency, "type_dependency"))
@@ -114,12 +130,17 @@ def _leandepviz_resolver(raw_nodes: list[object]):
     by_short: dict[str, set[str]] = {}
     for index, item in enumerate(raw_nodes):
         if not isinstance(item, dict):
-            raise ValueError(f"LeanDepViz node[{index}] must be an object")
-        full = item.get("fullName")
-        short = item.get("name")
-        module = item.get("module")
-        if not all(isinstance(value, str) and value for value in (full, short, module)):
-            raise ValueError(f"LeanDepViz node[{index}] has invalid identity fields")
+            raise TypeError(f"LeanDepViz node[{index}] must be an object")
+        row = cast(dict[str, object], item)
+        full = row.get("fullName")
+        short = row.get("name")
+        module = row.get("module")
+        if not isinstance(full, str) or not full:
+            raise TypeError(f"LeanDepViz node[{index}].fullName must be a non-empty string")
+        if not isinstance(short, str) or not short:
+            raise TypeError(f"LeanDepViz node[{index}].name must be a non-empty string")
+        if not isinstance(module, str) or not module:
+            raise TypeError(f"LeanDepViz node[{index}].module must be a non-empty string")
         if full in modules_by_full:
             raise ValueError(f"duplicate LeanDepViz fullName: {full}")
         modules_by_full[full] = module
@@ -127,7 +148,7 @@ def _leandepviz_resolver(raw_nodes: list[object]):
 
     def resolve(endpoint: object) -> str | None:
         if not isinstance(endpoint, str) or not endpoint:
-            raise ValueError("LeanDepViz edge endpoint must be a non-empty string")
+            raise TypeError("LeanDepViz edge endpoint must be a non-empty string")
         if endpoint in modules_by_full:
             return endpoint
         candidates = by_short.get(endpoint, set())
@@ -153,18 +174,19 @@ def _leandepviz_edges(
     raw_nodes = raw.get("nodes")
     raw_edges = raw.get("edges")
     if not isinstance(raw_nodes, list) or not isinstance(raw_edges, list):
-        raise ValueError("LeanDepViz raw graph must contain nodes and edges arrays")
+        raise TypeError("LeanDepViz raw graph must contain nodes and edges arrays")
     resolve = _leandepviz_resolver(raw_nodes)
     edges: set[tuple[str, str, str]] = set()
     relation = {"type": "type_dependency", "value": "value_dependency"}
     for index, item in enumerate(raw_edges):
         if not isinstance(item, dict):
-            raise ValueError(f"LeanDepViz edge[{index}] must be an object")
-        kind = item.get("kind")
-        if kind not in relation:
+            raise TypeError(f"LeanDepViz edge[{index}] must be an object")
+        row = cast(dict[str, object], item)
+        kind = row.get("kind")
+        if not isinstance(kind, str) or kind not in relation:
             continue
-        dependency = resolve(item.get("source"))
-        dependent = resolve(item.get("target"))
+        dependency = resolve(row.get("source"))
+        dependent = resolve(row.get("target"))
         if dependency is None or dependent is None:
             continue
         if dependency in local_names and dependent in local_names:
@@ -180,7 +202,7 @@ def _edge_rows(edges: Iterable[tuple[str, str, str]]) -> list[dict[str, str]]:
 
 
 def compare_plugin_facts_to_leandepviz(
-    facts: list[dict[str, object]],
+    facts: list[SemanticFact],
     raw: dict[str, object],
     *,
     source_commit: str,
@@ -191,7 +213,7 @@ def compare_plugin_facts_to_leandepviz(
     if not root_modules:
         raise ValueError("root modules must be non-empty")
     plugin_edges = _plugin_edges(facts)
-    local_names = {str(row["full_name"]) for row in facts}
+    local_names = {row["full_name"] for row in facts}
     leandepviz_edges = _leandepviz_edges(raw, local_names)
     common = plugin_edges & leandepviz_edges
     plugin_only = plugin_edges - leandepviz_edges
@@ -233,7 +255,10 @@ def _cmd_facts(args: argparse.Namespace) -> int:
     facts = parse_fact_log(args.log.read_text(encoding="utf-8"))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
-        "".join(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in facts),
+        "".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+            for row in facts
+        ),
         encoding="utf-8",
     )
     print(json.dumps({"semantic_facts": len(facts)}, sort_keys=True))
@@ -244,21 +269,25 @@ def _cmd_compare(args: argparse.Namespace) -> int:
     facts = load_fact_jsonl(args.facts)
     raw = json.loads(args.leandepviz.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
-        raise ValueError("LeanDepViz raw graph must be a JSON object")
+        raise TypeError("LeanDepViz raw graph must be a JSON object")
     result = compare_plugin_facts_to_leandepviz(
         facts,
-        raw,
+        cast(dict[str, object], raw),
         source_commit=args.source_commit,
         root_modules=tuple(args.root_module),
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    args.out.write_text(
+        json.dumps(result, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+    )
     print(json.dumps(result, sort_keys=True))
     return 0
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Bounded Riemann semantic-plugin pilot helpers.")
+    parser = argparse.ArgumentParser(
+        description="Bounded Riemann semantic-plugin pilot helpers."
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     overlay = sub.add_parser("overlay")
@@ -291,6 +320,9 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (ValueError, OSError, json.JSONDecodeError) as exc:
-        print(f"RIEMANN_SEMANTIC_PLUGIN_PILOT_BLOCKED: {exc}", file=__import__("sys").stderr)
+    except (TypeError, ValueError, OSError, json.JSONDecodeError) as exc:
+        print(
+            f"RIEMANN_SEMANTIC_PLUGIN_PILOT_BLOCKED: {exc}",
+            file=__import__("sys").stderr,
+        )
         raise SystemExit(2)
