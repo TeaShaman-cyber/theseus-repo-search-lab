@@ -129,7 +129,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean --run "$GITHUB_WORKSPACE/scripts/lean_project_import_closure.lean"             "$SOURCE_ROOT/src"             "$GITHUB_WORKSPACE/_out/shard-modules.txt"             > "$GITHUB_WORKSPACE/_out/project-closure.txt"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --             lake env lean --run "$GITHUB_WORKSPACE/scripts/lean_project_import_closure.lean"             "$SOURCE_ROOT/src"             "$GITHUB_WORKSPACE/_out/shard-modules.txt"             > "$GITHUB_WORKSPACE/_out/project-closure.txt"
           test -s "$GITHUB_WORKSPACE/_out/project-closure.txt"
 
       - name: Restore verified RH cache subset
