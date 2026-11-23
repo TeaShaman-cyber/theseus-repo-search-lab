@@ -110,13 +110,13 @@ class RiemannSemanticPluginPilotTests(unittest.TestCase):
             "nodes": [
                 {
                     "module": "Challenge",
-                    "fullName": "RiemannZetaZerosOnLine",
+                    "fullName": "Challenge.RiemannZetaZerosOnLine",
                     "name": "RiemannZetaZerosOnLine",
                     "kind": "def",
                 },
                 {
                     "module": "Challenge",
-                    "fullName": "riemannZeta_eq_zero_re",
+                    "fullName": "Challenge.riemannZeta_eq_zero_re",
                     "name": "riemannZeta_eq_zero_re",
                     "kind": "theorem",
                 },
