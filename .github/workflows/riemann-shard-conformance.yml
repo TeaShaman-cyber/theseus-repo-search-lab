@@ -124,11 +124,10 @@ jobs:
           printf 'SHARD_ROOT=%s\n' "$shard_root" >> "$GITHUB_ENV"
           printf 'SHARD_FILE=%s\n' "$shard_file" >> "$GITHUB_ENV"
 
-          mkdir -p "$SOURCE_ROOT/.lake/build/lib/lean/Lemmata"
           (
             cd "$SOURCE_ROOT"
             source scripts/cache-env.sh
-            lake env lean "src/Lemmata/TheseusShard${suffix}.lean"               -o ".lake/build/lib/lean/Lemmata/TheseusShard${suffix}.olean"
+            lake build "$shard_root"
           )
 
       - name: Extract dependency graph

@@ -25,6 +25,14 @@ class RiemannShardConformanceWorkflowTests(unittest.TestCase):
         )[0]
         self.assertIn("if: matrix.mode == 'direct'", build)
 
+    def test_shard_root_is_built_through_lake_target_resolution(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        prepare = text.split("- name: Prepare synthetic shard root", 1)[1].split(
+            "- name: Extract dependency graph", 1
+        )[0]
+        self.assertIn('lake build "$shard_root"', prepare)
+        self.assertNotIn('lake env lean "src/Lemmata/TheseusShard', prepare)
+
     def test_shard_roots_are_synthetic_and_untracked(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("Lemmata.TheseusShard", text)
