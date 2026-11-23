@@ -5,11 +5,11 @@ import argparse
 import importlib.util
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from typing import Iterable
+from collections.abc import Iterable
+from pathlib import Path
 
 
 def select_rows(rows: list[list[str]], modules: set[str]) -> list[list[str]]:
