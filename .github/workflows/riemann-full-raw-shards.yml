@@ -18,12 +18,11 @@ concurrency:
 
 jobs:
   extract:
-    if: ${{ inputs.only_shard == '-1' || matrix.shard_index == fromJSON(inputs.only_shard) }}
     strategy:
       fail-fast: false
       max-parallel: 16
       matrix:
-        shard_index: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+        shard_index: ${{ inputs.only_shard == '-1' && fromJSON('[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]') || fromJSON(format('[{0}]', inputs.only_shard)) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:

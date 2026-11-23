@@ -45,10 +45,17 @@ class RiemannFullShardWorkflowTests(unittest.TestCase):
         self.assertIn('lake build "$shard_root"', text)
         self.assertNotIn("lake build Lemmata", text)
 
-        start = text.index("shard_index:")
-        line = text[start:].splitlines()[0]
-        values = json.loads(line.split(":", 1)[1].strip())
-        self.assertEqual(values, list(range(32)))
+        full_matrix = json.dumps(list(range(32)), separators=(",", ":"))
+        self.assertIn(f"fromJSON('{full_matrix}')", text)
+
+    def test_single_shard_dispatch_uses_dynamic_matrix_not_job_if(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        jobs = text.split("jobs:", 1)[1]
+        header = jobs.split("strategy:", 1)[0]
+        self.assertNotIn("matrix.shard_index", header)
+        self.assertIn("fromJSON", text)
+        self.assertIn("inputs.only_shard == '-1'", text)
+        self.assertIn("format('[{0}]', inputs.only_shard)", text)
 
     def test_each_shard_uploads_raw_evidence_and_small_metrics_separately(self):
         text = WORKFLOW.read_text(encoding="utf-8")
