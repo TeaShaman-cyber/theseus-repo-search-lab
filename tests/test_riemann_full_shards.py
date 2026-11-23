@@ -1,4 +1,3 @@
-import json
 import unittest
 from pathlib import Path
 
@@ -35,27 +34,27 @@ class RiemannFullDescriptorTests(unittest.TestCase):
 
 
 class RiemannFullShardWorkflowTests(unittest.TestCase):
-    def test_workflow_runs_exactly_32_balanced_raw_shards(self):
+    def test_workflow_parameterizes_shard_count_and_matrix(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", text)
+        self.assertIn("shard_count:", text)
+        self.assertIn('default: "64"', text)
+        self.assertIn("options:", text)
+        self.assertIn('"32"', text)
+        self.assertIn('"64"', text)
+        self.assertIn('"128"', text)
+        self.assertIn("plan_matrix:", text)
+        self.assertIn("shard_matrix=", text)
+        self.assertIn("fromJSON(needs.plan_matrix.outputs.shard_matrix)", text)
+        self.assertIn("SHARD_COUNT: " + "$" + "{{ needs.plan_matrix.outputs.shard_count }}", text)
+        self.assertIn('--shard-count "$SHARD_COUNT"', text)
         self.assertIn("max-parallel: 16", text)
-        self.assertIn("--shard-count 32", text)
-        self.assertIn("--source-prefix src", text)
-        self.assertIn("Development.TheseusShard", text)
-        self.assertIn('lake build "$shard_root"', text)
-        self.assertNotIn("lake build Lemmata", text)
 
-        full_matrix = json.dumps(list(range(32)), separators=(",", ":"))
-        self.assertIn(f"fromJSON('{full_matrix}')", text)
-
-    def test_single_shard_dispatch_uses_dynamic_matrix_not_job_if(self):
+    def test_single_shard_dispatch_is_validated_by_plan_job(self):
         text = WORKFLOW.read_text(encoding="utf-8")
-        jobs = text.split("jobs:", 1)[1]
-        header = jobs.split("strategy:", 1)[0]
-        self.assertNotIn("matrix.shard_index", header)
-        self.assertIn("fromJSON", text)
-        self.assertIn("inputs.only_shard == '-1'", text)
-        self.assertIn("format('[{0}]', inputs.only_shard)", text)
+        self.assertIn("ONLY_SHARD:", text)
+        self.assertIn("only_shard must be -1", text)
+        self.assertNotIn("matrix.shard_index ==", text)
 
     def test_each_shard_uploads_raw_evidence_and_small_metrics_separately(self):
         text = WORKFLOW.read_text(encoding="utf-8")
@@ -67,6 +66,7 @@ class RiemannFullShardWorkflowTests(unittest.TestCase):
         self.assertIn('"nodes"', text)
         self.assertIn('"edges"', text)
         self.assertIn('"source_bytes"', text)
+        self.assertIn('"shard_count": int(os.environ["SHARD_COUNT"])', text)
 
     def test_shards_clean_source_and_outputs_after_upload(self):
         text = WORKFLOW.read_text(encoding="utf-8")

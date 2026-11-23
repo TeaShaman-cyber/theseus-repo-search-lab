@@ -3,8 +3,17 @@ name: Riemann full raw shards
 on:
   workflow_dispatch:
     inputs:
+      shard_count:
+        description: "Number of deterministic source-balanced shards"
+        required: true
+        default: "64"
+        type: choice
+        options:
+          - "32"
+          - "64"
+          - "128"
       only_shard:
-        description: "-1 runs all shards; otherwise run one shard index 0..31"
+        description: "-1 runs all shards; otherwise run one shard index"
         required: true
         default: "-1"
         type: string
@@ -13,22 +22,57 @@ permissions:
   contents: read
 
 concurrency:
-  group: riemann-full-raw-shards-${{ github.ref }}-${{ inputs.only_shard }}
+  group: riemann-full-raw-shards-${{ github.ref }}-${{ inputs.shard_count }}-${{ inputs.only_shard }}
   cancel-in-progress: false
 
 jobs:
+  plan_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      shard_count: ${{ steps.plan.outputs.shard_count }}
+      shard_matrix: ${{ steps.plan.outputs.shard_matrix }}
+    env:
+      SHARD_COUNT: ${{ inputs.shard_count }}
+      ONLY_SHARD: ${{ inputs.only_shard }}
+    steps:
+      - name: Validate dispatch and build matrix
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          import os
+
+          shard_count = int(os.environ["SHARD_COUNT"])
+          if shard_count not in {32, 64, 128}:
+              raise SystemExit("shard_count must be one of 32, 64, 128")
+
+          only_shard = int(os.environ["ONLY_SHARD"])
+          if only_shard < -1 or only_shard >= shard_count:
+              raise SystemExit(
+                  f"only_shard must be -1 or an index in 0..{shard_count - 1}"
+              )
+
+          matrix = list(range(shard_count)) if only_shard == -1 else [only_shard]
+          print(f"shard_count={shard_count}")
+          print("shard_matrix=" + json.dumps(matrix, separators=(",", ":")))
+          PY
+
   extract:
+    needs: plan_matrix
     strategy:
       fail-fast: false
       max-parallel: 16
       matrix:
-        shard_index: ${{ inputs.only_shard == '-1' && fromJSON('[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]') || fromJSON(format('[{0}]', inputs.only_shard)) }}
+        shard_index: ${{ fromJSON(needs.plan_matrix.outputs.shard_matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
       PYTHONPATH: ${{ github.workspace }}/src
       SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
       SHARD_INDEX: ${{ matrix.shard_index }}
+      SHARD_COUNT: ${{ needs.plan_matrix.outputs.shard_count }}
     steps:
       - name: Checkout Repository Search
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -104,7 +148,7 @@ jobs:
               --mappings-only
           )
 
-      - name: Plan exact 32-way source partition
+      - name: Plan exact source partition
         shell: bash
         run: |
           set -euo pipefail
@@ -112,7 +156,7 @@ jobs:
           python3 scripts/plan_lean_shards.py \
             --repo-root "$SOURCE_ROOT" \
             --source-prefix src \
-            --shard-count 32 \
+            --shard-count "$SHARD_COUNT" \
             --out _out/shard-plan.json
 
       - name: Materialize this shard through Lake
@@ -198,7 +242,7 @@ jobs:
               "schema": "theseus.riemann-full-raw-shard.v1",
               "source_commit": os.environ["SOURCE_COMMIT"],
               "shard_index": index,
-              "shard_count": 32,
+              "shard_count": int(os.environ["SHARD_COUNT"]),
               "module_count": shard["module_count"],
               "source_bytes": shard["total_bytes"],
               "nodes": len(raw["nodes"]),
