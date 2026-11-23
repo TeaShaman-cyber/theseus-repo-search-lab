@@ -25,6 +25,20 @@ class RiemannTargetedCachePilotWorkflowTests(unittest.TestCase):
         self.assertIn("524288", text)
         self.assertIn('"roots_csv_bytes"', text)
 
+    def test_closure_helper_runs_inside_pinned_rh_project(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        closure_step = text.split(
+            "- name: Compute project import closure from source", 1
+        )[1].split("- name: Restore verified RH cache subset", 1)[0]
+        self.assertIn(
+            'python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --',
+            closure_step,
+        )
+        self.assertIn(
+            'lake env lean --run "$GITHUB_WORKSPACE/scripts/lean_project_import_closure.lean"',
+            closure_step,
+        )
+
     def test_pilot_records_comparable_restore_and_extraction_metrics(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         for field in (
