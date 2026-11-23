@@ -165,6 +165,16 @@ class RiemannSemanticPluginPilotWorkflowTests(unittest.TestCase):
         self.assertIn('git -C "$SOURCE_ROOT" diff --exit-code', text)
         self.assertIn("sha256sum --check", text)
 
+    def test_plugin_build_runs_inside_runner_temp_root(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        step = text.split("- name: Build Lean 4.36 semantic plugin", 1)[1].split(
+            "- name: Generate external producer overlay", 1
+        )[0]
+        self.assertIn('cd "$RUNNER_TEMP"', step)
+        self.assertIn('lean -c RepoSemanticPlugin.c RepoSemanticPlugin.lean', step)
+        self.assertIn('leanc', step)
+        self.assertNotIn('lean \\n            -c "$RUNNER_TEMP/RepoSemanticPlugin.c"', step)
+
     def test_workflow_compares_same_slice_with_leandepviz_and_uploads_metrics(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("LeanDepVizMain.lean", text)

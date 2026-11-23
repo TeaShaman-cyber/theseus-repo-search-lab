@@ -108,18 +108,16 @@ jobs:
         run: |
           set -euo pipefail
           toolchain="$(tr -d '\r\n' < "$SOURCE_ROOT/lean-toolchain")"
-          cp "$PLUGIN_SOURCE" "$RUNNER_TEMP/RepoSemanticPlugin.lean"
-          ELAN_TOOLCHAIN="$toolchain" lean \
-            -c "$RUNNER_TEMP/RepoSemanticPlugin.c" \
-            "$RUNNER_TEMP/RepoSemanticPlugin.lean"
+          plugin_source="$GITHUB_WORKSPACE/$PLUGIN_SOURCE"
+          cp "$plugin_source" "$RUNNER_TEMP/RepoSemanticPlugin.lean"
+          cd "$RUNNER_TEMP"
+          ELAN_TOOLCHAIN="$toolchain" lean -c RepoSemanticPlugin.c RepoSemanticPlugin.lean
           ELAN_TOOLCHAIN="$toolchain" leanc \
             -fvisibility=default -Wl,--no-gc-sections -shared \
-            -o "$RUNNER_TEMP/RepoSemanticPlugin.so" \
-            "$RUNNER_TEMP/RepoSemanticPlugin.c"
-          nm -D "$RUNNER_TEMP/RepoSemanticPlugin.so" | \
-            grep -F ' T initialize_RepoSemanticPlugin'
+            -o RepoSemanticPlugin.so RepoSemanticPlugin.c
+          nm -D RepoSemanticPlugin.so | grep -F ' T initialize_RepoSemanticPlugin'
           printf 'PLUGIN_SOURCE_SHA256=%s\n' \
-            "$(sha256sum "$PLUGIN_SOURCE" | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
+            "$(sha256sum "$plugin_source" | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
           printf 'PLUGIN_BINARY_SHA256=%s\n' \
             "$(sha256sum "$RUNNER_TEMP/RepoSemanticPlugin.so" | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
 
