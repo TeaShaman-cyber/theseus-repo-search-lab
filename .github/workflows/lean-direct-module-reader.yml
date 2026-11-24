@@ -9,6 +9,12 @@ on:
       - 'scripts/load_producer_env.py'
       - 'src/theseus_repo_search/producer_config.py'
       - 'tools/dev/check-direct-module-reader'
+      - 'tools/dev/check-closed-module-replay'
+      - 'scripts/direct_module_replay.py'
+      - 'scripts/riemann_semantic_plugin_pilot.py'
+      - 'scripts/adapt_leandepviz_lean436.py'
+      - 'src/theseus_repo_search/normalize.py'
+      - 'tests/test_direct_module_replay.py'
       - 'tests/test_direct_module_reader_workflow.py'
       - '.github/workflows/lean-direct-module-reader.yml'
   workflow_dispatch:
@@ -57,3 +63,16 @@ jobs:
 
       - name: Verify native reader on isolated and split modules
         run: tools/dev/check-direct-module-reader
+
+      - name: Compare complete small import closure with pinned LeanDepViz
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py \
+            --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          EXTRACTOR_MAIN="$RUNNER_TEMP/LeanDepVizMain.lean" tools/dev/check-closed-module-replay

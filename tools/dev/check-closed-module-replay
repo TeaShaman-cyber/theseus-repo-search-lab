@@ -1,0 +1,81 @@
+#!/bin/sh
+# Full, deliberately small legacy import closure; independent LeanDepViz oracle.
+set -eu
+ROOT=$(git rev-parse --show-toplevel)
+LEAN_BIN_DIR=${LEAN_BIN_DIR:?set exact pinned Lean toolchain}
+EXTRACTOR_MAIN=${EXTRACTOR_MAIN:?set verified adapted LeanDepViz source}
+LEAN="$LEAN_BIN_DIR/lean"
+"$LEAN" --version | grep -F 'commit 611c117bfaf7b7ae1cfcf246ce6fba31e8f509e9'
+export PATH="$LEAN_BIN_DIR:$PATH"
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT HUP INT TERM
+cd "$WORK"
+export LEAN_PATH="$WORK"
+cat > Base.lean <<'EOF'
+prelude
+axiom P : Prop
+axiom p : P
+axiom q : P
+EOF
+cat > Left.lean <<'EOF'
+prelude
+import Base
+theorem shared : P := p
+theorem left : P := shared
+EOF
+cat > Right.lean <<'EOF'
+prelude
+import Base
+theorem shared : P := q
+theorem right : P := shared
+EOF
+cat > RightSame.lean <<'EOF'
+prelude
+import Base
+theorem shared : P := p
+theorem rightSame : P := shared
+EOF
+for pair in 'Root Left Right' 'Reverse Right Left' 'Agree Left RightSame' 'AgreeReverse RightSame Left'; do
+    set -- $pair
+    printf 'prelude\nimport %s\nimport %s\n' "$2" "$3" > "$1.lean"
+done
+for module in Base Left Right RightSame Root Reverse Agree AgreeReverse; do
+    "$LEAN" -o "$module.olean" "$module.lean"
+    env -u LEAN_PATH "$LEAN" --run "$ROOT/producer/lean/ReadModuleFacts.lean" "$module" "$WORK/$module.olean" --metadata "$module.json" > "$module.jsonl"
+done
+for module in Root Reverse Agree AgreeReverse; do
+    "$LEAN" --run "$EXTRACTOR_MAIN" --roots "$module" --include-prefix Base,Left,Right,RightSame,Root,Reverse,Agree,AgreeReverse --json-out "$module-graph.json"
+done
+PYTHONPATH="$ROOT:$ROOT/src" python3 - <<'PY'
+import json
+from pathlib import Path
+from scripts.direct_module_replay import replay_closed_modules
+from theseus_repo_search.normalize import normalize_leandepviz
+
+def inputs(modules):
+    return [(json.loads(Path(m+'.json').read_text()),
+             [json.loads(l) for l in Path(m+'.jsonl').read_text().splitlines()]) for m in modules]
+
+for root, expected in [('Agree', ['Left', 'RightSame']), ('AgreeReverse', ['RightSame', 'Left'])]:
+    modules = ['Base', 'Left', 'RightSame', root]
+    result = replay_closed_modules(inputs(modules), [root])
+    control = json.loads(Path(root+'-graph.json').read_text())
+    kwargs = dict(source_commit='synthetic-closure', root_modules=tuple(modules), producer_ref='comparison')
+    actual = normalize_leandepviz(result.graph, **kwargs)
+    assert actual == normalize_leandepviz(control, **kwargs)
+    assert (len(actual[0]), len(actual[1])) == (6, 8)
+    assert result.module_order == ['Base', *expected, root]
+    assert result.occurrences['shared'] == expected
+
+for root, owner, dep in [('Root', 'Left', 'q'), ('Reverse', 'Right', 'p')]:
+    control = json.loads(Path(root+'-graph.json').read_text())
+    assert next(n['module'] for n in control['nodes'] if n['name']=='shared') == owner
+    assert {e['source'] for e in control['edges'] if e['target']=='shared' and e['kind']=='value'} == {dep}
+    try:
+        replay_closed_modules(inputs(['Base', 'Left', 'Right', root]), [root])
+    except ValueError as error:
+        assert str(error) == 'conflicting observed dependency signatures: shared'
+    else:
+        raise AssertionError('conflicting proof dependencies accepted')
+print('CLOSED_MODULE_GRAPH_CONTROL_PASS')
+PY
