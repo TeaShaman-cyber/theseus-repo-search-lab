@@ -110,6 +110,60 @@ def load_fact_jsonl(path: Path) -> list[SemanticFact]:
     return sorted(facts, key=lambda row: (row["module"], row["full_name"]))
 
 
+def load_fact_sidecar_dir(
+    root: Path,
+) -> tuple[list[SemanticFact], list[dict[str, object]]]:
+    files = sorted(path for path in root.glob("*.jsonl") if path.is_file())
+    if not files:
+        raise ValueError("semantic sidecar directory contains no jsonl fragments")
+
+    facts: list[SemanticFact] = []
+    fragments: list[dict[str, object]] = []
+    seen_names: set[str] = set()
+    for path in files:
+        module = path.name.removesuffix(".jsonl")
+        data = path.read_bytes()
+        rows = [
+            _canonical_fact(json.loads(line))
+            for line in data.decode("utf-8").splitlines()
+            if line.strip()
+        ]
+        if not rows:
+            raise ValueError(f"semantic sidecar fragment is empty: {path.name}")
+        rows = sorted(rows, key=lambda row: (row["module"], row["full_name"]))
+        canonical = "".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+            for row in rows
+        ).encode("utf-8")
+        if data != canonical:
+            path.write_bytes(canonical)
+        for row in rows:
+            if row["module"] != module:
+                raise ValueError(
+                    f"sidecar module mismatch: file={module} fact={row['module']}"
+                )
+            name = row["full_name"]
+            if name in seen_names:
+                raise ValueError(
+                    f"duplicate declaration across sidecars: {name}"
+                )
+            seen_names.add(name)
+            facts.append(row)
+        fragments.append(
+            {
+                "module": module,
+                "path": path.name,
+                "sha256": _sha256(canonical),
+                "facts": len(rows),
+            }
+        )
+
+    return (
+        sorted(facts, key=lambda row: (row["module"], row["full_name"])),
+        fragments,
+    )
+
+
 def _plugin_canonical_id(fact: SemanticFact) -> str:
     raw_name = fact["full_name"]
     module = fact["module"]
@@ -287,6 +341,28 @@ def _cmd_facts(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_sidecars(args: argparse.Namespace) -> int:
+    facts, fragments = load_fact_sidecar_dir(args.dir)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    merged = "".join(
+        json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+        for row in facts
+    ).encode("utf-8")
+    args.out.write_bytes(merged)
+    metrics = {
+        "schema": "theseus.riemann-semantic-sidecar-transport.v1",
+        "facts": len(facts),
+        "fragments": fragments,
+        "merged_sha256": _sha256(merged),
+    }
+    payload = json.dumps(metrics, sort_keys=True)
+    print(payload)
+    if args.metrics_out:
+        args.metrics_out.parent.mkdir(parents=True, exist_ok=True)
+        args.metrics_out.write_text(payload + "\n", encoding="utf-8")
+    return 0
+
+
 def _cmd_compare(args: argparse.Namespace) -> int:
     facts = load_fact_jsonl(args.facts)
     raw = json.loads(args.leandepviz.read_text(encoding="utf-8"))
@@ -323,6 +399,12 @@ def _parser() -> argparse.ArgumentParser:
     facts.add_argument("--log", type=Path, required=True)
     facts.add_argument("--out", type=Path, required=True)
     facts.set_defaults(func=_cmd_facts)
+
+    sidecars = sub.add_parser("sidecars")
+    sidecars.add_argument("--dir", type=Path, required=True)
+    sidecars.add_argument("--out", type=Path, required=True)
+    sidecars.add_argument("--metrics-out", type=Path)
+    sidecars.set_defaults(func=_cmd_sidecars)
 
     compare = sub.add_parser("compare")
     compare.add_argument("--facts", type=Path, required=True)

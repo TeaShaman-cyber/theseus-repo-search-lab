@@ -183,5 +183,102 @@ class RiemannSemanticPluginPilotWorkflowTests(unittest.TestCase):
         self.assertIn("pilot-metrics.json", text)
 
 
+class RiemannSemanticSidecarTransportTests(unittest.TestCase):
+    def _fact(self, module: str, full_name: str):
+        return {
+            "schema": "theseus.lean-semantic-fact.v1",
+            "module": module,
+            "full_name": full_name,
+            "kind": "theorem",
+            "type_dependencies": [],
+            "value_dependencies": [],
+        }
+
+    def test_sidecar_loader_merges_modules_deterministically(self):
+        import tempfile
+        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "B.Mod.jsonl").write_text(
+                json.dumps(self._fact("B.Mod", "B.Mod.z")) + "\n",
+                encoding="utf-8",
+            )
+            (root / "A.Mod.jsonl").write_text(
+                json.dumps(self._fact("A.Mod", "A.Mod.a")) + "\n",
+                encoding="utf-8",
+            )
+
+            facts, fragments = load_fact_sidecar_dir(root)
+
+        self.assertEqual(
+            [(row["module"], row["full_name"]) for row in facts],
+            [("A.Mod", "A.Mod.a"), ("B.Mod", "B.Mod.z")],
+        )
+        self.assertEqual([row["module"] for row in fragments], ["A.Mod", "B.Mod"])
+        self.assertTrue(all(len(row["sha256"]) == 64 for row in fragments))
+
+    def test_sidecar_loader_canonicalizes_fragment_before_hashing(self):
+        import hashlib
+        import tempfile
+        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "A.jsonl"
+            path.write_text(
+                json.dumps(self._fact("A", "z")) + "\n"
+                + json.dumps(self._fact("A", "a")) + "\n",
+                encoding="utf-8",
+            )
+
+            facts, fragments = load_fact_sidecar_dir(root)
+            canonical = path.read_bytes()
+
+        self.assertEqual([row["full_name"] for row in facts], ["a", "z"])
+        lines = canonical.decode("utf-8").splitlines()
+        self.assertEqual([json.loads(line)["full_name"] for line in lines], ["a", "z"])
+        self.assertEqual(fragments[0]["sha256"], hashlib.sha256(canonical).hexdigest())
+
+    def test_sidecar_loader_rejects_filename_module_mismatch(self):
+        import tempfile
+        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "Wrong.jsonl").write_text(
+                json.dumps(self._fact("Right", "Right.x")) + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "sidecar module mismatch"):
+                load_fact_sidecar_dir(root)
+
+    def test_sidecar_loader_rejects_duplicate_declaration_across_fragments(self):
+        import tempfile
+        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            fact = self._fact("A", "shared")
+            (root / "A.jsonl").write_text(json.dumps(fact) + "\n", encoding="utf-8")
+            other = dict(fact, module="B")
+            (root / "B.jsonl").write_text(json.dumps(other) + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "duplicate declaration across sidecars"):
+                load_fact_sidecar_dir(root)
+
+    def test_workflow_uses_sidecar_transport_not_build_log_as_fact_source(self):
+        text = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("THESEUS_REPO_FACT_DIR", text)
+        self.assertIn("riemann_semantic_plugin_pilot.py sidecars", text)
+        self.assertIn("_out/plugin-fact-sidecars", text)
+        self.assertNotIn("riemann_semantic_plugin_pilot.py facts \\\n            --log _out/plugin-build.log", text)
+
+    def test_plugin_uses_locked_append_for_module_sidecars(self):
+        plugin = Path("producer/lean/RepoSemanticPlugin.lean").read_text(encoding="utf-8")
+        self.assertIn("THESEUS_REPO_FACT_DIR", plugin)
+        self.assertIn("IO.FS.Handle.mk", plugin)
+        self.assertIn(".append", plugin)
+        self.assertIn("h.lock (exclusive := true)", plugin)
+
 if __name__ == "__main__":
     unittest.main()

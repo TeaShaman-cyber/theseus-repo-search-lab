@@ -21,6 +21,15 @@ private def declarationKind : ConstantInfo → String
 private def namesJson (names : Array Name) : Json :=
   Json.arr <| names.map fun name => Json.str name.toString
 
+private def writeModuleSidecar (moduleName : Name) (fact : Json) : IO Unit := do
+  let some root ← IO.getEnv "THESEUS_REPO_FACT_DIR" | return
+  let root := System.FilePath.mk root
+  IO.FS.createDirAll root
+  let path := root / s!"{moduleName}.jsonl"
+  let h ← IO.FS.Handle.mk path .append
+  h.lock (exclusive := true)
+  h.putStrLn (Json.compress fact)
+
 initialize addLinter {
   name := `linter.theseusRepoSemanticPilot
   run := fun stx => do
@@ -40,13 +49,15 @@ initialize addLinter {
       | some value => value.getUsedConstants
       | none => #[]
 
+    let mainModule ← getMainModule
     let fact := Json.mkObj [
       ("schema", Json.str "theseus.lean-semantic-fact.v1"),
-      ("module", Json.str (← getMainModule).toString),
+      ("module", Json.str mainModule.toString),
       ("full_name", Json.str fullName.toString),
       ("kind", Json.str (declarationKind info)),
       ("type_dependencies", namesJson typeDeps),
       ("value_dependencies", namesJson valueDeps)
     ]
+    writeModuleSidecar mainModule fact
     IO.println s!"THESEUS_FACT\t{Json.compress fact}"
 }
