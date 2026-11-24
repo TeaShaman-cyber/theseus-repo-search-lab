@@ -24,10 +24,9 @@ def _git(repo: Path, *args: str) -> str:
     result = subprocess.run(
         ["git", "-C", str(repo), *args],
         check=True,
-        text=True,
         capture_output=True,
     )
-    return result.stdout
+    return result.stdout.decode("utf-8")
 
 
 def main() -> int:
@@ -37,7 +36,11 @@ def main() -> int:
         raise ValueError("source-prefix must be non-empty")
 
     source_commit = _git(args.repo_root, "rev-parse", "HEAD").strip()
-    rows = _git(args.repo_root, "ls-tree", "-r", "-l", "HEAD", source_prefix).splitlines()
+    # NUL framing disables Git's path quoting and preserves UTF-8 module names.
+    tree = _git(args.repo_root, "ls-tree", "-r", "-l", "-z", "HEAD", "--", source_prefix)
+    rows = tree.split("\0")
+    if rows.pop() != "":
+        raise ValueError("git ls-tree output is not NUL-terminated")
 
     modules: list[ModuleWeight] = []
     prefix = source_prefix + "/"

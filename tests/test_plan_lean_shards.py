@@ -58,6 +58,34 @@ class PlanLeanShardsTests(unittest.TestCase):
                 [150, 150],
             )
 
+    def test_cli_preserves_unicode_git_paths_with_quotepath_enabled(self):
+        with tempfile.TemporaryDirectory() as d:
+            repo = Path(d) / "repo"
+            repo.mkdir()
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "core.quotePath", "true"], cwd=repo, check=True)
+            src = repo / "src"
+            (src / "Δ").mkdir(parents=True)
+            (src / "A.lean").write_text("x", encoding="utf-8")
+            (src / "Δ" / "α.lean").write_text("α", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True)
+            subprocess.run(["git", "commit", "-qm", "fixture"], cwd=repo, check=True)
+            out = Path(d) / "plan.json"
+            result = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "plan_lean_shards.py"),
+                 "--repo-root", str(repo), "--source-prefix", "src",
+                 "--shard-count", "1", "--out", str(out)],
+                cwd=ROOT, env={**os.environ, "PYTHONPATH": str(ROOT / "src")},
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            plan = json.loads(out.read_text())
+            self.assertEqual(plan["module_count"], 2)
+            self.assertEqual(plan["total_bytes"], 3)
+            self.assertEqual(plan["shards"][0]["modules"], ["A", "Δ.α"])
+
     def test_cli_can_restore_module_namespace_for_nested_source_prefix(self):
         with tempfile.TemporaryDirectory() as d:
             repo = Path(d) / "repo"
