@@ -46,11 +46,19 @@ done
 for module in Root Reverse Agree AgreeReverse; do
     "$LEAN" --run "$EXTRACTOR_MAIN" --roots "$module" --include-prefix Base,Left,Right,RightSame,Root,Reverse,Agree,AgreeReverse --json-out "$module-graph.json"
 done
+env -u LEAN_PATH "$LEAN" --run "$ROOT/producer/lean/ReadModuleFacts.lean" --resolve-theorem shared Left Left.olean Right Right.olean > resolution.json
 PYTHONPATH="$ROOT:$ROOT/src" python3 - <<'PY'
 import json
 from pathlib import Path
 from scripts.direct_module_replay import replay_closed_modules
 from theseus_repo_search.normalize import normalize_leandepviz
+
+resolution = json.loads(Path('resolution.json').read_text())
+assert resolution['schema'] == 'theseus.lean-theorem-resolution.v1'
+assert resolution['previous']['module'] == 'Left'
+assert resolution['selected']['module'] == 'Right'
+assert resolution['previous']['value_dependencies'] == ['p']
+assert resolution['selected']['value_dependencies'] == ['q']
 
 def inputs(modules):
     return [(json.loads(Path(m+'.json').read_text()),
@@ -78,4 +86,64 @@ for root, owner, dep in [('Root', 'Left', 'q'), ('Reverse', 'Right', 'p')]:
     else:
         raise AssertionError('conflicting proof dependencies accepted')
 print('CLOSED_MODULE_GRAPH_CONTROL_PASS')
+PY
+
+mkdir split
+for module in Base Left Right Root Reverse; do
+    { printf 'module\n'; sed -e 's/^axiom /public axiom /' -e 's/^theorem /public theorem /' -e 's/^import /public import /' "$module.lean"; } > "split/$module.lean"
+done
+cd split
+export LEAN_PATH="$PWD"
+for module in Base Left Right Root Reverse; do
+    "$LEAN" -o "$module.olean" "$module.lean"
+    env -u LEAN_PATH "$LEAN" --run "$ROOT/producer/lean/ReadModuleFacts.lean" "$module" "$PWD/$module.olean" --metadata "$module.json" > "$module.jsonl"
+done
+for module in Root Reverse; do
+    "$LEAN" --run "$EXTRACTOR_MAIN" --roots "$module" --include-prefix Base,Left,Right,Root,Reverse --json-out "$module-graph.json"
+done
+cat > Different.lean <<'EOF'
+module
+prelude
+public axiom Q : Prop
+public axiom qProof : Q
+public theorem shared : Q := qProof
+EOF
+"$LEAN" -o Different.olean Different.lean
+if env -u LEAN_PATH "$LEAN" --run "$ROOT/producer/lean/ReadModuleFacts.lean" --resolve-theorem shared Left Left.olean Different Different.olean > rejected.json 2> rejected.err; then
+    echo 'incompatible theorem accepted' >&2; exit 1
+fi
+grep -F 'theorem subsumption not established' rejected.err
+test ! -s rejected.json
+PYTHONPATH="$ROOT:$ROOT/src" python3 - "$LEAN" "$ROOT" <<'PY'
+import copy
+import json
+import sys
+from pathlib import Path
+from scripts.direct_module_replay import replay_closed_modules, theorem_verifier
+from theseus_repo_search.normalize import normalize_leandepviz
+
+for root, owner, selected in [('Root', 'Left', 'Right'), ('Reverse', 'Right', 'Left')]:
+    modules = ['Base', 'Left', 'Right', root]
+    inputs = [(json.loads(Path(m+'.json').read_text()),
+               [json.loads(l) for l in Path(m+'.jsonl').read_text().splitlines()]) for m in modules]
+    assert all(meta['is_module'] and meta['ir_extra_const_names'] == [] for meta, _ in inputs)
+    verify = theorem_verifier([sys.argv[1], '--run', sys.argv[2]+'/producer/lean/ReadModuleFacts.lean'],
+                              {m: Path(m+'.olean') for m in modules})
+    result = replay_closed_modules(inputs, [root], private_split=True, verify_theorem=verify)
+    kwargs = dict(source_commit='synthetic-split', root_modules=tuple(modules), producer_ref='comparison')
+    actual = normalize_leandepviz(result.graph, **kwargs)
+    oracle = normalize_leandepviz(json.loads(Path(root+'-graph.json').read_text()), **kwargs)
+    assert actual == oracle
+    assert (len(actual[0]), len(actual[1])) == (6, 8)
+    assert result.occurrences['shared'] == [owner, selected]
+    assert result.selected_modules['shared'] == selected
+    corrupted = copy.deepcopy(inputs)
+    next(row for row in corrupted[1][1] if row['full_name']=='shared')['value_dependencies'] = ['q']
+    try:
+        replay_closed_modules(corrupted, [root], private_split=True, verify_theorem=verify)
+    except ValueError as error:
+        assert str(error) == 'theorem resolution does not bind supplied facts'
+    else:
+        raise AssertionError('unbound resolution accepted')
+print('SPLIT_CLOSURE_EXACT_REPLAY_PASS')
 PY

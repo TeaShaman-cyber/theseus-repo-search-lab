@@ -6,8 +6,12 @@ facts is not kernel/proof equality. Unsupported cases fail closed.
 """
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+import json
+import os
+import subprocess
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from scripts.riemann_semantic_plugin_pilot import (
     SemanticFact,
@@ -22,6 +26,7 @@ class Replay:
     module_order: list[str]
     occurrences: dict[str, list[str]]
     graph: RawDepgraph
+    selected_modules: dict[str, str | None]
 
 
 KINDS = {
@@ -36,14 +41,37 @@ def _names(value: object, field: str) -> list[str]:
     return list(value)
 
 
+def theorem_verifier(command: Sequence[str], module_files: Mapping[str, Path]) -> Callable[[SemanticFact, SemanticFact], None]:
+    """Bind the isolated native result to both supplied, verified fact rows."""
+    def verify(previous: SemanticFact, incoming: SemanticFact) -> None:
+        env = os.environ.copy()
+        env.pop('LEAN_PATH', None)
+        proc = subprocess.run([
+            *command, '--resolve-theorem', previous['full_name'],
+            previous['module'], str(module_files[previous['module']].resolve()),
+            incoming['module'], str(module_files[incoming['module']].resolve()),
+        ], env=env, check=True, capture_output=True, text=True, timeout=60)
+        result = json.loads(proc.stdout)
+        if (not isinstance(result, dict) or result.get('schema') != 'theseus.lean-theorem-resolution.v1'
+                or _canonical_fact(result.get('previous')) != previous
+                or _canonical_fact(result.get('selected')) != incoming):
+            raise ValueError('theorem resolution does not bind supplied facts')
+    return verify
+
+
 def replay_closed_modules(
     modules: Iterable[tuple[object, Iterable[object]]], roots: Sequence[str],
+    *, verify_theorem: Callable[[SemanticFact, SemanticFact], None] | None = None,
+    private_split: bool = False,
 ) -> Replay:
-    """Replay only complete legacy-module fixtures with no hidden/extra names.
+    """Replay complete restricted private closures without hidden/extra names.
 
     First visited materialization determines observed attribution in this
     restricted scope. Equal dependency signatures permit a diagnostic graph;
     differing signatures require actual Lean constant-info selection evidence.
+    Explicit private split mode requires IR inventory and verification of every duplicate.
+    Without a verifier, equal-signature duplicates have unknown selected proof
+    module (None), even though their diagnostic edges agree.
     No assertion of proof identity or full RH applicability is made.
     """
     imports: dict[str, list[str]] = {}
@@ -57,7 +85,12 @@ def replay_closed_modules(
         if module in imports:
             raise ValueError(f'duplicate module: {module}')
         if meta.get('is_module') is not False:
-            raise ValueError(f'unsupported split module or missing flag: {module}')
+            if meta.get('is_module') is not True or not private_split:
+                raise ValueError(f'unsupported split module or missing flag: {module}')
+            if meta.get('ir_extra_const_names') is None:
+                raise ValueError(f'missing IR inventory: {module}')
+        if meta.get('ir_extra_const_names') is not None and _names(meta['ir_extra_const_names'], 'IR extra constant names'):
+            raise ValueError(f'unsupported IR extra constant names: {module}')
         if _names(meta.get('olean_extra_const_names'), 'extra constant names'):
             raise ValueError(f'unsupported extra constant names: {module}')
         raw_imports = meta.get('imports')
@@ -120,12 +153,23 @@ def replay_closed_modules(
         for row in facts[module]:
             name = row['full_name']
             occurrences.setdefault(name, []).append(module)
-            previous = selected.setdefault(name, row)
+            previous = selected.get(name)
+            if previous is None:
+                selected[name] = row
+                continue
+            if verify_theorem is not None:
+                if previous['kind'] != 'theorem' or row['kind'] != 'theorem':
+                    raise ValueError(f'unsupported duplicate constant kind: {name}')
+                verify_theorem(previous, row)
+                selected[name] = row
+                continue
+            if private_split:
+                raise ValueError(f'duplicate requires theorem verification: {name}')
             if (previous['kind'], previous['type_dependencies'], previous['value_dependencies']) != (
                 row['kind'], row['type_dependencies'], row['value_dependencies'],
             ):
                 raise ValueError(f'conflicting observed dependency signatures: {name}')
-    identities = {name: _plugin_canonical_id(row) for name, row in selected.items()}
+    identities = {name: _plugin_canonical_id(_canonical_fact(dict(row, module=occurrences[name][0]))) for name, row in selected.items()}
     if len(set(identities.values())) != len(identities):
         raise ValueError('colliding graph identities')
     nodes: list[dict[str, object]] = []
@@ -134,7 +178,7 @@ def replay_closed_modules(
         row = selected[name]
         target = identities[name]
         nodes.append({'fullName': target, 'name': name.rsplit('.', 1)[-1],
-                      'module': row['module'], 'kind': KINDS[row['kind']]})
+                      'module': occurrences[name][0], 'kind': KINDS[row['kind']]})
         for field, kind in (('type_dependencies', 'type'), ('value_dependencies', 'value')):
             dependencies = row['type_dependencies'] if field == 'type_dependencies' else row['value_dependencies']
             for dep in dependencies:
@@ -143,4 +187,5 @@ def replay_closed_modules(
                 edges.add((identities[dep], target, kind))
     return Replay(order, occurrences, {'nodes': nodes, 'edges': [
         {'source': a, 'target': b, 'kind': k} for a, b, k in sorted(edges)
-    ]})
+    ]}, {name: row['module'] if verify_theorem is not None or len(occurrences[name]) == 1 else None
+         for name, row in selected.items()})
