@@ -219,7 +219,6 @@ class RiemannSemanticSidecarTransportTests(unittest.TestCase):
         self.assertTrue(all(len(row["sha256"]) == 64 for row in fragments))
 
     def test_sidecar_loader_canonicalizes_fragment_before_hashing(self):
-        import hashlib
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             path = root / "A.jsonl"
