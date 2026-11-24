@@ -1,0 +1,199 @@
+name: Riemann dependency inventory pilot
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/riemann-dependency-inventory-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-dependency-inventory-pilot-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
+      PILOT_MODULE_A: CompanionTheory.AutomorphicTheory.BesselWaveGrids.InterlacingGrids.PairOKOfInterlace
+      PILOT_MODULE_B: Lemmata.GeneralBFactSecondVersion.Imports
+
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Install pinned runner and adapted extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py \
+            --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s\n' "$adapted_sha" >> "$GITHUB_ENV"
+
+      - name: Restore Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4 \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+              lake exe mathlib/cache get
+
+      - name: Verify dependency inputs and restore only two terminal RH modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          git -C "$SOURCE_ROOT" diff --exit-code
+          test "$(cat "$SOURCE_ROOT/lean-toolchain")" = 'leanprover/lean4:v4.36.0'
+          (cd "$SOURCE_ROOT"; lean --version) | tee _out/lean-version.txt
+          grep -F 'commit 611c117bfaf7b7ae1cfcf246ce6fba31e8f509e9' _out/lean-version.txt
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root = Path(os.environ['SOURCE_ROOT'])
+          manifest = json.loads((root/'lake-manifest.json').read_text())
+          for package in manifest['packages']:
+              path = root/'.lake/packages'/package['name']
+              assert subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip() == package['rev']
+              subprocess.run(['git','-C',str(path),'diff','--exit-code','HEAD'],check=True)
+          Path('_out/dependency-manifest.json').write_bytes((root/'lake-manifest.json').read_bytes())
+          PY
+          printf '%s\n' "$PILOT_MODULE_A" "$PILOT_MODULE_B" > _out/modules.txt
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o _out/rh-restore-time.txt \
+            python3 scripts/restore_riemann_ci_cache_subset.py --project "$SOURCE_ROOT" \
+              --modules-file _out/modules.txt --metrics-out _out/restore-receipt.json
+
+      - name: Build one reusable dependency inventory and isolated facts
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          cd "$SOURCE_ROOT"
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o "$root/_out/inventory-time.txt" \
+            lake env lean --run "$root/producer/lean/ReadDependencyNames.lean" Init Init Mathlib \
+            > "$root/_out/dependency-names.jsonl"
+          gzip -n "$root/_out/dependency-names.jsonl"
+          lean_bin="$(elan which lean)"
+          for module in "$PILOT_MODULE_A" "$PILOT_MODULE_B"; do
+            path="$SOURCE_ROOT/.lake/build/lib/lean/${module//./\/}.olean"
+            env -u LEAN_PATH "$lean_bin" --run "$root/producer/lean/ReadModuleFacts.lean" \
+              "$module" "$path" --metadata "$root/_out/$module.json" > "$root/_out/$module.jsonl"
+          done
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o "$root/_out/oracle-time.txt" \
+            lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
+              --roots "$PILOT_MODULE_A,$PILOT_MODULE_B" --include-prefix CompanionTheory,Lemmata \
+              --json-out "$root/_out/oracle.json"
+
+      - name: Compare both independent terminal graphs using the same inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections, gzip, hashlib, json, os, subprocess
+          from pathlib import Path
+          from scripts.direct_module_replay import load_dependency_inventory, replay_closed_modules
+          from theseus_repo_search.normalize import normalize_leandepviz
+          out = Path('_out')
+          with gzip.open(out/'dependency-names.jsonl.gz', 'rt') as stream:
+              inventory = load_dependency_inventory(map(json.loads, stream))
+          roots = [os.environ['PILOT_MODULE_A'], os.environ['PILOT_MODULE_B']]
+          inputs = [(json.loads((out/(m+'.json')).read_text()), [json.loads(line) for line in (out/(m+'.jsonl')).read_text().splitlines()]) for m in roots]
+          names = [set(meta['constant_names']) | set(meta['ir_extra_const_names']) for meta, _ in inputs]
+          assert not names[0] & names[1], 'terminal modules overlap'
+          oracle = json.loads((out/'oracle.json').read_text())
+          results = []
+          for root, (meta, facts) in zip(roots, inputs, strict=True):
+              result = replay_closed_modules([(meta, facts)], [root], private_split=True, dependency_inventory=inventory)
+              kwargs = dict(source_commit=os.environ['SOURCE_COMMIT'], root_modules=(root,), producer_ref='comparison')
+              actual = normalize_leandepviz(result.graph, **kwargs)
+              assert actual == normalize_leandepviz(oracle, **kwargs)
+              assert actual[0], 'empty terminal projection'
+              results.append({'root':root, 'nodes':len(actual[0]), 'edges':len(actual[1]), 'omitted':dict(collections.Counter(x[3] for x in result.omitted_dependencies))})
+              (out/(root+'-projection.json')).write_text(json.dumps({'graph':result.graph,'omitted':result.omitted_dependencies},sort_keys=True)+'\n')
+          def sha(path):
+              with path.open('rb') as stream:
+                  return hashlib.file_digest(stream,'sha256').hexdigest()
+          source = Path(os.environ['SOURCE_ROOT'])
+          receipt = {'schema':'theseus.rh-dependency-inventory-pilot.v1', 'source_commit':os.environ['SOURCE_COMMIT'],
+                     'producer_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                     'dependency_manifest_sha256':sha(source/'lake-manifest.json'), 'lakefile_sha256':sha(source/'lakefile.toml'),
+                     'lean_version':(out/'lean-version.txt').read_text().strip(),
+                     'inventory_reader_sha256':sha(Path('producer/lean/ReadDependencyNames.lean')),
+                     'inventory_roots':inventory.roots, 'dependency_modules':len(inventory.module_order),
+                     'dependency_names':len(inventory.names), 'results':results,
+                     'file_hashes':{p.name:sha(p) for p in out.iterdir() if p.is_file()}}
+          (out/'receipt.json').write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          print(json.dumps(receipt,sort_keys=True))
+          print('REAL_RH_DEPENDENCY_INVENTORY_PASS')
+          PY
+
+      - name: Upload bounded reusable research evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-dependency-inventory-pilot
+          path: _out/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove disposable workspace
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out

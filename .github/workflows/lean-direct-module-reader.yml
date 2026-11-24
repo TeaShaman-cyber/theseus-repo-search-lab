@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'producer/lean/ReadModuleFacts.lean'
+      - 'producer/lean/ReadDependencyNames.lean'
       - 'producer/runner.json'
       - 'producer/pilots/riemann-hypothesis-full.json'
       - 'scripts/load_producer_env.py'

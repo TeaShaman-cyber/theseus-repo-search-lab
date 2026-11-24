@@ -197,3 +197,32 @@ assert any(meta['quoted_short_names'] for meta, _ in inputs.values())
 assert any(meta['ir_extra_const_names'] for meta, _ in inputs.values())
 print('REAL_NAT_CLOSURE_CONTROL_PASS')
 PY
+
+# Reuse a single external name inventory for a terminal root, not its proof bodies.
+"$LEAN" --run "$ROOT/producer/lean/ReadDependencyNames.lean" Init.SimpLemmas Init.Data.NeZero Init.Grind.Tactics > dependency-names.jsonl
+PYTHONPATH="$ROOT:$ROOT/src" python3 - "$LEAN" "$ROOT" <<'PY'
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from scripts.direct_module_replay import load_dependency_inventory, replay_closed_modules
+from theseus_repo_search.normalize import normalize_leandepviz
+lean, repo = sys.argv[1:]
+root = 'Init.Data.Nat.Basic'
+lib = Path(lean).resolve().parent.parent / 'lib/lean'
+env = os.environ.copy()
+env.pop('LEAN_PATH', None)
+path = lib / Path(*root.split('.')).with_suffix('.olean')
+facts = subprocess.check_output([lean, '--run', repo+'/producer/lean/ReadModuleFacts.lean', root, str(path), '--metadata', 'terminal.json'], env=env, text=True, timeout=30)
+meta = json.loads(Path('terminal.json').read_text())
+with Path('dependency-names.jsonl').open() as stream:
+    inventory = load_dependency_inventory(map(json.loads, stream))
+result = replay_closed_modules([(meta, list(map(json.loads, facts.splitlines())))], [root], private_split=True, dependency_inventory=inventory)
+kwargs = dict(source_commit='lean436', root_modules=(root,), producer_ref='comparison')
+actual = normalize_leandepviz(result.graph, **kwargs)
+assert actual == normalize_leandepviz(json.loads(Path('oracle.json').read_text()), **kwargs)
+assert (len(inventory.module_order), len(inventory.names), len(actual[0]), len(actual[1])) == (12, 10954, 330, 398)
+assert any(x[3] == 'external_kernel' for x in result.omitted_dependencies)
+print('REAL_DEPENDENCY_INVENTORY_PASS')
+PY
