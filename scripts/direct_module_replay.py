@@ -43,6 +43,43 @@ def _names(value: object, field: str) -> list[str]:
     return list(value)
 
 
+@dataclass(frozen=True)
+class DependencyInventory:
+    roots: list[str]
+    module_order: list[str]
+    names: dict[str, tuple[str, str]]
+
+
+def load_dependency_inventory(records: Iterable[object]) -> DependencyInventory:
+    """Validate a private environment name inventory, not its build identity.
+
+    Caller must bind the file to the exact dependency inputs and reader receipt.
+    """
+    stream = iter(records)
+    header = next(stream, None)
+    if not isinstance(header, dict) or header.get('schema') != 'theseus.lean-dependency-names.v1':
+        raise ValueError('invalid dependency inventory header')
+    roots = _names(header.get('roots'), 'external roots')
+    order = _names(header.get('module_order'), 'external module order')
+    modules = set(order)
+    if not roots or len(modules) != len(order) or not set(roots) <= modules:
+        raise ValueError('invalid external roots or module order')
+    names: dict[str, tuple[str, str]] = {}
+    for record in stream:
+        if (not isinstance(record, list) or len(record) != 3
+                or any(not isinstance(v, str) or not v for v in record)):
+            raise ValueError('invalid external name row')
+        name, module, kind = record
+        if module not in modules or kind not in {'kernel', 'internal', 'ir_only'}:
+            raise ValueError('invalid external name row')
+        if name in names:
+            raise ValueError(f'duplicate external name: {name}')
+        names[name] = (module, kind)
+    if type(header.get('name_count')) is not int or header['name_count'] != len(names):
+        raise ValueError('external name count mismatch')
+    return DependencyInventory(roots, order, names)
+
+
 def theorem_verifier(command: Sequence[str], module_files: Mapping[str, Path]) -> Callable[[SemanticFact, SemanticFact], None]:
     """Bind the isolated native result to both supplied, verified fact rows."""
     def verify(previous: SemanticFact, incoming: SemanticFact) -> None:
@@ -65,6 +102,7 @@ def replay_closed_modules(
     modules: Iterable[tuple[object, Iterable[object]]], roots: Sequence[str],
     *, verify_theorem: Callable[[SemanticFact, SemanticFact], None] | None = None,
     private_split: bool = False,
+    dependency_inventory: DependencyInventory | None = None,
 ) -> Replay:
     """Replay complete private closures, with optional explicit name inventory.
 
@@ -80,7 +118,10 @@ def replay_closed_modules(
     Explicit private split mode requires IR inventory and verification of every duplicate.
     Without a verifier, equal-signature duplicates have unknown selected proof
     module (None), even though their diagnostic edges agree.
-    No assertion of proof identity or full RH applicability is made.
+    An optional external inventory replaces the imported prefix for a single
+    terminal module only. The ordered roots must match exactly; any local name
+    overlap is unsupported. External references are accounted for, not emitted
+    as local graph edges. No proof identity or full RH applicability is claimed.
     """
     imports: dict[str, list[str]] = {}
     facts: dict[str, list[SemanticFact]] = {}
@@ -100,6 +141,8 @@ def replay_closed_modules(
             if meta.get('ir_extra_const_names') is None:
                 raise ValueError(f'missing IR inventory: {module}')
         inventory_mode = private_split and 'internal_constant_names' in meta
+        if dependency_inventory is not None and not inventory_mode:
+            raise ValueError('external inventory requires explicit private name inventory')
         olean_extra = _names(meta.get('olean_extra_const_names'), 'extra constant names')
         ir_extra = (_names(meta['ir_extra_const_names'], 'IR extra constant names')
                     if meta.get('ir_extra_const_names') is not None else [])
@@ -153,6 +196,17 @@ def replay_closed_modules(
 
     if not roots or len(set(roots)) != len(roots):
         raise ValueError('expected nonempty unique roots')
+    external = dependency_inventory.names if dependency_inventory is not None else {}
+    external_order = dependency_inventory.module_order if dependency_inventory is not None else []
+    if dependency_inventory is not None:
+        if len(roots) != 1 or set(imports) != set(roots):
+            raise ValueError('external inventory requires one terminal module')
+        root = roots[0]
+        if root in external_order or imports[root] != dependency_inventory.roots:
+            raise ValueError('external roots do not match terminal module imports')
+        declared, _, extra = inventories[root]
+        if (set(declared) | set(extra)) & external.keys():
+            raise ValueError('external name overlap')
     order: list[str] = []
     done: set[str] = set()
     visiting: set[str] = set()
@@ -174,13 +228,14 @@ def replay_closed_modules(
             raise ValueError(f'missing module: {module}')
         visiting.add(module)
         stack.append((module, True))
-        stack.extend((dep, False) for dep in reversed(imports[module]))
+        if dependency_inventory is None:
+            stack.extend((dep, False) for dep in reversed(imports[module]))
     if done != set(imports):
         raise ValueError('unreachable input modules')
 
     selected: dict[str, SemanticFact] = {}
     occurrences: dict[str, list[str]] = {}
-    attribution: dict[str, str] = {}
+    attribution: dict[str, str] = {name: mod for name, (mod, _) in external.items()}
     hidden: set[str] = set()
     kernel: set[str] = set()
     for module in order:
@@ -225,6 +280,9 @@ def replay_closed_modules(
             dependencies = row['type_dependencies'] if field == 'type_dependencies' else row['value_dependencies']
             for dep in dependencies:
                 if dep not in identities:
+                    if dep in external:
+                        omitted.add((name, dep, kind, 'external_' + external[dep][1]))
+                        continue
                     if dep in hidden:
                         omitted.add((name, dep, kind, 'internal'))
                         continue
@@ -233,7 +291,7 @@ def replay_closed_modules(
                         continue
                     raise ValueError(f'unknown dependency: {dep}')
                 edges.add((identities[dep], target, kind))
-    return Replay(order, occurrences, {'nodes': nodes, 'edges': [
+    return Replay(external_order + order, occurrences, {'nodes': nodes, 'edges': [
         {'source': a, 'target': b, 'kind': k} for a, b, k in sorted(edges)
     ]}, {name: row['module'] if verify_theorem is not None or len(occurrences[name]) == 1 else None
          for name, row in selected.items()}, attribution, sorted(omitted))

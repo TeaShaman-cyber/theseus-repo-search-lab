@@ -186,3 +186,47 @@ class ClosedModuleReplayTests(unittest.TestCase):
         item[0]['quoted_short_names'] = {'other': 'wrong'}
         with self.assertRaisesRegex(ValueError, 'quoted name'):
             replay_closed_modules([item], ['Root'], private_split=True)
+
+    def test_terminal_module_uses_ordered_external_name_inventory(self):
+        from scripts.direct_module_replay import load_dependency_inventory
+        inventory = load_dependency_inventory([
+            {'schema': 'theseus.lean-dependency-names.v1', 'roots': ['Base', 'Base'],
+             'module_order': ['Base'], 'name_count': 3},
+            ['P', 'Base', 'kernel'], ['_hidden', 'Base', 'internal'], ['ir', 'Base', 'ir_only'],
+        ])
+        root = module('Root', ['Base', 'Base'], [('r', 'theorem', ['P'], ['_hidden', 'ir'])])
+        root[0].update(is_module=True, internal_constant_names=[], ir_extra_const_names=[])
+        result = replay_closed_modules([root], ['Root'], private_split=True, dependency_inventory=inventory)
+        self.assertEqual(result.module_order, ['Base', 'Root'])
+        self.assertEqual(result.graph['nodes'], [{'fullName': 'Root.r', 'name': 'r', 'kind': 'thm', 'module': 'Root'}])
+        self.assertEqual(result.graph['edges'], [])
+        self.assertEqual(result.omitted_dependencies, [('r', 'P', 'type', 'external_kernel'), ('r', '_hidden', 'value', 'external_internal'), ('r', 'ir', 'value', 'external_ir_only')])
+        root[0]['imports'].pop()
+        with self.assertRaisesRegex(ValueError, 'external roots'):
+            replay_closed_modules([root], ['Root'], private_split=True, dependency_inventory=inventory)
+
+    def test_dependency_inventory_rejects_overlap_and_missing_names(self):
+        from scripts.direct_module_replay import load_dependency_inventory
+        inventory = load_dependency_inventory([
+            {'schema': 'theseus.lean-dependency-names.v1', 'roots': ['Base'],
+             'module_order': ['Base'], 'name_count': 1}, ['P', 'Base', 'kernel'],
+        ])
+        root = module('Root', ['Base'], [('P', 'axiom', [], [])])
+        root[0].update(is_module=True, internal_constant_names=[], ir_extra_const_names=[])
+        with self.assertRaisesRegex(ValueError, 'external name overlap'):
+            replay_closed_modules([root], ['Root'], private_split=True, dependency_inventory=inventory)
+        root = module('Root', ['Base'], [('r', 'theorem', [], ['lost'])])
+        root[0].update(is_module=True, internal_constant_names=[], ir_extra_const_names=[])
+        with self.assertRaisesRegex(ValueError, 'unknown dependency.*lost'):
+            replay_closed_modules([root], ['Root'], private_split=True, dependency_inventory=inventory)
+
+    def test_dependency_inventory_rejects_incomplete_or_ambiguous_rows(self):
+        from scripts.direct_module_replay import load_dependency_inventory
+        header = {'schema': 'theseus.lean-dependency-names.v1', 'roots': ['Base'],
+                  'module_order': ['Base'], 'name_count': 2}
+        with self.assertRaisesRegex(ValueError, 'name count'):
+            load_dependency_inventory([header, ['P', 'Base', 'kernel']])
+        with self.assertRaisesRegex(ValueError, 'duplicate external name'):
+            load_dependency_inventory([header, ['P', 'Base', 'kernel'], ['P', 'Base', 'internal']])
+        with self.assertRaisesRegex(ValueError, 'invalid external name row'):
+            load_dependency_inventory([header, ['P', 'Absent', 'kernel'], ['Q', 'Base', 'kernel']])

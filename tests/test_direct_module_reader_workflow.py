@@ -23,3 +23,18 @@ class DirectModuleReaderWorkflowTests(unittest.TestCase):
         self.assertIn('${EXTRACTOR_MAIN_SHA256}', workflow)
         self.assertIn('scripts/adapt_leandepviz_lean436.py', workflow)
         self.assertIn('EXTRACTOR_MAIN="$RUNNER_TEMP/LeanDepVizMain.lean" tools/dev/check-closed-module-replay', workflow)
+
+    def test_dependency_inventory_uses_native_control_and_bounded_rh_pilot(self):
+        native = Path('.github/workflows/lean-direct-module-reader.yml').read_text()
+        self.assertIn("- 'producer/lean/ReadDependencyNames.lean'", native)
+        pilot = Path('.github/workflows/riemann-dependency-inventory-pilot.yml').read_text()
+        self.assertIn('restore_riemann_ci_cache_subset.py', pilot)
+        self.assertIn('ReadDependencyNames.lean', pilot)
+        self.assertIn('ReadModuleFacts.lean', pilot)
+        self.assertIn('PairOKOfInterlace', pilot)
+        self.assertIn('GeneralBFactSecondVersion.Imports', pilot)
+        self.assertIn('dependency-names.jsonl.gz', pilot)
+        self.assertIn('normalize_leandepviz', pilot)
+        self.assertIn('retention-days: 30', pilot)
+        self.assertNotIn('lake build', pilot)
+        self.assertNotIn('lean_project_import_closure.lean', pilot)
