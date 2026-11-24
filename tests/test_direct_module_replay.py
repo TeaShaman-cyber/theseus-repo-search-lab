@@ -21,6 +21,7 @@ class ClosedModuleReplayTests(unittest.TestCase):
         result = replay_closed_modules([left, root, right, base], ['Root'])
         self.assertEqual(result.module_order, ['Base', 'Right', 'Left', 'Root'])
         self.assertEqual(result.occurrences['shared'], ['Right', 'Left'])
+        self.assertIsNone(result.selected_modules['shared'])
         self.assertEqual(result.graph['nodes'], [
             {'fullName': 'Base.P', 'name': 'P', 'kind': 'axiom', 'module': 'Base'},
             {'fullName': 'Base.p', 'name': 'p', 'kind': 'axiom', 'module': 'Base'},
@@ -101,3 +102,40 @@ class ClosedModuleReplayTests(unittest.TestCase):
         root[0]['imports'][0]['import_all'] = True
         with self.assertRaisesRegex(ValueError, 'unsupported import metadata'):
             replay_closed_modules([module('Base'), root], ['Root'])
+
+
+    def test_verified_theorem_selection_separates_attribution_from_proof(self):
+        base = module('Base', facts=[('P', 'axiom', [], []), ('p', 'axiom', ['P'], []), ('q', 'axiom', ['P'], [])])
+        left = module('Left', ['Base'], [('shared', 'theorem', ['P'], ['p'])])
+        right = module('Right', ['Base'], [('shared', 'theorem', ['P'], ['q'])])
+        calls = []
+        def verify(previous, incoming):
+            calls.append((previous['module'], incoming['module']))
+        result = replay_closed_modules([base, left, right], ['Left', 'Right'], verify_theorem=verify)
+        self.assertEqual(calls, [('Left', 'Right')])
+        self.assertEqual(result.occurrences['shared'], ['Left', 'Right'])
+        self.assertEqual(result.selected_modules['shared'], 'Right')
+        self.assertIn({'fullName': 'Left.shared', 'name': 'shared', 'kind': 'thm', 'module': 'Left'}, result.graph['nodes'])
+        self.assertIn({'source': 'Base.q', 'target': 'Left.shared', 'kind': 'value'}, result.graph['edges'])
+        self.assertNotIn({'source': 'Base.p', 'target': 'Left.shared', 'kind': 'value'}, result.graph['edges'])
+
+    def test_split_requires_explicit_private_mode_and_ir_inventory(self):
+        item = module('Root')
+        item[0]['is_module'] = True
+        with self.assertRaisesRegex(ValueError, 'IR inventory'):
+            replay_closed_modules([item], ['Root'], private_split=True)
+        item[0]['ir_extra_const_names'] = []
+        result = replay_closed_modules([item], ['Root'], private_split=True)
+        self.assertEqual(result.module_order, ['Root'])
+        item[0]['ir_extra_const_names'] = ['extra']
+        with self.assertRaisesRegex(ValueError, 'IR extra constant'):
+            replay_closed_modules([item], ['Root'], private_split=True)
+
+    def test_split_duplicate_requires_structural_verification_even_if_signatures_match(self):
+        left = module('Left', facts=[('shared', 'theorem', [], [])])
+        right = module('Right', facts=[('shared', 'theorem', [], [])])
+        for meta, _ in (left, right):
+            meta['is_module'] = True
+            meta['ir_extra_const_names'] = []
+        with self.assertRaisesRegex(ValueError, 'requires theorem verification'):
+            replay_closed_modules([left, right], ['Left', 'Right'], private_split=True)
