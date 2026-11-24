@@ -185,18 +185,41 @@ def _plugin_identity_map(facts: Iterable[SemanticFact]) -> dict[str, str]:
     return identities
 
 
-def _plugin_edges(facts: Iterable[SemanticFact]) -> set[tuple[str, str, str]]:
+def _plugin_dependency_id(
+    fact: SemanticFact,
+    dependency: str,
+    identities: dict[str, str],
+) -> str:
+    if dependency in identities:
+        return identities[dependency]
+    if "." in dependency:
+        return dependency
+    module = fact["module"]
+    if module and module != "_unknown_":
+        return f"{module}.{dependency}"
+    return dependency
+
+
+def _plugin_edges(
+    facts: Iterable[SemanticFact],
+    *,
+    control_names: set[str] | None = None,
+) -> set[tuple[str, str, str]]:
     rows = list(facts)
     identities = _plugin_identity_map(rows)
     edges: set[tuple[str, str, str]] = set()
     for row in rows:
         dependent = identities[row["full_name"]]
+        if control_names is not None and dependent not in control_names:
+            continue
         for dependency in row["type_dependencies"]:
-            if dependency in identities:
-                edges.add((dependent, identities[dependency], "type_dependency"))
+            target = _plugin_dependency_id(row, dependency, identities)
+            if control_names is None or target in control_names:
+                edges.add((dependent, target, "type_dependency"))
         for dependency in row["value_dependencies"]:
-            if dependency in identities:
-                edges.add((dependent, identities[dependency], "value_dependency"))
+            target = _plugin_dependency_id(row, dependency, identities)
+            if control_names is None or target in control_names:
+                edges.add((dependent, target, "value_dependency"))
     return edges
 
 
@@ -241,6 +264,25 @@ def _leandepviz_resolver(raw_nodes: list[object]):
         raise ValueError(f"ambiguous LeanDepViz edge endpoint: {endpoint}")
 
     return resolve
+
+
+def _leandepviz_node_names(raw: dict[str, object]) -> set[str]:
+    raw_nodes = raw.get("nodes")
+    if not isinstance(raw_nodes, list):
+        raise TypeError("LeanDepViz raw graph must contain a nodes array")
+    names: set[str] = set()
+    for index, item in enumerate(raw_nodes):
+        if not isinstance(item, dict):
+            raise TypeError(f"LeanDepViz node[{index}] must be an object")
+        full = item.get("fullName")
+        if not isinstance(full, str) or not full:
+            raise TypeError(
+                f"LeanDepViz node[{index}].fullName must be a non-empty string"
+            )
+        if full in names:
+            raise ValueError(f"duplicate LeanDepViz fullName: {full}")
+        names.add(full)
+    return names
 
 
 def _leandepviz_edges(
@@ -288,17 +330,34 @@ def compare_plugin_facts_to_leandepviz(
     if not root_modules:
         raise ValueError("root modules must be non-empty")
     identities = _plugin_identity_map(facts)
-    plugin_edges = _plugin_edges(facts)
-    local_names = set(identities.values())
-    leandepviz_edges = _leandepviz_edges(raw, local_names)
+    plugin_names = set(identities.values())
+    leandepviz_names = _leandepviz_node_names(raw)
+    common_nodes = plugin_names & leandepviz_names
+    plugin_only_nodes = plugin_names - leandepviz_names
+    leandepviz_only_nodes = leandepviz_names - plugin_names
+
+    plugin_edges = _plugin_edges(facts, control_names=leandepviz_names)
+    leandepviz_edges = _leandepviz_edges(raw, leandepviz_names)
     common = plugin_edges & leandepviz_edges
     plugin_only = plugin_edges - leandepviz_edges
     leandepviz_only = leandepviz_edges - plugin_edges
+    exact = not (
+        plugin_only_nodes
+        or leandepviz_only_nodes
+        or plugin_only
+        or leandepviz_only
+    )
     return {
-        "schema": "theseus.riemann-semantic-plugin-comparison.v1",
+        "schema": "theseus.riemann-semantic-plugin-comparison.v2",
         "source_commit": source_commit,
         "root_modules": list(root_modules),
+        "exact": exact,
         "plugin_facts": len(facts),
+        "plugin_nodes": len(plugin_names),
+        "leandepviz_nodes": len(leandepviz_names),
+        "common_nodes": len(common_nodes),
+        "plugin_only_nodes": sorted(plugin_only_nodes),
+        "leandepviz_only_nodes": sorted(leandepviz_only_nodes),
         "plugin_internal_edges": len(plugin_edges),
         "leandepviz_internal_edges": len(leandepviz_edges),
         "common_edges": len(common),
@@ -379,6 +438,14 @@ def _cmd_compare(args: argparse.Namespace) -> int:
         json.dumps(result, sort_keys=True, indent=2) + "\n", encoding="utf-8"
     )
     print(json.dumps(result, sort_keys=True))
+    if args.require_exact and result["exact"] is not True:
+        raise ValueError(
+            "semantic comparison is not exact: "
+            f"plugin_only_nodes={len(cast(list[object], result['plugin_only_nodes']))} "
+            f"leandepviz_only_nodes={len(cast(list[object], result['leandepviz_only_nodes']))} "
+            f"plugin_only_edges={len(cast(list[object], result['plugin_only_edges']))} "
+            f"leandepviz_only_edges={len(cast(list[object], result['leandepviz_only_edges']))}"
+        )
     return 0
 
 
@@ -412,6 +479,7 @@ def _parser() -> argparse.ArgumentParser:
     compare.add_argument("--source-commit", required=True)
     compare.add_argument("--root-module", action="append", required=True)
     compare.add_argument("--out", type=Path, required=True)
+    compare.add_argument("--require-exact", action="store_true")
     compare.set_defaults(func=_cmd_compare)
     return parser
 

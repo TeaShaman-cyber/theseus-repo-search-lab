@@ -145,6 +145,75 @@ class RiemannSemanticPluginPilotTests(unittest.TestCase):
         self.assertEqual(result["common_edges"], 1)
         self.assertEqual(result["plugin_only_edges"], [])
         self.assertEqual(result["leandepviz_only_edges"], [])
+        self.assertEqual(result["plugin_nodes"], 2)
+        self.assertEqual(result["leandepviz_nodes"], 2)
+        self.assertEqual(result["common_nodes"], 2)
+        self.assertEqual(result["plugin_only_nodes"], [])
+        self.assertEqual(result["leandepviz_only_nodes"], [])
+        self.assertTrue(result["exact"])
+
+    def test_compare_reports_missing_control_nodes_and_edges_instead_of_masking_them(self):
+        facts = [
+            {
+                "schema": "theseus.lean-semantic-fact.v1",
+                "module": "Pkg",
+                "full_name": "Pkg.a",
+                "kind": "definition",
+                "type_dependencies": [],
+                "value_dependencies": [],
+            },
+            {
+                "schema": "theseus.lean-semantic-fact.v1",
+                "module": "Pkg",
+                "full_name": "Pkg.b",
+                "kind": "theorem",
+                "type_dependencies": ["Pkg.a", "Pkg.generated"],
+                "value_dependencies": [],
+            },
+        ]
+        raw = {
+            "nodes": [
+                {"module": "Pkg", "fullName": "Pkg.a", "name": "a", "kind": "def"},
+                {"module": "Pkg", "fullName": "Pkg.b", "name": "b", "kind": "thm"},
+                {
+                    "module": "Pkg",
+                    "fullName": "Pkg.generated",
+                    "name": "generated",
+                    "kind": "thm",
+                },
+            ],
+            "edges": [
+                {"kind": "type", "source": "Pkg.a", "target": "Pkg.b"},
+                {"kind": "type", "source": "Pkg.generated", "target": "Pkg.b"},
+                {"kind": "value", "source": "Pkg.a", "target": "Pkg.generated"},
+            ],
+        }
+
+        result = compare_plugin_facts_to_leandepviz(
+            facts, raw, source_commit="b" * 40, root_modules=("Pkg",)
+        )
+
+        self.assertEqual(result["schema"], "theseus.riemann-semantic-plugin-comparison.v2")
+        self.assertEqual(result["plugin_nodes"], 2)
+        self.assertEqual(result["leandepviz_nodes"], 3)
+        self.assertEqual(result["common_nodes"], 2)
+        self.assertEqual(result["plugin_only_nodes"], [])
+        self.assertEqual(result["leandepviz_only_nodes"], ["Pkg.generated"])
+        self.assertFalse(result["exact"])
+        self.assertEqual(result["plugin_internal_edges"], 2)
+        self.assertEqual(result["leandepviz_internal_edges"], 3)
+        self.assertEqual(result["common_edges"], 2)
+        self.assertEqual(result["plugin_only_edges"], [])
+        self.assertEqual(
+            result["leandepviz_only_edges"],
+            [
+                {
+                    "dependent": "Pkg.generated",
+                    "dependency": "Pkg.a",
+                    "relation": "value_dependency",
+                }
+            ],
+        )
 
 
 class RiemannSemanticPluginPilotWorkflowTests(unittest.TestCase):
@@ -182,6 +251,7 @@ class RiemannSemanticPluginPilotWorkflowTests(unittest.TestCase):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("LeanDepVizMain.lean", text)
         self.assertIn("riemann_semantic_plugin_pilot.py compare", text)
+        self.assertIn("--require-exact", text)
         self.assertIn("comparison.json", text)
         self.assertIn("pilot-metrics.json", text)
 
