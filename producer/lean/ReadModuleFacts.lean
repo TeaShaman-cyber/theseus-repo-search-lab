@@ -93,6 +93,14 @@ def main (args : List String) : IO Unit := do
       ("is_module", Json.bool data.isModule),
       ("imports", Json.arr imports),
       ("constant_names", Json.arr (data.constNames.map (fun n => Json.str n.toString))),
+      ("internal_constant_names", Json.arr (data.constNames.filter (·.isInternalDetail) |>.map (fun n => Json.str n.toString))),
+      ("quoted_short_names", Json.mkObj (data.constNames.toList.filterMap fun n =>
+        let raw := n.toString
+        if !n.isInternalDetail && (raw.contains '«' || raw.contains '»') then
+          some (raw, Json.str (match n.components.reverse with
+            | [] => raw
+            | hd :: _ => hd.toString))
+        else none)),
       ("olean_extra_const_names", Json.arr (data.extraConstNames.map (fun n => Json.str n.toString))),
       ("ir_extra_const_names", irNames),
       ("fact_count", toJson factCount)]) ++ "\n")
