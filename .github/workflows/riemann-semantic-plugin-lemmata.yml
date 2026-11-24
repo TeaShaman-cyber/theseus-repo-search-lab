@@ -228,7 +228,8 @@ jobs:
             --leandepviz _out/leandepviz-raw.json \
             --source-commit "$SOURCE_COMMIT" \
             --root-module Lemmata \
-            --out _out/comparison.json
+            --out _out/comparison.json \
+            --require-exact
 
       - name: Write Lemmata pilot metrics
         shell: bash
@@ -273,6 +274,12 @@ jobs:
               "sidecar_merged_sha256": sidecars["merged_sha256"],
               "leandepviz_nodes": len(raw.get("nodes", [])),
               "leandepviz_edges": len(raw.get("edges", [])),
+              "comparison_exact": comparison["exact"],
+              "plugin_nodes": comparison["plugin_nodes"],
+              "leandepviz_nodes_compared": comparison["leandepviz_nodes"],
+              "common_nodes": comparison["common_nodes"],
+              "plugin_only_nodes": len(comparison["plugin_only_nodes"]),
+              "leandepviz_only_nodes": len(comparison["leandepviz_only_nodes"]),
               "plugin_internal_edges": comparison["plugin_internal_edges"],
               "leandepviz_internal_edges": comparison["leandepviz_internal_edges"],
               "common_edges": comparison["common_edges"],

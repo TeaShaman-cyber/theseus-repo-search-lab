@@ -13,6 +13,13 @@ class RiemannSemanticPluginLemmataTests(unittest.TestCase):
         self.assertIn("return true", text)
         self.assertIn("unless wroteSidecar do", text)
 
+    def test_plugin_tracks_environment_constant_delta_not_only_primary_syntax_name(self):
+        text = PLUGIN.read_text(encoding="utf-8")
+        self.assertIn("registerStatefulLinter", text)
+        self.assertIn("constAddedGens.foldlNewEntries", text)
+        self.assertNotIn("declarationName?", text)
+        self.assertNotIn("initialize addLinter", text)
+
     def test_workflow_uses_existing_lemmata_descriptor_and_lazy_cache_mapping(self):
         text = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("producer/pilots/riemann-hypothesis-lemmata.json", text)
@@ -33,6 +40,7 @@ class RiemannSemanticPluginLemmataTests(unittest.TestCase):
         self.assertIn("LeanDepVizMain.lean", text)
         self.assertIn("--roots \"$ROOT_MODULES_CSV\"", text)
         self.assertIn("riemann_semantic_plugin_pilot.py compare", text)
+        self.assertIn("--require-exact", text)
         self.assertIn("comparison.json", text)
         self.assertIn("pilot-metrics.json", text)
         self.assertIn("_out/plugin-fact-sidecars/*.jsonl", text)

@@ -3,11 +3,6 @@ import Lean.Util.FoldConsts
 
 open Lean Elab Command Linter
 
-private def declarationName? (stx : Syntax) : Option Name := do
-  guard <| stx.isOfKind ``Lean.Parser.Command.declaration
-  let declId ← stx.find? (·.isOfKind ``Lean.Parser.Command.declId)
-  return declId[0].getId
-
 private def declarationKind : ConstantInfo → String
   | .thmInfo _ => "theorem"
   | .defnInfo _ => "definition"
@@ -31,35 +26,39 @@ private def writeModuleSidecar (moduleName : Name) (fact : Json) : IO Bool := do
   h.putStrLn (Json.compress fact)
   return true
 
-initialize addLinter {
-  name := `linter.theseusRepoSemanticPilot
-  run := fun stx => do
-    let some parsedName := declarationName? stx | return
-    let env ← getEnv
-    let currNamespace ← getCurrNamespace
-    let namespaced := currNamespace.append parsedName
-    let fullName :=
-      if (env.find? namespaced).isSome then
-        namespaced
-      else
-        parsedName
-    let some info := env.find? fullName | return
+private def emitSemanticFact
+    (mainModule fullName : Name)
+    (info : ConstantInfo) : CommandElabM Unit := do
+  let typeDeps := info.type.getUsedConstants
+  let valueDeps := match info.value? (allowOpaque := true) with
+    | some value => value.getUsedConstants
+    | none => #[]
+  let fact := Json.mkObj [
+    ("schema", Json.str "theseus.lean-semantic-fact.v1"),
+    ("module", Json.str mainModule.toString),
+    ("full_name", Json.str fullName.toString),
+    ("kind", Json.str (declarationKind info)),
+    ("type_dependencies", namesJson typeDeps),
+    ("value_dependencies", namesJson valueDeps)
+  ]
+  let wroteSidecar ← writeModuleSidecar mainModule fact
+  unless wroteSidecar do
+    IO.println s!"THESEUS_FACT\t{Json.compress fact}"
 
-    let typeDeps := info.type.getUsedConstants
-    let valueDeps := match info.value? (allowOpaque := true) with
-      | some value => value.getUsedConstants
-      | none => #[]
-
-    let mainModule ← getMainModule
-    let fact := Json.mkObj [
-      ("schema", Json.str "theseus.lean-semantic-fact.v1"),
-      ("module", Json.str mainModule.toString),
-      ("full_name", Json.str fullName.toString),
-      ("kind", Json.str (declarationKind info)),
-      ("type_dependencies", namesJson typeDeps),
-      ("value_dependencies", namesJson valueDeps)
-    ]
-    let wroteSidecar ← writeModuleSidecar mainModule fact
-    unless wroteSidecar do
-      IO.println s!"THESEUS_FACT\t{Json.compress fact}"
-}
+initialize
+  let _ ← registerStatefulLinter (τ := Unit) ({} : PHashMap Name Nat)
+    (post := fun _ previous _ _ _ => do
+      let env ← getEnv
+      let newNames :=
+        env.constAddedGens.foldlNewEntries
+          (fun names name _ => names.push name)
+          previous
+          #[]
+        |>.qsort Name.quickLt
+      let mainModule ← getMainModule
+      for fullName in newNames do
+        let some info := env.find? fullName
+          | throwError "registered constant missing from environment: {fullName}"
+        emitSemanticFact mainModule fullName info
+      return env.constAddedGens)
+  pure ()
