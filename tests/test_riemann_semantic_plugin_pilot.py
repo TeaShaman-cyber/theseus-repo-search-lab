@@ -1,9 +1,12 @@
+import hashlib
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
 from scripts.riemann_semantic_plugin_pilot import (
     compare_plugin_facts_to_leandepviz,
+    load_fact_sidecar_dir,
     make_overlay,
     parse_fact_log,
 )
@@ -195,9 +198,6 @@ class RiemannSemanticSidecarTransportTests(unittest.TestCase):
         }
 
     def test_sidecar_loader_merges_modules_deterministically(self):
-        import tempfile
-        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
-
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "B.Mod.jsonl").write_text(
@@ -220,9 +220,6 @@ class RiemannSemanticSidecarTransportTests(unittest.TestCase):
 
     def test_sidecar_loader_canonicalizes_fragment_before_hashing(self):
         import hashlib
-        import tempfile
-        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
-
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             path = root / "A.jsonl"
@@ -241,9 +238,6 @@ class RiemannSemanticSidecarTransportTests(unittest.TestCase):
         self.assertEqual(fragments[0]["sha256"], hashlib.sha256(canonical).hexdigest())
 
     def test_sidecar_loader_rejects_filename_module_mismatch(self):
-        import tempfile
-        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
-
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "Wrong.jsonl").write_text(
@@ -254,9 +248,6 @@ class RiemannSemanticSidecarTransportTests(unittest.TestCase):
                 load_fact_sidecar_dir(root)
 
     def test_sidecar_loader_rejects_duplicate_declaration_across_fragments(self):
-        import tempfile
-        from scripts.riemann_semantic_plugin_pilot import load_fact_sidecar_dir
-
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             fact = self._fact("A", "shared")
