@@ -1,0 +1,58 @@
+#!/bin/sh
+# Bounded producer regression; requires the exact RH Lean toolchain, not a project build.
+set -eu
+ROOT=$(git rev-parse --show-toplevel)
+LEAN_BIN_DIR=${LEAN_BIN_DIR:?set LEAN_BIN_DIR to the pinned Lean 4.36.0 toolchain bin directory}
+LEAN="$LEAN_BIN_DIR/lean"
+LEANC="$LEAN_BIN_DIR/leanc"
+"$LEAN" --version | grep -F 'commit 611c117bfaf7b7ae1cfcf246ce6fba31e8f509e9'
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT HUP INT TERM
+cd "$WORK"
+cp "$ROOT/producer/lean/ReadModuleFacts.lean" .
+"$LEAN" -c ReadModuleFacts.c ReadModuleFacts.lean
+"$LEANC" -O2 -o reader ReadModuleFacts.c
+cat > Base.lean <<'EOF'
+def inc (n : Nat) : Nat := n + 1
+EOF
+cat > Child.lean <<'EOF'
+import Base
+
+theorem child (n : Nat) : inc n = n + 1 := inc.eq_def n
+private theorem hidden : True := trivial
+EOF
+LEAN_PATH="$WORK" "$LEAN" -o Base.olean Base.lean
+LEAN_PATH="$WORK" "$LEAN" -o Child.olean Child.lean
+mkdir isolated
+cp Child.olean isolated/
+(cd isolated; test ! -e Base.olean; test ! -e Base.lean; env -u LEAN_PATH ../reader Child Child.olean > ../child.jsonl)
+cat > Split.lean <<'EOF'
+module
+
+public def splitValue (n : Nat) : Nat := n + 1
+private theorem hidden : True := trivial
+EOF
+"$LEAN" -o Split.olean Split.lean
+mkdir split
+cp Split.olean Split.olean.server Split.olean.private split/
+(cd split; env -u LEAN_PATH ../reader Split Split.olean > ../split.jsonl; mv Split.olean.private withheld; if env -u LEAN_PATH ../reader Split Split.olean > ../incomplete.jsonl 2> ../incomplete.err; then echo 'incomplete module accepted' >&2; exit 1; fi; test ! -s ../incomplete.jsonl)
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+def rows(name):
+    return {r['full_name']: r for r in map(json.loads, Path(name).read_text().splitlines())}
+
+child = rows('child.jsonl')
+assert set(child) == {'child', 'inc.eq_def'}, child.keys()
+assert all(r['module'] == 'Child' and r['schema'] == 'theseus.lean-semantic-fact.v1' for r in child.values())
+assert 'inc' in child['child']['type_dependencies']
+assert 'inc.eq_def' in child['child']['value_dependencies']
+assert 'inc' in child['inc.eq_def']['type_dependencies']
+split = rows('split.jsonl')
+assert set(split) == {'splitValue'}, split.keys()
+assert split['splitValue']['module'] == 'Split'
+assert split['splitValue']['kind'] == 'definition'
+assert 'Nat' in split['splitValue']['type_dependencies']
+print('DIRECT_MODULE_READER_PASS')
+PY
