@@ -27,6 +27,8 @@ class Replay:
     occurrences: dict[str, list[str]]
     graph: RawDepgraph
     selected_modules: dict[str, str | None]
+    name_attribution: dict[str, str]
+    omitted_dependencies: list[tuple[str, str, str, str]]
 
 
 KINDS = {
@@ -64,7 +66,13 @@ def replay_closed_modules(
     *, verify_theorem: Callable[[SemanticFact, SemanticFact], None] | None = None,
     private_split: bool = False,
 ) -> Replay:
-    """Replay complete restricted private closures without hidden/extra names.
+    """Replay complete private closures, with optional explicit name inventory.
+
+    In private mode Lean ignores import visibility annotations, includes all
+    transitive module data and uses the full IR name inventory for split modules.
+    Internal kernel names are classified by the reader, not guessed from missing
+    fact rows. We retain first name attribution and record omitted visible-to-
+    hidden/IR-only dependencies; we do not claim their transitive proof graph.
 
     First visited materialization determines observed attribution in this
     restricted scope. Equal dependency signatures permit a diagnostic graph;
@@ -76,6 +84,8 @@ def replay_closed_modules(
     """
     imports: dict[str, list[str]] = {}
     facts: dict[str, list[SemanticFact]] = {}
+    inventories: dict[str, tuple[list[str], list[str], list[str]]] = {}
+    quoted_names: dict[str, str] = {}
     for meta, values in modules:
         if not isinstance(meta, dict) or meta.get('schema') != 'theseus.lean-module-metadata.v1':
             raise ValueError('invalid module metadata schema')
@@ -89,18 +99,28 @@ def replay_closed_modules(
                 raise ValueError(f'unsupported split module or missing flag: {module}')
             if meta.get('ir_extra_const_names') is None:
                 raise ValueError(f'missing IR inventory: {module}')
-        if meta.get('ir_extra_const_names') is not None and _names(meta['ir_extra_const_names'], 'IR extra constant names'):
-            raise ValueError(f'unsupported IR extra constant names: {module}')
-        if _names(meta.get('olean_extra_const_names'), 'extra constant names'):
-            raise ValueError(f'unsupported extra constant names: {module}')
+        inventory_mode = private_split and 'internal_constant_names' in meta
+        olean_extra = _names(meta.get('olean_extra_const_names'), 'extra constant names')
+        ir_extra = (_names(meta['ir_extra_const_names'], 'IR extra constant names')
+                    if meta.get('ir_extra_const_names') is not None else [])
+        if not inventory_mode:
+            if ir_extra:
+                raise ValueError(f'unsupported IR extra constant names: {module}')
+            if olean_extra:
+                raise ValueError(f'unsupported extra constant names: {module}')
+        # Lean ImportedModule.irData? uses full IR for split modules in
+        # private mode, and main module data for legacy modules.
+        extra = ir_extra if meta['is_module'] else olean_extra
         raw_imports = meta.get('imports')
         if not isinstance(raw_imports, list):
             raise TypeError(f'invalid imports: {module}')
         direct: list[str] = []
         for item in raw_imports:
             if (not isinstance(item, dict) or not isinstance(item.get('module'), str)
-                    or not item['module'] or item.get('is_exported') is not True
-                    or item.get('import_all') is not False or item.get('is_meta') is not False):
+                    or not item['module']
+                    or any(type(item.get(k)) is not bool for k in ('is_exported', 'import_all', 'is_meta'))
+                    or (not inventory_mode and (item['is_exported'] is not True
+                        or item['import_all'] is not False or item['is_meta'] is not False))):
                 raise ValueError(f'unsupported import metadata: {module}')
             direct.append(item['module'])
         rows = [_canonical_fact(v) for v in values]
@@ -112,13 +132,24 @@ def replay_closed_modules(
         if len(set(names)) != len(names):
             raise ValueError(f'duplicate fact: {module}')
         declared = _names(meta.get('constant_names'), 'constant names')
-        if len(set(declared)) != len(declared) or set(declared) != set(names):
+        internal = _names(meta['internal_constant_names'], 'internal constant names') if inventory_mode else []
+        if (len(set(declared)) != len(declared) or len(set(internal)) != len(internal)
+                or set(internal) & set(names) or set(declared) != set(names) | set(internal)):
             raise ValueError(f'unrepresented constants or inconsistent inventory: {module}')
+        expected_quoted = {n for n in names if any(c in n for c in '«»')}
+        quoted = meta.get('quoted_short_names', {}) if inventory_mode else {}
+        if (not isinstance(quoted, dict) or set(quoted) != expected_quoted
+                or any(not isinstance(v, str) or not v for v in quoted.values())):
+            raise ValueError(f'unsupported or incomplete quoted name metadata: {module}')
+        for name, short in quoted.items():
+            if quoted_names.setdefault(name, short) != short:
+                raise ValueError(f'conflicting quoted name metadata: {name}')
         for row in rows:
-            if row['kind'] not in KINDS or any(c in row['full_name'] for c in '«»'):
-                raise ValueError(f'unsupported constant kind or quoted name: {row["full_name"]}')
+            if row['kind'] not in KINDS:
+                raise ValueError(f'unsupported constant kind: {row["full_name"]}')
         imports[module] = direct
         facts[module] = rows
+        inventories[module] = (declared, internal, extra)
 
     if not roots or len(set(roots)) != len(roots):
         raise ValueError('expected nonempty unique roots')
@@ -149,7 +180,15 @@ def replay_closed_modules(
 
     selected: dict[str, SemanticFact] = {}
     occurrences: dict[str, list[str]] = {}
+    attribution: dict[str, str] = {}
+    hidden: set[str] = set()
+    kernel: set[str] = set()
     for module in order:
+        declared, internal, extra = inventories[module]
+        hidden.update(internal)
+        kernel.update(declared)
+        for name in (*declared, *extra):
+            attribution.setdefault(name, module)
         for row in facts[module]:
             name = row['full_name']
             occurrences.setdefault(name, []).append(module)
@@ -169,23 +208,32 @@ def replay_closed_modules(
                 row['kind'], row['type_dependencies'], row['value_dependencies'],
             ):
                 raise ValueError(f'conflicting observed dependency signatures: {name}')
-    identities = {name: _plugin_canonical_id(_canonical_fact(dict(row, module=occurrences[name][0]))) for name, row in selected.items()}
+    if hidden & selected.keys():
+        raise ValueError('conflicting internal classification')
+    identities = {name: _plugin_canonical_id(_canonical_fact(dict(row, module=attribution[name]))) for name, row in selected.items()}
     if len(set(identities.values())) != len(identities):
         raise ValueError('colliding graph identities')
     nodes: list[dict[str, object]] = []
     edges: set[tuple[str, str, str]] = set()
+    omitted: set[tuple[str, str, str, str]] = set()
     for name in sorted(selected, key=identities.__getitem__):
         row = selected[name]
         target = identities[name]
-        nodes.append({'fullName': target, 'name': name.rsplit('.', 1)[-1],
-                      'module': occurrences[name][0], 'kind': KINDS[row['kind']]})
+        nodes.append({'fullName': target, 'name': quoted_names.get(name, name.rsplit('.', 1)[-1]),
+                      'module': attribution[name], 'kind': KINDS[row['kind']]})
         for field, kind in (('type_dependencies', 'type'), ('value_dependencies', 'value')):
             dependencies = row['type_dependencies'] if field == 'type_dependencies' else row['value_dependencies']
             for dep in dependencies:
                 if dep not in identities:
+                    if dep in hidden:
+                        omitted.add((name, dep, kind, 'internal'))
+                        continue
+                    if dep in attribution and dep not in kernel:
+                        omitted.add((name, dep, kind, 'ir_only'))
+                        continue
                     raise ValueError(f'unknown dependency: {dep}')
                 edges.add((identities[dep], target, kind))
     return Replay(order, occurrences, {'nodes': nodes, 'edges': [
         {'source': a, 'target': b, 'kind': k} for a, b, k in sorted(edges)
     ]}, {name: row['module'] if verify_theorem is not None or len(occurrences[name]) == 1 else None
-         for name, row in selected.items()})
+         for name, row in selected.items()}, attribution, sorted(omitted))

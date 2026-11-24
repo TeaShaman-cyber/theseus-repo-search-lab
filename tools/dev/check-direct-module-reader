@@ -91,7 +91,8 @@ for module in ('child', 'sibling', 'root', 'reverse', 'split'):
     assert meta['module'] == module.capitalize()
     assert meta['fact_count'] == len(rows(module + '.jsonl'))
     assert len(meta['constant_names']) >= meta['fact_count']
-    assert set(rows(module + '.jsonl')) <= set(meta['constant_names'])
+    assert set(rows(module + '.jsonl')).isdisjoint(meta['internal_constant_names'])
+    assert set(rows(module + '.jsonl')) | set(meta['internal_constant_names']) == set(meta['constant_names'])
     assert all(set(i) == {'module', 'is_exported', 'import_all', 'is_meta'} for i in meta['imports'])
     assert all(isinstance(i[k], bool) for i in meta['imports'] for k in ('is_exported', 'import_all', 'is_meta'))
     assert isinstance(meta['olean_extra_const_names'], list)

@@ -92,6 +92,8 @@ mkdir split
 for module in Base Left Right Root Reverse; do
     { printf 'module\n'; sed -e 's/^axiom /public axiom /' -e 's/^theorem /public theorem /' -e 's/^import /public import /' "$module.lean"; } > "split/$module.lean"
 done
+# The private-root oracle includes non-exported imports too.
+sed -i 's/^public import Left$/import Left/' split/Root.lean
 cd split
 export LEAN_PATH="$PWD"
 for module in Base Left Right Root Reverse; do
@@ -146,4 +148,52 @@ for root, owner, selected in [('Root', 'Left', 'Right'), ('Reverse', 'Right', 'L
     else:
         raise AssertionError('unbound resolution accepted')
 print('SPLIT_CLOSURE_EXACT_REPLAY_PASS')
+PY
+
+# Real, complete pinned standard-library closure. No Mathlib download or build.
+mkdir "$WORK/stdlib"
+cd "$WORK/stdlib"
+PYTHONPATH="$ROOT:$ROOT/src" python3 - "$LEAN" "$ROOT" "$EXTRACTOR_MAIN" <<'PY'
+import collections
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+from scripts.direct_module_replay import replay_closed_modules, theorem_verifier
+from theseus_repo_search.normalize import normalize_leandepviz
+
+lean, repo, extractor = sys.argv[1:]
+lib = Path(lean).resolve().parent.parent / 'lib/lean'
+command = [lean, '--run', repo+'/producer/lean/ReadModuleFacts.lean']
+env = os.environ.copy()
+env.pop('LEAN_PATH', None)
+root = 'Init.Data.Nat.Basic'
+todo = [root]
+inputs = {}
+files = {}
+while todo:
+    module = todo.pop()
+    if module in inputs:
+        continue
+    assert len(inputs) < 80, 'unexpectedly large standard library closure'
+    path = lib / Path(*module.split('.')).with_suffix('.olean')
+    files[module] = path
+    metadata = Path(module+'.json')
+    facts = subprocess.check_output([*command, module, str(path), '--metadata', str(metadata)], env=env, text=True, timeout=30)
+    meta = json.loads(metadata.read_text())
+    inputs[module] = (meta, [json.loads(line) for line in facts.splitlines()])
+    todo.extend(i['module'] for i in meta['imports'])
+result = replay_closed_modules(inputs.values(), [root], private_split=True,
+                               verify_theorem=theorem_verifier(command, files))
+subprocess.run([lean, '--run', extractor, '--roots', root, '--include-prefix', 'Init',
+                '--json-out', 'oracle.json'], env=env, check=True, timeout=90)
+kwargs = dict(source_commit='lean436', root_modules=tuple(inputs), producer_ref='comparison')
+actual = normalize_leandepviz(result.graph, **kwargs)
+assert actual == normalize_leandepviz(json.loads(Path('oracle.json').read_text()), **kwargs)
+assert (len(inputs), len(actual[0]), len(actual[1])) == (13, 4184, 35534)
+assert collections.Counter(x[3] for x in result.omitted_dependencies) == {'internal': 587}
+assert any(meta['quoted_short_names'] for meta, _ in inputs.values())
+assert any(meta['ir_extra_const_names'] for meta, _ in inputs.values())
+print('REAL_NAT_CLOSURE_CONTROL_PASS')
 PY

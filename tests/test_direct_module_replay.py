@@ -139,3 +139,50 @@ class ClosedModuleReplayTests(unittest.TestCase):
             meta['ir_extra_const_names'] = []
         with self.assertRaisesRegex(ValueError, 'requires theorem verification'):
             replay_closed_modules([left, right], ['Left', 'Right'], private_split=True)
+
+    def test_private_inventory_tracks_filtered_dependencies_and_ir_attribution(self):
+        base = module('Base', facts=[('P', 'axiom', [], [])])
+        base[0].update(is_module=True, internal_constant_names=['_hidden'],
+                       constant_names=['P', '_hidden'], ir_extra_const_names=['later', 'irOnly'])
+        root = module('Root', ['Base'], [('later', 'theorem', ['P'], ['_hidden', 'irOnly'])])
+        root[0].update(is_module=True, internal_constant_names=[], ir_extra_const_names=[])
+        root[0]['imports'][0].update(is_exported=False, is_meta=True, import_all=True)
+        result = replay_closed_modules([root, base], ['Root'], private_split=True)
+        self.assertEqual(result.name_attribution, {'P': 'Base', '_hidden': 'Base', 'later': 'Base', 'irOnly': 'Base'})
+        self.assertEqual(result.occurrences['later'], ['Root'])
+        self.assertEqual(result.selected_modules['later'], 'Root')
+        self.assertIn({'fullName': 'Base.later', 'name': 'later', 'kind': 'thm', 'module': 'Base'}, result.graph['nodes'])
+        self.assertEqual(result.omitted_dependencies, [('later', '_hidden', 'value', 'internal'), ('later', 'irOnly', 'value', 'ir_only')])
+        self.assertEqual(result.graph['edges'], [{'source': 'Base.P', 'target': 'Base.later', 'kind': 'type'}])
+
+    def test_inventory_cannot_hide_unclassified_missing_fact(self):
+        item = module('Root')
+        item[0].update(is_module=True, internal_constant_names=[], constant_names=['lost'], ir_extra_const_names=[])
+        with self.assertRaisesRegex(ValueError, 'unrepresented constants'):
+            replay_closed_modules([item], ['Root'], private_split=True)
+
+    def test_internal_and_visible_classification_must_not_conflict(self):
+        base = module('Base')
+        base[0].update(is_module=True, internal_constant_names=['x'], constant_names=['x'], ir_extra_const_names=[])
+        root = module('Root', ['Base'], [('x', 'axiom', [], [])])
+        root[0].update(is_module=True, internal_constant_names=[], ir_extra_const_names=[])
+        with self.assertRaisesRegex(ValueError, 'conflicting internal classification'):
+            replay_closed_modules([root, base], ['Root'], private_split=True)
+
+    def test_legacy_attribution_uses_olean_extra_not_ir(self):
+        item = module('Root', facts=[('p', 'theorem', [], ['legacyExtra'])])
+        item[0].update(internal_constant_names=[], olean_extra_const_names=['legacyExtra'], ir_extra_const_names=['notUsed'])
+        result = replay_closed_modules([item], ['Root'], private_split=True)
+        self.assertEqual(result.name_attribution, {'p': 'Root', 'legacyExtra': 'Root'})
+        self.assertEqual(result.omitted_dependencies, [('p', 'legacyExtra', 'value', 'ir_only')])
+
+    def test_quoted_name_uses_lean_short_name_not_dot_splitting(self):
+        item = module('Root', facts=[('N.«a.b»', 'axiom', [], [])])
+        with self.assertRaisesRegex(ValueError, 'quoted name'):
+            replay_closed_modules([item], ['Root'])
+        item[0].update(internal_constant_names=[], quoted_short_names={'N.«a.b»': '«a.b»'})
+        result = replay_closed_modules([item], ['Root'], private_split=True)
+        self.assertEqual(result.graph['nodes'], [{'fullName': 'N.«a.b»', 'name': '«a.b»', 'kind': 'axiom', 'module': 'Root'}])
+        item[0]['quoted_short_names'] = {'other': 'wrong'}
+        with self.assertRaisesRegex(ValueError, 'quoted name'):
+            replay_closed_modules([item], ['Root'], private_split=True)
