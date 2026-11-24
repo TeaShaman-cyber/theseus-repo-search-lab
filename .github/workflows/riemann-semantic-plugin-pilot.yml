@@ -139,18 +139,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          fact_dir="$GITHUB_WORKSPACE/_out/plugin-fact-sidecars"
+          rm -rf "$fact_dir"
+          mkdir -p "$fact_dir"
           started="$(date +%s)"
-          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
-            lake --file "$OVERLAY_PATH" build \
-              "+$PILOT_MODULE_A" \
-              "+$PILOT_MODULE_B" \
-            2>&1 | tee _out/plugin-build.log
+          THESEUS_REPO_FACT_DIR="$fact_dir" \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+              lake --file "$OVERLAY_PATH" build \
+                "+$PILOT_MODULE_A" \
+                "+$PILOT_MODULE_B" \
+              2>&1 | tee _out/plugin-build.log
           finished="$(date +%s)"
           printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
 
-          python3 scripts/riemann_semantic_plugin_pilot.py facts \
-            --log _out/plugin-build.log \
-            --out _out/plugin-facts.jsonl
+          python3 scripts/riemann_semantic_plugin_pilot.py sidecars \
+            --dir "$fact_dir" \
+            --out _out/plugin-facts.jsonl \
+            --metrics-out _out/sidecar-metrics.json
 
           python3 - <<'PY'
           import json
@@ -223,6 +228,7 @@ jobs:
           ]
           comparison = json.loads(Path("_out/comparison.json").read_text(encoding="utf-8"))
           overlay = json.loads(Path("_out/overlay-metrics.json").read_text(encoding="utf-8"))
+          sidecars = json.loads(Path("_out/sidecar-metrics.json").read_text(encoding="utf-8"))
           raw = json.loads(Path("_out/leandepviz-raw.json").read_text(encoding="utf-8"))
           metrics = {
               "schema": "theseus.riemann-semantic-plugin-pilot.v1",
@@ -235,6 +241,8 @@ jobs:
               "plugin_seconds": int(os.environ["PLUGIN_SECONDS"]),
               "leandepviz_seconds": int(os.environ["LEANDEPVIZ_SECONDS"]),
               "plugin_facts": len(facts),
+              "sidecar_fragments": len(sidecars["fragments"]),
+              "sidecar_merged_sha256": sidecars["merged_sha256"],
               "plugin_internal_edges": comparison["plugin_internal_edges"],
               "leandepviz_nodes": len(raw.get("nodes", [])),
               "leandepviz_edges": len(raw.get("edges", [])),
@@ -258,6 +266,8 @@ jobs:
             _out/authority.sha256
             _out/overlay-metrics.json
             _out/plugin-build.log
+            _out/plugin-fact-sidecars/*.jsonl
+            _out/sidecar-metrics.json
             _out/plugin-facts.jsonl
             _out/leandepviz-raw.json
             _out/comparison.json
