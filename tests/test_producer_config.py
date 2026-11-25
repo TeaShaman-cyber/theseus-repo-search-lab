@@ -88,6 +88,18 @@ class StrictConfigTests(unittest.TestCase):
 
 
 class ConfigFileLoadTests(unittest.TestCase):
+    def test_invalid_schema_types_fail_closed(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "source.json"
+            for schema in ([], {}, None, True, 1):
+                with self.subTest(schema=schema):
+                    payload = StrictConfigTests.source_payload()
+                    payload["schema"] = schema
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    with self.assertRaises(RepoSearchError) as caught:
+                        load_lean_git_source(path)
+                    self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
+
     def test_config_loaders_reject_duplicate_decoded_keys(self):
         cases = (
             (load_lean_git_source, StrictConfigTests.source_payload(), "source_id", r"source_\u0069d"),
