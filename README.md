@@ -190,6 +190,37 @@ source text at `--token-budget` (1–4000 estimated tokens). An exhausted graph
 budget returns `DEGRADED`, not a complete graph or a definitive no-path result.
 Results bind the accepted source and artifact; no cross-corpus edge inference.
 
+## Compiled-reference preview (not an accepted corpus)
+
+For a verified `olean-export deps` pilot, `scripts/build_olean_preview.py`
+consumes the original ZIP with an independently obtained SHA-256, validates its
+member hashes and source/producer pins, reads the exact Git commit's source
+blobs, and builds the ordinary Repo Search artifact and SQLite projection.
+Run the script with `PYTHONPATH=src` and `--help` for the explicit inputs.
+Use ordinary `search`, `deps`, `rdeps`, `path` and `context` on its index;
+no Lean build or service deployment is needed for querying.
+
+`COMPILED_REFERENCE` / `compiled_reference` denotes the upstream combined
+compiled-reference relation, not an elaborated type or proof-value dependency.
+The current one-node-per-name representation excludes all ambiguous name
+occurrences from the graph; it never arbitrarily chooses a module. Raw
+occurrences remain in the original verified pilot ZIP; the separate preview
+receipt records the omissions and coverage. Source chunks remain searchable. Preview source associations are reciprocal
+unique lexical candidates within the module, including competition from
+graph-omitted names; they are not elaborated declaration ranges. Ambiguous
+candidates remain unbound, and exact/context retrieval does not guess a source
+location for an unbound node.
+Unresolved references include references outside the emitted graph and must not
+be interpreted as missing mathematical declarations. The preview producer
+cannot claim authoritative source acceptance. Graph results always have
+`complete_within_scope=false` and CLI status `DEGRADED`, even when a path is
+found. It is not registered in the accepted catalog or published as a release.
+
+Large CLI graph scopes are summarized to 32 displayed entries, with explicit
+truncation, the original count, and SHA-256 of the canonical full module list.
+The exact scope remains in the artifact/projection; the graph's actual
+completeness signal is independent of display truncation.
+
 ## Live research smoke
 
 After significant corpus acceptance, Repository Search can run a bounded versioned research-smoke panel on fresh hosted consumers, including release-backed consumers when the producer fingerprint is unchanged. Smoke scenarios ask for evidence classes and record grounded observations; they do not encode a desired mathematical conclusion.

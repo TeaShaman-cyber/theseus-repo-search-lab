@@ -124,6 +124,7 @@ class ProjectionProvenance:
     source_authority: dict[str, object] | None
     created_from_authoritative_source: bool
     revision_column: str
+    producer_kind: str | None = None
 
     @property
     def is_legacy_git(self) -> bool:
@@ -193,6 +194,7 @@ def read_projection_provenance(conn: QueryConnection) -> ProjectionProvenance:
                 meta, "created_from_authoritative_commit"
             ),
             revision_column="source_commit",
+            producer_kind=meta.get("producer.kind"),
         )
 
     if artifact_schema != "theseus.repo-index.v2":
@@ -259,6 +261,7 @@ def read_projection_provenance(conn: QueryConnection) -> ProjectionProvenance:
             meta, "created_from_authoritative_source"
         ),
         revision_column="source_revision",
+        producer_kind=meta.get("producer.kind"),
     )
 
 

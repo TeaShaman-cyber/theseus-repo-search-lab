@@ -34,6 +34,7 @@ V2_SCHEMA = "theseus.repo-index.v2"
 _DEPENDENCY_GRADE_BY_RELATION = {
     "type_dependency": EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
     "value_dependency": EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
+    "compiled_reference": EvidenceGrade.COMPILED_REFERENCE,
 }
 
 
@@ -601,6 +602,8 @@ def load_artifact(
             raise ValueError(f"unsupported schema: {schema}")
     except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError, ValueError, AssertionError) as exc:
         raise _integrity(f"invalid manifest: {exc}") from exc
+    if manifest.producer.kind == "olean-export-deps-preview" and manifest.created_from_authoritative_source:
+        raise _integrity("preview producer cannot claim authoritative corpus acceptance")
     if manifest.scope.dependency_boundary != "internal_only":
         raise _integrity(
             f"unsupported dependency boundary: {manifest.scope.dependency_boundary}"
@@ -828,6 +831,8 @@ def load_artifact(
                 "edge producer mismatch: "
                 f"expected {expected_edge_producer}, observed {edge.producer}"
             )
+        if (edge.relation == "compiled_reference") != (manifest.producer.kind == "olean-export-deps-preview"):
+            raise _integrity("compiled references require the explicitly partial preview producer")
         expected_grade = _DEPENDENCY_GRADE_BY_RELATION.get(edge.relation)
         if expected_grade is None:
             raise _integrity(f"unsupported dependency relation: {edge.relation}")
