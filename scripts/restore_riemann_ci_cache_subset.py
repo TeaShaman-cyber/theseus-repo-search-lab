@@ -8,7 +8,9 @@ import os
 import subprocess
 import sys
 import tempfile
+import tomllib
 from collections.abc import Iterable
+from hashlib import sha256
 from pathlib import Path
 
 
@@ -40,6 +42,59 @@ def subset_mapping_bytes(contents: bytes, selected_rows: Iterable[list[str]]) ->
     if missing:
         raise ValueError("missing selected input hashes: " + ", ".join(missing))
     return b"\n".join(kept) + b"\n"
+
+
+def transport_config(source: str) -> str:
+    """Project only the RH S3 transport settings, not its build dependencies.
+
+    The verified source workspace still owns input identity and archive restore.
+    Reject unfamiliar service layouts rather than silently dropping settings.
+    """
+    config = tomllib.loads(source)
+    name = config.get("name")
+    platform = config.get("platformIndependent", False)
+    cache = config.get("cache")
+    if not isinstance(name, str) or not name or type(platform) is not bool:
+        raise ValueError("invalid transport package configuration")
+    if not isinstance(cache, dict) or set(cache) != {"defaultService", "service"}:
+        raise ValueError("unsupported cache configuration")
+    services = cache["service"]
+    if not isinstance(services, list) or len(services) != 1:
+        raise ValueError("expected a single cache service")
+    service = services[0]
+    keys = ("name", "kind", "artifactEndpoint", "revisionEndpoint")
+    if (not isinstance(service, dict) or set(service) != set(keys)
+            or any(not isinstance(service[k], str) or not service[k] for k in keys)
+            or service["name"] != cache["defaultService"] or service["kind"] != "s3"
+            or not all(service[k].startswith("https://") for k in keys[2:])):
+        raise ValueError("unsupported S3 cache service configuration")
+    result = (f"name = {json.dumps(name, ensure_ascii=False)}\n"
+              f"platformIndependent = {str(platform).lower()}\n\n"
+              f"[cache]\ndefaultService = {json.dumps(cache['defaultService'])}\n\n"
+              "[[cache.service]]\n" + "".join(f"{k} = {json.dumps(service[k], ensure_ascii=False)}\n" for k in keys))
+    if tomllib.loads(result) != {"name": name, "platformIndependent": platform, "cache": cache}:
+        raise ValueError("transport configuration projection mismatch")
+    return result
+
+
+def download_subset(project: Path, cache: Path, subset: bytes, repository: str,
+                    env: dict[str, str], *, lake: str = "lake") -> str:
+    """Download already validated mappings without materializing packages."""
+    config = transport_config((project / "lakefile.toml").read_text(encoding="utf-8"))
+    with tempfile.TemporaryDirectory(prefix="rh-cache-transport-") as temporary:
+        workspace = Path(temporary)
+        (workspace / "lakefile.toml").write_text(config, encoding="utf-8")
+        (workspace / "lean-toolchain").write_text(env["ELAN_TOOLCHAIN"] + "\n", encoding="utf-8")
+        mapping = workspace / "outputs.jsonl"
+        mapping.write_bytes(subset)
+        transport_env = dict(env, LAKE_CONFIG=str(workspace / "lakefile.toml"),
+                             LAKE_CACHE_DIR=str(cache.resolve()))
+        subprocess.run([lake, "-q", "cache", "get", str(mapping), "--repo", repository],
+                       cwd=workspace, env=transport_env, check=True)
+        packages = workspace / ".lake/packages"
+        if packages.exists() and any(packages.iterdir()):
+            raise ValueError("transport unexpectedly materialized packages")
+    return sha256(config.encode()).hexdigest()
 
 
 def _load_upstream(project: Path):
@@ -117,15 +172,7 @@ def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancest
         ELAN_TOOLCHAIN=identity["toolchain"],
     )
 
-    with tempfile.TemporaryDirectory(prefix="ci-cache-subset-", dir=project / ".lake") as temporary:
-        mapping_path = Path(temporary) / "outputs.jsonl"
-        mapping_path.write_bytes(subset)
-        subprocess.run(
-            ["lake", "-q", "cache", "get", str(mapping_path), "--repo", ci.REPOSITORY],
-            cwd=project,
-            env=env,
-            check=True,
-        )
+    config_sha = download_subset(project, cache, subset, ci.REPOSITORY, env)
 
     jobs = ci.restore.restore_jobs(project, cache, selected_rows)
     if ci.current_identity(project) != identity:
@@ -156,6 +203,7 @@ def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancest
         "selected_project_modules": len(selected_rows),
         "selected_mapping_rows": len(subset.splitlines()) - 1,
         "toolchain": identity["toolchain"],
+        "transport_config_sha256": config_sha,
     }
     return 0, metrics
 

@@ -1,5 +1,9 @@
 import json
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from scripts.restore_riemann_ci_cache_subset import (
     select_rows,
@@ -65,6 +69,61 @@ class RiemannTargetedCacheTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "missing selected input hashes"):
             subset_mapping_bytes(full, selected_rows)
+
+
+class IsolatedTransportTests(unittest.TestCase):
+    def test_download_uses_disposable_workspace_and_preserves_original(self):
+        from scripts.restore_riemann_ci_cache_subset import download_subset
+        source = ('name="tree"\nplatformIndependent=true\n[[require]]\nname="mathlib"\n'
+                  '[cache]\ndefaultService="rh"\n[[cache.service]]\nname="rh"\nkind="s3"\n'
+                  'artifactEndpoint="https://example.org/artifacts"\nrevisionEndpoint="https://example.org/revisions"\n')
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            config = project / 'lakefile.toml'
+            config.write_text(source)
+            cache = project / 'cache'
+            subset = b'"2026-03-17"\n'
+            observed = []
+            def run(args, *, cwd, env, check):
+                observed.append(cwd)
+                self.assertNotEqual(cwd, project)
+                self.assertEqual(Path(args[4]).read_bytes(), subset)
+                self.assertEqual(env['LAKE_CACHE_DIR'], str(cache.resolve()))
+                self.assertEqual(env['LAKE_CONFIG'], str(cwd / 'lakefile.toml'))
+                self.assertNotIn('[[require]]', (cwd / 'lakefile.toml').read_text())
+                self.assertTrue(check)
+                raise subprocess.CalledProcessError(1, args)
+            with patch('scripts.restore_riemann_ci_cache_subset.subprocess.run', side_effect=run), self.assertRaises(subprocess.CalledProcessError):
+                download_subset(project, cache, subset, 'owner/repo', {'ELAN_TOOLCHAIN': 'leanprover/lean4:v4.36.0'})
+            self.assertEqual(config.read_text(), source)
+            self.assertEqual(len(observed), 1)
+            self.assertFalse(observed[0].exists())
+
+    def test_transport_preserves_cache_configuration_without_build_dependencies(self):
+        import tomllib
+
+        from scripts.restore_riemann_ci_cache_subset import transport_config
+        source = '''name = "tree"
+platformIndependent = true
+[[require]]
+name = "mathlib"
+[cache]
+defaultService = "rh"
+[[cache.service]]
+name = "rh"
+kind = "s3"
+artifactEndpoint = "https://example.org/artifacts"
+revisionEndpoint = "https://example.org/revisions"
+'''
+        original = tomllib.loads(source)
+        result = tomllib.loads(transport_config(source))
+        self.assertEqual(result, {key: original[key] for key in ('name', 'platformIndependent', 'cache')})
+
+    def test_unsupported_cache_layout_rejected(self):
+        from scripts.restore_riemann_ci_cache_subset import transport_config
+        for source in ('name="tree"', 'name="tree"\n[cache]\ndefaultService="missing"', 'name="tree"\n[cache]\ndefaultService="rh"\n[[cache.service]]\nname="rh"\nkind="reservoir"'):
+            with self.subTest(source=source), self.assertRaises(ValueError):
+                transport_config(source)
 
 
 if __name__ == "__main__":
