@@ -348,6 +348,37 @@ class SourceChunkTests(unittest.TestCase):
                 )
             self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
 
+    def test_manifest_backed_scan_rejects_ambiguous_decoded_keys(self):
+        import json
+
+        from theseus_repo_search.errors import RepoSearchError
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            data = b"theorem authoritative : True := by trivial\n"
+            (root / "Main.lean").write_bytes(data)
+            payload = {
+                "schema": "theseus.archive-member-manifest.v1",
+                "source": {
+                    "kind": "archive", "url": "https://example.invalid/source.zip",
+                    "sha256": "a" * 64, "format": "zip", "subdir": ".",
+                },
+                "source_root_relative": ".",
+                "members": [{
+                    "path": "Main.lean", "source_path": "Main.lean",
+                    "sha256": sha256(data).hexdigest(),
+                }],
+            }
+            raw = (r'{"\u0073chema":null,' + json.dumps(payload)[1:]).encode()
+            manifest = root / "members.json"
+            manifest.write_bytes(raw)
+            with self.assertRaisesRegex(RepoSearchError, "duplicate JSON object key") as caught:
+                scan_manifest_backed_lean_sources(
+                    root, source_revision="a" * 64, member_manifest_path=manifest,
+                    expected_manifest_sha256=sha256(raw).hexdigest(),
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
+
     def test_manifest_backed_scan_rejects_changed_member_manifest_bytes(self):
         import json
 
