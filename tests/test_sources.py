@@ -4,9 +4,11 @@ import tempfile
 import unittest
 from hashlib import sha256
 from pathlib import Path
+from unittest.mock import patch
 
 from theseus_repo_search.model import Node, SourceChunk
 from theseus_repo_search.sources import (
+    _chunks_from_text,
     bind_node_sources,
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
@@ -44,6 +46,11 @@ class LeanQuotedModuleSourcePathTests(unittest.TestCase):
 
 
 class SourceChunkTests(unittest.TestCase):
+    def test_inconsistent_chunk_boundaries_cannot_silently_drop_declarations(self):
+        text = "theorem first : True := by trivial\ntheorem second : True := by trivial\n"
+        with patch("theseus_repo_search.sources._chunk_starts", return_value=[0]), self.assertRaises(ValueError):
+            _chunks_from_text("Fixture.lean", text, source_revision="abc123")
+
     def test_extracts_declarations_with_exact_provenance_and_hash(self):
         chunks = scan_lean_sources(FIXTURE_ROOT, source_commit="abc123")
         self.assertEqual(len(chunks), 2)

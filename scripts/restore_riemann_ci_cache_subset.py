@@ -253,4 +253,4 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except (ValueError, OSError, EOFError, subprocess.CalledProcessError) as exc:
         print(f"TARGETED_RIEMANN_CACHE_RESTORE_BLOCKED: {exc}", file=sys.stderr)
-        raise SystemExit(2)
+        raise SystemExit(2) from exc

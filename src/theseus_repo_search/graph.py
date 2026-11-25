@@ -258,7 +258,7 @@ def path_connection(conn: QueryConnection, source: str, target: str, *, max_dept
             for row in rows:
                 neighbor = row[1]
                 edge_record = _edge_record(row, depth=current_depth + 1)
-                next_path = prior_edges + (edge_record,)
+                next_path = (*prior_edges, edge_record)
                 if neighbor == target_id:
                     found_path = next_path
                     break

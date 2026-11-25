@@ -575,7 +575,7 @@ class ArtifactTests(unittest.TestCase):
             )
 
             with self.assertRaises(RepoSearchError) as caught:
-                write_sample(path, nodes=sample_nodes() + [extra])
+                write_sample(path, nodes=[*sample_nodes(), extra])
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("immutable", str(caught.exception))
 
@@ -652,7 +652,7 @@ class ArtifactTests(unittest.TestCase):
             )
             _write_artifact_contents(
                 path,
-                nodes=sample_nodes() + [extra],
+                nodes=[*sample_nodes(), extra],
                 edges=sample_edges(),
                 sources=sample_sources(),
                 source_repo="anthropics/formal-math",
@@ -829,7 +829,8 @@ class StructuralIntegrityTests(unittest.TestCase):
     def test_out_of_scope_node_is_blocked_for_internal_only_artifact(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
-            nodes = sample_nodes() + [
+            nodes = [
+                *sample_nodes(),
                 Node.from_lean(
                     full_name="Mathlib.Algebra.outside",
                     name="outside",
@@ -838,7 +839,8 @@ class StructuralIntegrityTests(unittest.TestCase):
                     source_commit=SOURCE_COMMIT,
                 )
             ]
-            edges = sample_edges() + [
+            edges = [
+                *sample_edges(),
                 Edge(
                     source_id="lean:Zeta23.Tiny.b",
                     target_id="lean:Mathlib.Algebra.outside",
