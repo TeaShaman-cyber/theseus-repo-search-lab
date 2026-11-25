@@ -1,0 +1,36 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
+  "files": {
+    "includes": ["**/*.json"]
+  },
+  "formatter": {
+    "enabled": false
+  },
+  "assist": {
+    "enabled": false
+  },
+  "json": {
+    "parser": {
+      "allowComments": false,
+      "allowTrailingCommas": false
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "suspicious": {
+        "noDuplicateObjectKeys": "error",
+        "noEmptyObjectKeys": "error"
+      },
+      "style": {
+        "noTopLevelLiterals": "error"
+      },
+      "nursery": {
+        "noJsonUnsafeValues": "error",
+        "useConsistentObjectKeys": "error",
+        "useConsistentUnicodeBom": "error"
+      }
+    }
+  }
+}
