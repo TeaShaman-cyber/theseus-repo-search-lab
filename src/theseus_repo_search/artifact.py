@@ -9,7 +9,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from .errors import RepoSearchError
-from .json_contract import strict_json_loads
+from .json_contract import require_integer, require_string, strict_json_loads
 from .model import (
     ArchiveAuthority,
     ArtifactManifest,
@@ -512,20 +512,6 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
     return rows
 
 
-def _require_str(data: dict[str, object], key: str) -> str:
-    value = data[key]
-    if not isinstance(value, str):
-        raise TypeError(f"{key} must be a string")
-    return value
-
-
-def _require_int(data: dict[str, object], key: str) -> int:
-    value = data[key]
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{key} must be an integer")
-    return value
-
-
 def _optional_str(data: dict[str, object], key: str) -> str | None:
     value = data[key]
     if value is None:
@@ -549,25 +535,25 @@ def _node_from_dict(data: dict[str, object], *, revision_key: str) -> Node:
     if forbidden_key in data:
         raise TypeError(f"{forbidden_key} is not valid for this artifact schema")
     return Node(
-        id=_require_str(data, "id"),
-        full_name=_require_str(data, "full_name"),
-        name=_require_str(data, "name"),
-        kind=_require_str(data, "kind"),
-        module=_require_str(data, "module"),
+        id=require_string(data["id"], "id"),
+        full_name=require_string(data["full_name"], "full_name"),
+        name=require_string(data["name"], "name"),
+        kind=require_string(data["kind"], "kind"),
+        module=require_string(data["module"], "module"),
         source_path=_optional_str(data, "source_path"),
         source_start_line=_optional_int(data, "source_start_line"),
         source_end_line=_optional_int(data, "source_end_line"),
-        source_commit=_require_str(data, revision_key),
+        source_commit=require_string(data[revision_key], revision_key),
     )
 
 
 def _edge_from_dict(data: dict[str, object]) -> Edge:
     return Edge(
-        source_id=_require_str(data, "source_id"),
-        target_id=_require_str(data, "target_id"),
-        relation=_require_str(data, "relation"),
-        evidence_grade=EvidenceGrade(_require_str(data, "evidence_grade")),
-        producer=_require_str(data, "producer"),
+        source_id=require_string(data["source_id"], "source_id"),
+        target_id=require_string(data["target_id"], "target_id"),
+        relation=require_string(data["relation"], "relation"),
+        evidence_grade=EvidenceGrade(require_string(data["evidence_grade"], "evidence_grade")),
+        producer=require_string(data["producer"], "producer"),
     )
 
 
@@ -576,14 +562,14 @@ def _source_from_dict(data: dict[str, object], *, revision_key: str) -> SourceCh
     if forbidden_key in data:
         raise TypeError(f"{forbidden_key} is not valid for this artifact schema")
     return SourceChunk(
-        id=_require_str(data, "id"),
-        source_commit=_require_str(data, revision_key),
-        source_path=_require_str(data, "source_path"),
-        source_start_line=_require_int(data, "source_start_line"),
-        source_end_line=_require_int(data, "source_end_line"),
+        id=require_string(data["id"], "id"),
+        source_commit=require_string(data[revision_key], revision_key),
+        source_path=require_string(data["source_path"], "source_path"),
+        source_start_line=require_integer(data["source_start_line"], "source_start_line"),
+        source_end_line=require_integer(data["source_end_line"], "source_end_line"),
         declaration_hint=_optional_str(data, "declaration_hint"),
-        text=_require_str(data, "text"),
-        content_sha256=_require_str(data, "content_sha256"),
+        text=require_string(data["text"], "text"),
+        content_sha256=require_string(data["content_sha256"], "content_sha256"),
     )
 
 

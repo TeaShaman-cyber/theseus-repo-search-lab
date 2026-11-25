@@ -257,7 +257,7 @@ def _load_json_object(path: Path) -> dict[str, object]:
 
 def load_lean_source(path: Path) -> LeanSource:
     data = _load_json_object(path)
-    schema = data.get("schema")
+    schema = _require_str(data, "schema")
     if schema in {SOURCE_SCHEMA_V1, SOURCE_SCHEMA_V2}:
         return LeanGitSource.from_dict(data)
     if schema == ARCHIVE_SOURCE_SCHEMA_V1:
