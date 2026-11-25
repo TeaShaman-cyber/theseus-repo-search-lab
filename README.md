@@ -160,6 +160,9 @@ argument. A credential-injecting provider proxy may instead be selected with
 it does not replace immutable accepted releases or the versioned accepted-corpus
 catalog.
 
+For Turso and MotherDuck resource ownership, retention and verified cleanup,
+follow [cloud resource housekeeping](docs/cloud-resource-housekeeping.md).
+
 ### Read-only hosted search from the governed workbench
 
 The same accepted catalog and retrieval logic can query the existing Turso
