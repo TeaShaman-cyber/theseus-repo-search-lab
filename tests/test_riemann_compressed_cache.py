@@ -1,10 +1,15 @@
 import json
+import os
+import signal
+import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 from scripts.riemann_compressed_cache import (
+    SpaceGuard,
     batch_rows,
     canonical_graph_hash,
     ensure_space,
@@ -129,3 +134,50 @@ class CompressedCacheTests(unittest.TestCase):
             with a.open("a") as f:
                 f.write(json.dumps(rows[1]) + "\n")
             self.assertEqual(canonical_graph_hash(a)[0], 3)
+
+    @unittest.skipUnless(
+        Path("/proc").is_dir() and hasattr(os, "killpg"),
+        "Linux process groups required",
+    )
+    def test_disk_guard_stops_signal_ignoring_descendant(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            pidfile = root / "child.pid"
+            guard = SpaceGuard(root, 1, 1)
+            child = (
+                "import os,signal,time,pathlib,sys;"
+                "signal.signal(signal.SIGTERM,signal.SIG_IGN);"
+                "pathlib.Path(sys.argv[1]).write_text(str(os.getpid()));time.sleep(60)"
+            )
+            parent = (
+                "import subprocess,sys,time;"
+                "subprocess.Popen([sys.executable,'-c',sys.argv[1],sys.argv[2]]);time.sleep(60)"
+            )
+
+            def alive(pid):
+                try:
+                    state = Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0]
+                    return state not in ("Z", "X")
+                except FileNotFoundError:
+                    return False
+
+            try:
+                with (
+                    patch.object(
+                        guard,
+                        "check",
+                        side_effect=[None, ValueError("injected disk reserve breach")],
+                    ),
+                    self.assertRaisesRegex(ValueError, "reserve"),
+                ):
+                    guard.run([sys.executable, "-c", parent, child, str(pidfile)])
+                pid = int(pidfile.read_text())
+                deadline = time.monotonic() + 1
+                while alive(pid) and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertFalse(alive(pid))
+            finally:
+                if pidfile.exists():
+                    pid = int(pidfile.read_text())
+                    if alive(pid):
+                        os.kill(pid, signal.SIGKILL)

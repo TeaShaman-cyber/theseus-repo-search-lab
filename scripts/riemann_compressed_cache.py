@@ -18,6 +18,7 @@ import subprocess
 import tempfile
 import time
 from collections.abc import Iterator, Sequence
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -93,8 +94,8 @@ class SpaceGuard:
         self.minimum_free = shutil.disk_usage(path).free
 
     def check(self) -> None:
-        ensure_space(self.path, self.reserve_bytes, self.reserve_inodes)
         self.minimum_free = min(self.minimum_free, shutil.disk_usage(self.path).free)
+        ensure_space(self.path, self.reserve_bytes, self.reserve_inodes)
 
     def run(self, argv: list[str], *, input: str | None = None, **kwargs: Any) -> None:
         """Terminate the owned child process group before consuming the reserve."""
@@ -122,13 +123,12 @@ class SpaceGuard:
                 if process.returncode:
                     raise subprocess.CalledProcessError(process.returncode, argv)
             except BaseException:
-                if process.poll() is None:
-                    os.killpg(process.pid, signal.SIGTERM)
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        os.killpg(process.pid, signal.SIGKILL)
-                        process.wait()
+                # The leader can exit before descendants, and a grace period
+                # would let them consume the emergency disk reserve. All work
+                # here belongs to a disposable, separately spawned group.
+                with suppress(ProcessLookupError):
+                    os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
                 raise
 
 
