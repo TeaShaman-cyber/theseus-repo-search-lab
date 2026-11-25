@@ -50,3 +50,13 @@ class DirectModuleReaderWorkflowTests(unittest.TestCase):
         self.assertIn('extra_edges', pilot)
         self.assertNotIn('replay_closed_modules', pilot)
         self.assertNotIn('lake build', pilot)
+
+    def test_upstream_deps_pilot_restores_project_closure_and_reports_scale(self):
+        pilot = Path('.github/workflows/riemann-olean-deps-pilot.yml').read_text()
+        self.assertIn('lean_project_import_closure.lean', pilot)
+        self.assertIn('--modules-file _out/project-closure.txt', pilot)
+        self.assertIn('MAX_PROJECT_MODULES: 4096', pilot)
+        self.assertIn('project_cross_module_edges', pilot)
+        self.assertIn('project_duplicate_names', pilot)
+        self.assertIn('project_missing_modules', pilot)
+        self.assertNotIn('replay_closed_modules', pilot)
