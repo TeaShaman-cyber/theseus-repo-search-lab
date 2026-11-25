@@ -568,6 +568,39 @@ class TursoHttpClient:
             )
         return decoded
 
+    def query_rows(
+        self, hostname: str, token: str, sql: str, parameters: tuple[object, ...] = ()
+    ) -> list[tuple[object, ...]]:
+        # Only repository-owned read queries use this internal method. Bind all
+        # user values as Hrana arguments, never as SQL fragments.
+        args: list[dict[str, object]] = []
+        for value in parameters:
+            if isinstance(value, str):
+                args.append({"type": "text", "value": value})
+            elif isinstance(value, int) and not isinstance(value, bool):
+                args.append({"type": "integer", "value": str(value)})
+            else:
+                raise TypeError("unsupported query parameter type")
+        payload = self._json_request(
+            "POST", f"https://{hostname}/v2/pipeline",
+            payload={"requests": [{"type": "execute", "stmt": {"sql": sql, "args": args}}, {"type": "close"}]},
+            token=token,
+        )
+        if not isinstance(payload, dict) or not isinstance(payload.get("results"), list) or len(payload["results"]) != 2:
+            raise RepoSearchError("TURSO_API_INVALID_RESPONSE", "invalid read-query result count")
+        result, closed = payload["results"]
+        if not isinstance(result, dict) or result.get("type") != "ok":
+            raise RepoSearchError("TURSO_SQL_ERROR", "read query failed")
+        if not isinstance(closed, dict) or closed.get("type") != "ok":
+            raise RepoSearchError("TURSO_API_INVALID_RESPONSE", "read query close failed")
+        response = result.get("response")
+        result_set = response.get("result") if isinstance(response, dict) else None
+        if not isinstance(result_set, dict) or not isinstance(result_set.get("rows"), list):
+            raise RepoSearchError("TURSO_API_INVALID_RESPONSE", "invalid read-query rows")
+        if any(not isinstance(row, list) for row in result_set["rows"]):
+            raise RepoSearchError("TURSO_API_INVALID_RESPONSE", "invalid read-query row")
+        return [tuple(self._decode_cell(cell) for cell in row) for row in result_set["rows"]]
+
     def read_projection_state(
         self, hostname: str, token: str
     ) -> dict[str, object]:

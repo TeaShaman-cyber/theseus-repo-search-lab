@@ -48,6 +48,7 @@ from .sources import (
     scan_manifest_backed_lean_sources,
 )
 from .turso_materializer import TursoHttpClient, TursoMaterializer
+from .turso_query import search_turso_catalog
 
 
 def _emit(payload: dict[str, object], *, stream=sys.stdout) -> None:
@@ -927,6 +928,19 @@ def _cmd_multicorpus_search(args: argparse.Namespace) -> int:
         limit=args.limit,
         mode=args.mode,
     )
+    return _emit_multicorpus_result(args, result)
+
+
+def _cmd_turso_search(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", f"accepted corpus catalog invalid: {exc}") from exc
+    result = search_turso_catalog(catalog, _turso_client(args), query=args.query, limit=args.limit, mode=args.mode)
+    return _emit_multicorpus_result(args, result)
+
+
+def _emit_multicorpus_result(args: argparse.Namespace, result) -> int:
     _emit(
         {
             "status": _multicorpus_status(result, mode=args.mode),
@@ -1114,6 +1128,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--mode", choices=("discovery", "evidence"), default="discovery"
     )
     multicorpus_search.set_defaults(func=_cmd_multicorpus_search)
+
+    turso_search = subparsers.add_parser("turso-search")
+    turso_search.add_argument("--catalog", type=Path, required=True)
+    turso_search.add_argument("--organization", required=True)
+    turso_search.add_argument("--platform-base-url", default="https://api.turso.tech")
+    turso_search.add_argument("--platform-token-env")
+    turso_search.add_argument("--query", required=True)
+    turso_search.add_argument("--limit", type=int, default=20)
+    turso_search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
+    turso_search.set_defaults(func=_cmd_turso_search)
 
     search = subparsers.add_parser("search")
     search.add_argument("--db", type=Path, required=True)

@@ -160,6 +160,31 @@ argument. A credential-injecting provider proxy may instead be selected with
 it does not replace immutable accepted releases or the versioned accepted-corpus
 catalog.
 
+### Read-only hosted search from the governed workbench
+
+The same accepted catalog and retrieval logic can query the existing Turso
+projections without downloading or rebuilding local SQLite files:
+
+```text
+python3 -m theseus_repo_search turso-search \
+  --catalog producer/accepted-corpora.json \
+  --organization <turso-organization> \
+  --platform-base-url <governed-platform-proxy> \
+  --query <text> --limit 20 --mode discovery
+```
+
+The workbench resolves identity-bound database names, obtains short-lived
+read-only tokens and checks the accepted artifact identity before querying.
+Both Git and archive projection schemas use the existing provenance reader.
+Results use the same federated ranking, evidence/discovery semantics and explicit
+partial-coverage envelope as local search. Query length is 1–512 characters and
+result limit 1–50. No caller SQL, materialization, database writes or Lean build.
+The platform proxy is a governed workbench credential, not an agent-facing
+credential. This command is not yet the private MCP frontend in #123; that
+frontend must have separately provisioned restricted credentials and verified
+client/auth transport. Graph/context operations remain on the existing local
+query route until the hosted equivalents are verified.
+
 ## Live research smoke
 
 After significant corpus acceptance, Repository Search can run a bounded versioned research-smoke panel on fresh hosted consumers, including release-backed consumers when the producer fingerprint is unchanged. Smoke scenarios ask for evidence classes and record grounded observations; they do not encode a desired mathematical conclusion.

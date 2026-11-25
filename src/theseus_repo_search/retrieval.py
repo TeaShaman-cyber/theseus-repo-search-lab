@@ -10,7 +10,11 @@ from typing import Literal
 from .errors import RepoSearchError
 from .graph import dependencies
 from .model import EvidenceGrade
-from .projection import ProjectionProvenance, read_projection_provenance
+from .projection import (
+    ProjectionProvenance,
+    QueryConnection,
+    read_projection_provenance,
+)
 from .sources import lean_module_source_path
 
 SearchMode = Literal["discovery", "evidence"]
@@ -51,7 +55,7 @@ class SearchHit:
 
 
 def _node_row_by_id(
-    conn: sqlite3.Connection, node_id: str, *, revision_column: str
+    conn: QueryConnection, node_id: str, *, revision_column: str
 ):
     return conn.execute(
         "SELECT id, name, source_path, source_start_line, source_end_line, "
@@ -60,7 +64,7 @@ def _node_row_by_id(
     ).fetchone()
 
 
-def _unique_node_id(conn: sqlite3.Connection, query: str) -> str | None:
+def _unique_node_id(conn: QueryConnection, query: str) -> str | None:
     if query.startswith("lean:"):
         row = conn.execute("SELECT id FROM nodes WHERE id = ?", (query,)).fetchone()
         return None if row is None else str(row[0])
@@ -87,7 +91,7 @@ def _unique_node_id(conn: sqlite3.Connection, query: str) -> str | None:
     return None
 
 
-def _required_node_id(conn: sqlite3.Connection, query: str) -> str:
+def _required_node_id(conn: QueryConnection, query: str) -> str:
     node_id = _unique_node_id(conn, query)
     if node_id is not None:
         return node_id
@@ -109,7 +113,7 @@ def _required_node_id(conn: sqlite3.Connection, query: str) -> str:
 
 
 def _source_row_for_node(
-    conn: sqlite3.Connection, node_row, *, revision_column: str
+    conn: QueryConnection, node_row, *, revision_column: str
 ):
     _, name, source_path, source_start_line, _source_end_line, _, module = node_row
     if source_path is not None:
@@ -143,7 +147,7 @@ def _source_row_for_node(
 
 
 def _exact_hit(
-    conn: sqlite3.Connection, query: str, *, provenance: ProjectionProvenance
+    conn: QueryConnection, query: str, *, provenance: ProjectionProvenance
 ) -> SearchHit | None:
     node_id = _unique_node_id(conn, query)
     if node_id is None:
@@ -188,7 +192,7 @@ def _exact_hit(
 
 
 def _declaration_id_for_hit(
-    conn: sqlite3.Connection,
+    conn: QueryConnection,
     hint: str | None,
     *,
     source_path: str,
@@ -240,67 +244,73 @@ def search(
     limit: int = 10,
     mode: SearchMode = "discovery",
 ) -> list[SearchHit]:
+    with sqlite3.connect(db_path) as conn:
+        return search_connection(conn, query, limit=limit, mode=mode)
+
+
+def search_connection(
+    conn: QueryConnection, query: str, *, limit: int = 10, mode: SearchMode = "discovery"
+) -> list[SearchHit]:
     if mode not in {"discovery", "evidence"}:
         raise ValueError(f"unsupported search mode: {mode}")
     if limit <= 0:
         return []
-    with sqlite3.connect(db_path) as conn:
-        provenance = read_projection_provenance(conn)
-        exact = _exact_hit(conn, query, provenance=provenance)
-        if exact is not None:
-            return [replace(exact, query_mode=mode, match_mode="exact")]
+    provenance = read_projection_provenance(conn)
+    exact = _exact_hit(conn, query, provenance=provenance)
+    if exact is not None:
+        return [replace(exact, query_mode=mode, match_mode="exact")]
 
-        terms = re.findall(r"\w+", query, flags=re.UNICODE)
-        if not terms:
-            return []
-        if len(terms) == 1:
-            operator = " OR "
-            match_mode: SearchMatchMode = "single_term"
-        elif mode == "evidence":
-            operator = " AND "
-            match_mode = "all_terms"
-        else:
-            operator = " OR "
-            match_mode = "any_terms"
-        fts_query = operator.join(f'"{term}"' for term in terms)
-        rows = conn.execute(
-            f"SELECT s.id, s.{provenance.revision_column}, s.source_path, s.source_start_line, "
-            "s.source_end_line, s.declaration_hint, s.text, bm25(sources_fts) AS rank "
-            "FROM sources_fts JOIN sources s ON s.rowid = sources_fts.rowid "
-            "WHERE sources_fts MATCH ? "
-            "ORDER BY rank, s.source_path, s.source_start_line LIMIT ?",
-            (fts_query, limit),
-        ).fetchall()
-        return [
-            SearchHit(
-                declaration_id=_declaration_id_for_hit(
-                    conn,
-                    row[5],
-                    source_path=str(row[2]),
-                    source_start_line=int(row[3]),
-                    source_end_line=int(row[4]),
-                ),
-                declaration_hint=None if row[5] is None else str(row[5]),
-                source_kind=provenance.source_kind,
-                source_revision=str(row[1]),
-                source_authority=provenance.source_authority,
+    terms = re.findall(r"\w+", query, flags=re.UNICODE)
+    if not terms:
+        return []
+    if len(terms) == 1:
+        operator = " OR "
+        match_mode: SearchMatchMode = "single_term"
+    elif mode == "evidence":
+        operator = " AND "
+        match_mode = "all_terms"
+    else:
+        operator = " OR "
+        match_mode = "any_terms"
+    fts_query = operator.join(f'"{term}"' for term in terms)
+    rows = conn.execute(
+        f"SELECT s.id, s.{provenance.revision_column}, s.source_path, s.source_start_line, "
+        "s.source_end_line, s.declaration_hint, s.text, bm25(sources_fts) AS rank "
+        "FROM sources_fts JOIN sources s ON s.rowid = sources_fts.rowid "
+        "WHERE sources_fts MATCH ? "
+        "ORDER BY rank, s.source_path, s.source_start_line LIMIT ?",
+        (fts_query, limit),
+    ).fetchall()
+    return [
+        SearchHit(
+            declaration_id=_declaration_id_for_hit(
+                conn,
+                row[5],
                 source_path=str(row[2]),
                 source_start_line=int(row[3]),
                 source_end_line=int(row[4]),
-                evidence_grade=EvidenceGrade.LEXICAL_HIT,
-                score=float(row[7]),
-                text=str(row[6]),
-                created_from_authoritative_source=provenance.created_from_authoritative_source,
-                query_mode=mode,
-                match_mode=match_mode,
-                source_row_id=str(row[0]),
-            )
-            for row in rows
-        ]
+            ),
+            declaration_hint=None if row[5] is None else str(row[5]),
+            source_kind=provenance.source_kind,
+            source_revision=str(row[1]),
+            source_authority=provenance.source_authority,
+            source_path=str(row[2]),
+            source_start_line=int(row[3]),
+            source_end_line=int(row[4]),
+            evidence_grade=EvidenceGrade.LEXICAL_HIT,
+            score=float(row[7]),
+            text=str(row[6]),
+            created_from_authoritative_source=provenance.created_from_authoritative_source,
+            query_mode=mode,
+            match_mode=match_mode,
+            source_row_id=str(row[0]),
+        )
+        for row in rows
+    ]
 
 
 def _context_chunk(
-    conn: sqlite3.Connection, node_id: str, distance: int, *, provenance: ProjectionProvenance
+    conn: QueryConnection, node_id: str, distance: int, *, provenance: ProjectionProvenance
 ):
     node_row = _node_row_by_id(
         conn, node_id, revision_column=provenance.revision_column

@@ -8,8 +8,10 @@ import sqlite3
 import subprocess
 import tempfile
 import uuid
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 
 from scripts.consume_accepted_release import (
@@ -104,17 +106,28 @@ def search_local_catalog(
     limit: int = 20,
     mode: SearchMode = "discovery",
 ) -> MultiCorpusResult:
+    return federate_search(
+        tuple((state.source_id, partial(search, state.db_path, query, limit=limit, mode=mode))
+              for state in states), unavailable_corpora,
+        catalog_sha256=catalog_sha256, limit=limit,
+    )
+
+
+def federate_search(
+    queries: tuple[tuple[str, Callable[[], list[SearchHit]]], ...],
+    unavailable_corpora: tuple[UnavailableCorpus, ...], *, catalog_sha256: str, limit: int,
+) -> MultiCorpusResult:
     searched = 0
     unavailable = list(unavailable_corpora)
     federated: list[MultiCorpusHit] = []
 
-    for state in states:
+    for source_id, query_fn in queries:
         try:
-            local_hits = search(state.db_path, query, limit=limit, mode=mode)
+            local_hits = query_fn()
         except RepoSearchError as exc:
             unavailable.append(
                 UnavailableCorpus(
-                    source_id=state.source_id,
+                    source_id=source_id,
                     code=exc.code,
                     message=str(exc),
                 )
@@ -123,7 +136,7 @@ def search_local_catalog(
         except sqlite3.Error as exc:
             unavailable.append(
                 UnavailableCorpus(
-                    source_id=state.source_id,
+                    source_id=source_id,
                     code="UNAVAILABLE_PROJECTION",
                     message=f"SQLite projection unavailable: {exc}",
                 )
@@ -134,8 +147,8 @@ def search_local_catalog(
         for local_rank, hit in enumerate(local_hits, start=1):
             federated.append(
                 MultiCorpusHit(
-                    candidate_id=_candidate_id(state.source_id, hit),
-                    source_id=state.source_id,
+                    candidate_id=_candidate_id(source_id, hit),
+                    source_id=source_id,
                     local_rank=local_rank,
                     hit=hit,
                 )
