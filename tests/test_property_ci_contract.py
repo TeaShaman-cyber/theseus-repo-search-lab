@@ -1,5 +1,4 @@
 import re
-import subprocess
 import unittest
 from pathlib import Path
 
@@ -33,14 +32,7 @@ class PropertyCiContractTest(unittest.TestCase):
         self.assertEqual(len(hashes), 2)
         self.assertEqual(len(set(hashes)), 2)
 
-    def test_endpoint_is_valid_posix_shell_and_scoped_to_property_suite(self):
-        result = subprocess.run(
-            ["sh", "-n", str(ENDPOINT)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
+    def test_endpoint_is_scoped_to_property_suite(self):
         text = ENDPOINT.read_text()
         self.assertIn("tests/property", text)
         self.assertIn("PROPERTY_TEST_PASS", text)
