@@ -5,7 +5,7 @@ ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
     printf '%s\n' 'heavy-python: not inside a Git worktree' >&2
     exit 2
 }
-cd "$ROOT"
+cd "$ROOT" || exit 2
 
 printf '%s\n' '== ruff full repository =='
 ruff check --isolated --target-version py311 src scripts tests

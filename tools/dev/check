@@ -188,6 +188,12 @@ if failures:
     raise SystemExit(1)
 PY_CHECK
 
+printf '%s\n' '== POSIX shell syntax =='
+for script in tools/ci/* tools/dev/*; do
+    [ -f "$script" ] || continue
+    sh -n "$script"
+done
+
 printf '%s\n' '== unit tests =='
 python3 -m unittest discover -s tests -p 'test_*.py'
 

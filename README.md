@@ -230,3 +230,24 @@ Current v0 scenarios live under `qa/research-smoke/`. Search probes explicitly d
 After accepting a new corpus, select only relevant scenarios from `qa/research-smoke/` and run them on that corpus's fresh projection with `scripts/run_research_smoke.py`; do not run the full corpus producer matrix just for the smoke. The versioned `annals-marton-seam-v0.json` links to [Math #56](https://github.com/TeaShaman-cyber/theseus-math-research-lab/issues/56). Its first live source-specific [experimental hosted run #37768026926](https://github.com/TeaShaman-cyber/theseus-repo-search-lab/actions/runs/37768026926) passed producer, source-free fresh consumer and research smoke on exact head `54cdadd8c336ecb2d359cf01d0872751b634a63d`, yielding `CORPUS_BOUNDARY`, `scientific_authority=NONE`. The Actions artifact is **transient**, not an immutable accepted-artifact release. Onboarding it to `main` does not itself publish a durable release or prove Marton. For unchanged producer fingerprints, reuse an existing accepted artifact on a source-free consumer rather than rerun the full producer matrix. An absent mathematical bridge is not a smoke regression.
 
 Smoke dispositions are non-blocking evidence states, not mathematical verdicts. `regression_detected` records loss of a previously demonstrated capability without converting the smoke layer into scientific acceptance authority.
+
+### Static workflow and shell checks
+
+The normal `tools/dev/check` parses every POSIX endpoint in `tools/ci/` and
+`tools/dev/` using `sh -n`. The hosted Workflow and shell analysis job runs
+digest-pinned jactionlint, zizmor and ShellCheck. With the versions pinned in
+`.github/workflows/workflow-lint.yml` installed on PATH, the same analysis can
+run locally:
+
+```sh
+jactionlint --no-online
+zizmor --offline --no-config --strict-collection .github/workflows
+shellcheck tools/ci/* tools/dev/*
+```
+
+These tools replace generic syntax checks and add workflow correctness and
+security diagnostics. Concurrency findings remain warnings: cancellation
+policy for existing acceptance runs is not changed by linting. Keep
+project-specific tests for exact workflow pins, accepted corpus matrices,
+provenance, fail-closed behavior and producer/consumer phase boundaries.
+The lint job does not change branch protection or accepted corpus policy.

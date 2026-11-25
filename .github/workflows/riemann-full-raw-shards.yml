@@ -28,6 +28,7 @@ concurrency:
 jobs:
   plan_matrix:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       shard_count: ${{ steps.plan.outputs.shard_count }}
       shard_matrix: ${{ steps.plan.outputs.shard_matrix }}

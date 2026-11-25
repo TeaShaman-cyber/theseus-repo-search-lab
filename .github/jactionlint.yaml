@@ -1,0 +1,5 @@
+profile: default
+rules:
+  # Keep reporting concurrent runs. Changing cancellation semantics of
+  # existing producer/QA workflows is outside this static-analysis change.
+  concurrency-limits: warn

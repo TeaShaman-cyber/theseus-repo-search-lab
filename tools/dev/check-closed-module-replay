@@ -36,6 +36,8 @@ theorem shared : P := p
 theorem rightSame : P := shared
 EOF
 for pair in 'Root Left Right' 'Reverse Right Left' 'Agree Left RightSame' 'AgreeReverse RightSame Left'; do
+    # The fixed space-delimited triples intentionally become three arguments.
+    # shellcheck disable=SC2086
     set -- $pair
     printf 'prelude\nimport %s\nimport %s\n' "$2" "$3" > "$1.lean"
 done
