@@ -182,8 +182,13 @@ result limit 1–50. No caller SQL, materialization, database writes or Lean bui
 The platform proxy is a governed workbench credential, not an agent-facing
 credential. This command is not yet the private MCP frontend in #123; that
 frontend must have separately provisioned restricted credentials and verified
-client/auth transport. Graph/context operations remain on the existing local
-query route until the hosted equivalents are verified.
+client/auth transport. Graph operations use `turso-graph` with the same catalog/organization/proxy,
+`--source-id`, `--operation deps|rdeps|path|context`, `--name`, and `--depth`.
+For a path, also supply `--target`. Traversal has an explicit examined-edge
+budget (`--max-edges`, 1–500); context additionally caps that budget at 50 and
+source text at `--token-budget` (1–4000 estimated tokens). An exhausted graph
+budget returns `DEGRADED`, not a complete graph or a definitive no-path result.
+Results bind the accepted source and artifact; no cross-corpus edge inference.
 
 ## Live research smoke
 

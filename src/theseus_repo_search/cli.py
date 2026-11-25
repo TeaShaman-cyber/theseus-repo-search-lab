@@ -18,7 +18,7 @@ from .artifact import (
     write_artifact,
 )
 from .errors import RepoSearchError
-from .graph import dependencies, reverse_dependencies
+from .graph import GraphResult, dependencies, reverse_dependencies
 from .graph import path as graph_path
 from .model import (
     ArchiveAuthority,
@@ -36,7 +36,7 @@ from .producer_config import (
     load_lean_archive_source,
     load_lean_source,
 )
-from .projection import build_projection
+from .projection import build_projection, read_projection_provenance
 from .retrieval import SearchHit
 from .retrieval import context as build_context
 from .retrieval import search as search_repo
@@ -48,7 +48,7 @@ from .sources import (
     scan_manifest_backed_lean_sources,
 )
 from .turso_materializer import TursoHttpClient, TursoMaterializer
-from .turso_query import search_turso_catalog
+from .turso_query import connect_corpus, query_graph, search_turso_catalog
 
 
 def _emit(payload: dict[str, object], *, stream=sys.stdout) -> None:
@@ -940,6 +940,34 @@ def _cmd_turso_search(args: argparse.Namespace) -> int:
     return _emit_multicorpus_result(args, result)
 
 
+def _cmd_turso_graph(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", f"accepted corpus catalog invalid: {exc}") from exc
+    item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
+    if item is None:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
+    conn = connect_corpus(item, _turso_client(args))
+    result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
+                         max_edges=args.max_edges, token_budget=args.token_budget)
+    if isinstance(result, GraphResult):
+        payload = _graph_payload(result)
+        payload["found"] = result.found
+        payload["source_revision"] = result.source_revision
+    else:
+        payload = result
+        payload["status"] = "FOUND"
+        provenance = read_projection_provenance(conn)
+        payload["source_revision"] = provenance.source_revision
+        payload["source_kind"] = provenance.source_kind
+    if not payload["complete_within_scope"]:
+        payload["status"] = "DEGRADED"
+    _emit({**payload, "source_id": item.source_id, "artifact_identity": item.artifact_identity,
+           "catalog_sha256": accepted_catalog_sha256(catalog)})
+    return 0
+
+
 def _emit_multicorpus_result(args: argparse.Namespace, result) -> int:
     _emit(
         {
@@ -1138,6 +1166,20 @@ def build_parser() -> argparse.ArgumentParser:
     turso_search.add_argument("--limit", type=int, default=20)
     turso_search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
     turso_search.set_defaults(func=_cmd_turso_search)
+
+    turso_graph = subparsers.add_parser("turso-graph")
+    turso_graph.add_argument("--catalog", type=Path, required=True)
+    turso_graph.add_argument("--organization", required=True)
+    turso_graph.add_argument("--platform-base-url", default="https://api.turso.tech")
+    turso_graph.add_argument("--platform-token-env")
+    turso_graph.add_argument("--source-id", required=True)
+    turso_graph.add_argument("--operation", choices=("deps", "rdeps", "path", "context"), required=True)
+    turso_graph.add_argument("--name", required=True)
+    turso_graph.add_argument("--target")
+    turso_graph.add_argument("--depth", type=int, default=1)
+    turso_graph.add_argument("--max-edges", type=int, default=200)
+    turso_graph.add_argument("--token-budget", type=int, default=4000)
+    turso_graph.set_defaults(func=_cmd_turso_graph)
 
     search = subparsers.add_parser("search")
     search.add_argument("--db", type=Path, required=True)
