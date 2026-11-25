@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from .errors import RepoSearchError
-from .graph import dependencies
+from .graph import GraphResult, dependencies
 from .model import EvidenceGrade
 from .projection import (
     ProjectionProvenance,
@@ -346,25 +346,30 @@ def context(
 ) -> dict[str, object]:
     graph_result = dependencies(db_path, name, depth=depth)
     with sqlite3.connect(db_path) as conn:
-        provenance = read_projection_provenance(conn)
-        target_id = _required_node_id(conn, name)
-        distances: dict[str, int] = {target_id: 0}
-        for edge in graph_result.edges:
-            target = str(edge["target_id"])
-            edge_depth_raw = edge["depth"]
-            if isinstance(edge_depth_raw, bool) or not isinstance(edge_depth_raw, int):
-                raise RepoSearchError(
-                    "BLOCKED_PROJECTION_INTEGRITY",
-                    "graph edge depth must be an integer",
-                )
-            edge_depth = edge_depth_raw
-            distances[target] = min(distances.get(target, edge_depth), edge_depth)
+        return context_connection(conn, name, graph_result=graph_result, token_budget=token_budget)
 
-        candidates = []
-        for node_id, distance in distances.items():
-            chunk = _context_chunk(conn, node_id, distance, provenance=provenance)
-            if chunk is not None:
-                candidates.append(chunk)
+
+def context_connection(conn: QueryConnection, name: str, *, graph_result: GraphResult,
+                       token_budget: int = 4000) -> dict[str, object]:
+    provenance = read_projection_provenance(conn)
+    target_id = _required_node_id(conn, name)
+    distances: dict[str, int] = {target_id: 0}
+    for edge in graph_result.edges:
+        target = str(edge["target_id"])
+        edge_depth_raw = edge["depth"]
+        if isinstance(edge_depth_raw, bool) or not isinstance(edge_depth_raw, int):
+            raise RepoSearchError(
+                "BLOCKED_PROJECTION_INTEGRITY",
+                "graph edge depth must be an integer",
+            )
+        edge_depth = edge_depth_raw
+        distances[target] = min(distances.get(target, edge_depth), edge_depth)
+
+    candidates = []
+    for node_id, distance in distances.items():
+        chunk = _context_chunk(conn, node_id, distance, provenance=provenance)
+        if chunk is not None:
+            candidates.append(chunk)
 
     candidates.sort(
         key=lambda item: (
