@@ -87,6 +87,35 @@ jobs:
           _target/olean-export/target/release/olean-export --version
           _target/olean-export/target/release/olean-export deps --help
 
+      - name: Verify actual generated deps invocation before heavy restoration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          lean_bin="$(cd "$SOURCE_ROOT"; elan which lean)"
+          python3 - "$lean_bin" <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          from types import SimpleNamespace
+          from scripts.riemann_compressed_cache import reader_command
+          lean = Path(sys.argv[1])
+          root = Path.cwd()
+          args = SimpleNamespace(reader=root/'_target/olean-export/target/release/olean-export',
+                                 jobs=2, trust='Mathlib', constant='Nat')
+          output = root/'_out/reader-cli-preflight.jsonl'
+          # Exercise the same command generator with both repeatable search
+          # arguments and the actual -c/--trust options, before cache restore.
+          env = os.environ.copy()
+          env.pop('LEAN_PATH', None)
+          env.pop('LEAN_SYSROOT', None)
+          subprocess.run(reader_command(args, ['Init.Prelude'],
+                         [root/'_target/olean-export', lean.parent.parent/'lib/lean'],
+                         output), env=env, check=True)
+          rows = [json.loads(line) for line in output.read_text().splitlines()]
+          assert any(row['name']=='Nat' and row['module']=='Init.Prelude' for row in rows)
+          print('GENERATED_DEPS_COMMAND_PASS')
+          PY
+
       - name: Restore Mathlib cache
         shell: bash
         run: |

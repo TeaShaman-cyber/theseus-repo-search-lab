@@ -69,6 +69,8 @@ class DirectModuleReaderWorkflowTests(unittest.TestCase):
         self.assertIn('--constant riemannHypothesis', pilot)
         self.assertIn('8318f1d4e4fc5b530d34ff1ee3d73321587565b9', pilot)
         self.assertIn('--compare-plain', pilot)
+        self.assertIn('GENERATED_DEPS_COMMAND_PASS', pilot)
+        self.assertLess(pilot.index('GENERATED_DEPS_COMMAND_PASS'), pilot.index('Restore Mathlib cache'))
         self.assertIn('REAL_RH_COMPRESSED_GRAPH_PARITY_PASS', pilot)
         self.assertLess(pilot.index('Preserve control evidence'), pilot.index('Restore compressed Main closure'))
         self.assertIn('ReadModuleFacts.lean', pilot)

@@ -6,6 +6,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from scripts.riemann_compressed_cache import (
@@ -14,6 +15,7 @@ from scripts.riemann_compressed_cache import (
     canonical_graph_hash,
     ensure_space,
     part_hashes,
+    reader_command,
     restore_batch,
 )
 
@@ -181,3 +183,37 @@ class CompressedCacheTests(unittest.TestCase):
                     pid = int(pidfile.read_text())
                     if alive(pid):
                         os.kill(pid, signal.SIGKILL)
+
+    def test_reader_subcommand_precedes_global_flags(self):
+        args = SimpleNamespace(
+            reader=Path("/bin/olean-export"),
+            jobs=4,
+            trust="Init,Mathlib",
+            constant="riemannHypothesis",
+        )
+        command = reader_command(
+            args,
+            ["Main"],
+            [Path("/mount/a"), Path("/mount/b")],
+            Path("/out/graph.jsonl"),
+        )
+        self.assertEqual(
+            command,
+            [
+                "/bin/olean-export",
+                "deps",
+                "-j",
+                "4",
+                "-L",
+                "/mount/a",
+                "-L",
+                "/mount/b",
+                "Main",
+                "--trust",
+                "Init,Mathlib",
+                "-o",
+                "/out/graph.jsonl",
+                "-c",
+                "riemannHypothesis",
+            ],
+        )

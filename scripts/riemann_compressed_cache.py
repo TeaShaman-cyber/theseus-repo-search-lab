@@ -264,10 +264,10 @@ def compress_batch(
 def reader_command(
     args, roots: list[str], mounted: list[Path], output: Path
 ) -> list[str]:
-    command = [str(args.reader), "-j", str(args.jobs)]
+    command = [str(args.reader), "deps", "-j", str(args.jobs)]
     for mount in mounted:
         command.extend(["-L", str(mount)])
-    command.extend(["deps", *roots, "--trust", args.trust, "-o", str(output)])
+    command.extend([*roots, "--trust", args.trust, "-o", str(output)])
     if args.constant is not None:
         command.extend(["-c", args.constant])
     return command
