@@ -9,6 +9,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from .errors import RepoSearchError
+from .json_contract import strict_json_loads
 from .model import (
     ArchiveAuthority,
     ArtifactManifest,
@@ -389,8 +390,8 @@ def _integrity(message: str) -> RepoSearchError:
 
 def _validate_authority_receipt_bytes(data: bytes, manifest: ArtifactManifestAny) -> str:
     try:
-        receipt = json.loads(data.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        receipt = strict_json_loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
         raise _integrity(f"invalid authority receipt: {exc}") from exc
     if not isinstance(receipt, dict):
         raise _integrity("invalid authority receipt: root must be an object")
@@ -502,11 +503,11 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
         for line in path.read_text(encoding="utf-8").splitlines():
             if not line:
                 continue
-            value = json.loads(line)
+            value = strict_json_loads(line)
             if not isinstance(value, dict):
                 raise ValueError("JSONL row is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
             rows.append(value)
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         raise _integrity(f"invalid artifact member {path.name}: {exc}") from exc
     return rows
 
@@ -590,7 +591,7 @@ def load_artifact(
     path: Path,
 ) -> tuple[ArtifactManifestAny, list[Node], list[Edge], list[SourceChunk]]:
     try:
-        manifest_data = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
+        manifest_data = strict_json_loads((path / "manifest.json").read_text(encoding="utf-8"))
         if not isinstance(manifest_data, dict):
             raise ValueError("manifest is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
         schema = manifest_data.get("schema")
@@ -600,7 +601,7 @@ def load_artifact(
             manifest = ArtifactManifestV2.from_dict(manifest_data)
         else:
             raise ValueError(f"unsupported schema: {schema}")
-    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError, ValueError, AssertionError) as exc:
+    except (OSError, UnicodeError, KeyError, TypeError, ValueError, AssertionError) as exc:
         raise _integrity(f"invalid manifest: {exc}") from exc
     if manifest.producer.kind == "olean-export-deps-preview" and manifest.created_from_authoritative_source:
         raise _integrity("preview producer cannot claim authoritative corpus acceptance")
@@ -792,8 +793,8 @@ def load_artifact(
 
     if manifest.created_from_authoritative_source and manifest.producer.kind != "lexical_only":
         try:
-            raw_value = json.loads(raw_depgraph_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raw_value = strict_json_loads(raw_depgraph_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError) as exc:
             raise _integrity(f"invalid raw dependency graph member: {exc}") from exc
         if not isinstance(raw_value, dict):
             raise _integrity("raw dependency graph member must be a JSON object")

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import stat
@@ -12,6 +11,7 @@ from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
 from .errors import RepoSearchError
+from .json_contract import strict_json_loads
 from .model import Edge, Node, SourceChunk
 
 DECL_RE = re.compile(
@@ -281,10 +281,10 @@ def scan_manifest_backed_lean_sources(
             raise _source_mismatch(
                 "archive member manifest changed before source consumption"
             )
-        manifest = json.loads(manifest_bytes.decode("utf-8"))
+        manifest = strict_json_loads(manifest_bytes.decode("utf-8"))
     except RepoSearchError:
         raise
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         raise RepoSearchError(
             "BLOCKED_SOURCE_BINDING",
             f"invalid archive member manifest: {exc}",
