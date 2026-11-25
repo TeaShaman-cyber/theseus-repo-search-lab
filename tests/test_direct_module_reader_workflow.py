@@ -38,3 +38,15 @@ class DirectModuleReaderWorkflowTests(unittest.TestCase):
         self.assertIn('retention-days: 30', pilot)
         self.assertNotIn('lake build', pilot)
         self.assertNotIn('lean_project_import_closure.lean', pilot)
+
+    def test_upstream_deps_pilot_compares_without_rebuilding_graph(self):
+        pilot = Path('.github/workflows/riemann-olean-deps-pilot.yml').read_text()
+        self.assertIn('8318f1d4e4fc5b530d34ff1ee3d73321587565b9', pilot)
+        self.assertIn('cargo +1.100.0 build --locked --release', pilot)
+        self.assertIn('restore_riemann_ci_cache_subset.py', pilot)
+        self.assertIn('olean-export" deps', pilot)
+        self.assertIn('ReadModuleFacts.lean', pilot)
+        self.assertIn('missing_edges', pilot)
+        self.assertIn('extra_edges', pilot)
+        self.assertNotIn('replay_closed_modules', pilot)
+        self.assertNotIn('lake build', pilot)
