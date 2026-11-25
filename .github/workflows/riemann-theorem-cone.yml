@@ -1,0 +1,225 @@
+name: Riemann headline theorem cone
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/riemann-theorem-cone.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-theorem-cone-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
+
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Install pinned Lean runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build pinned upstream olean-export with its locked dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url https://github.com/sdiehl/olean-export.git \
+            --commit 8318f1d4e4fc5b530d34ff1ee3d73321587565b9 \
+            --dest _target/olean-export
+          rustup toolchain install 1.100.0 --profile minimal
+          (cd _target/olean-export; cargo +1.100.0 build --locked --release --bin olean-export)
+          _target/olean-export/target/release/olean-export --version
+          _target/olean-export/target/release/olean-export deps --help
+
+      - name: Restore Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4 \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+              lake exe mathlib/cache get
+
+      - name: Verify dependency inputs and measure Main import closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          git -C "$SOURCE_ROOT" diff --exit-code
+          test "$(cat "$SOURCE_ROOT/lean-toolchain")" = 'leanprover/lean4:v4.36.0'
+          (cd "$SOURCE_ROOT"; lean --version) | tee _out/lean-version.txt
+          grep -F 'commit 611c117bfaf7b7ae1cfcf246ce6fba31e8f509e9' _out/lean-version.txt
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root = Path(os.environ['SOURCE_ROOT'])
+          manifest = json.loads((root/'lake-manifest.json').read_text())
+          for package in manifest['packages']:
+              path = root/'.lake/packages'/package['name']
+              assert subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip() == package['rev']
+              subprocess.run(['git','-C',str(path),'diff','--exit-code','HEAD'],check=True)
+          Path('_out/dependency-manifest.json').write_bytes((root/'lake-manifest.json').read_bytes())
+          PY
+          printf 'Main\n' > _out/modules.txt
+          lean_bin="$(cd "$SOURCE_ROOT"; elan which lean)"
+          env -u LEAN_PATH "$lean_bin" --run scripts/lean_project_import_closure.lean \
+            "$SOURCE_ROOT/src" "$GITHUB_WORKSPACE/_out/modules.txt" > _out/project-closure.txt
+          grep -Fx Main _out/project-closure.txt
+          python3 - <<'PY'
+          import json, os, shutil
+          from pathlib import Path
+          out = Path('_out')
+          modules = out.joinpath('project-closure.txt').read_text().splitlines()
+          # A provisional conservative budget, not a source-module count cap.
+          # Earlier 253-module pilot downloaded ~31 KiB/module; budget 384 KiB
+          # per module for archives, unpacked artifacts and graph working disk,
+          # plus 5 GiB reserve. Record actual free space and stop if insufficient.
+          free = shutil.disk_usage(os.environ['SOURCE_ROOT']).free
+          estimate = len(modules)*384*1024 + 5*1024**3
+          budget = {'closure_modules':len(modules),'free_bytes':free,'estimated_required_bytes':estimate,
+                    'estimate_not_guarantee':True}
+          out.joinpath('disk-budget.json').write_text(json.dumps(budget,indent=2)+'\n')
+          print(json.dumps(budget))
+          assert len(modules)==len(set(modules)) and 'Main' in modules
+          assert free >= estimate, 'provisional disk budget insufficient for Main closure'
+          PY
+
+      - name: Restore exact Main closure without compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o _out/rh-restore-time.txt \
+            python3 scripts/restore_riemann_ci_cache_subset.py --project "$SOURCE_ROOT" \
+              --modules-file _out/project-closure.txt --metrics-out _out/restore-receipt.json
+          df -h "$SOURCE_ROOT" | tee _out/disk-after-restore.txt
+
+      - name: Read the headline theorem cone directly
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          bin="$root/_target/olean-export/target/release"
+          cd "$SOURCE_ROOT"
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o "$root/_out/theorem-cone-time.txt" \
+            lake env "$bin/olean-export" deps Main -c riemannHypothesis \
+              --trust Init,Std,Lean,Lake,Mathlib,Batteries,Aesop,Qq,ProofWidgets,ImportGraph,LeanSearchClient,Plausible \
+              -o "$root/_out/theorem-cone.jsonl"
+          sha256sum "$bin/olean-export" > "$root/_out/upstream-binary.sha256"
+          lean_bin="$(elan which lean)"
+          env -u LEAN_PATH "$lean_bin" --run "$root/producer/lean/ReadModuleFacts.lean" Main \
+            "$SOURCE_ROOT/.lake/build/lib/lean/Main.olean" --metadata "$root/_out/Main.json" > "$root/_out/Main.jsonl"
+
+      - name: Verify headline boundary and record cone coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections, hashlib, json, os, subprocess
+          from pathlib import Path
+          out = Path('_out')
+          closure = set(out.joinpath('project-closure.txt').read_text().splitlines())
+          expected = {r['full_name']:set(r['type_dependencies'])|set(r['value_dependencies'])
+                      for r in map(json.loads,out.joinpath('Main.jsonl').read_text().splitlines())}
+          counts = collections.Counter()
+          headline = []
+          references = 0
+          with out.joinpath('theorem-cone.jsonl').open() as stream:
+              for line in stream:
+                  row = json.loads(line)
+                  counts[row['module']] += 1
+                  references += len(row['uses'])
+                  if row['module']=='Main': headline.append(row)
+          assert counts and set(counts) <= closure, 'output outside pinned project closure'
+          root = [r for r in headline if r['name']=='riemannHypothesis']
+          assert len(root)==1 and 'riemannHypothesis' in expected
+          actual = set(root[0]['uses'])
+          native = expected['riemannHypothesis']
+          assert 'LFunction_ne_zero_of_half_lt_re' in actual
+          receipt = {'schema':'theseus.rh-headline-cone.v1',
+                     'source_commit':os.environ['SOURCE_COMMIT'],
+                     'upstream_commit':'8318f1d4e4fc5b530d34ff1ee3d73321587565b9',
+                     'producer_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                     'project_import_closure_modules':len(closure), 'cone_modules':len(counts),
+                     'cone_rows':sum(counts.values()),'cone_references':references,
+                     'headline_rows':headline,'root_missing_refs':sorted(native-actual),
+                     'root_extra_refs':sorted(actual-native),
+                     'timings':{p.name:p.read_text().strip() for p in out.glob('*time.txt')},
+                     'file_hashes':{}}
+          for p in out.iterdir():
+              if p.is_file():
+                  with p.open('rb') as stream:
+                      receipt['file_hashes'][p.name]=hashlib.file_digest(stream,'sha256').hexdigest()
+          out.joinpath('receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Upload theorem cone and partial evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-headline-cone
+          path: _out/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Remove disposable workspace
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out

@@ -60,3 +60,14 @@ class DirectModuleReaderWorkflowTests(unittest.TestCase):
         self.assertIn('project_duplicate_names', pilot)
         self.assertIn('project_missing_modules', pilot)
         self.assertNotIn('replay_closed_modules', pilot)
+
+    def test_headline_cone_uses_upstream_reader_and_existing_restore(self):
+        pilot = Path('.github/workflows/riemann-theorem-cone.yml').read_text()
+        self.assertIn('lean_project_import_closure.lean', pilot)
+        self.assertIn('--modules-file _out/project-closure.txt', pilot)
+        self.assertIn('olean-export" deps Main -c riemannHypothesis', pilot)
+        self.assertIn('8318f1d4e4fc5b530d34ff1ee3d73321587565b9', pilot)
+        self.assertIn('ReadModuleFacts.lean', pilot)
+        self.assertIn('disk-budget.json', pilot)
+        self.assertNotIn('replay_closed_modules', pilot)
+        self.assertNotIn('lake build', pilot)
