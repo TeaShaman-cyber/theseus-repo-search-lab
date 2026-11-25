@@ -29,6 +29,10 @@ not a replacement for that scope.
   contextualizing existing formalized mathematics. If not, leave it out of
   Repository Search absent explicit, separately scoped authorization. Do not
   interpret old proof-audit issues or QA fixtures as a product roadmap.
+- **Cloud resources:** before creating Turso or MotherDuck resources, record the
+  exact intended target, owner Issue, purpose, source identity and retirement
+  condition; reconcile actual resources at completion or record pending cleanup.
+  Follow [cloud resource housekeeping](docs/cloud-resource-housekeeping.md).
 - **Verify:** use the repository's `./tools/dev/check` first. For search-runtime
   changes, also exercise real cold/warm corpus queries and report absent or
   unavailable corpora explicitly; green unit tests alone do not prove usability.
