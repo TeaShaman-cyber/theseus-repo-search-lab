@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from hashlib import sha256
 from pathlib import Path
 
@@ -78,7 +78,8 @@ def transport_config(source: str) -> str:
 
 
 def download_subset(project: Path, cache: Path, subset: bytes, repository: str,
-                    env: dict[str, str], *, lake: str = "lake") -> str:
+                    env: dict[str, str], *, lake: str = "lake",
+                    run: Callable[..., object] | None = None) -> str:
     """Download already validated mappings without materializing packages."""
     config = transport_config((project / "lakefile.toml").read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory(prefix="rh-cache-transport-") as temporary:
@@ -89,7 +90,7 @@ def download_subset(project: Path, cache: Path, subset: bytes, repository: str,
         mapping.write_bytes(subset)
         transport_env = dict(env, LAKE_CONFIG=str(workspace / "lakefile.toml"),
                              LAKE_CACHE_DIR=str(cache.resolve()))
-        subprocess.run([lake, "-q", "cache", "get", str(mapping), "--repo", repository],
+        (run or subprocess.run)([lake, "-q", "cache", "get", str(mapping), "--repo", repository],
                        cwd=workspace, env=transport_env, check=True)
         packages = workspace / ".lake/packages"
         if packages.exists() and any(packages.iterdir()):
@@ -125,7 +126,7 @@ def _read_modules(path: Path, module_pattern) -> set[str]:
     return modules
 
 
-def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancestor_limit: int):
+def validated_selection(project: Path, modules: set[str], ancestor_limit: int):
     ci = _load_upstream(project)
     identity = ci.current_identity(project)
     record = ci.find_record(project, identity, ancestor_limit)
@@ -133,7 +134,7 @@ def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancest
     if record is None:
         record, cached = ci.baseline_record(identity)
     if record is None:
-        return 3, None
+        return None
 
     def fetcher(key, maximum=ci.MAX_JSON):
         if key in cached:
@@ -142,12 +143,14 @@ def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancest
 
     contents, rows = ci.validated_blobs(record, identity, fetcher)
     selected_rows = select_rows(rows, modules)
-    subset = subset_mapping_bytes(contents, selected_rows)
 
     if ci.current_identity(project) != identity:
         raise ValueError("project inputs changed during targeted cache lookup")
 
-    ci.restore.local_path(project, Path(".lake"), set()).mkdir(exist_ok=True)
+    return ci, identity, record, contents, rows, selected_rows
+
+
+def restore_environment(project: Path, cache: Path, identity) -> dict[str, str]:
     env = os.environ.copy()
     for key in list(env):
         if (
@@ -161,6 +164,7 @@ def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancest
                 "GH_TOKEN",
                 "GITHUB_TOKEN",
                 "HF_TOKEN",
+                "LEAN_PATH",
             )
         ):
             env.pop(key)
@@ -171,6 +175,18 @@ def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancest
         LAKE_RESTORE_ARTIFACTS="true",
         ELAN_TOOLCHAIN=identity["toolchain"],
     )
+
+    return env
+
+
+def _restore(project: Path, modules: set[str], cache: Path, workers: int, ancestor_limit: int):
+    selection = validated_selection(project, modules, ancestor_limit)
+    if selection is None:
+        return 3, None
+    ci, identity, record, contents, rows, selected_rows = selection
+    subset = subset_mapping_bytes(contents, selected_rows)
+    ci.restore.local_path(project, Path(".lake"), set()).mkdir(exist_ok=True)
+    env = restore_environment(project, cache, identity)
 
     config_sha = download_subset(project, cache, subset, ci.REPOSITORY, env)
 

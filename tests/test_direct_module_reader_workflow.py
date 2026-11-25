@@ -61,13 +61,17 @@ class DirectModuleReaderWorkflowTests(unittest.TestCase):
         self.assertIn('project_missing_modules', pilot)
         self.assertNotIn('replay_closed_modules', pilot)
 
-    def test_headline_cone_uses_upstream_reader_and_existing_restore(self):
+    def test_headline_cone_requires_actual_compressed_graph_parity(self):
         pilot = Path('.github/workflows/riemann-theorem-cone.yml').read_text()
         self.assertIn('lean_project_import_closure.lean', pilot)
-        self.assertIn('--modules-file _out/project-closure.txt', pilot)
-        self.assertIn('olean-export" deps Main -c riemannHypothesis', pilot)
+        self.assertIn('scripts/riemann_compressed_cache.py', pilot)
+        self.assertIn('--modules-file "$root/_out/project-closure.txt"', pilot)
+        self.assertIn('--constant riemannHypothesis', pilot)
         self.assertIn('8318f1d4e4fc5b530d34ff1ee3d73321587565b9', pilot)
+        self.assertIn('--compare-plain', pilot)
+        self.assertIn('REAL_RH_COMPRESSED_GRAPH_PARITY_PASS', pilot)
+        self.assertLess(pilot.index('Preserve control evidence'), pilot.index('Restore compressed Main closure'))
         self.assertIn('ReadModuleFacts.lean', pilot)
-        self.assertIn('disk-budget.json', pilot)
+        self.assertIn('mount_cleanup_verified', pilot)
         self.assertNotIn('replay_closed_modules', pilot)
         self.assertNotIn('lake build', pilot)

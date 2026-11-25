@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/riemann-theorem-cone.yml'
+      - 'scripts/riemann_compressed_cache.py'
+      - 'scripts/restore_riemann_ci_cache_subset.py'
   workflow_dispatch:
 
 permissions:
@@ -16,10 +18,11 @@ concurrency:
 jobs:
   compare:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     env:
       PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
       SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
+      TRUST_MODULES: Init,Std,Lean,Lake,Mathlib,Batteries,Aesop,Qq,ProofWidgets,ImportGraph,LeanSearchClient,Plausible
 
     steps:
       - name: Checkout Repository Search
@@ -118,35 +121,75 @@ jobs:
           env -u LEAN_PATH "$lean_bin" --run scripts/lean_project_import_closure.lean \
             "$SOURCE_ROOT/src" "$GITHUB_WORKSPACE/_out/modules.txt" > _out/project-closure.txt
           grep -Fx Main _out/project-closure.txt
-          python3 - <<'PY'
-          import json, os, shutil
-          from pathlib import Path
-          out = Path('_out')
-          modules = out.joinpath('project-closure.txt').read_text().splitlines()
-          # A provisional conservative budget, not a source-module count cap.
-          # Earlier 253-module pilot downloaded ~31 KiB/module; budget 384 KiB
-          # per module for archives, unpacked artifacts and graph working disk,
-          # plus 5 GiB reserve. Record actual free space and stop if insufficient.
-          free = shutil.disk_usage(os.environ['SOURCE_ROOT']).free
-          estimate = len(modules)*384*1024 + 5*1024**3
-          budget = {'closure_modules':len(modules),'free_bytes':free,'estimated_required_bytes':estimate,
-                    'estimate_not_guarantee':True}
-          out.joinpath('disk-budget.json').write_text(json.dumps(budget,indent=2)+'\n')
-          print(json.dumps(budget))
-          assert len(modules)==len(set(modules)) and 'Main' in modules
-          assert free >= estimate, 'provisional disk budget insufficient for Main closure'
-          PY
+          df -h "$SOURCE_ROOT" | tee _out/disk-before.txt
+          df -i "$SOURCE_ROOT" | tee _out/inodes-before.txt
+          # Verify the previously measured closure at this exact source pin.
+          echo "390af5fb692aa6fc120b2b8e2ff9817f1251479a966b71de52837f54e4b64cbc  _out/project-closure.txt" | sha256sum --check
 
-      - name: Restore exact Main closure without compilation
+      - name: Prepare compressed filesystem tools
         shell: bash
         run: |
           set -euo pipefail
-          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o _out/rh-restore-time.txt \
-            python3 scripts/restore_riemann_ci_cache_subset.py --project "$SOURCE_ROOT" \
-              --modules-file _out/project-closure.txt --metrics-out _out/restore-receipt.json
-          df -h "$SOURCE_ROOT" | tee _out/disk-after-restore.txt
+          if ! command -v mksquashfs >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends squashfs-tools
+          fi
+          mksquashfs -version
+          sudo -n true
+          mkdir -p _target/compressed _out/control
 
-      - name: Read the headline theorem cone directly
+      - name: Compare the real RH graph on plain and compressed storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          cat > _out/control/roots.txt <<'ROOTS'
+          CompanionTheory.AutomorphicTheory.BesselWaveGrids.InterlacingGrids.PairOKOfInterlace
+          Lemmata.GeneralBFactSecondVersion.Imports
+          Development.AbelianVarietyTheory.Definitions.Divisors.PullbackBijectiveDegreesOneTwo
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.FinrankEigenCoindMackeyDoubleCosets
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.ExistsDerivationEqIteratePrimeCharP
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.LocallyFinitePresentationOfEtaleCoverStatement
+          Development.AbelianVarietyTheory.Proofs.AdelicLatticeProofs.ContinuousSymmFinite
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.QuaternionNormOneTraceOpenPi
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.EventuallyExistsIntegralCharpolySplitPlace
+          ROOTS
+          lean_bin="$(cd "$SOURCE_ROOT"; elan which lean)"
+          env -u LEAN_PATH "$lean_bin" --run scripts/lean_project_import_closure.lean \
+            "$SOURCE_ROOT/src" "$root/_out/control/roots.txt" > _out/control/modules.txt
+          # Same pinned scope as the independently verified #170 pilot.
+          test "$(wc -l < _out/control/modules.txt)" -eq 1740
+          cd "$SOURCE_ROOT"
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o "$root/_out/control/time.txt" \
+            lake env python3 "$root/scripts/riemann_compressed_cache.py" \
+              --project "$SOURCE_ROOT" --modules-file "$root/_out/control/modules.txt" \
+              --roots-file "$root/_out/control/roots.txt" \
+              --reader "$root/_target/olean-export/target/release/olean-export" \
+              --trust "$TRUST_MODULES" --batch-size 512 --jobs 4 --compare-plain \
+              --work-dir "$root/_target/compressed" \
+              --output "$root/_out/control/rh-deps.jsonl" \
+              --metrics-out "$root/_out/control/receipt.json"
+          python3 - "$root/_out/control/receipt.json" <<'PY'
+          import json, sys
+          receipt = json.load(open(sys.argv[1]))
+          assert receipt['status'] == 'PASS'
+          assert receipt['mount_cleanup_verified']
+          assert receipt['plain_graph'] == receipt['compressed_graph']
+          assert receipt['compressed_graph'][0] == 61496
+          assert len(receipt['batches']) >= 2
+          assert receipt['image_bytes'] < receipt['olean_bytes']
+          print('REAL_RH_COMPRESSED_GRAPH_PARITY_PASS')
+          PY
+
+      - name: Preserve control evidence before full restore
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-compressed-control
+          path: _out/control/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Restore compressed Main closure and read the headline cone
         shell: bash
         run: |
           set -euo pipefail
@@ -154,13 +197,17 @@ jobs:
           bin="$root/_target/olean-export/target/release"
           cd "$SOURCE_ROOT"
           /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o "$root/_out/theorem-cone-time.txt" \
-            lake env "$bin/olean-export" deps Main -c riemannHypothesis \
-              --trust Init,Std,Lean,Lake,Mathlib,Batteries,Aesop,Qq,ProofWidgets,ImportGraph,LeanSearchClient,Plausible \
-              -o "$root/_out/theorem-cone.jsonl"
+            lake env python3 "$root/scripts/riemann_compressed_cache.py" \
+              --project "$SOURCE_ROOT" --modules-file "$root/_out/project-closure.txt" \
+              --roots-file "$root/_out/modules.txt" \
+              --reader "$bin/olean-export" --trust "$TRUST_MODULES" \
+              --constant riemannHypothesis --batch-size 4096 --jobs 4 \
+              --work-dir "$root/_target/compressed" \
+              --output "$root/_out/theorem-cone.jsonl" \
+              --metrics-out "$root/_out/restore-receipt.json" \
+              --native-reader "$root/producer/lean/ReadModuleFacts.lean"
           sha256sum "$bin/olean-export" > "$root/_out/upstream-binary.sha256"
-          lean_bin="$(elan which lean)"
-          env -u LEAN_PATH "$lean_bin" --run "$root/producer/lean/ReadModuleFacts.lean" Main \
-            "$SOURCE_ROOT/.lake/build/lib/lean/Main.olean" --metadata "$root/_out/Main.json" > "$root/_out/Main.jsonl"
+          df -h "$SOURCE_ROOT" | tee "$root/_out/disk-after-restore.txt"
 
       - name: Verify headline boundary and record cone coverage
         shell: bash
@@ -171,6 +218,9 @@ jobs:
           from pathlib import Path
           out = Path('_out')
           closure = set(out.joinpath('project-closure.txt').read_text().splitlines())
+          restore = json.loads(out.joinpath('restore-receipt.json').read_text())
+          assert restore['status'] == 'PASS' and restore['mount_cleanup_verified']
+          assert restore['selected_project_modules'] == len(closure)
           expected = {r['full_name']:set(r['type_dependencies'])|set(r['value_dependencies'])
                       for r in map(json.loads,out.joinpath('Main.jsonl').read_text().splitlines())}
           counts = collections.Counter()
@@ -220,6 +270,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Cleanup only this workflow's mountpoints, including interrupted batches.
+          if test -d _target/compressed; then
+            for mount in "$GITHUB_WORKSPACE"/_target/compressed/compressed-*/mount-*; do
+              test -d "$mount" || continue
+              if mountpoint -q "$mount"; then sudo umount "$mount"; fi
+              ! mountpoint -q "$mount"
+            done
+          fi
           rm -rf _target _out
           test ! -e _target
           test ! -e _out
