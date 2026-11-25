@@ -251,3 +251,20 @@ policy for existing acceptance runs is not changed by linting. Keep
 project-specific tests for exact workflow pins, accepted corpus matrices,
 provenance, fail-closed behavior and producer/consumer phase boundaries.
 The lint job does not change branch protection or accepted corpus policy.
+
+### JSON lint
+
+The hosted static analysis job also uses standalone Biome 2.6.6 with the
+unchanged `biome.json` profile from Session Search
+(`89a261a1092fd693b3ae95d05e69d1ed6fef037b`). No Node.js dependencies are
+required. Run `tools/ci/json-lint` with that version of Biome on PATH. It
+checks all tracked JSON, treats warnings (including files skipped for size)
+as failures, and does not reformat or modify files. The local dev check uses
+this endpoint when Biome is installed; otherwise its original basic
+fixture-syntax check remains available without additional dependencies.
+The hosted job always executes the full Biome check.
+
+Static lint is not runtime validation: Biome 2.6.6 misses equivalent
+escaped object keys (for example `"a"` and `"\u0061"`). Keep strict runtime
+parsing, provenance and domain-invariant tests. JSONL and downloaded corpus
+artifacts are not part of this tracked-JSON lint scope.

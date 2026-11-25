@@ -1,0 +1,11 @@
+#!/bin/sh
+# Reuse Session Search's exact Biome 2.6.6 profile over tracked JSON only.
+set -eu
+ROOT=$(git rev-parse --show-toplevel)
+cd "$ROOT"
+test "$(biome --version)" = 'Version: 2.6.6'
+paths=$(mktemp)
+trap 'rm -f "$paths"' EXIT
+git ls-files -z -- '*.json' > "$paths"
+test -s "$paths"
+xargs -0 biome lint --config-path biome.json --diagnostic-level=warn --error-on-warnings < "$paths"

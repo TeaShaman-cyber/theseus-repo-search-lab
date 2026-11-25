@@ -32,17 +32,20 @@ jobs:
           curl -fsSL --retry 2 -o jactionlint.tar.gz https://github.com/jdx/jactionlint/releases/download/v2.6.0/jactionlint_2.6.0_linux_amd64.tar.gz
           curl -fsSL --retry 2 -o zizmor.tar.gz https://github.com/zizmorcore/zizmor/releases/download/v1.33.1/zizmor-x86_64-unknown-linux-gnu.tar.gz
           curl -fsSL --retry 2 -o shellcheck.tar.xz https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
+          curl -fsSL --retry 2 -o biome https://github.com/biomejs/biome/releases/download/@biomejs/biome@2.6.6/biome-linux-x64
           sha256sum -c <<'SHA256'
           d5400967b8f0d3a5ae9a4cee21f56400a50eb3f05d0cbb4ef17184f17f0760c8  jactionlint.tar.gz
           3e6a301c7a820a2501915f5a9de8c0486da82bdec7965f068477538a98743d43  zizmor.tar.gz
           8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  shellcheck.tar.xz
+          69ca8e9ff548091b2bfbd178d6f73142b483a5257b07854de702c68fb7f8c06b  biome
           SHA256
           tar -xzf jactionlint.tar.gz -C "$bin" jactionlint
           tar -xzf zizmor.tar.gz -C "$bin" zizmor
           tar -xJf shellcheck.tar.xz -C "$bin" --strip-components=1 shellcheck-v0.11.0/shellcheck
+          install -m 0755 biome "$bin/biome"
           echo "$bin" >> "$GITHUB_PATH"
 
-      - name: Analyze repository workflows and POSIX endpoints
+      - name: Analyze repository workflows, POSIX endpoints and tracked JSON
         shell: bash
         run: |
           set -euo pipefail
@@ -52,3 +55,4 @@ jobs:
           jactionlint --no-online
           zizmor --offline --no-config --strict-collection .github/workflows
           shellcheck tools/ci/* tools/dev/*
+          tools/ci/json-lint
