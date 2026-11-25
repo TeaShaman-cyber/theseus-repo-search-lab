@@ -255,9 +255,16 @@ The lint job does not change branch protection or accepted corpus policy.
 ### JSON lint
 
 The hosted static analysis job also uses standalone Biome 2.6.6 with the
-unchanged `biome.json` profile from Session Search
+repository-specific `biome.json` profile based on Session Search
 (`89a261a1092fd693b3ae95d05e69d1ed6fef037b`). No Node.js dependencies are
-required. Run `tools/ci/json-lint` with that version of Biome on PATH. It
+required. The JSON-only profile explicitly disallows comments and trailing
+commas, empty keys, scalar roots and duplicate keys. Three individually
+enabled nursery rules reject unsafe interoperation values (including integers
+outside the IEEE-754 safe range), non-NFC object keys and a leading UTF-8 BOM.
+These are policies for checked-in configuration/evidence JSON, not constraints
+on arbitrary mathematical corpus data. Formatter and assist are disabled;
+no blanket nursery preset or automatic rewriting is enabled. Review these
+experimental rules when upgrading the pinned Biome version. Run `tools/ci/json-lint` with that version of Biome on PATH. It
 checks all tracked JSON, treats warnings (including files skipped for size)
 as failures, and does not reformat or modify files. The local dev check uses
 this endpoint when Biome is installed; otherwise its original basic
