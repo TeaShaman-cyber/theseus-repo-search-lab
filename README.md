@@ -205,7 +205,11 @@ compiled-reference relation, not an elaborated type or proof-value dependency.
 The current one-node-per-name representation excludes all ambiguous name
 occurrences from the graph; it never arbitrarily chooses a module. Raw
 occurrences remain in the original verified pilot ZIP; the separate preview
-receipt records the omissions and coverage. Source chunks remain searchable.
+receipt records the omissions and coverage. Source chunks remain searchable. Preview source associations are reciprocal
+unique lexical candidates within the module, including competition from
+graph-omitted names; they are not elaborated declaration ranges. Ambiguous
+candidates remain unbound, and exact/context retrieval does not guess a source
+location for an unbound node.
 Unresolved references include references outside the emitted graph and must not
 be interpreted as missing mathematical declarations. The preview producer
 cannot claim authoritative source acceptance. Graph results always have

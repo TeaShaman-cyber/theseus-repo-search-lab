@@ -113,9 +113,19 @@ def _required_node_id(conn: QueryConnection, query: str) -> str:
 
 
 def _source_row_for_node(
-    conn: QueryConnection, node_row, *, revision_column: str
+    conn: QueryConnection, node_row, *, revision_column: str, require_bound_location: bool = False
 ):
-    _, name, source_path, source_start_line, _source_end_line, _, module = node_row
+    _, name, source_path, source_start_line, source_end_line, _, module = node_row
+    if require_bound_location:
+        if source_path is None or source_start_line is None or source_end_line is None:
+            return None
+        rows = conn.execute(
+            f"SELECT id, {revision_column}, source_path, source_start_line, source_end_line, "
+            "declaration_hint, text FROM sources WHERE source_path = ? AND source_start_line = ? "
+            "AND source_end_line = ? AND declaration_hint = ?",
+            (source_path, source_start_line, source_end_line, name),
+        ).fetchall()
+        return rows[0] if len(rows) == 1 else None
     if source_path is not None:
         rows = conn.execute(
             f"SELECT id, {revision_column}, source_path, source_start_line, source_end_line, "
@@ -157,7 +167,8 @@ def _exact_hit(
     )
     assert node_row is not None
     source_row = _source_row_for_node(
-        conn, node_row, revision_column=provenance.revision_column
+        conn, node_row, revision_column=provenance.revision_column,
+        require_bound_location=provenance.producer_kind == "olean-export-deps-preview",
     )
     if source_row is None:
         return SearchHit(
@@ -198,7 +209,7 @@ def _declaration_id_for_hit(
     source_path: str,
     source_start_line: int,
     source_end_line: int,
-    allow_global_fallback: bool = True,
+    require_exact_binding: bool = False,
 ) -> str | None:
     if hint is None:
         return None
@@ -220,6 +231,9 @@ def _declaration_id_for_hit(
     if len(exact) == 1:
         return exact[0]
 
+    if require_exact_binding:
+        return None
+
     containing = [
         str(row[0])
         for row in rows
@@ -234,8 +248,6 @@ def _declaration_id_for_hit(
     if len(path_ids) == 1:
         return path_ids[0]
 
-    if not allow_global_fallback:
-        return None
     ids = sorted({str(row[0]) for row in rows})
     return ids[0] if len(ids) == 1 else None
 
@@ -284,13 +296,6 @@ def search_connection(
         "ORDER BY rank, s.source_path, s.source_start_line LIMIT ?",
         (fts_query, limit),
     ).fetchall()
-    # A preview deliberately omits ambiguous graph occurrences. Never attach a
-    # lexical occurrence to a different module merely because its surviving
-    # short name happens to be unique in this partial graph.
-    allow_global_fallback = True
-    if not provenance.created_from_authoritative_source:
-        producer = conn.execute("SELECT value FROM meta WHERE key='producer.kind'").fetchone()
-        allow_global_fallback = producer != ("olean-export-deps-preview",)
     return [
         SearchHit(
             declaration_id=_declaration_id_for_hit(
@@ -299,7 +304,7 @@ def search_connection(
                 source_path=str(row[2]),
                 source_start_line=int(row[3]),
                 source_end_line=int(row[4]),
-                allow_global_fallback=allow_global_fallback,
+                require_exact_binding=provenance.producer_kind == "olean-export-deps-preview",
             ),
             declaration_hint=None if row[5] is None else str(row[5]),
             source_kind=provenance.source_kind,
@@ -329,7 +334,8 @@ def _context_chunk(
     if node_row is None:
         return None
     source_row = _source_row_for_node(
-        conn, node_row, revision_column=provenance.revision_column
+        conn, node_row, revision_column=provenance.revision_column,
+        require_bound_location=provenance.producer_kind == "olean-export-deps-preview",
     )
     if source_row is None:
         return None

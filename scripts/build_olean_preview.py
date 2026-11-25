@@ -17,11 +17,13 @@ from pathlib import Path, PurePosixPath
 
 from theseus_repo_search.artifact import artifact_identity, write_artifact
 from theseus_repo_search.model import ArtifactScope, ProducerPin, SourceChunk
-from theseus_repo_search.olean_projection import normalize_olean_references
+from theseus_repo_search.olean_projection import (
+    bind_preview_node_sources,
+    normalize_olean_references,
+)
 from theseus_repo_search.projection import build_projection
 from theseus_repo_search.sources import (
     _chunks_from_text,
-    bind_node_sources,
     lean_module_source_path,
 )
 
@@ -141,7 +143,7 @@ def main() -> None:
     sources = sources_from_git(
         args.source_git, args.source_commit, modules, args.source_subdir
     )
-    nodes = bind_node_sources(nodes, sources)
+    nodes = bind_preview_node_sources(nodes, sources, report)
     manifest = write_artifact(
         args.out / "artifact",
         nodes=nodes,

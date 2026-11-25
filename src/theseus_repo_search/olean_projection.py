@@ -9,9 +9,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import replace
 
 from .errors import RepoSearchError
-from .model import Edge, EvidenceGrade, Node
+from .model import Edge, EvidenceGrade, Node, SourceChunk
+from .sources import lean_module_source_path
 
 
 def normalize_olean_references(
@@ -107,3 +109,71 @@ def normalize_olean_references(
             "complete_within_scope": False,
         },
     )
+
+
+def bind_preview_node_sources(
+    nodes: list[Node], sources: list[SourceChunk], report: dict[str, object]
+) -> list[Node]:
+    """Attach only reciprocal unique lexical candidates, not elaborated ranges.
+
+    Consider every raw in-module name, including graph-omitted occurrences.
+    A qualified hint and a namespace-local hint can compete for one node.
+    Neither an ambiguous name nor an ambiguous source chunk is resolved by
+    choosing the shortest spelling or by traversal order.
+    """
+    names_by_path: dict[str, set[str]] = defaultdict(set)
+    for node in nodes:
+        names_by_path[lean_module_source_path(node.module)].add(node.full_name)
+    ambiguous = report.get("ambiguous_names")
+    if not isinstance(ambiguous, dict):
+        raise RepoSearchError(
+            "BLOCKED_ARTIFACT_INTEGRITY", "missing raw name ambiguity report"
+        )
+    for name, modules in ambiguous.items():
+        for module in modules:
+            names_by_path[lean_module_source_path(module)].add(name)
+
+    # Index all suffixes so large modules do not need a quadratic join.
+    by_hint: dict[tuple[str, str], set[str]] = defaultdict(set)
+    for source_path, names in names_by_path.items():
+        for name in names:
+            parts = [name] if "«" in name or "»" in name else name.split(".")
+            for i in range(len(parts)):
+                by_hint[(source_path, ".".join(parts[i:]))].add(name)
+    chunks_by_candidate: dict[tuple[str, str], list[SourceChunk]] = defaultdict(list)
+    unique_chunk_ids: set[str] = set()
+    for chunk in sources:
+        if chunk.declaration_hint is None:
+            continue
+        candidates = by_hint.get((chunk.source_path, chunk.declaration_hint), set())
+        for name in candidates:
+            chunks_by_candidate[(chunk.source_path, name)].append(chunk)
+        if len(candidates) == 1:
+            unique_chunk_ids.add(chunk.id)
+
+    result = []
+    for node in nodes:
+        chunk_candidates = chunks_by_candidate.get(
+            (lean_module_source_path(node.module), node.full_name), []
+        )
+        if len(chunk_candidates) != 1 or chunk_candidates[0].id not in unique_chunk_ids:
+            result.append(node)
+            continue
+        chunk = chunk_candidates[0]
+        if (
+            chunk.source_revision != node.source_revision
+            or chunk.declaration_hint is None
+        ):
+            raise RepoSearchError(
+                "BLOCKED_ARTIFACT_INTEGRITY", "preview source identity mismatch"
+            )
+        result.append(
+            replace(
+                node,
+                name=chunk.declaration_hint,
+                source_path=chunk.source_path,
+                source_start_line=chunk.source_start_line,
+                source_end_line=chunk.source_end_line,
+            )
+        )
+    return result

@@ -6,10 +6,13 @@ from theseus_repo_search.artifact import write_artifact
 from theseus_repo_search.errors import RepoSearchError
 from theseus_repo_search.graph import dependencies, path
 from theseus_repo_search.model import ArtifactScope, EvidenceGrade, ProducerPin
-from theseus_repo_search.olean_projection import normalize_olean_references
+from theseus_repo_search.olean_projection import (
+    bind_preview_node_sources,
+    normalize_olean_references,
+)
 from theseus_repo_search.projection import build_projection
-from theseus_repo_search.retrieval import search
-from theseus_repo_search.sources import _chunks_from_text, bind_node_sources
+from theseus_repo_search.retrieval import context, search
+from theseus_repo_search.sources import _chunks_from_text
 
 
 class OleanProjectionTests(unittest.TestCase):
@@ -99,7 +102,7 @@ class OleanProjectionTests(unittest.TestCase):
             {"module": "B", "name": "shared", "kind": "theorem", "uses": []},
             {"module": "C", "name": "C.shared", "kind": "theorem", "uses": []},
         ]
-        nodes, edges, _ = normalize_olean_references(
+        nodes, edges, report = normalize_olean_references(
             rows,
             source_commit="a" * 40,
             modules=("A", "B", "C"),
@@ -117,7 +120,7 @@ class OleanProjectionTests(unittest.TestCase):
             root = Path(d)
             write_artifact(
                 root / "artifact",
-                nodes=bind_node_sources(nodes, chunks),
+                nodes=bind_preview_node_sources(nodes, chunks, report),
                 edges=edges,
                 sources=chunks,
                 source_repo="example/repo",
@@ -150,3 +153,74 @@ class OleanProjectionTests(unittest.TestCase):
                 scope=ArtifactScope(("A",), "internal_only"),
                 created_from_authoritative_commit=True,
             )
+
+    def test_same_module_qualified_and_local_names_do_not_misbind(self):
+        rows = [
+            {"module": "M", "name": "A.x", "kind": "theorem", "uses": ["B.x"]},
+            {"module": "M", "name": "B.x", "kind": "theorem", "uses": []},
+            {"module": "M", "name": "B.unique", "kind": "theorem", "uses": []},
+        ]
+        nodes, edges, report = normalize_olean_references(
+            rows,
+            source_commit="a" * 40,
+            modules=("M",),
+            producer_ref="sdiehl/olean-export@pin",
+        )
+        chunks = _chunks_from_text(
+            "M.lean",
+            "theorem A.x : True := by trivial\nnamespace B\ntheorem x : 1 = 1 := by rfl -- otherstatement\ntheorem unique : True := by trivial\nend B\n",
+            source_revision="a" * 40,
+        )
+        bound = bind_preview_node_sources(nodes, chunks, report)
+        self.assertIsNone(bound[0].source_path)
+        self.assertIsNotNone(bound[1].source_path)
+        self.assertIsNone(bound[2].source_path)
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            write_artifact(
+                root / "artifact",
+                nodes=bound,
+                edges=edges,
+                sources=chunks,
+                source_repo="example/repo",
+                source_commit="a" * 40,
+                source_subdir="src",
+                producer=ProducerPin(
+                    "olean-export-deps-preview", "sdiehl/olean-export", "pin", "b" * 64
+                ),
+                scope=ArtifactScope(("M",), "internal_only"),
+                created_from_authoritative_commit=False,
+            )
+            build_projection(root / "artifact", root / "index.sqlite")
+            self.assertIsNone(search(root / "index.sqlite", "A.x")[0].text)
+            self.assertIsNone(search(root / "index.sqlite", "B.x")[0].text)
+            self.assertEqual(context(root / "index.sqlite", "A.x")["chunks"], [])
+            self.assertIsNone(
+                search(root / "index.sqlite", "otherstatement")[0].declaration_id
+            )
+            self.assertIn(
+                "theorem unique",
+                search(root / "index.sqlite", "B.unique")[0].text or "",
+            )
+
+    def test_graph_omitted_occurrence_still_competes_for_source_chunk(self):
+        rows = [
+            {"module": "M", "name": "A.x", "kind": "theorem", "uses": []},
+            {"module": "N", "name": "A.x", "kind": "theorem", "uses": []},
+            {"module": "M", "name": "B.x", "kind": "theorem", "uses": []},
+        ]
+        nodes, _, report = normalize_olean_references(
+            rows,
+            source_commit="a" * 40,
+            modules=("M", "N"),
+            producer_ref="sdiehl/olean-export@pin",
+        )
+        chunks = _chunks_from_text(
+            "M.lean",
+            "namespace A\ntheorem x : True := by trivial\nend A\n",
+            source_revision="a" * 40,
+        )
+        self.assertEqual([n.full_name for n in nodes], ["B.x"])
+        self.assertIsNone(
+            bind_preview_node_sources(nodes, chunks, report)[0].source_path
+        )
