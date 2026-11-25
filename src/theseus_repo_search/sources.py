@@ -214,7 +214,7 @@ def _chunks_from_text(
     declaration_lines = [index for index, _ in declarations]
     starts = _chunk_starts(lines, declaration_lines)
     chunks: list[SourceChunk] = []
-    for position, ((_, declaration_name), start) in enumerate(zip(declarations, starts)):
+    for position, ((_, declaration_name), start) in enumerate(zip(declarations, starts, strict=True)):
         end = starts[position + 1] - 1 if position + 1 < len(starts) else len(lines) - 1
         chunk_text = "".join(lines[start : end + 1])
         start_line = start + 1

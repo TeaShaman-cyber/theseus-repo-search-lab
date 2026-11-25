@@ -497,4 +497,4 @@ if __name__ == "__main__":
             f"RIEMANN_SEMANTIC_PLUGIN_PILOT_BLOCKED: {exc}",
             file=__import__("sys").stderr,
         )
-        raise SystemExit(2)
+        raise SystemExit(2) from exc

@@ -9,6 +9,7 @@ import tempfile
 import urllib.request
 import zipfile
 from collections.abc import Callable
+from contextlib import suppress
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 from typing import BinaryIO
@@ -386,10 +387,8 @@ def materialize_archive_source(
                     member_manifest_path.unlink(missing_ok=True)
                 raise
             for temp_path in (temp_receipt, temp_member_manifest):
-                try:
+                with suppress(OSError):
                     temp_path.unlink()
-                except OSError:
-                    pass
         except OSError as exc:
             temp_receipt.unlink(missing_ok=True)
             temp_member_manifest.unlink(missing_ok=True)

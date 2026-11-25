@@ -41,7 +41,8 @@ class PostgresHarnessCleanupTests(unittest.TestCase):
     def test_failed_cleanup_must_not_report_harness_success(self):
         name = "postgres_harness_cleanup_test_module"
         spec = importlib.util.spec_from_file_location(name, HARNESS_PATH)
-        assert spec is not None and spec.loader is not None
+        assert spec is not None
+        assert spec.loader is not None
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module
         try:

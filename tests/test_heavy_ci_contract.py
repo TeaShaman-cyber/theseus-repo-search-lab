@@ -54,7 +54,7 @@ class HeavyCiContractTest(unittest.TestCase):
 
     def test_endpoint_avoids_parent_config_bleed_and_runs_both_analyzers(self):
         text = ENDPOINT.read_text()
-        self.assertIn("ruff check --isolated --target-version py311 src scripts tests", text)
+        self.assertIn("ruff check --isolated --target-version py311 --extend-select B904,B905,PT018,RUF005,SIM105 src scripts tests", text)
         self.assertIn("MYPYPATH=src mypy --config-file config/mypy-heavy.ini src scripts", text)
         self.assertIn("HEAVY_PYTHON_RESULT", text)
         self.assertIn("ruff_code", text)

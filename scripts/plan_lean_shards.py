@@ -105,4 +105,4 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"BLOCKED_SHARD_PLAN: {exc}", file=sys.stderr)
-        raise SystemExit(2)
+        raise SystemExit(2) from exc
