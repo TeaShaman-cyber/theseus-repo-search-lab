@@ -198,6 +198,7 @@ def _declaration_id_for_hit(
     source_path: str,
     source_start_line: int,
     source_end_line: int,
+    allow_global_fallback: bool = True,
 ) -> str | None:
     if hint is None:
         return None
@@ -233,6 +234,8 @@ def _declaration_id_for_hit(
     if len(path_ids) == 1:
         return path_ids[0]
 
+    if not allow_global_fallback:
+        return None
     ids = sorted({str(row[0]) for row in rows})
     return ids[0] if len(ids) == 1 else None
 
@@ -281,6 +284,13 @@ def search_connection(
         "ORDER BY rank, s.source_path, s.source_start_line LIMIT ?",
         (fts_query, limit),
     ).fetchall()
+    # A preview deliberately omits ambiguous graph occurrences. Never attach a
+    # lexical occurrence to a different module merely because its surviving
+    # short name happens to be unique in this partial graph.
+    allow_global_fallback = True
+    if not provenance.created_from_authoritative_source:
+        producer = conn.execute("SELECT value FROM meta WHERE key='producer.kind'").fetchone()
+        allow_global_fallback = producer != ("olean-export-deps-preview",)
     return [
         SearchHit(
             declaration_id=_declaration_id_for_hit(
@@ -289,6 +299,7 @@ def search_connection(
                 source_path=str(row[2]),
                 source_start_line=int(row[3]),
                 source_end_line=int(row[4]),
+                allow_global_fallback=allow_global_fallback,
             ),
             declaration_hint=None if row[5] is None else str(row[5]),
             source_kind=provenance.source_kind,

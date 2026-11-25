@@ -166,10 +166,24 @@ def _search_hit_dict(hit: SearchHit) -> dict[str, object]:
     return data
 
 
+def _compact_graph_scope(payload: dict[str, object]) -> dict[str, object]:
+    # Exact module lists remain in the artifact. Avoid repeating a large closure
+    # in every graph response, and make the presentation truncation explicit.
+    roots = payload.get("scope_root_modules")
+    if isinstance(roots, list) and len(roots) > 32:
+        encoded = json.dumps(roots, ensure_ascii=False, separators=(",", ":")).encode()
+        payload["scope_root_module_count"] = len(roots)
+        payload["scope_root_modules_sha256"] = sha256(encoded).hexdigest()
+        payload["scope_root_modules_truncated"] = True
+        payload["scope_root_modules"] = roots[:32]
+    return payload
+
+
 def _graph_payload(result) -> dict[str, object]:
     payload: dict[str, object] = {
-        "status": "FOUND" if result.found else "UNKNOWN",
+        "status": ("FOUND" if result.found else "UNKNOWN") if result.complete_within_scope else "DEGRADED",
         "query": result.query,
+        "found": result.found,
         "edges": list(result.edges),
         "scope_root_modules": list(result.scope_root_modules),
         "dependency_boundary": result.dependency_boundary,
@@ -190,7 +204,7 @@ def _graph_payload(result) -> dict[str, object]:
                 ),
             }
         )
-    return payload
+    return _compact_graph_scope(payload)
 
 
 def _verify_raw_depgraph_receipt(
@@ -963,8 +977,8 @@ def _cmd_turso_graph(args: argparse.Namespace) -> int:
         payload["source_kind"] = provenance.source_kind
     if not payload["complete_within_scope"]:
         payload["status"] = "DEGRADED"
-    _emit({**payload, "source_id": item.source_id, "artifact_identity": item.artifact_identity,
-           "catalog_sha256": accepted_catalog_sha256(catalog)})
+    _emit(_compact_graph_scope({**payload, "source_id": item.source_id, "artifact_identity": item.artifact_identity,
+           "catalog_sha256": accepted_catalog_sha256(catalog)}))
     return 0
 
 
@@ -1037,7 +1051,7 @@ def _cmd_context(args: argparse.Namespace) -> int:
         depth=args.depth,
         token_budget=args.token_budget,
     )
-    _emit({"status": "FOUND", **payload})
+    _emit(_compact_graph_scope({"status": "FOUND" if payload["complete_within_scope"] else "DEGRADED", **payload}))
     return 0
 
 
