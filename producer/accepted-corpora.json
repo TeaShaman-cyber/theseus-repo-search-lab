@@ -76,6 +76,16 @@
       "fingerprint_sha256": "07a937f3c7f05444ed3390c85476ca696f14c111e9e41386aa7243d3e7f70a7b"
     },
     {
+      "source_id": "leanprover-community-riemann-readable",
+      "release_tag": "accepted-artifact/leanprover-community-riemann-readable/6ee2f773cf70114e",
+      "package_asset": "leanprover-community-riemann-readable-accepted.tar.gz",
+      "receipt_asset": "leanprover-community-riemann-readable-release-receipt.json",
+      "source_descriptor": "producer/sources/leanprover-community-riemann-readable.json",
+      "artifact_identity": "6ee2f773cf70114e9ae09b67b56bca07143f2d36b7a137705eb60d96e1e9b5c2",
+      "fingerprint_sha256": "77258a125b585577fdf152d8c8008af8dd5857a58f36724e192a74e7e35e68b9",
+      "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
+    },
+    {
       "source_id": "openai-cdc-lean",
       "release_tag": "accepted-artifact/openai-cdc-lean/154e254c84a94b26",
       "package_asset": "openai-cdc-lean-accepted.tar.gz",
