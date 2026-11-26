@@ -4,9 +4,13 @@ import os
 import subprocess
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
-from scripts.package_accepted_artifact import build_release_package
+from scripts.package_accepted_artifact import (
+    _validate_consumer_acceptance,
+    build_release_package,
+)
 from tests.test_replay_con_nf import DESCRIPTOR as CON_NF_DESCRIPTOR
 from tests.test_replay_con_nf import RUNNER as CON_NF_RUNNER
 from tests.test_replay_con_nf import write_fixture as write_con_nf_fixture
@@ -127,6 +131,37 @@ def _accepted_context(
 
 
 class ReleasePackageTests(unittest.TestCase):
+    def test_static_consumer_workflow_is_producer_specific(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            artifact = write_fixture(root)
+            replay = root / "replay.json"
+            _write_replay(replay, artifact)
+            _, descriptor, runner, consumer, _ = _accepted_context(
+                root, artifact, replay, descriptor_source=DESCRIPTOR
+            )
+            manifest = load_artifact(artifact)[0]
+            static = replace(manifest, producer=replace(manifest.producer, kind="source-static-deps"))
+            data = json.loads(consumer.read_text())
+            def validate(selected):
+                return _validate_consumer_acceptance(
+                    data=json.dumps(data).encode(), manifest=selected,
+                    identity=artifact_identity(manifest),
+                    replay_sha256=hashlib.sha256(replay.read_bytes()).hexdigest(),
+                    source_descriptor_path="producer/sources/source.json",
+                    source_descriptor_sha256=hashlib.sha256(descriptor.read_bytes()).hexdigest(),
+                    runner_config_path="producer/runner.json",
+                    runner_config_sha256=hashlib.sha256(runner.read_bytes()).hexdigest(),
+                )
+            with self.assertRaises(ValueError):
+                validate(static)
+            data["workflow"]["workflow_ref"] = data["workflow"]["workflow_ref"].replace(
+                "lean-source-producer-smoke.yml", "static-source-producer-smoke.yml"
+            )
+            validate(static)
+            with self.assertRaises(ValueError):
+                validate(manifest)
+
     def test_package_bytes_and_receipt_are_reproducible_across_source_mtime_changes(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
