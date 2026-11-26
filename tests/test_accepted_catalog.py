@@ -11,6 +11,11 @@ from theseus_repo_search.accepted_catalog import (
 
 EXPECTED_SOURCE_IDS = {
     "annals-challenge-marton",
+    "annals-challenge-full",
+    "formal-conjectures-riemann",
+    "openai-euler",
+    "openai-ten-proofs-sphere-packing",
+    "openai-ten-proofs-permanent",
     "anthropic-fermats-last-theorem",
     "decreasing-diagrams-complete",
     "leanprover-community-con-nf",
@@ -140,13 +145,13 @@ class AcceptedCatalogTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises((ValueError, TypeError)):
                 self._load(_payload(corpora=[_entry(runner_config=path)]))
 
-    def test_repository_catalog_has_exact_sorted_eleven_sources(self):
+    def test_repository_catalog_has_exact_sorted_sixteen_sources(self):
         path = Path(__file__).resolve().parents[1] / "producer" / "accepted-corpora.json"
         catalog = load_accepted_catalog(path)
         source_ids = [entry.source_id for entry in catalog.corpora]
         self.assertEqual(set(source_ids), EXPECTED_SOURCE_IDS)
         self.assertEqual(source_ids, sorted(source_ids))
-        self.assertEqual(len(source_ids), 11)
+        self.assertEqual(len(source_ids), 16)
 
 
 if __name__ == "__main__":
