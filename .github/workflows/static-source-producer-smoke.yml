@@ -170,3 +170,33 @@ jobs:
             --artifact "$artifact" \
             --descriptor "$SOURCE_DESCRIPTOR" \
             --out "_consumer/${SOURCE_ID}-replay.json"
+      - name: Write consumer acceptance receipt
+        env:
+          RECEIPT_WORKFLOW_REF: ${{ github.workflow_ref }}
+          RECEIPT_WORKFLOW_SHA: ${{ github.workflow_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/write_consumer_receipt.py \
+            --artifact "_consumer/download/${SOURCE_ID}-artifact" \
+            --db "_consumer/${SOURCE_ID}.sqlite" \
+            --replay "_consumer/${SOURCE_ID}-replay.json" \
+            --source-descriptor "$SOURCE_DESCRIPTOR" \
+            --source-descriptor-path "$SOURCE_DESCRIPTOR" \
+            --runner-config producer/runner.json \
+            --runner-config-path producer/runner.json \
+            --artifact-name "$ARTIFACT_NAME" \
+            --repository-head "${{ github.sha }}" \
+            --workflow-run-id "${{ github.run_id }}" \
+            --workflow-run-attempt "${{ github.run_attempt }}" \
+            --workflow-ref "$RECEIPT_WORKFLOW_REF" \
+            --workflow-sha "$RECEIPT_WORKFLOW_SHA" \
+            --out "_consumer/${SOURCE_ID}-consumer-receipt.json"
+
+      - name: Upload consumer acceptance receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-consumer-receipt
+          path: _consumer/*-consumer-receipt.json
+          if-no-files-found: error
+          retention-days: 7

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 
 from theseus_repo_search.artifact import artifact_identity
@@ -9,6 +10,7 @@ from theseus_repo_search.graph import dependencies
 from theseus_repo_search.replay_contract import (
     prepare_registered_replay,
     registered_replay_provenance,
+    static_producer_pin,
 )
 from theseus_repo_search.retrieval import search
 
@@ -17,7 +19,10 @@ EXPECTED_DIRECT_DEPENDENCY = "lean:FLT.fermatLastTheorem"
 
 
 def run_replay(db_path: Path, artifact_path: Path, descriptor_path: Path) -> dict[str, object]:
-    manifest, _source = prepare_registered_replay(artifact_path, db_path, descriptor_path)
+    root = Path(__file__).resolve().parents[1]
+    head = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip()
+    manifest, _source = prepare_registered_replay(artifact_path, db_path, descriptor_path,
+        expected_static_pin=static_producer_pin(root, head))
     exact_hits = search(db_path, TARGET, limit=1)
     if len(exact_hits) != 1:
         raise AssertionError("complete FLT root theorem did not resolve exactly")
