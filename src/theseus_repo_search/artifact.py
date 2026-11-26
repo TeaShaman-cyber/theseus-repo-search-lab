@@ -753,13 +753,13 @@ def load_artifact(
                 isinstance(manifest, ArtifactManifestV2)
                 and manifest.created_from_authoritative_source
             ):
-                key = (
-                    source_path,
-                    source_start_line,
-                    source_end_line,
-                    node.name,
+                matching_bindings = sum(
+                    source_binding_counts.get(
+                        (source_path, source_start_line, source_end_line, hint), 0
+                    )
+                    for hint in {node.name, node.full_name}
                 )
-                if source_binding_counts.get(key, 0) != 1:
+                if matching_bindings != 1:
                     raise _integrity(f"node source location mismatch: {node.id}")
 
     if isinstance(manifest, ArtifactManifestV2) and manifest.created_from_authoritative_source:
