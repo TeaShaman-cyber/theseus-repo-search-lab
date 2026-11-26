@@ -374,3 +374,27 @@ an interrupted materialization before retry. The explicit reconciliation modes
 `--resume-empty` and `--verify-existing` require confirmed ownership and
 respectively empty or exactly matching graph tables. The ready record is not corpus
 authority. No new cluster or database is required.
+
+### Cross-corpus overlap and noise filtering
+
+```sh
+./tools/repo-search query overlap --limit 20
+./tools/repo-search query overlap --raw --limit 20
+```
+
+This read-only Turso catalog scan groups **short declaration names**, not
+mathematically equivalent statements. By default it considers theorem
+occurrences and filters likely generated Lean theorems only when a known
+generated suffix, compatible parent kind, and missing recorded source location
+agree. This is a conservative heuristic, not an authoritative generated flag.
+Uncorroborated names remain visible and are flagged as possible generated names.
+The raw mode retains all node kinds and occurrences. Filtering precedes grouping
+and result limits; no source or graph rows are changed. Exact lookup, normal
+lexical search and graph traversal retain their original behavior.
+
+The response includes total scanned nodes, suppression counts over the whole
+scan, raw and filtered cross-corpus counts, per-corpus coverage and bounded
+occurrence provenance. Groups and occurrence lists can be truncated separately.
+Each corpus scan is bounded to 100,000 nodes; an unavailable or oversized corpus
+is reported rather than counted as a successful empty result. The result does
+not include external Mathlib dependencies or establish semantic equivalence.

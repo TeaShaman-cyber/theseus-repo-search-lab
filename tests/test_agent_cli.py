@@ -117,3 +117,18 @@ class AgentCliTests(unittest.TestCase):
         self.assertEqual(result["searched_corpora"], 1)
         self.assertEqual(reach_all.call_args.args[0], self.catalog)
         self.client.get_database.assert_not_called()
+
+    def test_overlap_runs_read_only_scan_with_profile(self):
+        rc, result = self.invoke("overlap", "--limit", "1")
+        self.assertEqual(rc, 0)
+        self.assertEqual(result["searched_corpora"], 1)
+        self.assertEqual(result["shared_names"], 0)
+        self.assertEqual(result["scanned_nodes"], self.local.execute("SELECT count(*) FROM nodes").fetchone()[0])
+        self.assertEqual(result["filter"], "theorem_candidates_v1")
+
+    def test_overlap_unavailable_is_not_empty_success(self):
+        self.client.get_database.return_value = None
+        rc, result = self.invoke("overlap")
+        self.assertEqual(rc, 0)
+        self.assertEqual(result["status"], "UNAVAILABLE")
+        self.assertEqual(result["unavailable_corpora"], 1)
