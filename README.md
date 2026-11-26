@@ -278,3 +278,48 @@ Static lint is not runtime validation: Biome 2.6.6 misses equivalent
 escaped object keys (for example `"a"` and `"\u0061"`). Keep strict runtime
 parsing, provenance and domain-invariant tests. JSONL and downloaded corpus
 artifacts are not part of this tracked-JSON lint scope.
+
+## Unified agent query CLI (read-only)
+
+Use the same command for corpus discovery, lexical search, dependency traversal,
+paths and bounded source context. From a checked-out repository, set the
+authorized connection profile once:
+
+```sh
+export REPO_SEARCH_TURSO_ORGANIZATION='<your organization>'
+export REPO_SEARCH_TURSO_PLATFORM_URL=https://turso.int.exe.xyz
+```
+
+The proxy example is specific to an authorized exe.dev workbench with the
+Turso integration attached. The launcher defaults to the checked-out accepted
+catalog; override with `REPO_SEARCH_CATALOG`. Other environments can configure
+the official API URL and `REPO_SEARCH_TURSO_TOKEN_ENV` (the **name** of an
+environment variable containing a platform token). Do not paste tokens into
+arguments, logs or source. This workbench route is not an agent-facing
+credential boundary for untrusted remote clients.
+
+```sh
+./tools/repo-search query corpora
+./tools/repo-search query search 'spectral measure' --limit 5
+./tools/repo-search query search 'coeffMoments_atV' --source zeta23
+./tools/repo-search query deps zeta23 Zeta23.XiPrime.coeffMoments_atV
+./tools/repo-search query rdeps zeta23 Zeta23.XiPrime.GzMoments
+./tools/repo-search query path zeta23 Zeta23.XiPrime.coeffMoments_atV Zeta23.XiPrime.CoeffMoments
+./tools/repo-search query context zeta23 Zeta23.XiPrime.coeffMoments_atV --token-budget 2000
+```
+
+All results are JSON. Search hits carry accepted artifact identities alongside
+source IDs and provenance. `corpora` lists the catalog, not live availability;
+search reports unavailable corpora and distinguishes partial coverage from
+zero hits. `--source` restricts search to one accepted corpus without changing
+the catalog identity. Graph operations always name a corpus; they preserve
+the existing bounded graph semantics and do not infer cross-corpus edges.
+Use the existing `discovery` (OR) or `evidence` (AND) search mode.
+A successful process exit does not imply a complete result: inspect `status`
+and coverage fields. Profile flags may precede the operation, for example
+`query --catalog /path/catalog.json corpora`.
+
+This interface uses existing Turso read-only data-plane queries. Local SQLite
+commands remain available. Azure SQL and Kusto pilots are not accepted serving
+projections; no live Kusto or SQL dependency is added here. MCP hosting,
+declaration grouping and feedback remain separate work (#123, #159, #162).

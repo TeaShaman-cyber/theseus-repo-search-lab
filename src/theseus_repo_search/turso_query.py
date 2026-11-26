@@ -59,11 +59,14 @@ def _search_one(item: AcceptedCorpus, client: TursoHttpClient, query: str, limit
     return search_connection(connect_corpus(item, client), query, limit=limit, mode=mode)
 
 
-def search_turso_catalog(catalog: AcceptedCatalog, client: TursoHttpClient, *, query: str, limit: int = 20, mode: SearchMode = "discovery") -> MultiCorpusResult:
+def search_turso_catalog(catalog: AcceptedCatalog, client: TursoHttpClient, *, query: str, limit: int = 20, mode: SearchMode = "discovery", source_id: str | None = None) -> MultiCorpusResult:
     if not 1 <= limit <= 50 or not 1 <= len(query) <= 512:
         raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "query length 1..512 and limit 1..50 required")
+    selected = tuple(item for item in catalog.corpora if source_id is None or item.source_id == source_id)
+    if not selected:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
     return federate_search(
-        tuple((item.source_id, partial(_search_one, item, client, query, limit, mode)) for item in catalog.corpora),
+        tuple((item.source_id, partial(_search_one, item, client, query, limit, mode)) for item in selected),
         (), catalog_sha256=accepted_catalog_sha256(catalog), limit=limit,
     )
 
