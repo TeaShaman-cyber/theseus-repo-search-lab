@@ -312,16 +312,16 @@ All results are JSON. Search hits carry accepted artifact identities alongside
 source IDs and provenance. `corpora` lists the catalog, not live availability;
 search reports unavailable corpora and distinguishes partial coverage from
 zero hits. `--source` restricts search to one accepted corpus without changing
-the catalog identity. Graph operations always name a corpus; they preserve
-the existing bounded graph semantics and do not infer cross-corpus edges.
+the catalog identity. Single-corpus graph operations name a corpus; federated graph queries preserve
+each corpus identity and do not infer cross-corpus edges.
 Use the existing `discovery` (OR) or `evidence` (AND) search mode.
 A successful process exit does not imply a complete result: inspect `status`
 and coverage fields. Profile flags may precede the operation, for example
 `query --catalog /path/catalog.json corpora`.
 
-This interface uses existing Turso read-only data-plane queries. Local SQLite
-commands remain available. Azure SQL and Kusto pilots are not accepted serving
-projections; no live Kusto or SQL dependency is added here. MCP hosting,
+Lexical and evidence queries use existing Turso read-only data-plane queries.
+Local SQLite commands remain available. Kusto is an additional selected graph
+projection (below), not an Azure SQL dependency. MCP hosting,
 declaration grouping and feedback remain separate work (#123, #159, #162).
 
 ### Kusto graph analytics in the same CLI
@@ -334,26 +334,41 @@ export REPO_SEARCH_KUSTO_CLUSTER='https://<cluster>.<region>.kusto.windows.net'
 export REPO_SEARCH_KUSTO_DATABASE=repository_search
 ./tools/repo-search query reach zeta23 Zeta23.XiPrime.coeffMoments_atV --depth 3 --limit 100
 ./tools/repo-search query reach zeta23 Zeta23.XiPrime.coeffMoments_atV --reverse
+./tools/repo-search query reach-all Zeta23.XiPrime.coeffMoments_atV --depth 2
+./tools/repo-search query graph-search finite --limit 9 --depth 2 --graph-limit 30
 ```
 
 Use the exact declaration ID from search. Reach returns unique reachable
 declarations and their shortest distance (excluding the root), with depth
 1–3 and limit 1–500. It uses ADX graph-match, not a client-side walk.
-The result carries accepted artifact identity, revision and dependency
+The result carries accepted artifact identity, revision, root modules and dependency
 boundary; result completeness is limited to that indexed graph and depth.
 It does not certify a proof. Existing deps/rdeps/path/context still return
 typed evidence via Turso. ADX uses the governed az-owner workbench wrapper;
 this is not a least-privilege external serving credential.
 
-The first selected ADX projection is Zeta23 (6046 nodes, 46563 typed edges).
-Other corpora without a verified selected ADX projection fail explicitly;
+`reach-all` checks the exact declaration across the entire accepted catalog and
+returns independent per-corpus results (limit is per corpus).
+`graph-search` performs federated Turso retrieval followed by native Kusto
+reachability for distinct declaration occurrences selected by lexical Top-K.
+Its separate lexical and graph coverage/status fields distinguish unavailable
+corpora, missing roots, lexical-only hits without a declaration ID, and
+truncated neighborhoods. Graph expansion is not exhaustive over every lexical
+match; at most ten seeds, 1–50 graph nodes per seed. Equal names are never
+merged between artifacts. No synthetic inter-corpus edges are introduced.
+
+Corpora without a verified selected ADX projection fail explicitly;
 there is no silent backend switch. An identity-specific ready table is
 written only after exact row parity with the accepted local projection.
+The v2 ready metadata preserves Git/archive provenance and module scope.
 The read-only query checks the ready record, artifact identity and current
 row counts (not a full content audit on every request). For materialization,
 verify the immutable release, rebuild and verify its projection with the
 existing consumer, record resource ownership in an Issue, then use
 `scripts/materialize_kusto_graph.py` with the independently established
-projection fingerprint. Do not overwrite existing tables; reconcile an
-interrupted materialization before retry. The ready record is not corpus
+projection fingerprint. Bounded inline ingestion is for these small accepted
+corpora, not large-scale RH imports. Do not overwrite existing tables; reconcile
+an interrupted materialization before retry. The explicit reconciliation modes
+`--resume-empty` and `--verify-existing` require confirmed ownership and
+respectively empty or exactly matching graph tables. The ready record is not corpus
 authority. No new cluster or database is required.

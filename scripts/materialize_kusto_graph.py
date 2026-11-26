@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import gzip
 import io
 import json
 import os
@@ -13,8 +12,11 @@ import urllib.request
 from pathlib import Path
 
 from theseus_repo_search.accepted_catalog import load_accepted_catalog
-from theseus_repo_search.kusto_query import KustoClient, tables
-from theseus_repo_search.projection import projection_fingerprint
+from theseus_repo_search.kusto_query import READY_COLUMNS, KustoClient, tables
+from theseus_repo_search.projection import (
+    projection_fingerprint,
+    read_projection_provenance,
+)
 
 
 def main() -> int:
@@ -23,11 +25,16 @@ def main() -> int:
     p.add_argument("--source", required=True)
     p.add_argument("--db", type=Path, required=True)
     p.add_argument("--fingerprint", required=True)
+    p.add_argument("--verify-existing", action="store_true", help="verify existing owned graph before adding v2 ready metadata")
+    p.add_argument("--resume-empty", action="store_true", help="resume explicitly reconciled empty owned tables")
     args = p.parse_args()
+    if args.resume_empty and args.verify_existing:
+        p.error("choose one reconciliation mode")
     item = next(c for c in load_accepted_catalog(args.catalog).corpora if c.source_id == args.source)
     if projection_fingerprint(args.db) != args.fingerprint:
         raise ValueError("local projection fingerprint mismatch")
-    with sqlite3.connect(args.db.as_uri()+"?mode=ro", uri=True) as conn:
+    with sqlite3.connect(args.db.resolve().as_uri()+"?mode=ro", uri=True) as conn:
+        provenance = read_projection_provenance(conn)
         meta = dict(conn.execute("SELECT key,value FROM meta"))
         if meta["artifact_identity"] != item.artifact_identity:
             raise ValueError("artifact identity mismatch")
@@ -50,40 +57,54 @@ def main() -> int:
         return data["Tables"][0]["Rows"]
 
     def ingest(table, rows):
+        # Small accepted-corpus projections: synchronous ingestion avoids
+        # new-table propagation delays at the separate streaming gateway.
         buf=io.StringIO(newline="")
-        csv.writer(buf).writerows(rows)
-        payload=gzip.compress(buf.getvalue().encode(),compresslevel=3,mtime=0)
-        if len(payload)>4*1024*1024:
-            raise ValueError("ingest batch too large")
-        req=urllib.request.Request(client.cluster+"/v1/rest/ingest/"+client.database+"/"+table+"?streamFormat=Csv",
-            data=payload,headers={"Authorization":"Bearer "+client._token,"Content-Encoding":"gzip","Content-Type":"application/octet-stream"})
-        with urllib.request.urlopen(req,timeout=90) as resp:
-            data=json.load(resp)
-        if data.get("error"):
-            raise RuntimeError("ingest failure")
-        # The readback below, not the HTTP response, is the acceptance gate.
+        for row in rows:
+            line=io.StringIO(newline="")
+            csv.writer(line).writerow(row)
+            value=line.getvalue()
+            if len(value.encode()) > 128*1024:
+                raise ValueError("inline row exceeds bounded ingestion size")
+            if len(buf.getvalue().encode())+len(value.encode()) > 128*1024:
+                mg(f".ingest inline into table {table} <|\n"+buf.getvalue())
+                buf=io.StringIO(newline="")
+            buf.write(value)
+        if buf.tell():
+            mg(f".ingest inline into table {table} <|\n"+buf.getvalue())
+        # Exact batch parity below is the acceptance gate.
 
-    if any(row[0] in (n,e,r) for row in mg(".show tables")):
-        raise RuntimeError("existing projection: reconcile, do not overwrite")
-    mg(f".create table {n} (id:string,batch:long)")
-    mg(f".create table {e} (source_id:string,target_id:string,relation:string,evidence_grade:string,producer:string,batch:long)")
-    mg(f".create table {r} (artifact_identity:string,source_revision:string,dependency_boundary:string,node_count:long,edge_count:long)")
-    for table in (n,e,r):
-        mg(f".alter table {table} policy streamingingestion enable")
+    existing = {row[0] for row in mg(".show tables")} & {n,e,r}
+    if args.verify_existing:
+        if not {n,e} <= existing or (r in existing and client.query(f"{r} | count") != [[0]]):
+            raise RuntimeError("expected exact owned node/edge tables without nonempty v2 ready")
+    elif args.resume_empty:
+        if existing != {n,e} or any(client.query(f"{table} | count") != [[0]] for table in (n,e)):
+            raise RuntimeError("expected two owned empty tables")
+    else:
+        if existing:
+            raise RuntimeError("existing projection: reconcile, do not overwrite")
+        mg(f".create table {n} (id:string,batch:long)")
+        mg(f".create table {e} (source_id:string,target_id:string,relation:string,evidence_grade:string,producer:string,batch:long)")
     for table, rows, cols in ((n,nodes,"id"),(e,edges,"source_id,target_id,relation,evidence_grade,producer")):
         for i in range(0,len(rows),5000):
             batch=i//5000
             expected=rows[i:i+5000]
-            ingest(table,[(*row,batch) for row in expected])
+            if not args.verify_existing:
+                ingest(table,[(*row,batch) for row in expected])
             actual=client.query(f"{table} | where batch == {batch} | project {cols}")
             if sorted(map(tuple,actual))!=sorted(expected):
                 raise RuntimeError(f"exact row parity failed for {table} batch {batch}")
         if client.query(f"{table} | count") != [[len(rows)]]:
             raise RuntimeError("count mismatch")
         print("EXACT_PARITY",table,len(rows),flush=True)
-    ready=[item.artifact_identity,meta["source_commit"],meta["dependency_boundary"],len(nodes),len(edges)]
+    if r not in existing:
+        mg(f".create table {r} (artifact_identity:string,source_revision:string,dependency_boundary:string,node_count:long,edge_count:long,root_modules:string,source_kind:string,source_authority:string,created_from_authoritative_source:bool,producer_kind:string)")
+    ready=[item.artifact_identity,provenance.source_revision,meta["dependency_boundary"],len(nodes),len(edges),
+           meta["root_modules"],provenance.source_kind,json.dumps(provenance.source_authority,ensure_ascii=False,separators=(",",":")),
+           provenance.created_from_authoritative_source,meta["producer.kind"]]
     ingest(r,[ready])
-    if client.query(f"{r} | project artifact_identity,source_revision,dependency_boundary,node_count,edge_count") != [ready]:
+    if client.query(f"{r} | project {READY_COLUMNS}") != [ready]:
         raise RuntimeError("ready readback failed")
     print("READY",item.source_id,item.artifact_identity,flush=True)
     return 0

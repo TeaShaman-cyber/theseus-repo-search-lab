@@ -10,7 +10,7 @@ class KustoReachTests(unittest.TestCase):
     def setUp(self):
         self.item = AcceptedCorpus("zeta23", "tag", "asset", "receipt", "descriptor", "a"*64, "b"*64)
         self.client = Mock()
-        self.ready = [self.item.artifact_identity, "revision", "internal_only", 3, 2]
+        self.ready = [self.item.artifact_identity, "revision", "internal_only", 3, 2, '["Zeta23"]', "git", "null", True, "lean-dep-viz"]
 
     def test_reach_is_bounded_and_identity_bound(self):
         self.client.query.side_effect = [[self.ready], [[3, 2]], [[1]], [["lean:B", 1], ["lean:C", 2]]]
@@ -19,6 +19,7 @@ class KustoReachTests(unittest.TestCase):
         self.assertEqual(r["artifact_identity"], self.item.artifact_identity)
         self.assertEqual(r["nodes"], [{"id": "lean:B", "depth": 1}])
         self.assertFalse(r["complete_within_scope"])
+        self.assertEqual(r["scope_root_modules"], ["Zeta23"])
         self.assertIn("take 2", self.client.query.call_args.args[0])
 
     def test_wrong_identity_blocks_before_graph(self):
@@ -49,3 +50,17 @@ class KustoReachTests(unittest.TestCase):
         with self.assertRaises(RepoSearchError):
             reach(self.item, self.client, "A", depth=9)
         self.client.query.assert_not_called()
+
+
+    def test_invalid_scope_rejected(self):
+        self.ready[5] = "{}"
+        self.client.query.return_value = [self.ready]
+        with self.assertRaises(RepoSearchError):
+            reach(self.item, self.client, "A")
+
+    def test_zero_edges_are_valid_for_isolated_root(self):
+        self.ready[4] = 0
+        self.client.query.side_effect = [[self.ready], [[3, 0]], [[1]]]
+        r = reach(self.item, self.client, "A")
+        self.assertEqual(r["status"], "FOUND")
+        self.assertEqual(r["nodes"], [])

@@ -24,7 +24,7 @@ from .artifact import (
 from .errors import RepoSearchError
 from .graph import GraphResult, dependencies, reverse_dependencies
 from .graph import path as graph_path
-from .kusto_query import KustoClient, reach
+from .kusto_query import KustoClient, expand_search_hits, federated_reach, reach
 from .model import (
     ArchiveAuthority,
     ArtifactScope,
@@ -988,31 +988,41 @@ def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | Non
     return 0
 
 
-def _emit_multicorpus_result(args: argparse.Namespace, result, *, catalog: AcceptedCatalog | None = None) -> int:
+def _multicorpus_payload(args: argparse.Namespace, result, *, catalog: AcceptedCatalog | None = None) -> dict[str, object]:
     identities = {item.source_id: item.artifact_identity for item in catalog.corpora} if catalog is not None else {}
-    _emit(
-        {
-            "status": _multicorpus_status(result, mode=args.mode),
-            "query": args.query,
-            "query_mode": args.mode,
-            "catalog_sha256": result.catalog_sha256,
-            "searched_corpora": result.searched_corpora,
-            **({"source_filter": args.source_id, "backend": "turso"} if catalog is not None else {}),
-            "unavailable_corpora": len(result.unavailable_corpora),
-            "unavailable": [asdict(item) for item in result.unavailable_corpora],
-            "hits": [
-                {
-                    "candidate_id": item.candidate_id,
-                    "source_id": item.source_id,
-                    "local_rank": item.local_rank,
-                    **({"artifact_identity": identities[item.source_id]} if catalog is not None else {}),
-                    **_search_hit_dict(item.hit),
-                }
-                for item in result.hits
-            ],
-        }
-    )
+    return {
+        "status": _multicorpus_status(result, mode=args.mode),
+        "query": args.query,
+        "query_mode": args.mode,
+        "catalog_sha256": result.catalog_sha256,
+        "searched_corpora": result.searched_corpora,
+        **({"source_filter": args.source_id, "backend": "turso"} if catalog is not None else {}),
+        "unavailable_corpora": len(result.unavailable_corpora),
+        "unavailable": [asdict(item) for item in result.unavailable_corpora],
+        "hits": [
+            {
+                "candidate_id": item.candidate_id,
+                "source_id": item.source_id,
+                "local_rank": item.local_rank,
+                **({"artifact_identity": identities[item.source_id]} if catalog is not None else {}),
+                **_search_hit_dict(item.hit),
+            }
+            for item in result.hits
+        ],
+    }
+
+
+def _emit_multicorpus_result(args: argparse.Namespace, result, *, catalog: AcceptedCatalog | None = None) -> int:
+    _emit(_multicorpus_payload(args, result, catalog=catalog))
     return 0
+
+
+def _agent_kusto_client() -> KustoClient:
+    cluster = os.environ.get("REPO_SEARCH_KUSTO_CLUSTER")
+    database = os.environ.get("REPO_SEARCH_KUSTO_DATABASE")
+    if not cluster or not database:
+        raise RepoSearchError("BLOCKED_QUERY_PROFILE", "configure Kusto cluster and database")
+    return KustoClient(cluster, database)
 
 
 def _cmd_agent_query(args: argparse.Namespace) -> int:
@@ -1030,16 +1040,15 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
                "release_repository": catalog.release_repository,
                "corpora": [asdict(item) for item in catalog.corpora]})
         return 0
-    if args.operation == "reach":
-        item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
-        if item is None:
+    if args.operation in ("reach", "reach-all"):
+        item = next((c for c in catalog.corpora if c.source_id == getattr(args, "source_id", None)), None)
+        if args.operation == "reach" and item is None:
             raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
-        cluster = os.environ.get("REPO_SEARCH_KUSTO_CLUSTER")
-        database = os.environ.get("REPO_SEARCH_KUSTO_DATABASE")
-        if not cluster or not database:
-            raise RepoSearchError("BLOCKED_QUERY_PROFILE", "configure Kusto cluster and database")
-        payload = reach(item, KustoClient(cluster, database), args.name,
-                        depth=args.depth, limit=args.limit, reverse=args.reverse)
+        client = _agent_kusto_client()
+        if item is None:
+            payload = federated_reach(catalog, client, args.name, depth=args.depth, limit=args.limit, reverse=args.reverse)
+        else:
+            payload = reach(item, client, args.name, depth=args.depth, limit=args.limit, reverse=args.reverse)
         _emit({**payload, "catalog_sha256": accepted_catalog_sha256(catalog)})
         return 0
     args.organization = args.organization or os.environ.get("REPO_SEARCH_TURSO_ORGANIZATION")
@@ -1049,9 +1058,30 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
         "REPO_SEARCH_TURSO_PLATFORM_URL", "https://api.turso.tech"
     )
     args.platform_token_env = args.platform_token_env or os.environ.get("REPO_SEARCH_TURSO_TOKEN_ENV")
-    if args.operation == "search":
+    if args.operation in ("search", "graph-search"):
+        if args.operation == "graph-search" and (not 1 <= args.limit <= 10 or not 1 <= args.depth <= 3 or not 1 <= args.graph_limit <= 50):
+            raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "graph-search: limit 1..10, depth 1..3, graph-limit 1..50")
         result = search_turso_catalog(catalog, _turso_client(args), query=args.query,
                                       limit=args.limit, mode=args.mode, source_id=args.source_id)
+        if args.operation == "graph-search":
+            payload = _multicorpus_payload(args, result, catalog=catalog)
+            # Preserve lexical evidence even when the graph route is unavailable.
+            if not result.hits:
+                graph = {"graph_status": "NOT_RUN", "graph_seeds": 0, "graphs": [],
+                         "graph_unavailable": []}
+            else:
+                try:
+                    graph = expand_search_hits(catalog, _agent_kusto_client(), result.hits,
+                                               depth=args.depth, limit=args.graph_limit, reverse=args.reverse)
+                except RepoSearchError as exc:
+                    graph = {"graph_status": "UNAVAILABLE", "graphs": [],
+                             "graph_unavailable": [{"code": exc.code, "message": str(exc)}]}
+            lexical_status = payload["status"]
+            graph_status = graph["graph_status"]
+            if result.hits and graph_status != "FOUND":
+                payload["status"] = "DEGRADED"
+            _emit({**payload, **graph, "lexical_status": lexical_status, "backend": "turso+kusto"})
+            return 0
         return _emit_multicorpus_result(args, result, catalog=catalog)
     return _cmd_turso_graph(args, catalog=catalog)
 
@@ -1065,17 +1095,24 @@ def _add_agent_query(subparsers) -> None:
     parser.set_defaults(func=_cmd_agent_query)
     ops = parser.add_subparsers(dest="operation", required=True)
     ops.add_parser("corpora", help="list catalog identities (not live availability)")
-    search = ops.add_parser("search")
-    search.add_argument("query")
-    search.add_argument("--source", dest="source_id")
-    search.add_argument("--limit", type=int, default=10)
-    search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
-    graph_reach = ops.add_parser("reach", help="Kusto bounded graph reachability")
-    graph_reach.add_argument("source_id")
-    graph_reach.add_argument("name")
-    graph_reach.add_argument("--depth", type=int, default=3)
-    graph_reach.add_argument("--limit", type=int, default=100)
-    graph_reach.add_argument("--reverse", action="store_true")
+    for operation in ("search", "graph-search"):
+        search = ops.add_parser(operation)
+        search.add_argument("query")
+        search.add_argument("--source", dest="source_id")
+        search.add_argument("--limit", type=int, default=10 if operation == "search" else 5)
+        search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
+        if operation == "graph-search":
+            search.add_argument("--depth", type=int, default=2)
+            search.add_argument("--graph-limit", type=int, default=30)
+            search.add_argument("--reverse", action="store_true")
+    for operation in ("reach", "reach-all"):
+        graph_reach = ops.add_parser(operation, help="Kusto bounded graph reachability")
+        if operation == "reach":
+            graph_reach.add_argument("source_id")
+        graph_reach.add_argument("name")
+        graph_reach.add_argument("--depth", type=int, default=3)
+        graph_reach.add_argument("--limit", type=int, default=100)
+        graph_reach.add_argument("--reverse", action="store_true")
     for op in ("deps", "rdeps", "path", "context"):
         graph = ops.add_parser(op)
         graph.add_argument("source_id")
