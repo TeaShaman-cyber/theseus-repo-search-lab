@@ -52,6 +52,27 @@ def partition_modules(modules: Iterable[ModuleWeight], shard_count: int) -> tupl
     )
 
 
+def validate_shard_receipt_entries(shards: object) -> None:
+    if not isinstance(shards, list) or not shards:
+        raise ValueError("sharded raw dependency graph receipt must contain non-empty shards")
+    for index, shard in enumerate(shards):
+        if (
+            not isinstance(shard, dict)
+            or set(shard) != {"index", "raw_depgraph_sha256", "receipt_sha256", "root_modules"}
+            or not isinstance(shard.get("index"), int)
+            or isinstance(shard["index"], bool)
+            or shard["index"] != index
+        ):
+            raise ValueError("sharded raw dependency graph receipt has invalid shard ordering or fields")
+        roots = shard.get("root_modules")
+        if not isinstance(roots, list) or not roots or not all(isinstance(root, str) and root for root in roots):
+            raise ValueError("sharded raw dependency graph receipt has invalid shard root_modules")
+        for field in ("raw_depgraph_sha256", "receipt_sha256"):
+            value = shard.get(field)
+            if not isinstance(value, str) or len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value):
+                raise ValueError(f"sharded raw dependency graph receipt has invalid {field}")
+
+
 def _require_rows(raw: dict[str, object], key: str) -> list[dict[str, object]]:
     value = raw.get(key)
     if not isinstance(value, list):

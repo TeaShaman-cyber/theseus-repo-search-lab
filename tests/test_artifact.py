@@ -638,6 +638,46 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(edges, sample_edges())
             self.assertEqual(sources, sample_sources())
 
+    def test_sharded_authority_receipt_roundtrip_and_malformed_shard_evidence(self):
+        raw = raw_depgraph_bytes(sample_nodes(), sample_edges())
+        receipt = {
+            "schema": "theseus.raw-depgraph-receipt.v4",
+            "source": {"repo": "anthropics/formal-math", "commit": SOURCE_COMMIT, "subdir": "zeta23"},
+            "scope": {"root_modules": ["Zeta23"]},
+            "producer": {"kind": PRODUCER.kind, "tool_repo": PRODUCER.tool_repo,
+                         "tool_commit": PRODUCER.tool_commit, "tool_hash": PRODUCER.tool_hash},
+            "observed": {"lean_toolchain": "leanprover/lean4:v4.37.0-rc1"},
+            "raw_depgraph": {"sha256": hashlib.sha256(raw).hexdigest()},
+            "shards": [{"index": 0, "raw_depgraph_sha256": "1" * 64,
+                        "receipt_sha256": "2" * 64, "root_modules": ["Zeta23.Tiny"]}],
+        }
+        def write(path, payload):
+            return write_artifact(path, nodes=sample_nodes(), edges=sample_edges(),
+                                  sources=sample_sources(), source_repo="anthropics/formal-math",
+                                  source_commit=SOURCE_COMMIT, source_subdir="zeta23",
+                                  producer=PRODUCER, scope=SCOPE,
+                                  created_from_authoritative_commit=True,
+                                  authority_receipt=json.dumps(payload).encode(), raw_depgraph=raw)
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "valid"
+            manifest = write(path, receipt)
+            self.assertEqual(load_artifact(path)[0], manifest)
+            for label, mutate in (
+                ("missing", lambda p: p.pop("shards")),
+                ("empty", lambda p: p.__setitem__("shards", [])),
+                ("index", lambda p: p["shards"][0].__setitem__("index", 1)),
+                ("bool-index", lambda p: p["shards"][0].__setitem__("index", False)),
+                ("hash", lambda p: p["shards"][0].__setitem__("receipt_sha256", "bad")),
+                ("roots", lambda p: p["shards"][0].__setitem__("root_modules", [])),
+                ("scope", lambda p: p["scope"].__setitem__("root_modules", ["Other"])),
+                ("extra", lambda p: p.__setitem__("unexpected", True)),
+            ):
+                with self.subTest(label=label):
+                    payload = json.loads(json.dumps(receipt))
+                    mutate(payload)
+                    with self.assertRaises(RepoSearchError):
+                        write(Path(d) / label, payload)
+
     def test_authoritative_exact_artifact_requires_raw_derivation_member(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)

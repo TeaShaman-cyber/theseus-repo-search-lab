@@ -4,9 +4,9 @@ import unittest
 from pathlib import Path
 
 from scripts.replay_queued_intake import run_replay
+from tests.test_replay_ten_proofs_multicolor import DESCRIPTOR, TARGET, write_fixture
 from theseus_repo_search.model import ProducerPin
 from theseus_repo_search.producer_config import load_runner_pins
-from tests.test_replay_ten_proofs_multicolor import DESCRIPTOR, TARGET, write_fixture
 
 
 class QueuedReplayTests(unittest.TestCase):
