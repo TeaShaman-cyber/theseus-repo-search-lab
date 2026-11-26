@@ -541,7 +541,9 @@ def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Nod
             bound.append(node)
             continue
         expected_path = lean_module_source_path(node.module)
-        matches = by_path_and_name.get((expected_path, node.name), [])
+        hints = {node.name, node.full_name}
+        matches = [chunk for hint in sorted(hints)
+                   for chunk in by_path_and_name.get((expected_path, hint), [])]
         if len(matches) != 1:
             bound.append(node)
             continue

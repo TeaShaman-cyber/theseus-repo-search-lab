@@ -662,3 +662,32 @@ class SourceChunkTests(unittest.TestCase):
 
             self.assertEqual([chunk.declaration_hint for chunk in chunks], ["tracked_decl"])
             self.assertEqual([chunk.source_path for chunk in chunks], ["Zeta23/Main.lean"])
+
+
+class QualifiedDeclarationBindingTests(unittest.TestCase):
+    def test_qualified_source_name_matches_same_module_node(self):
+        node = Node.from_lean(full_name="PNat.pow_add_pow_ne_pow", name="pow_add_pow_ne_pow",
+                              kind="thm", module="FermatsLastTheorem", source_commit="abc123")
+        chunks = _chunks_from_text("FermatsLastTheorem.lean",
+                                   "theorem PNat.pow_add_pow_ne_pow : True := by trivial\n",
+                                   source_revision="abc123")
+        result = bind_node_sources([node], chunks)[0]
+        self.assertEqual(result.source_path, "FermatsLastTheorem.lean")
+        self.assertEqual(result.source_start_line, 1)
+
+    def test_qualified_and_unqualified_competing_hints_are_ambiguous(self):
+        node = Node.from_lean(full_name="PNat.pow_add_pow_ne_pow", name="pow_add_pow_ne_pow",
+                              kind="thm", module="FermatsLastTheorem", source_commit="abc123")
+        chunks = _chunks_from_text("FermatsLastTheorem.lean",
+                                   "theorem PNat.pow_add_pow_ne_pow : True := by trivial\n"
+                                   "theorem pow_add_pow_ne_pow : True := by trivial\n",
+                                   source_revision="abc123")
+        self.assertIsNone(bind_node_sources([node], chunks)[0].source_path)
+
+    def test_unrelated_qualified_hint_does_not_bind(self):
+        node = Node.from_lean(full_name="PNat.pow_add_pow_ne_pow", name="pow_add_pow_ne_pow",
+                              kind="thm", module="FermatsLastTheorem", source_commit="abc123")
+        chunks = _chunks_from_text("FermatsLastTheorem.lean",
+                                   "theorem Other.pow_add_pow_ne_pow : True := by trivial\n",
+                                   source_revision="abc123")
+        self.assertIsNone(bind_node_sources([node], chunks)[0].source_path)
