@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: lean-source-repo-lens-${{ github.ref }}
@@ -13,46 +14,23 @@ concurrency:
 jobs:
   produce-and-replay:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       PYTHONPATH: ${{ github.workspace }}/src
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/openai-navier-stokes.json
-            replay_script: scripts/replay_navier_stokes.py
-            artifact_name: openai-navier-stokes-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/leanprover-community-riemann-readable.json
+            replay_script: scripts/replay_queued_intake.py
+            artifact_name: leanprover-community-riemann-readable-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Load producer configuration
         shell: bash
@@ -60,7 +38,7 @@ jobs:
           set -euo pipefail
           python3 scripts/load_producer_env.py \
             --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --github-env "$GITHUB_ENV"
 
       - name: Checkout pinned source
@@ -124,7 +102,7 @@ jobs:
           set -euo pipefail
           python3 scripts/load_producer_env.py \
             --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --checkout-root "$GITHUB_WORKSPACE/_target/source" \
             --github-env "$GITHUB_ENV"
 
@@ -133,173 +111,57 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$SOURCE_ROOT"
-          observed="$(python3 scripts/producer_guard.py toolchain --cwd "$SOURCE_ROOT")"
+          observed="$(python3 scripts/producer_guard.py toolchain --cwd "$GITHUB_WORKSPACE/_target/source")"
+          test "$observed" = leanprover/lean4:v4.37.0-rc1
+          printf 'PROJECT_ROOT=%s\n' "$GITHUB_WORKSPACE/_target/source" >> "$GITHUB_ENV"
           test -n "$observed"
           printf "observed_lean_toolchain=%s\n" "$observed"
 
-      - name: Install pinned generic runner prerequisites
+      - name: Recover exact successful extraction from failed normalization run
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --location --proto "=https" --tlsv1.2 \
-            --output "$RUNNER_TEMP/elan.tar.gz" \
-            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
-          mkdir -p "$RUNNER_TEMP/elan"
-          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
-          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
-          curl --fail --location --proto "=https" --tlsv1.2 \
-            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
-          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
-
-      # Cache compressed Mathlib downloads, not the multi-GiB source/build trees.
-      # Exact source-owned Lean toolchain + Lake lock determine cache validity.
-      - name: Compute pinned Mathlib archive cache key
-        id: mathlib-cache-key
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ ! -f "$SOURCE_ROOT/lean-toolchain" ] || [ ! -f "$SOURCE_ROOT/lake-manifest.json" ]; then
-            printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
-            printf 'mathlib_cache_disabled=missing_pins\n'
-            exit 0
-          fi
-          lean_pin="$(sha256sum "$SOURCE_ROOT/lean-toolchain" | cut -d ' ' -f 1)"
-          lake_pin="$(sha256sum "$SOURCE_ROOT/lake-manifest.json" | cut -d ' ' -f 1)"
-          key="mathlib-archives-v1-${RUNNER_OS}-${lean_pin}-${lake_pin}"
-          printf 'enabled=true\nkey=%s\n' "$key" >> "$GITHUB_OUTPUT"
-          printf 'mathlib_archive_cache_key=%s\n' "$key"
-
-      - name: Restore pinned Mathlib download archives
-        if: steps.mathlib-cache-key.outputs.enabled == 'true'
-        id: mathlib-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: ~/.cache/mathlib
-          key: ${{ steps.mathlib-cache-key.outputs.key }}
-
-      - name: Restore source dependency cache
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v lake
-          started="$(date +%s)"
-          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
-          finished="$(date +%s)"
-          printf "cache_get_seconds=%s\n" "$((finished - started))"
-          cache_dir="${MATHLIB_CACHE_DIR:-$HOME/.cache/mathlib}"
-          if [ -d "$cache_dir" ]; then
-            printf "mathlib_cache_files=%s\n" "$(find "$cache_dir" -type f | wc -l | tr -d ' ')"
-            printf "mathlib_cache_kib=%s\n" "$(du -sk "$cache_dir" | awk '{print $1}')"
-          else
-            printf "mathlib_cache_files=0\n"
-            printf "mathlib_cache_kib=0\n"
-          fi
-          if [ -d "$SOURCE_ROOT/.lake/packages" ]; then
-            printf "source_packages_kib=%s\n" "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
-          else
-            printf "source_packages_kib=0\n"
-          fi
-
-      - name: Bound Mathlib cache persistence
-        id: mathlib-cache-size
-        shell: bash
-        run: |
-          set -euo pipefail
-          allowed=false
-          if [ -d "$HOME/.cache/mathlib" ]; then
-            cache_kib="$(du -sk "$HOME/.cache/mathlib" | awk '{print $1}')"
-            if [ "$cache_kib" -gt 0 ] && [ "$cache_kib" -le 750000 ]; then
-              allowed=true
-            fi
-            printf 'mathlib_download_archives_kib=%s\n' "$cache_kib"
-          fi
-          printf 'save=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
-
-      - name: Save pinned Mathlib download archives
-        if: steps.mathlib-cache-key.outputs.enabled == 'true' && steps.mathlib-cache.outputs.cache-hit != 'true' && steps.mathlib-cache-size.outputs.save == 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: ~/.cache/mathlib
-          key: ${{ steps.mathlib-cache-key.outputs.key }}
-
-      - name: Build source target
-        shell: bash
-        run: |
-          set -euo pipefail
-          started="$(date +%s)"
-
-          heartbeat() {
-            local started_epoch="$1"
-            local tick=0
-            while true; do
-              sleep 60
-              tick=$((tick + 1))
-              now="$(date +%s)"
-              elapsed="$((now - started_epoch))"
-              ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-              mem_available_kib="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
-              root_free_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
-              printf 'build_heartbeat ts=%s elapsed_seconds=%s source_id=%s build_target=%s mem_available_kib=%s root_free_kib=%s\n' \
-                "$ts" "$elapsed" "$SOURCE_ID" "$BUILD_TARGET" "$mem_available_kib" "$root_free_kib"
-              if (( tick % 5 == 0 )); then
-                if [ -d "$SOURCE_ROOT/.lake/build" ]; then
-                  source_build_kib="$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
-                else
-                  source_build_kib=0
-                fi
-                printf 'build_heartbeat_slow ts=%s elapsed_seconds=%s source_build_kib=%s\n' \
-                  "$ts" "$elapsed" "$source_build_kib"
-              fi
-            done
-          }
-
-          heartbeat "$started" &
-          heartbeat_pid=$!
-          cleanup_heartbeat() {
-            kill "$heartbeat_pid" 2>/dev/null || true
-            wait "$heartbeat_pid" 2>/dev/null || true
-          }
-          trap cleanup_heartbeat EXIT
-          trap 'cleanup_heartbeat; exit 130' INT
-          trap 'cleanup_heartbeat; exit 143' TERM
-
-          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
-
-          cleanup_heartbeat
-          trap - EXIT INT TERM
-          finished="$(date +%s)"
-          printf "source_build_seconds=%s\n" "$((finished - started))"
-          if [ -d "$SOURCE_ROOT/.lake/build" ]; then
-            printf "source_build_kib=%s\n" "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
-          else
-            printf "source_build_kib=0\n"
-          fi
-
-      - name: Extract exact declaration graph
-        shell: bash
-        run: |
-          set -euo pipefail
+          repo=TeaShaman-cyber/theseus-repo-search-lab
+          gh api "repos/$repo/actions/runs/45910387476" --jq .head_sha | grep -Fx d264ff78ed9933b5447b2c4c234d2992e75f304d
+          gh api "repos/$repo/actions/jobs/140217068906" > "$RUNNER_TEMP/origin-job.json"
+          gh api "repos/$repo/actions/artifacts/15159823856" > "$RUNNER_TEMP/origin-artifact.json"
+          python3 - <<'PY_ORIGIN'
+          import json, os
+          from pathlib import Path
+          d=Path(os.environ['RUNNER_TEMP'])
+          j=json.loads((d/'origin-job.json').read_text())
+          a=json.loads((d/'origin-artifact.json').read_text())
+          assert j['run_id']==45910387476 and j['head_sha']=='d264ff78ed9933b5447b2c4c234d2992e75f304d'
+          assert any(x['name']=='Plan and extract one coherent Lean environment' and x['conclusion']=='success' for x in j['steps'])
+          assert any(x['name']=='Build normalized artifact' and x['conclusion']=='failure' for x in j['steps'])
+          assert a['workflow_run']['id']==45910387476 and a['id']==15159823856 and not a['expired']
+          assert a['digest']=='sha256:54ea079837c1d12d453d586c2078857d7ea8a025feada7058bd2e52d7a5bfb39'
+          PY_ORIGIN
           mkdir -p _out
-          # Lean name quotes delimit syntax, not a filesystem .olean basename.
-          EXTRACTOR_ROOT_MODULES="${ROOT_MODULES_CSV//«/}"
-          EXTRACTOR_ROOT_MODULES="${EXTRACTOR_ROOT_MODULES//»/}"
-          python3 scripts/producer_guard.py extract-source \
-            --cwd "$SOURCE_ROOT" \
-            --source-container "$GITHUB_WORKSPACE/_target/source" \
-            --source "${{ matrix.source_descriptor }}" \
-            --materialization-receipt "$GITHUB_WORKSPACE/_out/source-materialization.json" \
-            --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
-            --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
-            --producer-kind lean-dep-viz \
-            --producer-tool-repo "$EXTRACTOR_REPO" \
-            --producer-tool-commit "$EXTRACTOR_COMMIT" \
-            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" -- \
-            lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
-            --roots "$EXTRACTOR_ROOT_MODULES" \
-            --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          gh api "repos/$repo/actions/artifacts/15159823856/zip" > "$RUNNER_TEMP/raw.zip"
+          echo "54ea079837c1d12d453d586c2078857d7ea8a025feada7058bd2e52d7a5bfb39  $RUNNER_TEMP/raw.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/raw.zip" -d _out
+          echo 'f732fab89fc6e2062ef85d6cf1e1fa808b2a799048926c804b60154d5a59b24d  _out/raw-depgraph.json' | sha256sum --check
+          python3 scripts/merge_raw_depgraph_shards.py --input-root _out/shards \
+            --source-repo "$SOURCE_REPO" --source-commit "$SOURCE_COMMIT" --source-subdir "$SOURCE_SUBDIR" \
+            --scope-root-module Lib --scope-root-module Main --scope-root-module New --scope-root-module Statements \
+            --producer-kind lean-dep-viz --producer-tool-repo "$EXTRACTOR_REPO" \
+            --producer-tool-commit "$EXTRACTOR_COMMIT" --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" \
+            --out-raw "$RUNNER_TEMP/rebuilt-raw.json" --out-receipt "$RUNNER_TEMP/rebuilt-receipt.json"
+          cmp _out/raw-depgraph.json "$RUNNER_TEMP/rebuilt-raw.json"
+          cmp _out/raw-depgraph-receipt.json "$RUNNER_TEMP/rebuilt-receipt.json"
+          python3 - <<'PY_ROOTS'
+          import json, os, subprocess
+          from pathlib import Path
+          receipt=json.loads(Path('_out/raw-depgraph-receipt.json').read_text())
+          roots=receipt['shards'][0]['root_modules']
+          names=subprocess.check_output(['git','-C',os.environ['PROJECT_ROOT'],'ls-files','-z','src']).decode().split('\0')
+          expected={n[4:-5].replace('/','.') for n in names if n.endswith('.lean')}
+          assert len(receipt['shards'])==1 and len(roots)==len(set(roots))==len(expected)==802 and set(roots)==expected
+          print('RAW_RECOVERY_PASS',len(roots))
+          PY_ROOTS
 
       - name: Install repository lens package
         run: python3 -m pip install -e .
@@ -336,7 +198,22 @@ jobs:
             --source-root "$SOURCE_ROOT" \
             --artifact "_out/${SOURCE_ID}-artifact" \
             --descriptor "${{ matrix.source_descriptor }}" \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --out "_out/${SOURCE_ID}-replay.json"
+
+      - name: Retain failed replay diagnostic artifact
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: diagnostic-${{ matrix.artifact_name }}
+          path: |
+            _out/*-artifact/
+            _out/raw-depgraph.json
+            _out/raw-depgraph-receipt.json
+            _out/shard-plan.json
+            _out/shards/
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Remove disposable producer outputs
         shell: bash
@@ -357,45 +234,23 @@ jobs:
             _out/*-artifact/
             _out/*-replay.json
           if-no-files-found: error
+          retention-days: 7
 
   consume-artifact:
     needs: produce-and-replay
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       PYTHONPATH: ${{ github.workspace }}/src
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/openai-navier-stokes.json
-            replay_script: scripts/replay_navier_stokes.py
-            artifact_name: openai-navier-stokes-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/leanprover-community-riemann-readable.json
+            replay_script: scripts/replay_queued_intake.py
+            artifact_name: leanprover-community-riemann-readable-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -408,7 +263,7 @@ jobs:
           set -euo pipefail
           python3 scripts/load_producer_env.py \
             --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --github-env "$GITHUB_ENV"
 
       - name: Download normalized repository lens artifact
@@ -448,6 +303,7 @@ jobs:
             --db "_consumer/${SOURCE_ID}.sqlite" \
             --artifact "_consumer/download/${SOURCE_ID}-artifact" \
             --descriptor "${{ matrix.source_descriptor }}" \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --out "_consumer/${SOURCE_ID}-replay.json"
 
       - name: Write consumer acceptance receipt
@@ -463,8 +319,8 @@ jobs:
             --replay "_consumer/${SOURCE_ID}-replay.json" \
             --source-descriptor "${{ matrix.source_descriptor }}" \
             --source-descriptor-path "${{ matrix.source_descriptor }}" \
-            --runner-config producer/runner.json \
-            --runner-config-path producer/runner.json \
+            --runner-config producer/runners/leandepviz-lean436-adapted.json \
+            --runner-config-path producer/runners/leandepviz-lean436-adapted.json \
             --artifact-name "${{ matrix.artifact_name }}" \
             --repository-head "${{ github.sha }}" \
             --workflow-run-id "${{ github.run_id }}" \
@@ -479,78 +335,4 @@ jobs:
           name: ${{ matrix.artifact_name }}-consumer-receipt
           path: _consumer/*-consumer-receipt.json
           if-no-files-found: error
-
-  research-smoke:
-    needs: consume-artifact
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      PYTHONPATH: ${{ github.workspace }}/src
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - scenario: qa/research-smoke/zeta23-riemann-panel-v0.json
-            source_descriptor: producer/sources/zeta23.json
-            artifact_name: zeta23-repo-index-v1
-            source_id: zeta23
-          - scenario: qa/research-smoke/flt-bridge-v0.json
-            source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-            source_id: leanprover-community-flt-regular
-          - scenario: qa/research-smoke/annals-marton-seam-v0.json
-            source_descriptor: producer/sources/annals-challenge-marton.json
-            artifact_name: annals-challenge-marton-repo-index-v1
-            source_id: annals-challenge-marton
-    steps:
-      - name: Checkout repository lens
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Verify exact research smoke checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected="${{ github.sha }}"
-          observed="$(git rev-parse HEAD)"
-          test "$observed" = "$expected"
-          printf 'research_smoke_event_sha=%s\n' "$expected"
-          printf 'research_smoke_checkout_sha=%s\n' "$observed"
-          printf 'RESEARCH_SMOKE_TOOL_COMMIT=%s\n' "$observed" >> "$GITHUB_ENV"
-
-      - name: Download accepted normalized artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: _smoke/download
-
-      - name: Install repository lens package
-        run: python3 -m pip install -e .
-
-      - name: Build disposable smoke projection
-        shell: bash
-        run: |
-          set -euo pipefail
-          artifact="_smoke/download/${{ matrix.source_id }}-artifact"
-          db="_smoke/${{ matrix.source_id }}.sqlite"
-          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
-          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
-
-      - name: Run non-blocking live research smoke
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/run_research_smoke.py \
-            --db "_smoke/${{ matrix.source_id }}.sqlite" \
-            --artifact "_smoke/download/${{ matrix.source_id }}-artifact" \
-            --scenario "${{ matrix.scenario }}" \
-            --tool-commit "$RESEARCH_SMOKE_TOOL_COMMIT" \
-            --out "_smoke/${{ matrix.source_id }}-research-smoke-receipt.json"
-
-      - name: Upload research smoke receipt
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: ${{ matrix.artifact_name }}-research-smoke-receipt
-          path: _smoke/*-research-smoke-receipt.json
-          if-no-files-found: error
+          retention-days: 7
