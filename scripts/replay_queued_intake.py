@@ -25,7 +25,7 @@ def run_replay(db: Path, artifact: Path, descriptor: Path, *, witnesses: Path = 
         raise AssertionError("unsupported evidence class")
     hits = search(db, "lean:" + target, limit=1)
     if len(hits) != 1 or hits[0].declaration_id != "lean:" + target or hits[0].match_mode != "exact" or hits[0].source_path != path:
-        raise AssertionError("exact witness source binding failed")
+        raise AssertionError(f"exact witness source binding failed: target={target}, expected_path={path}, observed={[(h.declaration_id, h.source_path, h.match_mode) for h in hits]}")
     graph = dependencies(db, target, depth=1)
     if klass != "STATEMENT_CORPUS" and not graph.edges:
         raise AssertionError("proof-side witness has no in-scope dependency")
@@ -33,7 +33,7 @@ def run_replay(db: Path, artifact: Path, descriptor: Path, *, witnesses: Path = 
         raise AssertionError("unexpected dependency evidence grade")
     ctx = context(db, target, depth=1, token_budget=8000)
     chunks = require_context_chunks(ctx)
-    if not any(chunk.get("declaration_hint") == target.rsplit(".", 1)[-1] and chunk.get("source_path") == path for chunk in chunks):
+    if not any(chunk.get("declaration_hint") == witness.get("source_hint", target.rsplit(".", 1)[-1]) and chunk.get("source_path") == path for chunk in chunks):
         raise AssertionError("bounded context omitted witness")
     return {
         "status": "PASS", "artifact_identity": artifact_identity(manifest),
