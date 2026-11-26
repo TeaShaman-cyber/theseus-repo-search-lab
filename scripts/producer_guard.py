@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import tomllib
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -147,19 +148,30 @@ def run_bound_extraction(
             "BLOCKED_SOURCE_BINDING",
             f"source subdir escapes verified checkout: {source_subdir}",
         ) from exc
+    tracked_scope = source_subdir
     if cwd.resolve() != expected_source_root:
-        raise RepoSearchError(
-            "BLOCKED_SOURCE_BINDING",
-            f"extraction cwd must equal verified source root: expected {expected_source_root}, observed {cwd.resolve()}",
-        )
+        # Lake packages can declare a separate source directory. Bind the
+        # whole tracked project, including its build configuration, in that case.
+        config = repo_root / "lakefile.toml"
+        if cwd.resolve() != repo_root or config.is_symlink() or not config.is_file():
+            raise RepoSearchError("BLOCKED_SOURCE_BINDING", "extraction cwd must equal verified source root")
+        try:
+            declared = tomllib.loads(config.read_text(encoding="utf-8")).get("srcDir")
+            subprocess.run(["git", "-C", str(repo_root), "ls-files", "--error-unmatch",
+                            "lakefile.toml", "lean-toolchain"], check=True, capture_output=True)
+        except (OSError, ValueError, subprocess.CalledProcessError) as exc:
+            raise RepoSearchError("BLOCKED_SOURCE_BINDING", "invalid tracked Lake source layout") from exc
+        if not isinstance(declared, str) or (repo_root / declared).resolve() != expected_source_root:
+            raise RepoSearchError("BLOCKED_SOURCE_BINDING", "extraction cwd does not match declared Lake srcDir")
+        tracked_scope = ""
     verify_checked_out_commit(repo_dir, expected_commit)
-    verify_tracked_source_clean(repo_dir, source_subdir)
+    verify_tracked_source_clean(repo_dir, tracked_scope)
     observed_toolchain = read_bound_toolchain(cwd)
     raw_depgraph.parent.mkdir(parents=True, exist_ok=True)
     raw_depgraph.unlink(missing_ok=True)
     run_exact_command(argv, cwd)
     verify_checked_out_commit(repo_dir, expected_commit)
-    verify_tracked_source_clean(repo_dir, source_subdir)
+    verify_tracked_source_clean(repo_dir, tracked_scope)
     try:
         raw_bytes = raw_depgraph.read_bytes()
     except OSError as exc:
