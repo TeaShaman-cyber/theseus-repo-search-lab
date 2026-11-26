@@ -24,6 +24,7 @@ from .artifact import (
 from .errors import RepoSearchError
 from .graph import GraphResult, dependencies, reverse_dependencies
 from .graph import path as graph_path
+from .kusto_query import KustoClient, reach
 from .model import (
     ArchiveAuthority,
     ArtifactScope,
@@ -1029,6 +1030,18 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
                "release_repository": catalog.release_repository,
                "corpora": [asdict(item) for item in catalog.corpora]})
         return 0
+    if args.operation == "reach":
+        item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
+        if item is None:
+            raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
+        cluster = os.environ.get("REPO_SEARCH_KUSTO_CLUSTER")
+        database = os.environ.get("REPO_SEARCH_KUSTO_DATABASE")
+        if not cluster or not database:
+            raise RepoSearchError("BLOCKED_QUERY_PROFILE", "configure Kusto cluster and database")
+        payload = reach(item, KustoClient(cluster, database), args.name,
+                        depth=args.depth, limit=args.limit, reverse=args.reverse)
+        _emit({**payload, "catalog_sha256": accepted_catalog_sha256(catalog)})
+        return 0
     args.organization = args.organization or os.environ.get("REPO_SEARCH_TURSO_ORGANIZATION")
     if not args.organization:
         raise RepoSearchError("BLOCKED_QUERY_PROFILE", "set REPO_SEARCH_TURSO_ORGANIZATION or --organization")
@@ -1057,6 +1070,12 @@ def _add_agent_query(subparsers) -> None:
     search.add_argument("--source", dest="source_id")
     search.add_argument("--limit", type=int, default=10)
     search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
+    graph_reach = ops.add_parser("reach", help="Kusto bounded graph reachability")
+    graph_reach.add_argument("source_id")
+    graph_reach.add_argument("name")
+    graph_reach.add_argument("--depth", type=int, default=3)
+    graph_reach.add_argument("--limit", type=int, default=100)
+    graph_reach.add_argument("--reverse", action="store_true")
     for op in ("deps", "rdeps", "path", "context"):
         graph = ops.add_parser(op)
         graph.add_argument("source_id")

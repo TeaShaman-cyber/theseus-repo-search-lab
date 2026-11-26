@@ -323,3 +323,37 @@ This interface uses existing Turso read-only data-plane queries. Local SQLite
 commands remain available. Azure SQL and Kusto pilots are not accepted serving
 projections; no live Kusto or SQL dependency is added here. MCP hosting,
 declaration grouping and feedback remain separate work (#123, #159, #162).
+
+### Kusto graph analytics in the same CLI
+
+On the authorized exe.dev workbench configure the existing ADX cluster and
+database in the same environment profile:
+
+```sh
+export REPO_SEARCH_KUSTO_CLUSTER='https://<cluster>.<region>.kusto.windows.net'
+export REPO_SEARCH_KUSTO_DATABASE=repository_search
+./tools/repo-search query reach zeta23 Zeta23.XiPrime.coeffMoments_atV --depth 3 --limit 100
+./tools/repo-search query reach zeta23 Zeta23.XiPrime.coeffMoments_atV --reverse
+```
+
+Use the exact declaration ID from search. Reach returns unique reachable
+declarations and their shortest distance (excluding the root), with depth
+1–3 and limit 1–500. It uses ADX graph-match, not a client-side walk.
+The result carries accepted artifact identity, revision and dependency
+boundary; result completeness is limited to that indexed graph and depth.
+It does not certify a proof. Existing deps/rdeps/path/context still return
+typed evidence via Turso. ADX uses the governed az-owner workbench wrapper;
+this is not a least-privilege external serving credential.
+
+The first selected ADX projection is Zeta23 (6046 nodes, 46563 typed edges).
+Other corpora without a verified selected ADX projection fail explicitly;
+there is no silent backend switch. An identity-specific ready table is
+written only after exact row parity with the accepted local projection.
+The read-only query checks the ready record, artifact identity and current
+row counts (not a full content audit on every request). For materialization,
+verify the immutable release, rebuild and verify its projection with the
+existing consumer, record resource ownership in an Issue, then use
+`scripts/materialize_kusto_graph.py` with the independently established
+projection fingerprint. Do not overwrite existing tables; reconcile an
+interrupted materialization before retry. The ready record is not corpus
+authority. No new cluster or database is required.
