@@ -24,9 +24,6 @@ jobs:
           - source_descriptor: producer/sources/sphere-eversion-main.json
             replay_script: scripts/replay_queued_intake.py
             artifact_name: sphere-eversion-main-adapted-repo-index-v1
-          - source_descriptor: producer/sources/imperial-flt-partial.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: imperial-flt-partial-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -326,7 +323,10 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: diagnostic-${{ matrix.artifact_name }}
-          path: _out/*-artifact/
+          path: |
+            _out/*-artifact/
+            _out/raw-depgraph.json
+            _out/raw-depgraph-receipt.json
           if-no-files-found: ignore
           retention-days: 3
 
@@ -366,9 +366,6 @@ jobs:
           - source_descriptor: producer/sources/sphere-eversion-main.json
             replay_script: scripts/replay_queued_intake.py
             artifact_name: sphere-eversion-main-adapted-repo-index-v1
-          - source_descriptor: producer/sources/imperial-flt-partial.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: imperial-flt-partial-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
