@@ -33,6 +33,29 @@ class NormalizeLeanDepVizTests(unittest.TestCase):
             EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
         )
 
+    def test_static_edge_preserves_source_reference_evidence_grade(self):
+        raw = {
+            "nodes": [
+                {"module": "Theorems.Thm_dep", "fullName": "dep", "name": "dep", "kind": "theorem"},
+                {"module": "Theorems.Thm_use", "fullName": "use", "name": "use", "kind": "theorem"},
+            ],
+            "edges": [
+                {"source": "dep", "target": "use", "kind": "static"}
+            ],
+        }
+        nodes, edges = normalize_leandepviz(
+            raw,
+            source_commit="abc123",
+            root_modules=("Theorems",),
+            producer_ref="theseus/static-source@1",
+        )
+        self.assertEqual([node.id for node in nodes], ["lean:dep", "lean:use"])
+        self.assertEqual(len(edges), 1)
+        self.assertEqual(edges[0].source_id, "lean:use")
+        self.assertEqual(edges[0].target_id, "lean:dep")
+        self.assertEqual(edges[0].relation, "static_reference")
+        self.assertEqual(edges[0].evidence_grade, EvidenceGrade.STATIC_REFERENCE)
+
     def test_sorts_nodes_and_edges_and_removes_duplicate_edges(self):
         raw = self.load_fixture()
         raw["nodes"] = list(reversed(raw["nodes"]))

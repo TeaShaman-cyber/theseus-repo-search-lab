@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import re
+import subprocess
 from pathlib import Path
 
 from .model import (
@@ -29,6 +32,21 @@ def _expected_producer(runner_path: Path) -> ProducerPin:
         tool_commit=runner.extractor_commit,
         tool_hash=runner.extractor_main_sha256,
     )
+
+
+def static_producer_pin(repository_root: Path, commit: str) -> ProducerPin:
+    """Resolve the registered FLT extractor from exact producer Git evidence."""
+    if not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise ValueError("static producer requires exact Git commit")
+    try:
+        script = subprocess.check_output(
+            ["git", "-C", str(repository_root), "show",
+             f"{commit}:scripts/extract_anthropic_flt_static_graph.py"]
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("static extractor missing at exact producer commit") from exc
+    return ProducerPin("source-static-deps", "TeaShaman-cyber/theseus-repo-search-lab",
+                       commit, hashlib.sha256(script).hexdigest())
 
 
 def _archive_source_payload(manifest: ArtifactManifestV2) -> dict[str, object]:
@@ -112,6 +130,7 @@ def validate_registered_replay_manifest(
     manifest: ArtifactManifestAny,
     descriptor_path: Path,
     runner_path: Path = DEFAULT_RUNNER,
+    *, expected_static_pin: ProducerPin | None = None,
 ) -> LeanSource:
     source = load_lean_source(descriptor_path)
     expected_producer = _expected_producer(runner_path)
@@ -166,6 +185,14 @@ def validate_registered_replay_manifest(
     else:
         raise TypeError("unsupported artifact manifest type")
 
+    if expected_static_pin is not None:
+        if (not isinstance(source, LeanGitSource)
+                or source.source_id != "anthropic-fermats-last-theorem"
+                or source.source_repo != "anthropics/fermats-last-theorem"
+                or expected_static_pin.kind != "source-static-deps"
+                or expected_static_pin.tool_repo != "TeaShaman-cyber/theseus-repo-search-lab"):
+            raise AssertionError("static producer is not registered for this source")
+        expected_producer = expected_static_pin
     if manifest.producer != expected_producer:
         raise AssertionError("artifact producer pin does not match selected runner configuration")
     return source
@@ -176,12 +203,13 @@ def prepare_registered_replay(
     db_path: Path,
     descriptor_path: Path,
     runner_path: Path = DEFAULT_RUNNER,
+    *, expected_static_pin: ProducerPin | None = None,
 ) -> tuple[ArtifactManifestAny, LeanSource]:
     from .artifact import load_artifact
 
     manifest, _, _, _ = load_artifact(artifact_path)
     source = validate_registered_replay_manifest(
-        manifest, descriptor_path, runner_path=runner_path
+        manifest, descriptor_path, runner_path=runner_path, expected_static_pin=expected_static_pin
     )
     if isinstance(manifest, ArtifactManifestV2):
         registered_replay_provenance(artifact_path, manifest)

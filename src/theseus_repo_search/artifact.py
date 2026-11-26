@@ -36,6 +36,7 @@ _DEPENDENCY_GRADE_BY_RELATION = {
     "type_dependency": EvidenceGrade.ELABORATED_TYPE_DEPENDENCY,
     "value_dependency": EvidenceGrade.ELABORATED_VALUE_DEPENDENCY,
     "compiled_reference": EvidenceGrade.COMPILED_REFERENCE,
+    "static_reference": EvidenceGrade.STATIC_REFERENCE,
 }
 
 

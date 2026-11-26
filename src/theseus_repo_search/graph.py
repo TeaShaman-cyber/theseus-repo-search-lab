@@ -28,6 +28,7 @@ class GraphResult:
     source_authority: dict[str, object] | None
     created_from_authoritative_source: bool
     found: bool
+    evidence_boundary: str = "ELABORATED_DEPENDENCY"
 
     @property
     def created_from_authoritative_commit(self) -> bool:
@@ -195,7 +196,8 @@ def traverse_connection(conn: QueryConnection, name: str, *, depth: int, reverse
         edges=tuple(result_edges),
         scope_root_modules=roots,
         dependency_boundary=boundary,
-        complete_within_scope=complete and producer_kind != "olean-export-deps-preview",
+        complete_within_scope=complete and producer_kind not in ("olean-export-deps-preview", "source-static-deps"),
+        evidence_boundary={"olean-export-deps-preview": "COMPILED_REFERENCE", "source-static-deps": "STATIC_REFERENCE"}.get(producer_kind, "ELABORATED_DEPENDENCY"),
         source_kind=provenance.source_kind,
         source_revision=provenance.source_revision,
         source_authority=provenance.source_authority,
@@ -277,7 +279,8 @@ def path_connection(conn: QueryConnection, source: str, target: str, *, max_dept
         edges=tuple(path_edges),
         scope_root_modules=roots,
         dependency_boundary=boundary,
-        complete_within_scope=complete and producer_kind != "olean-export-deps-preview",
+        complete_within_scope=complete and producer_kind not in ("olean-export-deps-preview", "source-static-deps"),
+        evidence_boundary={"olean-export-deps-preview": "COMPILED_REFERENCE", "source-static-deps": "STATIC_REFERENCE"}.get(producer_kind, "ELABORATED_DEPENDENCY"),
         source_kind=provenance.source_kind,
         source_revision=provenance.source_revision,
         source_authority=provenance.source_authority,

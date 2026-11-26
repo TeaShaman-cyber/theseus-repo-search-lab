@@ -19,6 +19,7 @@ from theseus_repo_search.evidence_class import release_replay_evidence
 from theseus_repo_search.model import ArtifactManifest, ArtifactManifestV2
 from theseus_repo_search.producer_config import LeanArchiveSource, LeanGitSource
 from theseus_repo_search.replay_contract import (
+    static_producer_pin,
     validate_registered_replay_manifest,
     validate_registered_replay_provenance,
 )
@@ -265,9 +266,14 @@ def _validate_consumer_acceptance(
         raise ValueError("consumer receipt run_id must be decimal text")
     if not isinstance(run_attempt, str) or not run_attempt.isdigit() or not run_attempt:
         raise ValueError("consumer receipt run_attempt must be decimal text")
+    workflow_name = (
+        "static-source-producer-smoke.yml"
+        if manifest.producer.kind == "source-static-deps"
+        else "lean-source-producer-smoke.yml"
+    )
     if (
         not isinstance(workflow_ref, str)
-        or "/.github/workflows/lean-source-producer-smoke.yml@" not in workflow_ref
+        or f"/.github/workflows/{workflow_name}@" not in workflow_ref
     ):
         raise ValueError("consumer receipt workflow_ref is not the producer acceptance workflow")
     return {
@@ -297,11 +303,10 @@ def build_release_package(
         receipt=receipt,
     )
     manifest, *_ = load_artifact(artifact)
-    source = validate_registered_replay_manifest(
-        manifest, source_descriptor, runner_path=runner_config
-    )
-    if not isinstance(source, (LeanGitSource, LeanArchiveSource)):
-        raise TypeError("unsupported accepted source authority")
+    if manifest.producer.kind != "source-static-deps":
+        validate_registered_replay_manifest(
+            manifest, source_descriptor, runner_path=runner_config
+        )
 
     identity = artifact_identity(manifest)
     replay_bytes = replay.read_bytes()
@@ -340,6 +345,17 @@ def build_release_package(
         runner_config_sha256=_sha256(runner_bytes),
     )
     repository_head = str(acceptance["repository_head"])
+    expected_static = (
+        static_producer_pin(repository_root, repository_head)
+        if manifest.producer.kind == "source-static-deps"
+        else None
+    )
+    source = validate_registered_replay_manifest(
+        manifest, source_descriptor, runner_path=runner_config,
+        expected_static_pin=expected_static,
+    )
+    if not isinstance(source, (LeanGitSource, LeanArchiveSource)):
+        raise TypeError("unsupported accepted source authority")
     if _git_blob(
         repository_root, repository_head, source_descriptor, "source descriptor"
     ) != descriptor_bytes:
