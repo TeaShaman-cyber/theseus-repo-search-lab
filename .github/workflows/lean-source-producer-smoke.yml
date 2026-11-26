@@ -21,59 +21,15 @@ jobs:
       max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/openai-euler.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-euler-repo-index-v1
-          - source_descriptor: producer/sources/poincare-proof-endpoints.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: poincare-proof-endpoints-repo-index-v1
-          - source_descriptor: producer/sources/annals-challenge-full.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: annals-challenge-full-repo-index-v1
-          - source_descriptor: producer/sources/formal-conjectures-riemann.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: formal-conjectures-riemann-repo-index-v1
           - source_descriptor: producer/sources/sphere-eversion-main.json
             replay_script: scripts/replay_queued_intake.py
-            artifact_name: sphere-eversion-main-repo-index-v1
-          - source_descriptor: producer/sources/imperial-flt-partial.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: imperial-flt-partial-repo-index-v1
-          - source_descriptor: producer/sources/openai-matrix-exponent.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-matrix-exponent-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-sphere-packing.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-sphere-packing-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-metric-codes.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-metric-codes-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-permanent.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-permanent-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-non-sofic.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-non-sofic-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-connes-rigidity.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-connes-rigidity-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-ehrhart.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-ehrhart-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-quantum-repetition.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-quantum-repetition-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-gap-cvp.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-gap-cvp-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-compactness-degeneracy.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-compactness-degeneracy-repo-index-v1
+            artifact_name: sphere-eversion-main-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Load producer configuration
         shell: bash
@@ -170,9 +126,12 @@ jobs:
           tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
           "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          url="https://raw.githubusercontent.com/cameronfreer/LeanDepViz/7859d91f89b37c9193d9a09709a58be6d98f94d6/LeanDepViz/Main.lean"
           curl --fail --location --proto "=https" --tlsv1.2 \
-            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
+            --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          git show "$EXTRACTOR_COMMIT:scripts/adapt_leandepviz_lean436.py" > "$RUNNER_TEMP/adapt-extractor.py"
+          cmp "$RUNNER_TEMP/adapt-extractor.py" scripts/adapt_leandepviz_lean436.py
+          python3 "$RUNNER_TEMP/adapt-extractor.py" --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" --output "$RUNNER_TEMP/LeanDepVizMain.lean"
           echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
 
       # Cache compressed Mathlib downloads, not the multi-GiB source/build trees.
@@ -392,54 +351,9 @@ jobs:
       max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/openai-euler.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-euler-repo-index-v1
-          - source_descriptor: producer/sources/poincare-proof-endpoints.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: poincare-proof-endpoints-repo-index-v1
-          - source_descriptor: producer/sources/annals-challenge-full.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: annals-challenge-full-repo-index-v1
-          - source_descriptor: producer/sources/formal-conjectures-riemann.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: formal-conjectures-riemann-repo-index-v1
           - source_descriptor: producer/sources/sphere-eversion-main.json
             replay_script: scripts/replay_queued_intake.py
-            artifact_name: sphere-eversion-main-repo-index-v1
-          - source_descriptor: producer/sources/imperial-flt-partial.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: imperial-flt-partial-repo-index-v1
-          - source_descriptor: producer/sources/openai-matrix-exponent.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-matrix-exponent-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-sphere-packing.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-sphere-packing-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-metric-codes.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-metric-codes-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-permanent.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-permanent-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-non-sofic.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-non-sofic-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-connes-rigidity.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-connes-rigidity-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-ehrhart.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-ehrhart-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-quantum-repetition.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-quantum-repetition-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-gap-cvp.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-gap-cvp-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-compactness-degeneracy.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-compactness-degeneracy-repo-index-v1
+            artifact_name: sphere-eversion-main-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
