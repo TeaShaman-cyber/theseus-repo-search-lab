@@ -80,3 +80,40 @@ class AgentCliTests(unittest.TestCase):
     def test_profile_explicit_flags(self):
         with patch.dict("os.environ", {}, clear=True), patch.object(cli, "load_accepted_catalog", return_value=self.catalog), patch.object(cli, "_emit"):
             self.assertEqual(cli.main(["query", "--catalog", "catalog.json", "corpora"]), 0)
+
+    def test_graph_search_preserves_lexical_when_graph_unavailable(self):
+        from theseus_repo_search.errors import RepoSearchError
+
+        with patch.object(cli, "_agent_kusto_client", side_effect=RepoSearchError("UNAVAILABLE_KUSTO_AUTH", "unavailable")):
+            rc, result = self.invoke("graph-search", "moment", "--limit", "2")
+        self.assertEqual(rc, 0)
+        self.assertEqual(result["status"], "DEGRADED")
+        self.assertEqual(result["graph_status"], "UNAVAILABLE")
+        self.assertTrue(result["hits"])
+        self.assertEqual(result["searched_corpora"], 1)
+
+    def test_graph_search_passes_search_seeds_and_bounds(self):
+        with patch.object(cli, "_agent_kusto_client"), patch.object(cli, "expand_search_hits", return_value={
+                "graph_status": "FOUND", "graphs": [], "graph_seeds": 1}) as expand:
+            rc, result = self.invoke("graph-search", "moment", "--limit", "2", "--depth", "1", "--graph-limit", "3", "--reverse")
+        self.assertEqual(rc, 0)
+        self.assertEqual(result["backend"], "turso+kusto")
+        self.assertTrue(expand.call_args.args[2])
+        self.assertEqual(expand.call_args.kwargs, {"depth": 1, "limit": 3, "reverse": True})
+
+    def test_graph_search_empty_does_not_need_kusto(self):
+        with patch.object(cli, "_agent_kusto_client") as client:
+            rc, result = self.invoke("graph-search", "zz_missing_probe_zz")
+        self.assertEqual(rc, 0)
+        self.assertEqual(result["status"], "UNKNOWN")
+        self.assertEqual(result["graph_status"], "NOT_RUN")
+        client.assert_not_called()
+
+    def test_reach_all_uses_entire_catalog_without_turso(self):
+        with patch.object(cli, "_agent_kusto_client"), patch.object(cli, "federated_reach", return_value={
+                "status": "FOUND", "searched_corpora": 1}) as reach_all:
+            rc, result = self.invoke("reach-all", "A", "--reverse")
+        self.assertEqual(rc, 0)
+        self.assertEqual(result["searched_corpora"], 1)
+        self.assertEqual(reach_all.call_args.args[0], self.catalog)
+        self.client.get_database.assert_not_called()
