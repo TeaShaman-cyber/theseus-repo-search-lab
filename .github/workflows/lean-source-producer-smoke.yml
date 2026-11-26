@@ -1,388 +1,11 @@
-name: Lean source repository lens producer smoke
-
+name: Lean source producer smoke
 on:
   workflow_dispatch:
-
 permissions:
   contents: read
-
-concurrency:
-  group: lean-source-repo-lens-${{ github.ref }}
-  cancel-in-progress: true
-
+  actions: read
 jobs:
-  produce-and-replay:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      PYTHONPATH: ${{ github.workspace }}/src
-    strategy:
-      fail-fast: false
-      max-parallel: 3
-      matrix:
-        include:
-          - source_descriptor: producer/sources/openai-euler.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-euler-repo-index-v1
-          - source_descriptor: producer/sources/poincare-proof-endpoints.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: poincare-proof-endpoints-repo-index-v1
-          - source_descriptor: producer/sources/annals-challenge-full.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: annals-challenge-full-repo-index-v1
-          - source_descriptor: producer/sources/formal-conjectures-riemann.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: formal-conjectures-riemann-repo-index-v1
-          - source_descriptor: producer/sources/sphere-eversion-main.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: sphere-eversion-main-repo-index-v1
-          - source_descriptor: producer/sources/imperial-flt-partial.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: imperial-flt-partial-repo-index-v1
-          - source_descriptor: producer/sources/openai-matrix-exponent.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-matrix-exponent-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-sphere-packing.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-sphere-packing-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-metric-codes.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-metric-codes-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-permanent.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-permanent-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-non-sofic.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-non-sofic-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-connes-rigidity.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-connes-rigidity-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-ehrhart.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-ehrhart-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-quantum-repetition.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-quantum-repetition-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-gap-cvp.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-gap-cvp-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-compactness-degeneracy.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-compactness-degeneracy-repo-index-v1
-    steps:
-      - name: Checkout repository lens
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Load producer configuration
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/load_producer_env.py \
-            --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
-            --github-env "$GITHUB_ENV"
-
-      - name: Checkout pinned source
-        if: matrix.source_kind != 'archive'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/producer_guard.py checkout \
-            --repo-url "https://github.com/${SOURCE_REPO}.git" \
-            --commit "$SOURCE_COMMIT" \
-            --dest _target/source
-
-      - name: Materialize pinned archive source
-        if: matrix.source_kind == 'archive'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p _out
-          python3 scripts/materialize_archive_source.py \
-            --source "${{ matrix.source_descriptor }}" \
-            --dest _target/source \
-            --receipt _out/source-materialization.json
-
-      - name: Verify exact source readback
-        if: matrix.source_kind != 'archive'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/producer_guard.py verify \
-            --repo-dir _target/source \
-            --expected "$SOURCE_COMMIT"
-          printf "source_readback=%s\n" "$(git -C _target/source rev-parse HEAD)"
-
-      - name: Verify archive materialization readback
-        if: matrix.source_kind == 'archive'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - "${{ matrix.source_descriptor }}" \
-            "$GITHUB_WORKSPACE/_target/source" \
-            "$GITHUB_WORKSPACE/_out/source-materialization.json" <<'PY_ARCHIVE_READBACK'
-          import sys
-          from pathlib import Path
-
-          from scripts.materialize_archive_source import verify_materialized_archive_members
-          from theseus_repo_search.producer_config import load_lean_archive_source
-
-          descriptor = Path(sys.argv[1])
-          materialization_root = Path(sys.argv[2])
-          receipt = Path(sys.argv[3])
-          source = load_lean_archive_source(descriptor)
-          members = verify_materialized_archive_members(
-              source, dest=materialization_root, receipt_path=receipt
-          )
-          print(f"archive_member_count={len(members['members'])}")
-          PY_ARCHIVE_READBACK
-
-      - name: Resolve canonical source root
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/load_producer_env.py \
-            --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
-            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
-            --github-env "$GITHUB_ENV"
-
-      - name: Observe source-owned Lean toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$SOURCE_ROOT"
-          observed="$(python3 scripts/producer_guard.py toolchain --cwd "$SOURCE_ROOT")"
-          test -n "$observed"
-          printf "observed_lean_toolchain=%s\n" "$observed"
-
-      - name: Install pinned generic runner prerequisites
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --location --proto "=https" --tlsv1.2 \
-            --output "$RUNNER_TEMP/elan.tar.gz" \
-            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
-          mkdir -p "$RUNNER_TEMP/elan"
-          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
-          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
-          curl --fail --location --proto "=https" --tlsv1.2 \
-            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
-          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
-
-      # Cache compressed Mathlib downloads, not the multi-GiB source/build trees.
-      # Exact source-owned Lean toolchain + Lake lock determine cache validity.
-      - name: Compute pinned Mathlib archive cache key
-        id: mathlib-cache-key
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ ! -f "$SOURCE_ROOT/lean-toolchain" ] || [ ! -f "$SOURCE_ROOT/lake-manifest.json" ]; then
-            printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
-            printf 'mathlib_cache_disabled=missing_pins\n'
-            exit 0
-          fi
-          lean_pin="$(sha256sum "$SOURCE_ROOT/lean-toolchain" | cut -d ' ' -f 1)"
-          lake_pin="$(sha256sum "$SOURCE_ROOT/lake-manifest.json" | cut -d ' ' -f 1)"
-          key="mathlib-archives-v1-${RUNNER_OS}-${lean_pin}-${lake_pin}"
-          printf 'enabled=true\nkey=%s\n' "$key" >> "$GITHUB_OUTPUT"
-          printf 'mathlib_archive_cache_key=%s\n' "$key"
-
-      - name: Restore pinned Mathlib download archives
-        if: steps.mathlib-cache-key.outputs.enabled == 'true'
-        id: mathlib-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: ~/.cache/mathlib
-          key: ${{ steps.mathlib-cache-key.outputs.key }}
-
-      - name: Restore source dependency cache
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v lake
-          started="$(date +%s)"
-          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
-          finished="$(date +%s)"
-          printf "cache_get_seconds=%s\n" "$((finished - started))"
-          cache_dir="${MATHLIB_CACHE_DIR:-$HOME/.cache/mathlib}"
-          if [ -d "$cache_dir" ]; then
-            printf "mathlib_cache_files=%s\n" "$(find "$cache_dir" -type f | wc -l | tr -d ' ')"
-            printf "mathlib_cache_kib=%s\n" "$(du -sk "$cache_dir" | awk '{print $1}')"
-          else
-            printf "mathlib_cache_files=0\n"
-            printf "mathlib_cache_kib=0\n"
-          fi
-          if [ -d "$SOURCE_ROOT/.lake/packages" ]; then
-            printf "source_packages_kib=%s\n" "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
-          else
-            printf "source_packages_kib=0\n"
-          fi
-
-      - name: Bound Mathlib cache persistence
-        id: mathlib-cache-size
-        shell: bash
-        run: |
-          set -euo pipefail
-          allowed=false
-          if [ -d "$HOME/.cache/mathlib" ]; then
-            cache_kib="$(du -sk "$HOME/.cache/mathlib" | awk '{print $1}')"
-            if [ "$cache_kib" -gt 0 ] && [ "$cache_kib" -le 750000 ]; then
-              allowed=true
-            fi
-            printf 'mathlib_download_archives_kib=%s\n' "$cache_kib"
-          fi
-          printf 'save=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
-
-      - name: Save pinned Mathlib download archives
-        if: steps.mathlib-cache-key.outputs.enabled == 'true' && steps.mathlib-cache.outputs.cache-hit != 'true' && steps.mathlib-cache-size.outputs.save == 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: ~/.cache/mathlib
-          key: ${{ steps.mathlib-cache-key.outputs.key }}
-
-      - name: Build source target
-        shell: bash
-        run: |
-          set -euo pipefail
-          started="$(date +%s)"
-
-          heartbeat() {
-            local started_epoch="$1"
-            local tick=0
-            while true; do
-              sleep 60
-              tick=$((tick + 1))
-              now="$(date +%s)"
-              elapsed="$((now - started_epoch))"
-              ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-              mem_available_kib="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
-              root_free_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
-              printf 'build_heartbeat ts=%s elapsed_seconds=%s source_id=%s build_target=%s mem_available_kib=%s root_free_kib=%s\n' \
-                "$ts" "$elapsed" "$SOURCE_ID" "$BUILD_TARGET" "$mem_available_kib" "$root_free_kib"
-              if (( tick % 5 == 0 )); then
-                if [ -d "$SOURCE_ROOT/.lake/build" ]; then
-                  source_build_kib="$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
-                else
-                  source_build_kib=0
-                fi
-                printf 'build_heartbeat_slow ts=%s elapsed_seconds=%s source_build_kib=%s\n' \
-                  "$ts" "$elapsed" "$source_build_kib"
-              fi
-            done
-          }
-
-          heartbeat "$started" &
-          heartbeat_pid=$!
-          cleanup_heartbeat() {
-            kill "$heartbeat_pid" 2>/dev/null || true
-            wait "$heartbeat_pid" 2>/dev/null || true
-          }
-          trap cleanup_heartbeat EXIT
-          trap 'cleanup_heartbeat; exit 130' INT
-          trap 'cleanup_heartbeat; exit 143' TERM
-
-          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
-
-          cleanup_heartbeat
-          trap - EXIT INT TERM
-          finished="$(date +%s)"
-          printf "source_build_seconds=%s\n" "$((finished - started))"
-          if [ -d "$SOURCE_ROOT/.lake/build" ]; then
-            printf "source_build_kib=%s\n" "$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
-          else
-            printf "source_build_kib=0\n"
-          fi
-
-      - name: Extract exact declaration graph
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p _out
-          # Lean name quotes delimit syntax, not a filesystem .olean basename.
-          EXTRACTOR_ROOT_MODULES="${ROOT_MODULES_CSV//«/}"
-          EXTRACTOR_ROOT_MODULES="${EXTRACTOR_ROOT_MODULES//»/}"
-          python3 scripts/producer_guard.py extract-source \
-            --cwd "$SOURCE_ROOT" \
-            --source-container "$GITHUB_WORKSPACE/_target/source" \
-            --source "${{ matrix.source_descriptor }}" \
-            --materialization-receipt "$GITHUB_WORKSPACE/_out/source-materialization.json" \
-            --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json" \
-            --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json" \
-            --producer-kind lean-dep-viz \
-            --producer-tool-repo "$EXTRACTOR_REPO" \
-            --producer-tool-commit "$EXTRACTOR_COMMIT" \
-            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" -- \
-            lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
-            --roots "$EXTRACTOR_ROOT_MODULES" \
-            --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
-
-      - name: Install repository lens package
-        run: python3 -m pip install -e .
-
-      - name: Build normalized artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m theseus_repo_search build-source-artifact \
-            --source "${{ matrix.source_descriptor }}" \
-            --source-root "$SOURCE_ROOT" \
-            --source-container "$GITHUB_WORKSPACE/_target/source" \
-            --materialization-receipt "$GITHUB_WORKSPACE/_out/source-materialization.json" \
-            --member-manifest "$GITHUB_WORKSPACE/_out/source-materialization.members.json" \
-            --raw-depgraph _out/raw-depgraph.json \
-            --raw-depgraph-receipt _out/raw-depgraph-receipt.json \
-            --producer-kind lean-dep-viz \
-            --producer-tool-repo "$EXTRACTOR_REPO" \
-            --producer-tool-commit "$EXTRACTOR_COMMIT" \
-            --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" \
-            --out "_out/${SOURCE_ID}-artifact"
-          test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
-
-      - name: Verify project and replay selected source
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m theseus_repo_search verify-artifact --artifact "_out/${SOURCE_ID}-artifact"
-          python3 -m theseus_repo_search build-index \
-            --artifact "_out/${SOURCE_ID}-artifact" \
-            --db "_out/${SOURCE_ID}.sqlite"
-          python3 "${{ matrix.replay_script }}" \
-            --db "_out/${SOURCE_ID}.sqlite" \
-            --source-root "$SOURCE_ROOT" \
-            --artifact "_out/${SOURCE_ID}-artifact" \
-            --descriptor "${{ matrix.source_descriptor }}" \
-            --out "_out/${SOURCE_ID}-replay.json"
-
-      - name: Remove disposable producer outputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -f _out/raw-depgraph.json "_out/${SOURCE_ID}.sqlite" _out/raw-depgraph-receipt.json \
-            _out/source-materialization.json _out/source-materialization.members.json
-          test ! -e _out/raw-depgraph.json
-          test ! -e "_out/${SOURCE_ID}.sqlite"
-          test ! -e _out/raw-depgraph-receipt.json
-          test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
-
-      - name: Upload normalized repository lens artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            _out/*-artifact/
-            _out/*-replay.json
-          if-no-files-found: error
-          retention-days: 7
-
   consume-artifact:
-    needs: produce-and-replay
-    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -392,54 +15,21 @@ jobs:
       max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/openai-euler.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-euler-repo-index-v1
-          - source_descriptor: producer/sources/poincare-proof-endpoints.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: poincare-proof-endpoints-repo-index-v1
           - source_descriptor: producer/sources/annals-challenge-full.json
             replay_script: scripts/replay_queued_intake.py
             artifact_name: annals-challenge-full-repo-index-v1
           - source_descriptor: producer/sources/formal-conjectures-riemann.json
             replay_script: scripts/replay_queued_intake.py
             artifact_name: formal-conjectures-riemann-repo-index-v1
-          - source_descriptor: producer/sources/sphere-eversion-main.json
+          - source_descriptor: producer/sources/openai-euler.json
             replay_script: scripts/replay_queued_intake.py
-            artifact_name: sphere-eversion-main-repo-index-v1
-          - source_descriptor: producer/sources/imperial-flt-partial.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: imperial-flt-partial-repo-index-v1
-          - source_descriptor: producer/sources/openai-matrix-exponent.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-matrix-exponent-repo-index-v1
+            artifact_name: openai-euler-repo-index-v1
           - source_descriptor: producer/sources/openai-ten-proofs-sphere-packing.json
             replay_script: scripts/replay_queued_intake.py
             artifact_name: openai-ten-proofs-sphere-packing-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-metric-codes.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-metric-codes-repo-index-v1
           - source_descriptor: producer/sources/openai-ten-proofs-permanent.json
             replay_script: scripts/replay_queued_intake.py
             artifact_name: openai-ten-proofs-permanent-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-non-sofic.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-non-sofic-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-connes-rigidity.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-connes-rigidity-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-ehrhart.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-ehrhart-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-quantum-repetition.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-quantum-repetition-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-gap-cvp.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-gap-cvp-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-compactness-degeneracy.json
-            replay_script: scripts/replay_queued_intake.py
-            artifact_name: openai-ten-proofs-compactness-degeneracy-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -455,11 +45,40 @@ jobs:
             --runner producer/runner.json \
             --github-env "$GITHUB_ENV"
 
+      - name: Verify original producer run and selected artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: ${{ matrix.artifact_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo=TeaShaman-cyber/theseus-repo-search-lab
+          gh api "repos/$repo/actions/runs/45892943425" --jq .head_sha | grep -Fx d82b675efe9a8a6f96ab2e6b2b7b53d7f3e928ae
+          gh api "repos/$repo/actions/runs/45892943425/jobs?per_page=100" > "$RUNNER_TEMP/origin-jobs.json"
+          gh api "repos/$repo/actions/runs/45892943425/artifacts?per_page=100" > "$RUNNER_TEMP/origin-artifacts.json"
+          python3 - <<'PY_ORIGIN'
+          import json,os
+          from pathlib import Path
+          d=Path(os.environ["RUNNER_TEMP"])
+          name=os.environ["ARTIFACT_NAME"]
+          source=name.removesuffix("-repo-index-v1")
+          jobs=[x for x in json.loads((d/"origin-jobs.json").read_text())["jobs"]
+                if x["name"].startswith("produce-and-replay (producer/sources/"+source+".json,")]
+          assert len(jobs)==1 and jobs[0]["conclusion"]=="success"
+          artifacts=[x for x in json.loads((d/"origin-artifacts.json").read_text())["artifacts"]
+                     if x["name"]==name and not x["expired"]]
+          assert len(artifacts)==1 and artifacts[0]["digest"].startswith("sha256:")
+          print("ORIGIN",jobs[0]["id"],artifacts[0]["id"],artifacts[0]["digest"])
+          PY_ORIGIN
+
       - name: Download normalized repository lens artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: ${{ matrix.artifact_name }}
           path: _consumer/download
+          run-id: 45892943425
+          repository: TeaShaman-cyber/theseus-repo-search-lab
+          github-token: ${{ github.token }}
 
       - name: Install repository lens package
         run: python3 -m pip install -e .
