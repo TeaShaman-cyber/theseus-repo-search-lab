@@ -366,8 +366,10 @@ row counts (not a full content audit on every request). For materialization,
 verify the immutable release, rebuild and verify its projection with the
 existing consumer, record resource ownership in an Issue, then use
 `scripts/materialize_kusto_graph.py` with the independently established
-projection fingerprint. Bounded inline ingestion is for these small accepted
-corpora, not large-scale RH imports. Do not overwrite existing tables; reconcile
+projection fingerprint. Small accepted graphs use bounded inline ingestion.
+Larger graphs use gzip streaming after a table-scoped schema-cache refresh
+with explicit successful readback; a rejected empty batch can fall back to
+inline ingestion. No ambiguous write is automatically replayed. Do not overwrite existing tables; reconcile
 an interrupted materialization before retry. The explicit reconciliation modes
 `--resume-empty` and `--verify-existing` require confirmed ownership and
 respectively empty or exactly matching graph tables. The ready record is not corpus

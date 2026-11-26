@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import io
 import json
 import os
 import sqlite3
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -56,23 +58,58 @@ def main() -> int:
             raise RuntimeError("management failed")
         return data["Tables"][0]["Rows"]
 
+    # Larger graphs use the same streaming route already measured in #131.
+    # Small graphs and metadata use inline ingestion.
+    stream_tables: set[str] = set()
+
     def ingest(table, rows):
-        # Small accepted-corpus projections: synchronous ingestion avoids
-        # new-table propagation delays at the separate streaming gateway.
+        if table in stream_tables:
+            buf=io.StringIO(newline="")
+            csv.writer(buf).writerows(rows)
+            raw=buf.getvalue().encode()
+            if len(raw) > 3*1024*1024:
+                # Same batch key, smaller transport chunks; verify whole batch.
+                if len(rows) == 1:
+                    raise ValueError("oversized streaming row")
+                mid=len(rows)//2
+                ingest(table,rows[:mid])
+                ingest(table,rows[mid:])
+                return
+            req=urllib.request.Request(client.cluster+"/v1/rest/ingest/"+client.database+"/"+table+"?streamFormat=Csv",
+                data=gzip.compress(raw,compresslevel=3,mtime=0),
+                headers={"Authorization":"Bearer "+client._token,"Content-Encoding":"gzip","Content-Type":"application/octet-stream"})
+            try:
+                with urllib.request.urlopen(req,timeout=90) as resp:
+                    data=json.load(resp)
+                if data.get("error"):
+                    raise RuntimeError("ingest failure")
+                return
+            except urllib.error.HTTPError as exc:
+                detail=exc.read(2048).decode("utf-8",errors="replace")
+                # Fall back only on a definite gateway rejection, with no rows
+                # for the affected batch; never replay an ambiguous write.
+                if (exc.code != 400 or "BadRequest_EntityNotFound" not in detail
+                        or client.query(f"{table} | where batch == {rows[0][-1]} | count") != [[0]]):
+                    raise
+                print("INLINE_FALLBACK",table,flush=True)
+                stream_tables.remove(table)
         buf=io.StringIO(newline="")
+        size=0
         for row in rows:
             line=io.StringIO(newline="")
             csv.writer(line).writerow(row)
             value=line.getvalue()
-            if len(value.encode()) > 128*1024:
+            length=len(value.encode())
+            if length > 512*1024:
                 raise ValueError("inline row exceeds bounded ingestion size")
-            if len(buf.getvalue().encode())+len(value.encode()) > 128*1024:
+            if size+length > 512*1024:
                 mg(f".ingest inline into table {table} <|\n"+buf.getvalue())
                 buf=io.StringIO(newline="")
+                size=0
             buf.write(value)
-        if buf.tell():
+            size+=length
+        if size:
             mg(f".ingest inline into table {table} <|\n"+buf.getvalue())
-        # Exact batch parity below is the acceptance gate.
 
     existing = {row[0] for row in mg(".show tables")} & {n,e,r}
     if args.verify_existing:
@@ -86,15 +123,33 @@ def main() -> int:
             raise RuntimeError("existing projection: reconcile, do not overwrite")
         mg(f".create table {n} (id:string,batch:long)")
         mg(f".create table {e} (source_id:string,target_id:string,relation:string,evidence_grade:string,producer:string,batch:long)")
+    large = len(edges)>100000
+    if large and not args.verify_existing:
+        for table in (n,e):
+            mg(f".alter table {table} policy streamingingestion enable")
+            try:
+                cleared=mg(f".clear table {table} cache streamingingestion schema")
+            except urllib.error.HTTPError as exc:
+                if exc.code not in (400,403):
+                    raise
+                cleared=[]
+            if cleared and all(row[-1]=="Succeeded" for row in cleared):
+                stream_tables.add(table)
+                print("STREAM_READY",table,flush=True)
+            else:
+                print("INLINE_FALLBACK_SCHEMA_CACHE",table,flush=True)
+    batch_size=20000 if large else 5000
     for table, rows, cols in ((n,nodes,"id"),(e,edges,"source_id,target_id,relation,evidence_grade,producer")):
-        for i in range(0,len(rows),5000):
-            batch=i//5000
-            expected=rows[i:i+5000]
+        for i in range(0,len(rows),batch_size):
+            batch=i//batch_size
+            expected=rows[i:i+batch_size]
             if not args.verify_existing:
                 ingest(table,[(*row,batch) for row in expected])
             actual=client.query(f"{table} | where batch == {batch} | project {cols}")
             if sorted(map(tuple,actual))!=sorted(expected):
                 raise RuntimeError(f"exact row parity failed for {table} batch {batch}")
+            if large:
+                print("BATCH_PARITY",table,batch,len(expected),flush=True)
         if client.query(f"{table} | count") != [[len(rows)]]:
             raise RuntimeError("count mismatch")
         print("EXACT_PARITY",table,len(rows),flush=True)
