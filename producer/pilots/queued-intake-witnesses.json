@@ -24,7 +24,7 @@
     "issue": 35
   },
   "sphere-eversion-main": {
-    "declaration": "Smale",
+    "declaration": "SphereEversion.Main.Smale",
     "path": "SphereEversion/Main.lean",
     "corpus_class": "PROOF_CORPUS",
     "issue": 36
@@ -33,7 +33,8 @@
     "declaration": "PNat.pow_add_pow_ne_pow",
     "path": "FermatsLastTheorem.lean",
     "corpus_class": "PARTIAL_PROOF_CORPUS",
-    "issue": 36
+    "issue": 36,
+    "source_hint": "PNat.pow_add_pow_ne_pow"
   },
   "openai-matrix-exponent": {
     "declaration": "OAI.LinearAlgebra.SpectralBooks.square_exponent",
