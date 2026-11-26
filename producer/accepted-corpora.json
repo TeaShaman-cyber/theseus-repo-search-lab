@@ -3,6 +3,15 @@
   "release_repository": "TeaShaman-cyber/theseus-repo-search-lab",
   "corpora": [
     {
+      "source_id": "annals-challenge-full",
+      "release_tag": "accepted-artifact/annals-challenge-full/8caba38c6657f683",
+      "package_asset": "annals-challenge-full-accepted.tar.gz",
+      "receipt_asset": "annals-challenge-full-release-receipt.json",
+      "source_descriptor": "producer/sources/annals-challenge-full.json",
+      "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+      "fingerprint_sha256": "9463fdccba664131d297fb92452b052644083381e41d4516938319feb8cddcfc"
+    },
+    {
       "source_id": "annals-challenge-marton",
       "release_tag": "accepted-artifact/annals-challenge-marton/1d0d8ce2fbeb279f",
       "package_asset": "annals-challenge-marton-accepted.tar.gz",
@@ -28,6 +37,15 @@
       "source_descriptor": "producer/sources/decreasing-diagrams-complete.json",
       "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
       "fingerprint_sha256": "c3a52418f50906ebd70c5c84a1d8086ecde0ddb3af665c946d709e9944c58d0e"
+    },
+    {
+      "source_id": "formal-conjectures-riemann",
+      "release_tag": "accepted-artifact/formal-conjectures-riemann/d56ca7204a9a991c",
+      "package_asset": "formal-conjectures-riemann-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-riemann-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-riemann.json",
+      "artifact_identity": "d56ca7204a9a991c1e046b2760c1a84a99eb8e38597cd33cc6cab5bb26930eec",
+      "fingerprint_sha256": "7af3e1efe51626f2ced7e5d64e7ff67416b6508285347d679e576cbd3e680c53"
     },
     {
       "source_id": "leanprover-community-con-nf",
@@ -57,6 +75,15 @@
       "fingerprint_sha256": "3471bd170728e2d5c72505f4eb8a1dbafd16a3c953a70f71f7664d55c94f42ee"
     },
     {
+      "source_id": "openai-euler",
+      "release_tag": "accepted-artifact/openai-euler/d96ee5ae8f32131d",
+      "package_asset": "openai-euler-accepted.tar.gz",
+      "receipt_asset": "openai-euler-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-euler.json",
+      "artifact_identity": "d96ee5ae8f32131dc18193cd86a695fe63b9e641de1fe37ac7f16defc41c6a09",
+      "fingerprint_sha256": "877b9715cf40d2ed3b569dc1ea154874d1e3e6c2bf0524670d38e6df901da416"
+    },
+    {
       "source_id": "openai-long-gaps",
       "release_tag": "accepted-artifact/openai-long-gaps/9c062327474441f8",
       "package_asset": "openai-long-gaps-accepted.tar.gz",
@@ -82,6 +109,24 @@
       "source_descriptor": "producer/sources/openai-ten-proofs-multicolor.json",
       "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
       "fingerprint_sha256": "c5bf25665d4d22b943e30df80f83773bbb0dc7135ff241ba1056618663ff7d51"
+    },
+    {
+      "source_id": "openai-ten-proofs-permanent",
+      "release_tag": "accepted-artifact/openai-ten-proofs-permanent/b097ff91a1413a83",
+      "package_asset": "openai-ten-proofs-permanent-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-permanent-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-permanent.json",
+      "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+      "fingerprint_sha256": "b609443a04a2f21d7a23c59a624c6a4bf1512bcec2aeb513147dd64b545c4a70"
+    },
+    {
+      "source_id": "openai-ten-proofs-sphere-packing",
+      "release_tag": "accepted-artifact/openai-ten-proofs-sphere-packing/5350eca08be34180",
+      "package_asset": "openai-ten-proofs-sphere-packing-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-sphere-packing-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-sphere-packing.json",
+      "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+      "fingerprint_sha256": "a4ecbd30db23a4b379500eb594c445ab52b258b0dc51064bf4280b2ada65b19a"
     },
     {
       "source_id": "sphere-eversion-main",
