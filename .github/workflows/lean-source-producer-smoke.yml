@@ -149,17 +149,19 @@ jobs:
           df -h .
           lean --version
 
-      - name: Plan and extract four source-balanced graph shards
+      - name: Plan and extract one coherent Lean environment
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p _out/shards
-          python3 scripts/plan_lean_shards.py --repo-root "$PROJECT_ROOT" --source-prefix src --shard-count 4 --out _out/shard-plan.json
+          free -h
+          python3 scripts/plan_lean_shards.py --repo-root "$PROJECT_ROOT" --source-prefix src --shard-count 1 --out _out/shard-plan.json
           python3 - <<'PY_PLAN'
           import json
           from pathlib import Path
           plan=json.loads(Path('_out/shard-plan.json').read_text())
           assert plan['module_count']==802
+          assert plan['shard_count']==1
           modules=[m for s in plan['shards'] for m in s['modules']]
           assert len(set(modules))==802
           for shard in plan['shards']:
