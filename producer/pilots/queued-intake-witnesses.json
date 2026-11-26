@@ -1,0 +1,99 @@
+{
+  "openai-euler": {
+    "declaration": "EulerPacketInduction.exists_compact_smooth_euler_singularity",
+    "path": "Euler/EulerSingularity.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 30
+  },
+  "poincare-proof-endpoints": {
+    "declaration": "PoincareMT.smoothPoincareSkeleton",
+    "path": "PoincareLib/Topology/Manifold/Poincare.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 102
+  },
+  "annals-challenge-full": {
+    "declaration": "ConjectureOfMarton.theorem_1_2",
+    "path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35
+  },
+  "formal-conjectures-riemann": {
+    "declaration": "RiemannHypothesis.riemannHypothesis",
+    "path": "FormalConjectures/Millennium/RiemannHypothesis.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35
+  },
+  "sphere-eversion-main": {
+    "declaration": "SphereEversion.Main.Smale",
+    "path": "SphereEversion/Main.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 36
+  },
+  "imperial-flt-partial": {
+    "declaration": "PNat.pow_add_pow_ne_pow",
+    "path": "FermatsLastTheorem.lean",
+    "corpus_class": "PARTIAL_PROOF_CORPUS",
+    "issue": 36,
+    "source_hint": "PNat.pow_add_pow_ne_pow"
+  },
+  "openai-matrix-exponent": {
+    "declaration": "OAI.LinearAlgebra.SpectralBooks.square_exponent",
+    "path": "OAI/LinearAlgebra/SpectralBooks/ExactExponent.lean",
+    "corpus_class": "PARTIAL_PROOF_CORPUS",
+    "issue": 189
+  },
+  "openai-ten-proofs-sphere-packing": {
+    "declaration": "PackingBounds.sharpFullCohnElkiesManuscriptConclusions",
+    "path": "SpherePacking.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-metric-codes": {
+    "declaration": "MetricCodes.Johnson.binaryRate_lt_mrrw",
+    "path": "MetricCodes.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-permanent": {
+    "declaration": "PermanentFormulaLowerBound.permanent_rational_formula_logarithmic_lower_bound",
+    "path": "Permanent.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-non-sofic": {
+    "declaration": "SoficGroups.SourceTopLevelCompressionFinal.exists_finitelyPresented_nonsofic_group",
+    "path": "NonSoficGroup.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-connes-rigidity": {
+    "declaration": "ConnesRigidity.exists_infinite_pairwise_nonisomorphic_propertyT_icc_groups_with_isomorphic_factors",
+    "path": "ConnesRigidity.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-ehrhart": {
+    "declaration": "Ehrhart.Volume.ehrhart_volume_inequality_for_sets",
+    "path": "EhrhartVolumeInequality.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-quantum-repetition": {
+    "declaration": "QuantumParallelRepetition.distributionUniformExponential",
+    "path": "QuantumParallelRepetition.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-gap-cvp": {
+    "declaration": "GapCVP.Comparator.gapCVP400IsNPHard",
+    "path": "GapCVP.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  },
+  "openai-ten-proofs-compactness-degeneracy": {
+    "declaration": "CompactnessConjecture.quantitativeCompactnessCounterexample",
+    "path": "CompactnessAndDegeneracy.lean",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 52
+  }
+}

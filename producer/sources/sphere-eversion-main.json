@@ -1,0 +1,12 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "sphere-eversion-main",
+  "source_repo": "leanprover-community/sphere-eversion",
+  "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+  "source_subdir": "",
+  "root_modules": [
+    "SphereEversion.Main",
+    "SphereEversion.Global.Immersion"
+  ],
+  "build_target": "SphereEversion.Main"
+}
