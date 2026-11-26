@@ -12,6 +12,15 @@
       "fingerprint_sha256": "034c0ab9a11e5e03145372158a78fd388494a84da46df4d18b3a7dd8bacfc03b"
     },
     {
+      "source_id": "anthropic-fermats-last-theorem",
+      "release_tag": "accepted-artifact/anthropic-fermats-last-theorem/21b6b292cb3160fa",
+      "package_asset": "anthropic-fermats-last-theorem-accepted.tar.gz",
+      "receipt_asset": "anthropic-fermats-last-theorem-release-receipt.json",
+      "source_descriptor": "producer/sources/anthropic-fermats-last-theorem.json",
+      "artifact_identity": "21b6b292cb3160fa33a962ad72e1890691250279e016c251150cdb2f84ce62c3",
+      "fingerprint_sha256": "174f3a74e8176256ca3b7e997f53db2dd1def67d77aaf53cfea66e3e605b9c73"
+    },
+    {
       "source_id": "decreasing-diagrams-complete",
       "release_tag": "accepted-artifact/decreasing-diagrams-complete/abd7c1b4e2586c8c",
       "package_asset": "decreasing-diagrams-complete-accepted.tar.gz",

@@ -10,6 +10,7 @@ from theseus_repo_search.accepted_catalog import (
 
 EXPECTED_SOURCE_IDS = {
     "annals-challenge-marton",
+    "anthropic-fermats-last-theorem",
     "decreasing-diagrams-complete",
     "leanprover-community-con-nf",
     "leanprover-community-flt-regular",
@@ -122,13 +123,13 @@ class AcceptedCatalogTests(unittest.TestCase):
         right = self._load(right_payload)
         self.assertEqual(accepted_catalog_sha256(left), accepted_catalog_sha256(right))
 
-    def test_repository_catalog_has_exact_sorted_nine_sources(self):
+    def test_repository_catalog_has_exact_sorted_ten_sources(self):
         path = Path(__file__).resolve().parents[1] / "producer" / "accepted-corpora.json"
         catalog = load_accepted_catalog(path)
         source_ids = [entry.source_id for entry in catalog.corpora]
         self.assertEqual(set(source_ids), EXPECTED_SOURCE_IDS)
         self.assertEqual(source_ids, sorted(source_ids))
-        self.assertEqual(len(source_ids), 9)
+        self.assertEqual(len(source_ids), 10)
 
 
 if __name__ == "__main__":
