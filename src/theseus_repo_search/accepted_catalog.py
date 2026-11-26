@@ -34,6 +34,7 @@ class AcceptedCorpus:
     source_descriptor: str
     artifact_identity: str
     fingerprint_sha256: str
+    runner_config: str | None = None
 
 
 @dataclass(frozen=True)
@@ -81,18 +82,21 @@ def _validate_descriptor_path(value: str) -> None:
 
 def _parse_corpus(raw: object, *, index: int) -> AcceptedCorpus:
     obj = _require_object(raw, where=f"corpora[{index}]")
+    fields = _CORPUS_FIELDS | ({"runner_config"} if "runner_config" in obj else set())
     _require_exact_fields(
-        obj, expected=_CORPUS_FIELDS, where=f"corpora[{index}]"
+        obj, expected=frozenset(fields), where=f"corpora[{index}]"
     )
     values = {
         field: _require_text(obj[field], field=f"corpora[{index}].{field}")
-        for field in _CORPUS_FIELDS
+        for field in fields
     }
     if not _HEX64.fullmatch(values["artifact_identity"]):
         raise ValueError("artifact_identity must be 64 lowercase hexadecimal characters")
     if not _HEX64.fullmatch(values["fingerprint_sha256"]):
         raise ValueError("fingerprint_sha256 must be 64 lowercase hexadecimal characters")
     _validate_descriptor_path(values["source_descriptor"])
+    if "runner_config" in values and not re.fullmatch(r"producer/runners/[A-Za-z0-9_-]+\.json", values["runner_config"]):
+        raise ValueError("runner_config must be a pinned JSON file under producer/runners/")
     return AcceptedCorpus(**values)
 
 
@@ -141,12 +145,16 @@ def load_accepted_catalog(path: Path) -> AcceptedCatalog:
     )
 
 
+def corpus_payload(corpus: AcceptedCorpus) -> dict[str, object]:
+    return {key: value for key, value in asdict(corpus).items() if value is not None}
+
+
 def accepted_catalog_sha256(catalog: AcceptedCatalog) -> str:
     normalized = {
         "schema": catalog.schema,
         "release_repository": catalog.release_repository,
         "corpora": [
-            asdict(corpus)
+            corpus_payload(corpus)
             for corpus in sorted(catalog.corpora, key=lambda item: item.source_id)
         ],
     }

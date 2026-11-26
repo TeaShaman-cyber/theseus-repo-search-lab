@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from hashlib import sha256
 from pathlib import Path
 
 from theseus_repo_search.accepted_catalog import (
@@ -18,6 +19,7 @@ EXPECTED_SOURCE_IDS = {
     "openai-long-gaps",
     "openai-navier-stokes",
     "openai-ten-proofs-multicolor",
+    "sphere-eversion-main",
     "zeta23",
 }
 
@@ -123,13 +125,28 @@ class AcceptedCatalogTests(unittest.TestCase):
         right = self._load(right_payload)
         self.assertEqual(accepted_catalog_sha256(left), accepted_catalog_sha256(right))
 
-    def test_repository_catalog_has_exact_sorted_ten_sources(self):
+    def test_explicit_runner_pin_and_legacy_digest(self):
+        legacy = _payload()
+        expected = sha256(json.dumps(legacy, ensure_ascii=False, sort_keys=True,
+                                    separators=(",", ":")).encode()).hexdigest()
+        self.assertEqual(accepted_catalog_sha256(self._load(legacy)), expected)
+        selected = self._load(_payload(corpora=[_entry(runner_config="producer/runners/adapted.json")]))
+        self.assertEqual(selected.corpora[0].runner_config, "producer/runners/adapted.json")
+        self.assertNotEqual(accepted_catalog_sha256(selected), expected)
+
+    def test_rejects_untrusted_runner_path(self):
+        for path in ("/tmp/a.json", "producer/runners/../runner.json",
+                     "producer/runners/a/other.json", "producer/sources/a.json", None):
+            with self.subTest(path=path), self.assertRaises((ValueError, TypeError)):
+                self._load(_payload(corpora=[_entry(runner_config=path)]))
+
+    def test_repository_catalog_has_exact_sorted_eleven_sources(self):
         path = Path(__file__).resolve().parents[1] / "producer" / "accepted-corpora.json"
         catalog = load_accepted_catalog(path)
         source_ids = [entry.source_id for entry in catalog.corpora]
         self.assertEqual(set(source_ids), EXPECTED_SOURCE_IDS)
         self.assertEqual(source_ids, sorted(source_ids))
-        self.assertEqual(len(source_ids), 10)
+        self.assertEqual(len(source_ids), 11)
 
 
 if __name__ == "__main__":

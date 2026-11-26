@@ -193,8 +193,8 @@ def _cache_path(
     )
 
 
-def _runner_path(repository_root: Path) -> Path:
-    return repository_root / "producer" / "runner.json"
+def _runner_path(repository_root: Path, corpus: AcceptedCorpus) -> Path:
+    return repository_root / (corpus.runner_config or "producer/runner.json")
 
 
 def _descriptor_path(repository_root: Path, corpus: AcceptedCorpus) -> Path:
@@ -250,7 +250,7 @@ def _verify_cached_state(
             raise ValueError(f"local cache {key} mismatch")
 
     descriptor = _descriptor_path(repository_root, corpus)
-    runner = _runner_path(repository_root)
+    runner = _runner_path(repository_root, corpus)
     descriptor_sha = _sha256_path(descriptor)
     runner_sha = _sha256_path(runner)
     if receipt.get("source_descriptor_sha256") != descriptor_sha:
@@ -339,7 +339,7 @@ def _build_staged_cache(
         destination=downloads,
     )
     descriptor = _descriptor_path(repository_root, corpus)
-    runner = _runner_path(repository_root)
+    runner = _runner_path(repository_root, corpus)
     release_dir = stage / "release"
     verified = verify_and_extract_release(
         archive=archive,
