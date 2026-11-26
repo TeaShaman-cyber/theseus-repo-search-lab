@@ -1,0 +1,15 @@
+{
+  "schema": "theseus.lean-git-source.v2",
+  "source_id": "leanprover-community-riemann-readable",
+  "source_repo": "leanprover-community/riemann-hypothesis",
+  "source_commit": "3b68810902c2ca244fe047c43032cd110e64d41f",
+  "source_subdir": "src",
+  "root_modules": [
+    "Lib",
+    "Main",
+    "New",
+    "Statements"
+  ],
+  "build_target": "Main",
+  "exclude_source_prefixes": []
+}

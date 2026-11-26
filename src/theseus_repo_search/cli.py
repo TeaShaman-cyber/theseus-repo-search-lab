@@ -47,6 +47,7 @@ from .projection import build_projection, read_projection_provenance
 from .retrieval import SearchHit
 from .retrieval import context as build_context
 from .retrieval import search as search_repo
+from .sharding import validate_shard_receipt_entries
 from .sources import (
     bind_manifest_backed_node_sources,
     bind_node_sources,
@@ -297,44 +298,10 @@ def _verify_raw_depgraph_receipt(
                 "raw dependency graph receipt does not match source, producer, scope, or graph hash",
             )
 
-    shards = authority_receipt.get("shards")
-    if not isinstance(shards, list) or not shards:
-        raise RepoSearchError(
-            "BLOCKED_SOURCE_BINDING",
-            "sharded raw dependency graph receipt must contain non-empty shards",
-        )
-    hexchars = set("0123456789abcdef")
-    for index, shard in enumerate(shards):
-        if (
-            not isinstance(shard, dict)
-            or set(shard) != {"index", "raw_depgraph_sha256", "receipt_sha256", "root_modules"}
-            or shard.get("index") != index
-        ):
-            raise RepoSearchError(
-                "BLOCKED_SOURCE_BINDING",
-                "sharded raw dependency graph receipt has invalid shard ordering or fields",
-            )
-        roots = shard.get("root_modules")
-        if (
-            not isinstance(roots, list)
-            or not roots
-            or not all(isinstance(root, str) and root for root in roots)
-        ):
-            raise RepoSearchError(
-                "BLOCKED_SOURCE_BINDING",
-                "sharded raw dependency graph receipt has invalid shard root_modules",
-            )
-        for field in ("raw_depgraph_sha256", "receipt_sha256"):
-            value = shard.get(field)
-            if (
-                not isinstance(value, str)
-                or len(value) != 64
-                or any(char not in hexchars for char in value)
-            ):
-                raise RepoSearchError(
-                    "BLOCKED_SOURCE_BINDING",
-                    f"sharded raw dependency graph receipt has invalid {field}",
-                )
+    try:
+        validate_shard_receipt_entries(authority_receipt.get("shards"))
+    except ValueError as exc:
+        raise RepoSearchError("BLOCKED_SOURCE_BINDING", str(exc)) from exc
 
 
 def _verify_archive_raw_depgraph_receipt_bytes(

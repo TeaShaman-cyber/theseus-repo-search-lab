@@ -8,6 +8,7 @@ from pathlib import Path
 from theseus_repo_search.artifact import artifact_identity
 from theseus_repo_search.graph import dependencies
 from theseus_repo_search.replay_contract import (
+    DEFAULT_RUNNER,
     prepare_registered_replay,
     registered_replay_provenance,
     require_context_chunks,
@@ -17,8 +18,8 @@ from theseus_repo_search.retrieval import context, search
 WITNESSES = Path(__file__).resolve().parents[1] / "producer/pilots/queued-intake-witnesses.json"
 
 
-def run_replay(db: Path, artifact: Path, descriptor: Path, *, witnesses: Path = WITNESSES) -> dict[str, object]:
-    manifest, source = prepare_registered_replay(artifact, db, descriptor)
+def run_replay(db: Path, artifact: Path, descriptor: Path, *, witnesses: Path = WITNESSES, runner_path: Path = DEFAULT_RUNNER) -> dict[str, object]:
+    manifest, source = prepare_registered_replay(artifact, db, descriptor, runner_path=runner_path)
     witness = json.loads(witnesses.read_text())[source.source_id]
     target, path, klass = (witness[k] for k in ("declaration", "path", "corpus_class"))
     if klass not in {"PROOF_CORPUS", "PARTIAL_PROOF_CORPUS", "STATEMENT_CORPUS"}:
@@ -50,8 +51,9 @@ def main() -> int:
     for name in ("db", "artifact", "descriptor", "out"):
         p.add_argument("--" + name, type=Path, required=True)
     p.add_argument("--source-root", type=Path)
+    p.add_argument("--runner", type=Path, default=DEFAULT_RUNNER)
     a = p.parse_args()
-    result = run_replay(a.db, a.artifact, a.descriptor)
+    result = run_replay(a.db, a.artifact, a.descriptor, runner_path=a.runner)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(result, sort_keys=True, ensure_ascii=False) + "\n")
     print(json.dumps(result, sort_keys=True, ensure_ascii=False))

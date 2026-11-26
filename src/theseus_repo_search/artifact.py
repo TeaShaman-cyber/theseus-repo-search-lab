@@ -23,6 +23,7 @@ from .model import (
     SourceChunk,
 )
 from .normalize import normalize_leandepviz
+from .sharding import validate_shard_receipt_entries
 from .sources import (
     bind_manifest_backed_node_sources,
     filter_manifest_backed_edges,
@@ -467,7 +468,12 @@ def _validate_authority_receipt_bytes(data: bytes, manifest: ArtifactManifestAny
         producer = receipt["producer"]
         observed = receipt["observed"]
         raw = receipt["raw_depgraph"]
-        if receipt.get("schema") != "theseus.raw-depgraph-receipt.v2":
+        schema = receipt.get("schema")
+        if schema == "theseus.raw-depgraph-receipt.v4":
+            if set(receipt) != {"schema", "source", "scope", "producer", "observed", "raw_depgraph", "shards"}:
+                raise ValueError("sharded receipt has unexpected fields")
+            validate_shard_receipt_entries(receipt["shards"])
+        elif schema != "theseus.raw-depgraph-receipt.v2":
             raise ValueError("unsupported schema")
         if not all(isinstance(x, dict) for x in (source, scope, producer, observed, raw)):
             raise TypeError("receipt sections must be objects")

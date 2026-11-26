@@ -615,3 +615,32 @@ class ProducerGuardTests(unittest.TestCase):
             stderr.getvalue(),
             '{"code":"BLOCKED_SOURCE_MISMATCH","message":"sha mismatch","status":"BLOCKED"}\n',
         )
+
+    def test_bound_extraction_accepts_declared_nested_source_directory(self):
+        with tempfile.TemporaryDirectory() as d:
+            repo = Path(d) / "repo"
+            (repo / "src").mkdir(parents=True)
+            (repo / "src/Main.lean").write_text("theorem a : True := by trivial\n")
+            (repo / "lakefile.toml").write_text('name = "Fixture"\nsrcDir = "src"\n')
+            (repo / "lean-toolchain").write_text("leanprover/lean4:v4.37.0-rc1\n")
+            subprocess.run(["git", "init", "-q", repo], check=True)
+            subprocess.run(["git", "-C", repo, "add", "."], check=True)
+            subprocess.run(["git", "-C", repo, "-c", "user.name=QA", "-c", "user.email=qa@example.invalid", "commit", "-qm", "fixture"], check=True)
+            commit = subprocess.check_output(["git", "-C", repo, "rev-parse", "HEAD"], text=True).strip()
+            raw, receipt = Path(d) / "raw.json", Path(d) / "receipt.json"
+            def extract(argv, cwd):
+                self.assertEqual(cwd, repo)
+                raw.write_text('{"nodes":[],"edges":[]}\n')
+            def invoke():
+                producer_guard.run_bound_extraction(
+                    ["lake", "env", "lean"], cwd=repo, repo_dir=repo,
+                    expected_commit=commit, raw_depgraph=raw, receipt_path=receipt,
+                    source_repo="example/repo", source_subdir="src", root_modules=("Main",),
+                    producer_kind="lean-dep-viz", producer_tool_repo="example/extractor",
+                    producer_tool_commit="b"*40, producer_tool_hash="c"*64)
+            with patch.object(producer_guard, "run_exact_command", side_effect=extract):
+                invoke()
+                self.assertEqual(json.loads(receipt.read_text())["source"]["subdir"], "src")
+                (repo / "lakefile.toml").write_text('name = "Fixture"\nsrcDir = "other"\n')
+                with self.assertRaises(RepoSearchError):
+                    invoke()
