@@ -10,7 +10,11 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
-from .accepted_catalog import accepted_catalog_sha256, load_accepted_catalog
+from .accepted_catalog import (
+    AcceptedCatalog,
+    accepted_catalog_sha256,
+    load_accepted_catalog,
+)
 from .artifact import (
     artifact_identity,
     load_artifact,
@@ -954,11 +958,12 @@ def _cmd_turso_search(args: argparse.Namespace) -> int:
     return _emit_multicorpus_result(args, result)
 
 
-def _cmd_turso_graph(args: argparse.Namespace) -> int:
-    try:
-        catalog = load_accepted_catalog(args.catalog)
-    except (OSError, TypeError, ValueError) as exc:
-        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", f"accepted corpus catalog invalid: {exc}") from exc
+def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | None = None) -> int:
+    if catalog is None:
+        try:
+            catalog = load_accepted_catalog(args.catalog)
+        except (OSError, TypeError, ValueError) as exc:
+            raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", f"accepted corpus catalog invalid: {exc}") from exc
     item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
     if item is None:
         raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
@@ -982,7 +987,8 @@ def _cmd_turso_graph(args: argparse.Namespace) -> int:
     return 0
 
 
-def _emit_multicorpus_result(args: argparse.Namespace, result) -> int:
+def _emit_multicorpus_result(args: argparse.Namespace, result, *, catalog: AcceptedCatalog | None = None) -> int:
+    identities = {item.source_id: item.artifact_identity for item in catalog.corpora} if catalog is not None else {}
     _emit(
         {
             "status": _multicorpus_status(result, mode=args.mode),
@@ -990,6 +996,7 @@ def _emit_multicorpus_result(args: argparse.Namespace, result) -> int:
             "query_mode": args.mode,
             "catalog_sha256": result.catalog_sha256,
             "searched_corpora": result.searched_corpora,
+            **({"source_filter": args.source_id, "backend": "turso"} if catalog is not None else {}),
             "unavailable_corpora": len(result.unavailable_corpora),
             "unavailable": [asdict(item) for item in result.unavailable_corpora],
             "hits": [
@@ -997,6 +1004,7 @@ def _emit_multicorpus_result(args: argparse.Namespace, result) -> int:
                     "candidate_id": item.candidate_id,
                     "source_id": item.source_id,
                     "local_rank": item.local_rank,
+                    **({"artifact_identity": identities[item.source_id]} if catalog is not None else {}),
                     **_search_hit_dict(item.hit),
                 }
                 for item in result.hits
@@ -1004,6 +1012,65 @@ def _emit_multicorpus_result(args: argparse.Namespace, result) -> int:
         }
     )
     return 0
+
+
+def _cmd_agent_query(args: argparse.Namespace) -> int:
+    catalog_path = args.catalog or os.environ.get("REPO_SEARCH_CATALOG")
+    if not catalog_path:
+        raise RepoSearchError("BLOCKED_QUERY_PROFILE", "set REPO_SEARCH_CATALOG or --catalog")
+    args.catalog = Path(catalog_path)
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "accepted corpus catalog invalid") from exc
+    if args.operation == "corpora":
+        _emit({"status": "FOUND", "availability": "NOT_CHECKED",
+               "catalog_sha256": accepted_catalog_sha256(catalog),
+               "release_repository": catalog.release_repository,
+               "corpora": [asdict(item) for item in catalog.corpora]})
+        return 0
+    args.organization = args.organization or os.environ.get("REPO_SEARCH_TURSO_ORGANIZATION")
+    if not args.organization:
+        raise RepoSearchError("BLOCKED_QUERY_PROFILE", "set REPO_SEARCH_TURSO_ORGANIZATION or --organization")
+    args.platform_base_url = args.platform_base_url or os.environ.get(
+        "REPO_SEARCH_TURSO_PLATFORM_URL", "https://api.turso.tech"
+    )
+    args.platform_token_env = args.platform_token_env or os.environ.get("REPO_SEARCH_TURSO_TOKEN_ENV")
+    if args.operation == "search":
+        result = search_turso_catalog(catalog, _turso_client(args), query=args.query,
+                                      limit=args.limit, mode=args.mode, source_id=args.source_id)
+        return _emit_multicorpus_result(args, result, catalog=catalog)
+    return _cmd_turso_graph(args, catalog=catalog)
+
+
+def _add_agent_query(subparsers) -> None:
+    parser = subparsers.add_parser("query", help="unified read-only accepted-corpus interface")
+    parser.add_argument("--catalog", type=Path)
+    parser.add_argument("--organization")
+    parser.add_argument("--platform-base-url")
+    parser.add_argument("--platform-token-env")
+    parser.set_defaults(func=_cmd_agent_query)
+    ops = parser.add_subparsers(dest="operation", required=True)
+    ops.add_parser("corpora", help="list catalog identities (not live availability)")
+    search = ops.add_parser("search")
+    search.add_argument("query")
+    search.add_argument("--source", dest="source_id")
+    search.add_argument("--limit", type=int, default=10)
+    search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
+    for op in ("deps", "rdeps", "path", "context"):
+        graph = ops.add_parser(op)
+        graph.add_argument("source_id")
+        graph.add_argument("name")
+        if op == "path":
+            graph.add_argument("target")
+        else:
+            graph.set_defaults(target=None)
+        graph.add_argument("--depth", type=int, default=5 if op == "path" else 1)
+        graph.add_argument("--max-edges", type=int, default=200)
+        if op == "context":
+            graph.add_argument("--token-budget", type=int, default=4000)
+        else:
+            graph.set_defaults(token_budget=4000)
 
 
 def _cmd_search(args: argparse.Namespace) -> int:
@@ -1112,6 +1179,7 @@ def _add_build_archive_artifact(subparsers) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="repo-search")
     subparsers = parser.add_subparsers(dest="command", required=True)
+    _add_agent_query(subparsers)
     _add_build_artifact(subparsers)
     _add_build_source_artifact(subparsers)
     _add_build_archive_artifact(subparsers)
