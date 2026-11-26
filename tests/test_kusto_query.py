@@ -87,3 +87,10 @@ class KustoReachTests(unittest.TestCase):
         r = reach(self.item, self.client, "A")
         self.assertEqual(r["status"], "DEGRADED")
         self.assertFalse(r["found"])
+
+    def test_static_graph_is_not_elaborated_completeness(self):
+        self.ready[9] = "source-static-deps"
+        self.client.query.side_effect = [[self.ready], [[3, 2]], [[1]], [["lean:B", 1]]]
+        r = reach(self.item, self.client, "A")
+        self.assertEqual(r["status"], "DEGRADED")
+        self.assertFalse(r["complete_within_scope"])

@@ -105,7 +105,7 @@ def reach(item: AcceptedCorpus, client: KustoClient, name: str, *, depth: int = 
         "depth": depth, "projection_nodes": nc, "projection_edges": ec,
         "evidence": "reachability_over_indexed_typed_edges",
     }
-    preview = producer == "olean-export-deps-preview"
+    preview = producer in ("olean-export-deps-preview", "source-static-deps")
     if matches == [[0]]:
         return {**payload, "status": "DEGRADED" if preview else "UNKNOWN", "found": False, "nodes": [], "complete_within_scope": False}
     if ec == 0:
