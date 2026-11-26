@@ -64,3 +64,26 @@ class KustoReachTests(unittest.TestCase):
         r = reach(self.item, self.client, "A")
         self.assertEqual(r["status"], "FOUND")
         self.assertEqual(r["nodes"], [])
+
+    def test_preview_graph_never_claims_complete(self):
+        self.ready[9] = "olean-export-deps-preview"
+        self.client.query.side_effect = [[self.ready], [[3, 2]], [[1]], [["lean:B", 1]]]
+        r = reach(self.item, self.client, "A")
+        self.assertEqual(r["status"], "DEGRADED")
+        self.assertFalse(r["complete_within_scope"])
+        self.assertTrue(r["found"])
+
+    def test_empty_preview_graph_never_claims_complete(self):
+        self.ready[9] = "olean-export-deps-preview"
+        self.ready[4] = 0
+        self.client.query.side_effect = [[self.ready], [[3, 0]], [[1]]]
+        r = reach(self.item, self.client, "A")
+        self.assertEqual(r["status"], "DEGRADED")
+        self.assertFalse(r["complete_within_scope"])
+
+    def test_missing_preview_root_is_degraded(self):
+        self.ready[9] = "olean-export-deps-preview"
+        self.client.query.side_effect = [[self.ready], [[3, 2]], [[0]]]
+        r = reach(self.item, self.client, "A")
+        self.assertEqual(r["status"], "DEGRADED")
+        self.assertFalse(r["found"])

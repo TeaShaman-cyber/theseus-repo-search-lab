@@ -105,10 +105,11 @@ def reach(item: AcceptedCorpus, client: KustoClient, name: str, *, depth: int = 
         "depth": depth, "projection_nodes": nc, "projection_edges": ec,
         "evidence": "reachability_over_indexed_typed_edges",
     }
+    preview = producer == "olean-export-deps-preview"
     if matches == [[0]]:
-        return {**payload, "status": "UNKNOWN", "found": False, "nodes": [], "complete_within_scope": False}
+        return {**payload, "status": "DEGRADED" if preview else "UNKNOWN", "found": False, "nodes": [], "complete_within_scope": False}
     if ec == 0:
-        return {**payload, "status": "FOUND", "found": True, "nodes": [], "complete_within_scope": True}
+        return {**payload, "status": "DEGRADED" if preview else "FOUND", "found": True, "nodes": [], "complete_within_scope": not preview}
     pattern = f"(a)<-[e*1..{depth}]-(b)" if reverse else f"(a)-[e*1..{depth}]->(b)"
     rows = client.query(
         f"{e} | make-graph source_id --> target_id with_node_id=key "
@@ -120,7 +121,7 @@ def reach(item: AcceptedCorpus, client: KustoClient, name: str, *, depth: int = 
             or type(row[1]) is not int or not 1 <= row[1] <= depth for row in rows)
             or len({row[0] for row in rows}) != len(rows)):
         raise RepoSearchError("DEGRADED_KUSTO_QUERY", "invalid reachability result")
-    complete = len(rows) <= limit
+    complete = len(rows) <= limit and not preview
     return {**payload, "status": "FOUND" if complete else "DEGRADED", "found": True,
             "nodes": [{"id": row[0], "depth": row[1]} for row in rows[:limit]],
             "complete_within_scope": complete}
@@ -138,15 +139,15 @@ def federated_reach(catalog: AcceptedCatalog, client: KustoClient, name: str, *,
         except RepoSearchError as exc:
             unavailable.append({"source_id": item.source_id, "artifact_identity": item.artifact_identity,
                                 "code": exc.code, "message": str(exc)})
-    truncated = any(r["status"] == "DEGRADED" for r in results)
+    incomplete = any(r["status"] == "DEGRADED" for r in results)
     found = any(r["found"] for r in results)
-    status = ("UNAVAILABLE" if not results else "DEGRADED" if unavailable or truncated else
+    status = ("UNAVAILABLE" if not results else "DEGRADED" if unavailable or incomplete else
               "FOUND" if found else "UNKNOWN")
     return {"status": status, "backend": "kusto", "query": name,
             "catalog_sha256": accepted_catalog_sha256(catalog),
             "searched_corpora": len(results), "unavailable_corpora": len(unavailable),
             "unavailable": unavailable, "results": results,
-            "complete_within_scope": not unavailable and not truncated and found,
+            "complete_within_scope": not unavailable and not incomplete and found,
             "result_limit_per_corpus": limit}
 
 def expand_search_hits(catalog: AcceptedCatalog, client: KustoClient,
