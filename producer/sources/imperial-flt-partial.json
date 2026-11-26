@@ -1,0 +1,12 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "imperial-flt-partial",
+  "source_repo": "ImperialCollegeLondon/FLT",
+  "source_commit": "019805815d7da565ed1e9f427b6fbd0cbc9d00d3",
+  "source_subdir": "",
+  "root_modules": [
+    "FermatsLastTheorem",
+    "FLT"
+  ],
+  "build_target": "FermatsLastTheorem"
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "openai-matrix-exponent",
+  "source_repo": "openai/math",
+  "source_commit": "3344da59991ed94f9ba711217b29c1d760badfa6",
+  "source_subdir": "lean",
+  "root_modules": [
+    "OAI.LinearAlgebra.SpectralBooks.ExactExponent",
+    "OAI.LinearAlgebra.MatrixExponent.Integral.RingFormula",
+    "OAI.LinearAlgebra.SpectralBooks.DualExponent",
+    "OAI.LinearAlgebra.SpectralBooks.RectangularCircuitModel",
+    "OAI.LinearAlgebra.SpectralBooks.SquareRankModel"
+  ],
+  "build_target": "OAI.LinearAlgebra.SpectralBooks.ExactExponent"
+}

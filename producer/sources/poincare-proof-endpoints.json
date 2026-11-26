@@ -1,0 +1,11 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "poincare-proof-endpoints",
+  "source_repo": "frenzymath/PoincareConjecture",
+  "source_commit": "62db01af9388dc1d9b56b66d6674f4c09b2318a2",
+  "source_subdir": "",
+  "root_modules": [
+    "PoincareLib.Topology.Manifold.Poincare"
+  ],
+  "build_target": "PoincareLib.Topology.Manifold.Poincare"
+}

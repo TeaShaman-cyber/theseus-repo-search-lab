@@ -1,0 +1,11 @@
+{
+  "schema": "theseus.lean-git-source.v1",
+  "source_id": "annals-challenge-full",
+  "source_repo": "ImperialCollegeLondon/AnnalsChallenge",
+  "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+  "source_subdir": "",
+  "root_modules": [
+    "AnnalsChallenge"
+  ],
+  "build_target": "AnnalsChallenge"
+}
