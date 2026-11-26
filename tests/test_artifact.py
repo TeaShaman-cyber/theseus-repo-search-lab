@@ -1180,3 +1180,44 @@ class StructuralIntegrityTests(unittest.TestCase):
                 load_artifact(path)
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("invalid artifact record", str(caught.exception))
+
+
+class QualifiedSourceArtifactTests(unittest.TestCase):
+    def test_qualified_hint_roundtrips_through_artifact_and_retrieval(self):
+        from theseus_repo_search.projection import build_projection
+        from theseus_repo_search.retrieval import context, search
+        from theseus_repo_search.sources import _chunks_from_text, bind_node_sources
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            node = Node.from_lean(full_name="PNat.pow_add_pow_ne_pow",
+                                 name="pow_add_pow_ne_pow", kind="thm",
+                                 module="Zeta23.Tiny", source_commit=SOURCE_COMMIT)
+            sources = _chunks_from_text(
+                "Zeta23/Tiny.lean", "theorem PNat.pow_add_pow_ne_pow : True := by trivial\n",
+                source_revision=SOURCE_COMMIT)
+            nodes = bind_node_sources([node], sources)
+            artifact = root / "artifact"
+            write_sample(artifact, nodes=nodes, edges=[], sources=sources)
+            self.assertEqual(load_artifact(artifact)[1], nodes)
+            db = root / "index.sqlite"
+            build_projection(artifact, db)
+            hit = search(db, node.id, limit=1)[0]
+            self.assertEqual(hit.declaration_id, node.id)
+            self.assertEqual(hit.source_path, "Zeta23/Tiny.lean")
+            self.assertEqual(hit.declaration_hint, node.full_name)
+            chunks = context(db, node.id)["chunks"]
+            self.assertTrue(any(c["declaration_hint"] == node.full_name for c in chunks))
+
+    def test_unrelated_qualified_hint_cannot_validate_bound_node(self):
+        from theseus_repo_search.sources import _chunks_from_text
+
+        with tempfile.TemporaryDirectory() as d:
+            node = replace(sample_nodes()[0], source_path="Zeta23/Tiny.lean",
+                           source_start_line=1, source_end_line=1)
+            sources = _chunks_from_text(
+                "Zeta23/Tiny.lean", "theorem Other.b : True := by trivial\n",
+                source_revision=SOURCE_COMMIT)
+            write_sample_raw(Path(d), nodes=[node], edges=[], sources=sources)
+            with self.assertRaisesRegex(RepoSearchError, "node source location mismatch"):
+                load_artifact(Path(d))
