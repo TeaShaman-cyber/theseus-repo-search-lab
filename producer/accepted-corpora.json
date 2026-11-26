@@ -84,6 +84,16 @@
       "fingerprint_sha256": "c5bf25665d4d22b943e30df80f83773bbb0dc7135ff241ba1056618663ff7d51"
     },
     {
+      "source_id": "sphere-eversion-main",
+      "release_tag": "accepted-artifact/sphere-eversion-main/c239fe589a525d9a",
+      "package_asset": "sphere-eversion-main-accepted.tar.gz",
+      "receipt_asset": "sphere-eversion-main-release-receipt.json",
+      "source_descriptor": "producer/sources/sphere-eversion-main.json",
+      "artifact_identity": "c239fe589a525d9aa21a5f5db0e40b963448bcd4b0086983db464c241fdc6bc7",
+      "fingerprint_sha256": "b766735d66ffba2855e0f95806c028c807cdeff6a2ac78f50fbef1ada04e9f45",
+      "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
+    },
+    {
       "source_id": "zeta23",
       "release_tag": "accepted-artifact/zeta23/786b5ab339dd85b7",
       "package_asset": "zeta23-accepted.tar.gz",

@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import threading
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
@@ -348,6 +349,28 @@ class MultiCorpusCacheTests(unittest.TestCase):
                 cache_root=cache,
                 gh_executable=str(fake_gh),
             )
+
+    def test_selected_runner_used_for_cold_and_warm_recovery(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            catalog, repo, _, runner, assets, fake_gh, count = self._fixture(root)
+            relative = "producer/runners/adapted.json"
+            selected = repo / relative
+            selected.parent.mkdir(parents=True)
+            selected.write_bytes(runner.read_bytes())
+            runner.write_text("{}")
+            catalog = replace(catalog, corpora=(replace(catalog.corpora[0], runner_config=relative),))
+            cache = root / "cache"
+            first, unavailable = self._ensure(catalog, repo, assets, fake_gh, count, cache)
+            self.assertEqual(len(first), 1)
+            self.assertFalse(unavailable)
+            warm, unavailable = self._ensure(catalog, repo, assets, fake_gh, count, cache)
+            self.assertEqual(warm, first)
+            self.assertFalse(unavailable)
+            selected.write_text("{}")
+            bad, unavailable = self._ensure(catalog, repo, assets, fake_gh, count, cache)
+            self.assertFalse(bad)
+            self.assertEqual(unavailable[0].code, "REBUILD_REQUIRED")
 
     def test_cold_materialization_then_warm_reuse_without_download(self):
         with tempfile.TemporaryDirectory() as d:

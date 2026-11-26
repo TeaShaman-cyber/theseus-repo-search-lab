@@ -13,6 +13,7 @@ from pathlib import Path
 from .accepted_catalog import (
     AcceptedCatalog,
     accepted_catalog_sha256,
+    corpus_payload,
     load_accepted_catalog,
 )
 from .artifact import (
@@ -1040,7 +1041,7 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
         _emit({"status": "FOUND", "availability": "NOT_CHECKED",
                "catalog_sha256": accepted_catalog_sha256(catalog),
                "release_repository": catalog.release_repository,
-               "corpora": [asdict(item) for item in catalog.corpora]})
+               "corpora": [corpus_payload(item) for item in catalog.corpora]})
         return 0
     if args.operation in ("reach", "reach-all"):
         item = next((c for c in catalog.corpora if c.source_id == getattr(args, "source_id", None)), None)
