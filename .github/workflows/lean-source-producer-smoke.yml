@@ -21,9 +21,9 @@ jobs:
       max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/sphere-eversion-main.json
+          - source_descriptor: producer/sources/imperial-flt-partial.json
             replay_script: scripts/replay_queued_intake.py
-            artifact_name: sphere-eversion-main-adapted-repo-index-v1
+            artifact_name: imperial-flt-partial-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -351,9 +351,9 @@ jobs:
       max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/sphere-eversion-main.json
+          - source_descriptor: producer/sources/imperial-flt-partial.json
             replay_script: scripts/replay_queued_intake.py
-            artifact_name: sphere-eversion-main-adapted-repo-index-v1
+            artifact_name: imperial-flt-partial-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
