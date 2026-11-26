@@ -95,5 +95,12 @@
     "path": "CompactnessAndDegeneracy.lean",
     "corpus_class": "PROOF_CORPUS",
     "issue": 52
+  },
+  "leanprover-community-riemann-readable": {
+    "declaration": "Main.riemannHypothesis",
+    "path": "Main.lean",
+    "source_hint": "riemannHypothesis",
+    "corpus_class": "PROOF_CORPUS",
+    "issue": 131
   }
 }
