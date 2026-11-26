@@ -1,0 +1,22 @@
+{
+  "schema": "theseus.lean-git-source.v2",
+  "source_id": "leanprover-community-riemann-hypothesis",
+  "source_repo": "leanprover-community/riemann-hypothesis",
+  "source_commit": "1b894f7511841e6607bc0398cf2657526bbb29d9",
+  "source_subdir": "",
+  "root_modules": [
+    "Challenge",
+    "CompanionTheory",
+    "Development",
+    "Formalism",
+    "GroundTheory",
+    "Lemmata",
+    "Main",
+    "PositivityTheory",
+    "ReciprocityTheory",
+    "Statements",
+    "Supplements"
+  ],
+  "build_target": "Main",
+  "exclude_source_prefixes": []
+}

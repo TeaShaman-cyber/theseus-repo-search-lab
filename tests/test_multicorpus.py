@@ -26,6 +26,7 @@ from theseus_repo_search.multicorpus import (
     LocalCorpusState,
     UnavailableCorpus,
     ensure_local_catalog,
+    ensure_local_corpus,
     search_local_catalog,
 )
 from theseus_repo_search.projection import SQLITE_PROJECTION_SCHEMA_VERSION
@@ -175,6 +176,80 @@ class MultiCorpusFederationTests(unittest.TestCase):
                 query="needle",
             )
         self.assertEqual(caught.exception.code, "BLOCKED_PROJECTION_INTEGRITY")
+
+
+
+
+class MultiCorpusSingleMaterializationTests(unittest.TestCase):
+    def test_ensure_local_corpus_uses_full_catalog_digest_and_only_requested_source(self):
+        first = AcceptedCorpus(
+            source_id="alpha",
+            release_tag="tag/alpha",
+            package_asset="alpha.tar.gz",
+            receipt_asset="alpha.json",
+            source_descriptor="producer/sources/alpha.json",
+            artifact_identity="a" * 64,
+            fingerprint_sha256="b" * 64,
+        )
+        second = AcceptedCorpus(
+            source_id="beta",
+            release_tag="tag/beta",
+            package_asset="beta.tar.gz",
+            receipt_asset="beta.json",
+            source_descriptor="producer/sources/beta.json",
+            artifact_identity="c" * 64,
+            fingerprint_sha256="d" * 64,
+        )
+        catalog = AcceptedCatalog(
+            schema="theseus.repo-search.accepted-catalog.v1",
+            release_repository="owner/repo",
+            corpora=(first, second),
+        )
+        expected = _search_state("beta", "beta")
+        with mock.patch(
+            "theseus_repo_search.multicorpus._ensure_one", return_value=expected
+        ) as ensure:
+            observed = ensure_local_corpus(
+                catalog,
+                "beta",
+                repository_root=Path("/repo"),
+                cache_root=Path("/cache"),
+                gh_executable="gh-test",
+            )
+
+        self.assertEqual(observed, expected)
+        ensure.assert_called_once_with(
+            catalog,
+            second,
+            repository_root=Path("/repo"),
+            cache_root=Path("/cache"),
+            gh_executable="gh-test",
+            catalog_sha256=accepted_catalog_sha256(catalog),
+        )
+
+    def test_ensure_local_corpus_rejects_unknown_source(self):
+        corpus = AcceptedCorpus(
+            source_id="alpha",
+            release_tag="tag/alpha",
+            package_asset="alpha.tar.gz",
+            receipt_asset="alpha.json",
+            source_descriptor="producer/sources/alpha.json",
+            artifact_identity="a" * 64,
+            fingerprint_sha256="b" * 64,
+        )
+        catalog = AcceptedCatalog(
+            schema="theseus.repo-search.accepted-catalog.v1",
+            release_repository="owner/repo",
+            corpora=(corpus,),
+        )
+        with self.assertRaises(RepoSearchError) as caught:
+            ensure_local_corpus(
+                catalog,
+                "missing",
+                repository_root=Path("/repo"),
+                cache_root=Path("/cache"),
+            )
+        self.assertEqual(caught.exception.code, "BLOCKED_ACCEPTED_CATALOG")
 
 
 class MultiCorpusJsonContractTests(unittest.TestCase):

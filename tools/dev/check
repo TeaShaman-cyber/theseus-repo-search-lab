@@ -188,16 +188,27 @@ if failures:
     raise SystemExit(1)
 PY_CHECK
 
+printf '%s\n' '== POSIX shell syntax =='
+for script in tools/ci/* tools/dev/*; do
+    [ -f "$script" ] || continue
+    sh -n "$script"
+done
+
 printf '%s\n' '== unit tests =='
 python3 -m unittest discover -s tests -p 'test_*.py'
 
 printf '%s\n' '== python syntax =='
 python3 -m compileall -q src scripts tests
 
-printf '%s\n' '== json fixtures =='
-find tests -type f -name '*.json' -print | sort | while IFS= read -r path; do
-    python3 -m json.tool "$path" >/dev/null
-done
+printf '%s\n' '== JSON lint =='
+if [ -f biome.json ] && command -v biome >/dev/null 2>&1; then
+    tools/ci/json-lint
+else
+    printf '%s\n' 'Biome unavailable: basic fixture syntax only; hosted JSON lint remains authoritative'
+    find tests -type f -name '*.json' -print | sort | while IFS= read -r path; do
+        python3 -m json.tool "$path" >/dev/null
+    done
+fi
 
 printf '%s\n' '== whitespace =='
 git diff --check

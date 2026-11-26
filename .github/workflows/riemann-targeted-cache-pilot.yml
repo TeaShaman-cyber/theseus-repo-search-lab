@@ -1,0 +1,224 @@
+name: Riemann targeted cache pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      shard_count:
+        description: "Source-balanced shard count used only to choose a bounded module set"
+        required: true
+        default: "128"
+        type: choice
+        options:
+          - "32"
+          - "64"
+          - "128"
+      shard_index:
+        description: "Single shard index to test"
+        required: true
+        default: "0"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-targeted-cache-pilot-${{ github.ref }}-${{ inputs.shard_count }}-${{ inputs.shard_index }}
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
+      SHARD_COUNT: ${{ inputs.shard_count }}
+      SHARD_INDEX: ${{ inputs.shard_index }}
+
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Validate bounded dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+
+          count = int(os.environ["SHARD_COUNT"])
+          index = int(os.environ["SHARD_INDEX"])
+          if count not in {32, 64, 128}:
+              raise SystemExit("shard_count must be one of 32, 64, 128")
+          if index < 0 or index >= count:
+              raise SystemExit(f"shard_index must be in 0..{count - 1}")
+          PY
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py             --source "$SOURCE_DESCRIPTOR"             --runner producer/runner.json             --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout             --repo-url "https://github.com/${SOURCE_REPO}.git"             --commit "$SOURCE_COMMIT"             --dest _target/source
+          python3 scripts/producer_guard.py verify             --repo-dir _target/source             --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py             --source "$SOURCE_DESCRIPTOR"             --runner producer/runner.json             --checkout-root "$GITHUB_WORKSPACE/_target/source"             --github-env "$GITHUB_ENV"
+
+      - name: Install pinned runner and adapted extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/elan.tar.gz"             "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py             --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean"             --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s\n' "$adapted_sha" >> "$GITHUB_ENV"
+
+      - name: Restore Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4             python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --               lake exe mathlib/cache get
+
+      - name: Plan exact source partition and roots
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          python3 scripts/plan_lean_shards.py             --repo-root "$SOURCE_ROOT"             --source-prefix src             --shard-count "$SHARD_COUNT"             --out _out/shard-plan.json
+
+          python3 - "$SHARD_INDEX" _out/shard-plan.json _out/shard-modules.txt <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          index = int(sys.argv[1])
+          plan = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          modules = plan["shards"][index]["modules"]
+          Path(sys.argv[3]).write_text("\n".join(modules) + "\n", encoding="utf-8")
+          PY
+
+          paste -sd, _out/shard-modules.txt > _out/shard-roots.csv
+          roots_csv_bytes="$(wc -c < _out/shard-roots.csv)"
+          if [ "$roots_csv_bytes" -gt 524288 ]; then
+            echo "direct roots CSV exceeds bounded 512 KiB pilot limit: $roots_csv_bytes bytes" >&2
+            exit 2
+          fi
+          printf 'direct_roots_csv_bytes=%s\n' "$roots_csv_bytes"
+
+      - name: Compute project import closure from source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --             lake env lean --run "$GITHUB_WORKSPACE/scripts/lean_project_import_closure.lean"             "$SOURCE_ROOT/src"             "$GITHUB_WORKSPACE/_out/shard-modules.txt"             > "$GITHUB_WORKSPACE/_out/project-closure.txt"
+          test -s "$GITHUB_WORKSPACE/_out/project-closure.txt"
+
+      - name: Restore verified RH cache subset
+        id: restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          python3 scripts/restore_riemann_ci_cache_subset.py             --project "$SOURCE_ROOT"             --modules-file _out/project-closure.txt             --metrics-out _out/cache-restore-metrics.json
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+
+      - name: Extract directly from original shard modules
+        id: extract
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          SHARD_ROOTS_CSV="$(cat _out/shard-roots.csv)"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean"             --roots "$SHARD_ROOTS_CSV"             --include-prefix "$ROOT_MODULES_CSV"             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+
+      - name: Write pilot metrics
+        shell: bash
+        env:
+          RESTORE_SECONDS: ${{ steps.restore.outputs.seconds }}
+          EXTRACT_SECONDS: ${{ steps.extract.outputs.seconds }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          plan = json.loads(Path("_out/shard-plan.json").read_text(encoding="utf-8"))
+          shard = plan["shards"][int(os.environ["SHARD_INDEX"])]
+          closure = [
+              line
+              for line in Path("_out/project-closure.txt").read_text(encoding="utf-8").splitlines()
+              if line
+          ]
+          cache = json.loads(Path("_out/cache-restore-metrics.json").read_text(encoding="utf-8"))
+          raw_path = Path("_out/raw-depgraph.json")
+          raw = json.loads(raw_path.read_text(encoding="utf-8"))
+          metrics = {
+              "schema": "theseus.riemann-targeted-cache-pilot.v1",
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "shard_count": int(os.environ["SHARD_COUNT"]),
+              "shard_index": int(os.environ["SHARD_INDEX"]),
+              "shard_source_modules": len(shard["modules"]),
+              "source_bytes": shard["total_bytes"],
+              "roots_csv_bytes": Path("_out/shard-roots.csv").stat().st_size,
+              "closure_project_modules": len(closure),
+              "validated_manifest_modules": cache["validated_manifest_modules"],
+              "selected_project_modules": cache["selected_project_modules"],
+              "selected_mapping_rows": cache["selected_mapping_rows"],
+              "restore_seconds": int(os.environ["RESTORE_SECONDS"]),
+              "extract_seconds": int(os.environ["EXTRACT_SECONDS"]),
+              "raw_bytes": raw_path.stat().st_size,
+              "nodes": len(raw.get("nodes", [])),
+              "edges": len(raw.get("edges", [])),
+          }
+          Path("_out/pilot-metrics.json").write_text(
+              json.dumps(metrics, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(metrics, sort_keys=True))
+          PY
+
+      - name: Upload pilot evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-targeted-cache-pilot-${{ inputs.shard_count }}-${{ inputs.shard_index }}
+          path: |
+            _out/raw-depgraph.json
+            _out/pilot-metrics.json
+            _out/cache-restore-metrics.json
+            _out/project-closure.txt
+            _out/shard-modules.txt
+            _out/shard-roots.csv
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove disposable source and outputs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out

@@ -1,0 +1,295 @@
+name: Riemann semantic plugin pilot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-semantic-plugin-pilot-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
+      PLUGIN_SOURCE: producer/lean/RepoSemanticPlugin.lean
+      PILOT_MODULE_A: Challenge
+      PILOT_MODULE_B: CompanionTheory.AutomorphicTheory.BesselWaveGrids.InterlacingGrids.PairOKOfInterlace
+      PILOT_PREFIXES_CSV: Challenge,CompanionTheory
+
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Install pinned runner and adapted extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py \
+            --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s\n' "$adapted_sha" >> "$GITHUB_ENV"
+
+      - name: Restore Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4 \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+              lake exe mathlib/cache get
+
+      - name: Snapshot authoritative RH inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          git -C "$SOURCE_ROOT" diff --exit-code
+          sha256sum \
+            "$SOURCE_ROOT/lakefile.toml" \
+            "$SOURCE_ROOT/src/Challenge.lean" \
+            "$SOURCE_ROOT/src/CompanionTheory/AutomorphicTheory/BesselWaveGrids/InterlacingGrids/PairOKOfInterlace.lean" \
+            > _out/authority.sha256
+
+      - name: Build Lean 4.36 semantic plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          toolchain="$(tr -d '\r\n' < "$SOURCE_ROOT/lean-toolchain")"
+          plugin_source="$GITHUB_WORKSPACE/$PLUGIN_SOURCE"
+          cp "$plugin_source" "$RUNNER_TEMP/RepoSemanticPlugin.lean"
+          cd "$RUNNER_TEMP"
+          ELAN_TOOLCHAIN="$toolchain" lean -c RepoSemanticPlugin.c RepoSemanticPlugin.lean
+          ELAN_TOOLCHAIN="$toolchain" leanc \
+            -fvisibility=default -Wl,--no-gc-sections -shared \
+            -o RepoSemanticPlugin.so RepoSemanticPlugin.c
+          nm -D RepoSemanticPlugin.so | grep -F ' T initialize_RepoSemanticPlugin'
+          printf 'PLUGIN_SOURCE_SHA256=%s\n' \
+            "$(sha256sum "$plugin_source" | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
+          printf 'PLUGIN_BINARY_SHA256=%s\n' \
+            "$(sha256sum "$RUNNER_TEMP/RepoSemanticPlugin.so" | cut -d ' ' -f 1)" >> "$GITHUB_ENV"
+
+      - name: Generate external producer overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          overlay="$SOURCE_ROOT/.theseus-riemann-plugin-overlay.toml"
+          python3 scripts/riemann_semantic_plugin_pilot.py overlay \
+            --canonical "$SOURCE_ROOT/lakefile.toml" \
+            --plugin "$RUNNER_TEMP/RepoSemanticPlugin.so" \
+            --out "$overlay" \
+            --metrics-out _out/overlay-metrics.json
+          grep -F -- "--plugin=$RUNNER_TEMP/RepoSemanticPlugin.so" "$overlay"
+          printf 'OVERLAY_PATH=%s\n' "$overlay" >> "$GITHUB_ENV"
+
+      - name: Build bounded real RH slice with semantic plugin
+        id: plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          fact_dir="$GITHUB_WORKSPACE/_out/plugin-fact-sidecars"
+          rm -rf "$fact_dir"
+          mkdir -p "$fact_dir"
+          started="$(date +%s)"
+          THESEUS_REPO_FACT_DIR="$fact_dir" \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+              lake --file "$OVERLAY_PATH" build \
+                "+$PILOT_MODULE_A" \
+                "+$PILOT_MODULE_B" \
+              2>&1 | tee _out/plugin-build.log
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+
+          python3 scripts/riemann_semantic_plugin_pilot.py sidecars \
+            --dir "$fact_dir" \
+            --out _out/plugin-facts.jsonl \
+            --metrics-out _out/sidecar-metrics.json
+
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected = {os.environ["PILOT_MODULE_A"], os.environ["PILOT_MODULE_B"]}
+          observed = {
+              json.loads(line)["module"]
+              for line in Path("_out/plugin-facts.jsonl").read_text(encoding="utf-8").splitlines()
+              if line
+          }
+          if observed != expected:
+              raise SystemExit(
+                  f"semantic plugin module set mismatch: expected={sorted(expected)} observed={sorted(observed)}"
+              )
+          PY
+
+      - name: Verify authoritative RH inputs remained unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum --check _out/authority.sha256
+          test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          git -C "$SOURCE_ROOT" diff --exit-code
+
+      - name: Extract same RH slice with LeanDepViz
+        id: leandepviz
+        shell: bash
+        run: |
+          set -euo pipefail
+          roots="$PILOT_MODULE_A,$PILOT_MODULE_B"
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+            lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean" \
+              --roots "$roots" \
+              --include-prefix "$PILOT_PREFIXES_CSV" \
+              --json-out "$GITHUB_WORKSPACE/_out/leandepviz-raw.json"
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+
+      - name: Compare semantic edges
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/riemann_semantic_plugin_pilot.py compare \
+            --facts _out/plugin-facts.jsonl \
+            --leandepviz _out/leandepviz-raw.json \
+            --source-commit "$SOURCE_COMMIT" \
+            --root-module Challenge \
+            --root-module CompanionTheory \
+            --out _out/comparison.json \
+            --require-exact
+
+      - name: Write pilot metrics
+        shell: bash
+        env:
+          PLUGIN_SECONDS: ${{ steps.plugin.outputs.seconds }}
+          LEANDEPVIZ_SECONDS: ${{ steps.leandepviz.outputs.seconds }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          facts = [
+              json.loads(line)
+              for line in Path("_out/plugin-facts.jsonl").read_text(encoding="utf-8").splitlines()
+              if line
+          ]
+          comparison = json.loads(Path("_out/comparison.json").read_text(encoding="utf-8"))
+          overlay = json.loads(Path("_out/overlay-metrics.json").read_text(encoding="utf-8"))
+          sidecars = json.loads(Path("_out/sidecar-metrics.json").read_text(encoding="utf-8"))
+          raw = json.loads(Path("_out/leandepviz-raw.json").read_text(encoding="utf-8"))
+          metrics = {
+              "schema": "theseus.riemann-semantic-plugin-pilot.v1",
+              "source_commit": os.environ["SOURCE_COMMIT"],
+              "modules": [os.environ["PILOT_MODULE_A"], os.environ["PILOT_MODULE_B"]],
+              "plugin_source_sha256": os.environ["PLUGIN_SOURCE_SHA256"],
+              "plugin_binary_sha256": os.environ["PLUGIN_BINARY_SHA256"],
+              "overlay_sha256": overlay["overlay_sha256"],
+              "adapted_extractor_sha256": os.environ["ADAPTED_EXTRACTOR_SHA256"],
+              "plugin_seconds": int(os.environ["PLUGIN_SECONDS"]),
+              "leandepviz_seconds": int(os.environ["LEANDEPVIZ_SECONDS"]),
+              "plugin_facts": len(facts),
+              "sidecar_fragments": len(sidecars["fragments"]),
+              "sidecar_merged_sha256": sidecars["merged_sha256"],
+              "comparison_exact": comparison["exact"],
+              "plugin_nodes": comparison["plugin_nodes"],
+              "leandepviz_nodes_compared": comparison["leandepviz_nodes"],
+              "common_nodes": comparison["common_nodes"],
+              "plugin_only_nodes": len(comparison["plugin_only_nodes"]),
+              "leandepviz_only_nodes": len(comparison["leandepviz_only_nodes"]),
+              "plugin_internal_edges": comparison["plugin_internal_edges"],
+              "leandepviz_nodes": len(raw.get("nodes", [])),
+              "leandepviz_edges": len(raw.get("edges", [])),
+              "leandepviz_internal_edges": comparison["leandepviz_internal_edges"],
+              "common_edges": comparison["common_edges"],
+              "plugin_only_edges": len(comparison["plugin_only_edges"]),
+              "leandepviz_only_edges": len(comparison["leandepviz_only_edges"]),
+          }
+          Path("_out/pilot-metrics.json").write_text(
+              json.dumps(metrics, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(metrics, sort_keys=True))
+          PY
+
+      - name: Upload pilot evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-semantic-plugin-pilot
+          path: |
+            _out/authority.sha256
+            _out/overlay-metrics.json
+            _out/plugin-build.log
+            _out/plugin-fact-sidecars/*.jsonl
+            _out/sidecar-metrics.json
+            _out/plugin-facts.jsonl
+            _out/leandepviz-raw.json
+            _out/comparison.json
+            _out/pilot-metrics.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove disposable source, overlay, and outputs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${SOURCE_ROOT:-}" ]; then
+            rm -f "$SOURCE_ROOT/.theseus-riemann-plugin-overlay.toml"
+          fi
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out

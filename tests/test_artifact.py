@@ -175,6 +175,52 @@ def write_v2_archive_fixture(path: Path, *, revision_key: str = "source_revision
 
 
 class ArtifactTests(unittest.TestCase):
+    def test_ambiguous_artifact_json_is_rejected_even_with_matching_hashes(self):
+        for member in ("manifest.json", "nodes.jsonl", "edges.jsonl", "sources.jsonl", "authority-receipt.json", "raw-depgraph.json"):
+            with self.subTest(member=member), tempfile.TemporaryDirectory() as d:
+                path = Path(d)
+                raw = raw_depgraph_bytes(sample_nodes(), sample_edges())
+                receipt = {
+                    "schema": "theseus.raw-depgraph-receipt.v2",
+                    "source": {"repo": "anthropics/formal-math", "commit": SOURCE_COMMIT, "subdir": "zeta23"},
+                    "scope": {"root_modules": ["Zeta23"]},
+                    "producer": {
+                        "kind": PRODUCER.kind, "tool_repo": PRODUCER.tool_repo,
+                        "tool_commit": PRODUCER.tool_commit, "tool_hash": PRODUCER.tool_hash,
+                    },
+                    "observed": {"lean_toolchain": "leanprover/lean4:v4.33.0"},
+                    "raw_depgraph": {"sha256": sha256(raw).hexdigest()},
+                }
+                write_artifact(
+                    path, nodes=sample_nodes(), edges=sample_edges(), sources=sample_sources(),
+                    source_repo="anthropics/formal-math", source_commit=SOURCE_COMMIT,
+                    source_subdir="zeta23", producer=PRODUCER, scope=SCOPE,
+                    created_from_authoritative_commit=True,
+                    authority_receipt=json.dumps(receipt).encode(), raw_depgraph=raw,
+                )
+                target = path / member
+                original = target.read_bytes()
+                first = json.loads(original.splitlines()[0] if member.endswith(".jsonl") else original)
+                key = next(iter(first))
+                escaped = f"\\u{ord(key[0]):04x}" + key[1:]
+                # Equivalent decoded key, conflicting value, followed by valid original.
+                altered = b'{"' + escaped.encode() + b'":null,' + original[1:]
+                target.write_bytes(altered)
+                manifest_path = path / "manifest.json"
+                if member != "manifest.json":
+                    manifest = json.loads(manifest_path.read_bytes())
+                    if member == "raw-depgraph.json":
+                        receipt["raw_depgraph"]["sha256"] = sha256(altered).hexdigest()
+                        altered_receipt = json.dumps(receipt).encode()
+                        (path / "authority-receipt.json").write_bytes(altered_receipt)
+                        manifest["members"]["authority_receipt"]["sha256"] = sha256(altered_receipt).hexdigest()
+                    else:
+                        manifest["members"][member.split(".")[0].replace("-", "_")]["sha256"] = sha256(altered).hexdigest()
+                    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+                with self.assertRaisesRegex(RepoSearchError, "duplicate JSON object key") as caught:
+                    load_artifact(path)
+                self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
+
     def test_manifest_non_object_is_normalized_to_integrity_error(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
@@ -575,7 +621,7 @@ class ArtifactTests(unittest.TestCase):
             )
 
             with self.assertRaises(RepoSearchError) as caught:
-                write_sample(path, nodes=sample_nodes() + [extra])
+                write_sample(path, nodes=[*sample_nodes(), extra])
             self.assertEqual(caught.exception.code, "BLOCKED_ARTIFACT_INTEGRITY")
             self.assertIn("immutable", str(caught.exception))
 
@@ -652,7 +698,7 @@ class ArtifactTests(unittest.TestCase):
             )
             _write_artifact_contents(
                 path,
-                nodes=sample_nodes() + [extra],
+                nodes=[*sample_nodes(), extra],
                 edges=sample_edges(),
                 sources=sample_sources(),
                 source_repo="anthropics/formal-math",
@@ -829,7 +875,8 @@ class StructuralIntegrityTests(unittest.TestCase):
     def test_out_of_scope_node_is_blocked_for_internal_only_artifact(self):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d)
-            nodes = sample_nodes() + [
+            nodes = [
+                *sample_nodes(),
                 Node.from_lean(
                     full_name="Mathlib.Algebra.outside",
                     name="outside",
@@ -838,7 +885,8 @@ class StructuralIntegrityTests(unittest.TestCase):
                     source_commit=SOURCE_COMMIT,
                 )
             ]
-            edges = sample_edges() + [
+            edges = [
+                *sample_edges(),
                 Edge(
                     source_id="lean:Zeta23.Tiny.b",
                     target_id="lean:Mathlib.Algebra.outside",

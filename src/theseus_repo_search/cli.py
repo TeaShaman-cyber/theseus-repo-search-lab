@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -9,7 +10,11 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
-from .accepted_catalog import accepted_catalog_sha256, load_accepted_catalog
+from .accepted_catalog import (
+    AcceptedCatalog,
+    accepted_catalog_sha256,
+    load_accepted_catalog,
+)
 from .artifact import (
     artifact_identity,
     load_artifact,
@@ -17,8 +22,9 @@ from .artifact import (
     write_artifact,
 )
 from .errors import RepoSearchError
-from .graph import dependencies, reverse_dependencies
+from .graph import GraphResult, dependencies, reverse_dependencies
 from .graph import path as graph_path
+from .kusto_query import KustoClient, expand_search_hits, federated_reach, reach
 from .model import (
     ArchiveAuthority,
     ArtifactScope,
@@ -27,15 +33,16 @@ from .model import (
     Node,
     ProducerPin,
 )
-from .multicorpus import ensure_local_catalog, search_local_catalog
+from .multicorpus import ensure_local_catalog, ensure_local_corpus, search_local_catalog
 from .normalize import normalize_leandepviz
+from .overlap import catalog_overlap
 from .producer_config import (
     LeanArchiveSource,
     LeanGitSource,
     load_lean_archive_source,
     load_lean_source,
 )
-from .projection import build_projection
+from .projection import build_projection, read_projection_provenance
 from .retrieval import SearchHit
 from .retrieval import context as build_context
 from .retrieval import search as search_repo
@@ -46,6 +53,8 @@ from .sources import (
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
 )
+from .turso_materializer import TursoHttpClient, TursoMaterializer
+from .turso_query import connect_corpus, query_graph, search_turso_catalog
 
 
 def _emit(payload: dict[str, object], *, stream=sys.stdout) -> None:
@@ -163,10 +172,24 @@ def _search_hit_dict(hit: SearchHit) -> dict[str, object]:
     return data
 
 
+def _compact_graph_scope(payload: dict[str, object]) -> dict[str, object]:
+    # Exact module lists remain in the artifact. Avoid repeating a large closure
+    # in every graph response, and make the presentation truncation explicit.
+    roots = payload.get("scope_root_modules")
+    if isinstance(roots, list) and len(roots) > 32:
+        encoded = json.dumps(roots, ensure_ascii=False, separators=(",", ":")).encode()
+        payload["scope_root_module_count"] = len(roots)
+        payload["scope_root_modules_sha256"] = sha256(encoded).hexdigest()
+        payload["scope_root_modules_truncated"] = True
+        payload["scope_root_modules"] = roots[:32]
+    return payload
+
+
 def _graph_payload(result) -> dict[str, object]:
     payload: dict[str, object] = {
-        "status": "FOUND" if result.found else "UNKNOWN",
+        "status": ("FOUND" if result.found else "UNKNOWN") if result.complete_within_scope else "DEGRADED",
         "query": result.query,
+        "found": result.found,
         "edges": list(result.edges),
         "scope_root_modules": list(result.scope_root_modules),
         "dependency_boundary": result.dependency_boundary,
@@ -188,7 +211,7 @@ def _graph_payload(result) -> dict[str, object]:
                 ),
             }
         )
-    return payload
+    return _compact_graph_scope(payload)
 
 
 def _verify_raw_depgraph_receipt(
@@ -231,8 +254,7 @@ def _verify_raw_depgraph_receipt(
 
     authority_receipt = dict(receipt)
     authority_receipt.pop("observed")
-    expected = {
-        "schema": "theseus.raw-depgraph-receipt.v2",
+    common = {
         "source": {
             "repo": source_repo,
             "commit": source_commit,
@@ -247,11 +269,71 @@ def _verify_raw_depgraph_receipt(
         },
         "raw_depgraph": {"sha256": raw_hash},
     }
-    if authority_receipt != expected:
+    schema = authority_receipt.get("schema")
+    if schema == "theseus.raw-depgraph-receipt.v2":
+        expected = {"schema": schema, **common}
+        if authority_receipt != expected:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_MISMATCH",
+                "raw dependency graph receipt does not match source, producer, scope, or graph hash",
+            )
+        return
+
+    if schema != "theseus.raw-depgraph-receipt.v4":
         raise RepoSearchError(
             "BLOCKED_SOURCE_MISMATCH",
             "raw dependency graph receipt does not match source, producer, scope, or graph hash",
         )
+    if set(authority_receipt) != {"schema", *common, "shards"}:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "sharded raw dependency graph receipt has unexpected fields",
+        )
+    for key, value in common.items():
+        if authority_receipt.get(key) != value:
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_MISMATCH",
+                "raw dependency graph receipt does not match source, producer, scope, or graph hash",
+            )
+
+    shards = authority_receipt.get("shards")
+    if not isinstance(shards, list) or not shards:
+        raise RepoSearchError(
+            "BLOCKED_SOURCE_BINDING",
+            "sharded raw dependency graph receipt must contain non-empty shards",
+        )
+    hexchars = set("0123456789abcdef")
+    for index, shard in enumerate(shards):
+        if (
+            not isinstance(shard, dict)
+            or set(shard) != {"index", "raw_depgraph_sha256", "receipt_sha256", "root_modules"}
+            or shard.get("index") != index
+        ):
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "sharded raw dependency graph receipt has invalid shard ordering or fields",
+            )
+        roots = shard.get("root_modules")
+        if (
+            not isinstance(roots, list)
+            or not roots
+            or not all(isinstance(root, str) and root for root in roots)
+        ):
+            raise RepoSearchError(
+                "BLOCKED_SOURCE_BINDING",
+                "sharded raw dependency graph receipt has invalid shard root_modules",
+            )
+        for field in ("raw_depgraph_sha256", "receipt_sha256"):
+            value = shard.get(field)
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(char not in hexchars for char in value)
+            ):
+                raise RepoSearchError(
+                    "BLOCKED_SOURCE_BINDING",
+                    f"sharded raw dependency graph receipt has invalid {field}",
+                )
 
 
 def _verify_archive_raw_depgraph_receipt_bytes(
@@ -743,6 +825,107 @@ def _multicorpus_status(result, *, mode: str) -> str:
     return "CANDIDATE"
 
 
+def _turso_platform_token(args: argparse.Namespace) -> str | None:
+    if args.platform_token_env is None:
+        return None
+    token = os.environ.get(args.platform_token_env)
+    if not token:
+        raise RepoSearchError(
+            "BLOCKED_TURSO_PLATFORM_AUTH",
+            f"environment variable is empty or missing: {args.platform_token_env}",
+        )
+    return token
+
+
+def _turso_client(args: argparse.Namespace) -> TursoHttpClient:
+    return TursoHttpClient(
+        organization=args.organization,
+        platform_base_url=args.platform_base_url,
+        platform_token=_turso_platform_token(args),
+    )
+
+
+def _cmd_materialize_turso(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_ACCEPTED_CATALOG",
+            f"accepted corpus catalog invalid: {exc}",
+        ) from exc
+
+    repository_root = args.catalog.resolve().parent.parent
+    state = ensure_local_corpus(
+        catalog,
+        args.source_id,
+        repository_root=repository_root,
+        cache_root=args.cache_dir,
+    )
+    client = _turso_client(args)
+    result = TursoMaterializer(client).materialize(
+        state,
+        group=args.group,
+        database=args.database,
+        size_limit=args.size_limit,
+        token_expiration=args.token_expiration,
+    )
+    _emit(asdict(result))
+    return 0
+
+
+def _cmd_sync_turso_catalog(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError(
+            "BLOCKED_ACCEPTED_CATALOG",
+            f"accepted corpus catalog invalid: {exc}",
+        ) from exc
+
+    repository_root = args.catalog.resolve().parent.parent
+    materializer = TursoMaterializer(_turso_client(args))
+    results: list[dict[str, object]] = []
+    failures: list[dict[str, str]] = []
+
+    for corpus in catalog.corpora:
+        try:
+            state = ensure_local_corpus(
+                catalog,
+                corpus.source_id,
+                repository_root=repository_root,
+                cache_root=args.cache_dir,
+            )
+            result = materializer.materialize(
+                state,
+                group=args.group,
+                size_limit=args.size_limit,
+                token_expiration=args.token_expiration,
+            )
+        except RepoSearchError as exc:
+            failures.append(
+                {
+                    "source_id": corpus.source_id,
+                    "code": exc.code,
+                    "message": str(exc),
+                }
+            )
+            continue
+        results.append(asdict(result))
+
+    _emit(
+        {
+            "status": "READY" if not failures else "DEGRADED",
+            "catalog_sha256": accepted_catalog_sha256(catalog),
+            "total_corpora": len(catalog.corpora),
+            "synced_corpora": len(results),
+            "failed_corpora": len(failures),
+            "failures": failures,
+            "results": results,
+        }
+    )
+    return 0 if not failures else 2
+
+
 def _cmd_multicorpus_search(args: argparse.Namespace) -> int:
     try:
         catalog = load_accepted_catalog(args.catalog)
@@ -766,27 +949,194 @@ def _cmd_multicorpus_search(args: argparse.Namespace) -> int:
         limit=args.limit,
         mode=args.mode,
     )
-    _emit(
-        {
-            "status": _multicorpus_status(result, mode=args.mode),
-            "query": args.query,
-            "query_mode": args.mode,
-            "catalog_sha256": result.catalog_sha256,
-            "searched_corpora": result.searched_corpora,
-            "unavailable_corpora": len(result.unavailable_corpora),
-            "unavailable": [asdict(item) for item in result.unavailable_corpora],
-            "hits": [
-                {
-                    "candidate_id": item.candidate_id,
-                    "source_id": item.source_id,
-                    "local_rank": item.local_rank,
-                    **_search_hit_dict(item.hit),
-                }
-                for item in result.hits
-            ],
-        }
-    )
+    return _emit_multicorpus_result(args, result)
+
+
+def _cmd_turso_search(args: argparse.Namespace) -> int:
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", f"accepted corpus catalog invalid: {exc}") from exc
+    result = search_turso_catalog(catalog, _turso_client(args), query=args.query, limit=args.limit, mode=args.mode)
+    return _emit_multicorpus_result(args, result)
+
+
+def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | None = None) -> int:
+    if catalog is None:
+        try:
+            catalog = load_accepted_catalog(args.catalog)
+        except (OSError, TypeError, ValueError) as exc:
+            raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", f"accepted corpus catalog invalid: {exc}") from exc
+    item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
+    if item is None:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
+    conn = connect_corpus(item, _turso_client(args))
+    result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
+                         max_edges=args.max_edges, token_budget=args.token_budget)
+    if isinstance(result, GraphResult):
+        payload = _graph_payload(result)
+        payload["found"] = result.found
+        payload["source_revision"] = result.source_revision
+    else:
+        payload = result
+        payload["status"] = "FOUND"
+        provenance = read_projection_provenance(conn)
+        payload["source_revision"] = provenance.source_revision
+        payload["source_kind"] = provenance.source_kind
+    if not payload["complete_within_scope"]:
+        payload["status"] = "DEGRADED"
+    _emit(_compact_graph_scope({**payload, "source_id": item.source_id, "artifact_identity": item.artifact_identity,
+           "catalog_sha256": accepted_catalog_sha256(catalog)}))
     return 0
+
+
+def _multicorpus_payload(args: argparse.Namespace, result, *, catalog: AcceptedCatalog | None = None) -> dict[str, object]:
+    identities = {item.source_id: item.artifact_identity for item in catalog.corpora} if catalog is not None else {}
+    return {
+        "status": _multicorpus_status(result, mode=args.mode),
+        "query": args.query,
+        "query_mode": args.mode,
+        "catalog_sha256": result.catalog_sha256,
+        "searched_corpora": result.searched_corpora,
+        **({"source_filter": args.source_id, "backend": "turso"} if catalog is not None else {}),
+        "unavailable_corpora": len(result.unavailable_corpora),
+        "unavailable": [asdict(item) for item in result.unavailable_corpora],
+        "hits": [
+            {
+                "candidate_id": item.candidate_id,
+                "source_id": item.source_id,
+                "local_rank": item.local_rank,
+                **({"artifact_identity": identities[item.source_id]} if catalog is not None else {}),
+                **_search_hit_dict(item.hit),
+            }
+            for item in result.hits
+        ],
+    }
+
+
+def _emit_multicorpus_result(args: argparse.Namespace, result, *, catalog: AcceptedCatalog | None = None) -> int:
+    _emit(_multicorpus_payload(args, result, catalog=catalog))
+    return 0
+
+
+def _agent_kusto_client() -> KustoClient:
+    cluster = os.environ.get("REPO_SEARCH_KUSTO_CLUSTER")
+    database = os.environ.get("REPO_SEARCH_KUSTO_DATABASE")
+    if not cluster or not database:
+        raise RepoSearchError("BLOCKED_QUERY_PROFILE", "configure Kusto cluster and database")
+    return KustoClient(cluster, database)
+
+
+def _cmd_agent_query(args: argparse.Namespace) -> int:
+    catalog_path = args.catalog or os.environ.get("REPO_SEARCH_CATALOG")
+    if not catalog_path:
+        raise RepoSearchError("BLOCKED_QUERY_PROFILE", "set REPO_SEARCH_CATALOG or --catalog")
+    args.catalog = Path(catalog_path)
+    try:
+        catalog = load_accepted_catalog(args.catalog)
+    except (OSError, TypeError, ValueError) as exc:
+        raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "accepted corpus catalog invalid") from exc
+    if args.operation == "corpora":
+        _emit({"status": "FOUND", "availability": "NOT_CHECKED",
+               "catalog_sha256": accepted_catalog_sha256(catalog),
+               "release_repository": catalog.release_repository,
+               "corpora": [asdict(item) for item in catalog.corpora]})
+        return 0
+    if args.operation in ("reach", "reach-all"):
+        item = next((c for c in catalog.corpora if c.source_id == getattr(args, "source_id", None)), None)
+        if args.operation == "reach" and item is None:
+            raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
+        client = _agent_kusto_client()
+        if item is None:
+            payload = federated_reach(catalog, client, args.name, depth=args.depth, limit=args.limit, reverse=args.reverse)
+        else:
+            payload = reach(item, client, args.name, depth=args.depth, limit=args.limit, reverse=args.reverse)
+        _emit({**payload, "catalog_sha256": accepted_catalog_sha256(catalog)})
+        return 0
+    args.organization = args.organization or os.environ.get("REPO_SEARCH_TURSO_ORGANIZATION")
+    if not args.organization:
+        raise RepoSearchError("BLOCKED_QUERY_PROFILE", "set REPO_SEARCH_TURSO_ORGANIZATION or --organization")
+    args.platform_base_url = args.platform_base_url or os.environ.get(
+        "REPO_SEARCH_TURSO_PLATFORM_URL", "https://api.turso.tech"
+    )
+    args.platform_token_env = args.platform_token_env or os.environ.get("REPO_SEARCH_TURSO_TOKEN_ENV")
+    if args.operation == "overlap":
+        _emit(catalog_overlap(catalog, _turso_client(args), limit=args.limit,
+                              occurrence_limit=args.occurrences, raw=args.raw))
+        return 0
+    if args.operation in ("search", "graph-search"):
+        if args.operation == "graph-search" and (not 1 <= args.limit <= 10 or not 1 <= args.depth <= 3 or not 1 <= args.graph_limit <= 50):
+            raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "graph-search: limit 1..10, depth 1..3, graph-limit 1..50")
+        result = search_turso_catalog(catalog, _turso_client(args), query=args.query,
+                                      limit=args.limit, mode=args.mode, source_id=args.source_id)
+        if args.operation == "graph-search":
+            payload = _multicorpus_payload(args, result, catalog=catalog)
+            # Preserve lexical evidence even when the graph route is unavailable.
+            if not result.hits:
+                graph = {"graph_status": "NOT_RUN", "graph_seeds": 0, "graphs": [],
+                         "graph_unavailable": []}
+            else:
+                try:
+                    graph = expand_search_hits(catalog, _agent_kusto_client(), result.hits,
+                                               depth=args.depth, limit=args.graph_limit, reverse=args.reverse)
+                except RepoSearchError as exc:
+                    graph = {"graph_status": "UNAVAILABLE", "graphs": [],
+                             "graph_unavailable": [{"code": exc.code, "message": str(exc)}]}
+            lexical_status = payload["status"]
+            graph_status = graph["graph_status"]
+            if result.hits and graph_status != "FOUND":
+                payload["status"] = "DEGRADED"
+            _emit({**payload, **graph, "lexical_status": lexical_status, "backend": "turso+kusto"})
+            return 0
+        return _emit_multicorpus_result(args, result, catalog=catalog)
+    return _cmd_turso_graph(args, catalog=catalog)
+
+
+def _add_agent_query(subparsers) -> None:
+    parser = subparsers.add_parser("query", help="unified read-only accepted-corpus interface")
+    parser.add_argument("--catalog", type=Path)
+    parser.add_argument("--organization")
+    parser.add_argument("--platform-base-url")
+    parser.add_argument("--platform-token-env")
+    parser.set_defaults(func=_cmd_agent_query)
+    ops = parser.add_subparsers(dest="operation", required=True)
+    ops.add_parser("corpora", help="list catalog identities (not live availability)")
+    overlap = ops.add_parser("overlap", help="cross-corpus short-name candidates with noise filtering")
+    overlap.add_argument("--limit", type=int, default=20)
+    overlap.add_argument("--occurrences", type=int, default=10)
+    overlap.add_argument("--raw", action="store_true")
+    for operation in ("search", "graph-search"):
+        search = ops.add_parser(operation)
+        search.add_argument("query")
+        search.add_argument("--source", dest="source_id")
+        search.add_argument("--limit", type=int, default=10 if operation == "search" else 5)
+        search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
+        if operation == "graph-search":
+            search.add_argument("--depth", type=int, default=2)
+            search.add_argument("--graph-limit", type=int, default=30)
+            search.add_argument("--reverse", action="store_true")
+    for operation in ("reach", "reach-all"):
+        graph_reach = ops.add_parser(operation, help="Kusto bounded graph reachability")
+        if operation == "reach":
+            graph_reach.add_argument("source_id")
+        graph_reach.add_argument("name")
+        graph_reach.add_argument("--depth", type=int, default=3)
+        graph_reach.add_argument("--limit", type=int, default=100)
+        graph_reach.add_argument("--reverse", action="store_true")
+    for op in ("deps", "rdeps", "path", "context"):
+        graph = ops.add_parser(op)
+        graph.add_argument("source_id")
+        graph.add_argument("name")
+        if op == "path":
+            graph.add_argument("target")
+        else:
+            graph.set_defaults(target=None)
+        graph.add_argument("--depth", type=int, default=5 if op == "path" else 1)
+        graph.add_argument("--max-edges", type=int, default=200)
+        if op == "context":
+            graph.add_argument("--token-budget", type=int, default=4000)
+        else:
+            graph.set_defaults(token_budget=4000)
 
 
 def _cmd_search(args: argparse.Namespace) -> int:
@@ -834,7 +1184,7 @@ def _cmd_context(args: argparse.Namespace) -> int:
         depth=args.depth,
         token_budget=args.token_budget,
     )
-    _emit({"status": "FOUND", **payload})
+    _emit(_compact_graph_scope({"status": "FOUND" if payload["complete_within_scope"] else "DEGRADED", **payload}))
     return 0
 
 
@@ -895,6 +1245,7 @@ def _add_build_archive_artifact(subparsers) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="repo-search")
     subparsers = parser.add_subparsers(dest="command", required=True)
+    _add_agent_query(subparsers)
     _add_build_artifact(subparsers)
     _add_build_source_artifact(subparsers)
     _add_build_archive_artifact(subparsers)
@@ -908,6 +1259,42 @@ def build_parser() -> argparse.ArgumentParser:
     index.add_argument("--db", type=Path, required=True)
     index.set_defaults(func=_cmd_build_index)
 
+    turso = subparsers.add_parser("materialize-turso")
+    turso.add_argument("--catalog", type=Path, required=True)
+    turso.add_argument("--cache-dir", type=Path, required=True)
+    turso.add_argument("--source-id", required=True)
+    turso.add_argument("--organization", required=True)
+    turso.add_argument("--group", required=True)
+    turso.add_argument("--database")
+    turso.add_argument("--size-limit")
+    turso.add_argument("--token-expiration", default="15m")
+    turso.add_argument(
+        "--platform-base-url",
+        default="https://api.turso.tech",
+    )
+    turso.add_argument(
+        "--platform-token-env",
+        help="environment variable containing the Turso Platform API token",
+    )
+    turso.set_defaults(func=_cmd_materialize_turso)
+
+    turso_sync = subparsers.add_parser("sync-turso-catalog")
+    turso_sync.add_argument("--catalog", type=Path, required=True)
+    turso_sync.add_argument("--cache-dir", type=Path, required=True)
+    turso_sync.add_argument("--organization", required=True)
+    turso_sync.add_argument("--group", required=True)
+    turso_sync.add_argument("--size-limit")
+    turso_sync.add_argument("--token-expiration", default="15m")
+    turso_sync.add_argument(
+        "--platform-base-url",
+        default="https://api.turso.tech",
+    )
+    turso_sync.add_argument(
+        "--platform-token-env",
+        help="environment variable containing the Turso Platform API token",
+    )
+    turso_sync.set_defaults(func=_cmd_sync_turso_catalog)
+
     multicorpus_search = subparsers.add_parser("multicorpus-search")
     multicorpus_search.add_argument("--catalog", type=Path, required=True)
     multicorpus_search.add_argument("--cache-dir", type=Path, required=True)
@@ -917,6 +1304,30 @@ def build_parser() -> argparse.ArgumentParser:
         "--mode", choices=("discovery", "evidence"), default="discovery"
     )
     multicorpus_search.set_defaults(func=_cmd_multicorpus_search)
+
+    turso_search = subparsers.add_parser("turso-search")
+    turso_search.add_argument("--catalog", type=Path, required=True)
+    turso_search.add_argument("--organization", required=True)
+    turso_search.add_argument("--platform-base-url", default="https://api.turso.tech")
+    turso_search.add_argument("--platform-token-env")
+    turso_search.add_argument("--query", required=True)
+    turso_search.add_argument("--limit", type=int, default=20)
+    turso_search.add_argument("--mode", choices=("discovery", "evidence"), default="discovery")
+    turso_search.set_defaults(func=_cmd_turso_search)
+
+    turso_graph = subparsers.add_parser("turso-graph")
+    turso_graph.add_argument("--catalog", type=Path, required=True)
+    turso_graph.add_argument("--organization", required=True)
+    turso_graph.add_argument("--platform-base-url", default="https://api.turso.tech")
+    turso_graph.add_argument("--platform-token-env")
+    turso_graph.add_argument("--source-id", required=True)
+    turso_graph.add_argument("--operation", choices=("deps", "rdeps", "path", "context"), required=True)
+    turso_graph.add_argument("--name", required=True)
+    turso_graph.add_argument("--target")
+    turso_graph.add_argument("--depth", type=int, default=1)
+    turso_graph.add_argument("--max-edges", type=int, default=200)
+    turso_graph.add_argument("--token-budget", type=int, default=4000)
+    turso_graph.set_defaults(func=_cmd_turso_graph)
 
     search = subparsers.add_parser("search")
     search.add_argument("--db", type=Path, required=True)

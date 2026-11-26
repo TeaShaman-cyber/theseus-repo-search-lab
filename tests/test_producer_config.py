@@ -61,9 +61,11 @@ class RunnerPinsTests(unittest.TestCase):
 
 
 class StrictConfigTests(unittest.TestCase):
-    def source_payload(self):
+    @staticmethod
+    def source_payload():
         return {"schema":"theseus.lean-git-source.v1","source_id":"fixture","source_repo":"example/repo","source_commit":COMMIT,"source_subdir":"","root_modules":["Fixture"],"build_target":"Fixture"}
-    def runner_payload(self):
+    @staticmethod
+    def runner_payload():
         return {"schema":"theseus.lean-producer-runner.v1","extractor_repo":"cameronfreer/LeanDepViz","extractor_commit":"b"*40,"extractor_main_sha256":"c"*64,"elan_version":"v4.2.3","elan_sha256":"d"*64}
     def test_invalid_descriptors_fail_closed(self):
         for patch in [{'schema': 'wrong.schema'}, {'source_commit': 'main'}, {'source_repo': 'missing-owner'}, {'source_repo': 'example/repo\nINJECTED=value'}, {'source_subdir': '/absolute'}, {'source_subdir': 'formal\nINJECTED=value'}, {'source_subdir': '../escape'}, {'root_modules': []}, {'root_modules': ['Zeta23', 'Zeta23']}, {'root_modules': ['Fixture,Injected']}, {'root_modules': ['Fixture\nINJECTED=value']}, {'root_modules': ['Fixture\rInjected']}, {'root_modules': ['Fixture\x00Injected']}, {'build_target': ''}]:
@@ -86,6 +88,35 @@ class StrictConfigTests(unittest.TestCase):
 
 
 class ConfigFileLoadTests(unittest.TestCase):
+    def test_invalid_schema_types_fail_closed(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "source.json"
+            for schema in ([], {}, None, True, 1):
+                with self.subTest(schema=schema):
+                    payload = StrictConfigTests.source_payload()
+                    payload["schema"] = schema
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    with self.assertRaises(RepoSearchError) as caught:
+                        load_lean_git_source(path)
+                    self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
+
+    def test_config_loaders_reject_duplicate_decoded_keys(self):
+        cases = (
+            (load_lean_git_source, StrictConfigTests.source_payload(), "source_id", r"source_\u0069d"),
+            (load_runner_pins, StrictConfigTests.runner_payload(), "elan_version", r"elan_vers\u0069on"),
+        )
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "config.json"
+            for loader, payload, key, escaped in cases:
+                for spelling in (key, escaped):
+                    with self.subTest(key=key, spelling=spelling):
+                        # Last-value-wins parsing would accept exactly the valid payload.
+                        path.write_text('{"' + spelling + '":"wrong",' + json.dumps(payload)[1:], encoding="utf-8")
+                        with self.assertRaises(RepoSearchError) as cm:
+                            loader(path)
+                        self.assertEqual(cm.exception.code, "BLOCKED_SOURCE_BINDING")
+                        self.assertIn("duplicate JSON object key", str(cm.exception))
+
     def test_invalid_utf8_configs_fail_closed(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

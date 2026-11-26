@@ -4,9 +4,11 @@ import json
 import os
 import sqlite3
 import tempfile
+from collections.abc import Iterator
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+from typing import Any, Protocol
 
 from .artifact import artifact_identity, load_artifact
 from .errors import RepoSearchError
@@ -122,6 +124,7 @@ class ProjectionProvenance:
     source_authority: dict[str, object] | None
     created_from_authoritative_source: bool
     revision_column: str
+    producer_kind: str | None = None
 
     @property
     def is_legacy_git(self) -> bool:
@@ -146,11 +149,21 @@ def _parse_bool_meta(meta: dict[str, str], key: str) -> bool:
     return value
 
 
-def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+class QueryCursor(Protocol):
+    def __iter__(self) -> Iterator[tuple[Any, ...]]: ...
+    def fetchone(self) -> tuple[Any, ...] | None: ...
+    def fetchall(self) -> list[tuple[Any, ...]]: ...
+
+
+class QueryConnection(Protocol):
+    def execute(self, sql: str, parameters: tuple[object, ...] = (), /) -> QueryCursor: ...
+
+
+def _table_columns(conn: QueryConnection, table: str) -> set[str]:
     return {str(row[1]) for row in conn.execute(f"PRAGMA table_info({table})")}
 
 
-def read_projection_provenance(conn: sqlite3.Connection) -> ProjectionProvenance:
+def read_projection_provenance(conn: QueryConnection) -> ProjectionProvenance:
     meta = {str(key): str(value) for key, value in conn.execute("SELECT key, value FROM meta")}
     node_columns = _table_columns(conn, "nodes")
     source_columns = _table_columns(conn, "sources")
@@ -181,6 +194,7 @@ def read_projection_provenance(conn: sqlite3.Connection) -> ProjectionProvenance
                 meta, "created_from_authoritative_commit"
             ),
             revision_column="source_commit",
+            producer_kind=meta.get("producer.kind"),
         )
 
     if artifact_schema != "theseus.repo-index.v2":
@@ -247,6 +261,7 @@ def read_projection_provenance(conn: sqlite3.Connection) -> ProjectionProvenance
             meta, "created_from_authoritative_source"
         ),
         revision_column="source_revision",
+        producer_kind=meta.get("producer.kind"),
     )
 
 

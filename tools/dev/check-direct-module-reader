@@ -1,0 +1,117 @@
+#!/bin/sh
+# Bounded producer regression; requires the exact RH Lean toolchain, not a project build.
+set -eu
+ROOT=$(git rev-parse --show-toplevel)
+LEAN_BIN_DIR=${LEAN_BIN_DIR:?set LEAN_BIN_DIR to the pinned Lean 4.36.0 toolchain bin directory}
+LEAN="$LEAN_BIN_DIR/lean"
+LEANC="$LEAN_BIN_DIR/leanc"
+"$LEAN" --version | grep -F 'commit 611c117bfaf7b7ae1cfcf246ce6fba31e8f509e9'
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT HUP INT TERM
+cd "$WORK"
+cp "$ROOT/producer/lean/ReadModuleFacts.lean" .
+"$LEAN" -c ReadModuleFacts.c ReadModuleFacts.lean
+"$LEANC" -O2 -o reader ReadModuleFacts.c
+cat > Base.lean <<'EOF'
+def inc (n : Nat) : Nat := n + 1
+EOF
+cat > Child.lean <<'EOF'
+import Base
+
+theorem child (n : Nat) : inc n = n + 1 := inc.eq_def n
+private theorem hidden : True := trivial
+EOF
+LEAN_PATH="$WORK" "$LEAN" -o Base.olean Base.lean
+LEAN_PATH="$WORK" "$LEAN" -o Child.olean Child.lean
+cat > Sibling.lean <<'EOF'
+import Base
+theorem sibling (n : Nat) : inc n = n + 1 := inc.eq_def n
+EOF
+cat > Root.lean <<'EOF'
+import Sibling
+import Child
+EOF
+LEAN_PATH="$WORK" "$LEAN" -o Sibling.olean Sibling.lean
+LEAN_PATH="$WORK" "$LEAN" -o Root.olean Root.lean
+cat > Reverse.lean <<'EOF'
+import Child
+import Sibling
+EOF
+LEAN_PATH="$WORK" "$LEAN" -o Reverse.olean Reverse.lean
+cat > Owner.lean <<'EOF'
+import Lean
+open Lean
+def main (args : List String) : IO Unit := do
+  Lean.initSearchPath (← Lean.findSysroot)
+  let imports := args.toArray.map fun s => { module := Name.mkSimple s : Import }
+  let env ← Lean.importModules imports {} 0
+  let some idx := env.getModuleIdxFor? `inc.eq_def | throw (IO.userError "missing inc.eq_def")
+  IO.println (env.header.moduleNames[idx.toNat]!.toString)
+EOF
+PATH="$LEAN_BIN_DIR:$PATH" LEAN_PATH="$WORK" "$LEAN" --run Owner.lean Root > root-owner.txt
+PATH="$LEAN_BIN_DIR:$PATH" LEAN_PATH="$WORK" "$LEAN" --run Owner.lean Reverse > reverse-owner.txt
+mkdir isolated
+cp Child.olean Sibling.olean Root.olean Reverse.olean isolated/
+(cd isolated; test ! -e Base.olean; test ! -e Base.lean; env -u LEAN_PATH ../reader Child Child.olean > ../child.jsonl; env -u LEAN_PATH ../reader Child Child.olean --metadata ../child-meta.json > ../child-with-meta.jsonl; env -u LEAN_PATH ../reader Sibling Sibling.olean --metadata ../sibling-meta.json > ../sibling.jsonl; env -u LEAN_PATH ../reader Root Root.olean --metadata ../root-meta.json > ../root.jsonl; env -u LEAN_PATH ../reader Reverse Reverse.olean --metadata ../reverse-meta.json > ../reverse.jsonl)
+cat > Split.lean <<'EOF'
+module
+
+public def splitValue (n : Nat) : Nat := n + 1
+private theorem hidden : True := trivial
+EOF
+"$LEAN" -o Split.olean Split.lean
+mkdir split
+cp Split.olean Split.olean.server Split.olean.private split/
+(cd split; env -u LEAN_PATH ../reader Split Split.olean > ../split.jsonl; env -u LEAN_PATH ../reader Split Split.olean --metadata ../split-meta.json > ../split-with-meta.jsonl; mv Split.olean.private withheld; if env -u LEAN_PATH ../reader Split Split.olean --metadata ../incomplete-meta.json > ../incomplete.jsonl 2> ../incomplete.err; then echo 'incomplete module accepted' >&2; exit 1; fi; test ! -s ../incomplete.jsonl; test ! -e ../incomplete-meta.json)
+python3 - <<'PY'
+import json
+from pathlib import Path
+
+def rows(name):
+    records = list(map(json.loads, Path(name).read_text().splitlines()))
+    assert len({r['full_name'] for r in records}) == len(records), name
+    return {r['full_name']: r for r in records}
+
+child = rows('child.jsonl')
+assert set(child) == {'child', 'inc.eq_def'}, child.keys()
+assert all(r['module'] == 'Child' and r['schema'] == 'theseus.lean-semantic-fact.v1' for r in child.values())
+assert 'inc' in child['child']['type_dependencies']
+assert 'inc.eq_def' in child['child']['value_dependencies']
+assert 'inc' in child['inc.eq_def']['type_dependencies']
+split = rows('split.jsonl')
+assert set(split) == {'splitValue'}, split.keys()
+assert split['splitValue']['module'] == 'Split'
+assert split['splitValue']['kind'] == 'definition'
+assert 'Nat' in split['splitValue']['type_dependencies']
+assert Path('child.jsonl').read_bytes() == Path('child-with-meta.jsonl').read_bytes()
+assert Path('split.jsonl').read_bytes() == Path('split-with-meta.jsonl').read_bytes()
+for module in ('child', 'sibling', 'root', 'reverse', 'split'):
+    meta = json.loads(Path(module + '-meta.json').read_text())
+    assert meta['schema'] == 'theseus.lean-module-metadata.v1'
+    assert meta['module'] == module.capitalize()
+    assert meta['fact_count'] == len(rows(module + '.jsonl'))
+    assert len(meta['constant_names']) >= meta['fact_count']
+    assert set(rows(module + '.jsonl')).isdisjoint(meta['internal_constant_names'])
+    assert set(rows(module + '.jsonl')) | set(meta['internal_constant_names']) == set(meta['constant_names'])
+    assert all(set(i) == {'module', 'is_exported', 'import_all', 'is_meta'} for i in meta['imports'])
+    assert all(isinstance(i[k], bool) for i in meta['imports'] for k in ('is_exported', 'import_all', 'is_meta'))
+    assert isinstance(meta['olean_extra_const_names'], list)
+root = json.loads(Path('root-meta.json').read_text())
+assert [i['module'] for i in root['imports'] if i['module'] in ('Sibling', 'Child')] == ['Sibling', 'Child']
+assert root['fact_count'] == 0
+reverse = json.loads(Path('reverse-meta.json').read_text())
+assert [i['module'] for i in reverse['imports'] if i['module'] in ('Sibling', 'Child')] == ['Child', 'Sibling']
+assert reverse['fact_count'] == 0
+# Import order can change attribution even with identical observed dependencies.
+# This fixture does not claim that all duplicate constants have identical proofs.
+for name in ('root', 'reverse'):
+    meta = json.loads(Path(name + '-meta.json').read_text())
+    candidates = [i['module'] for i in meta['imports'] if i['module'] in ('Sibling', 'Child')]
+    assert all('inc.eq_def' in rows(c.lower() + '.jsonl') for c in candidates)
+    assert candidates[0] == Path(name + '-owner.txt').read_text().strip()
+assert Path('root-owner.txt').read_text().strip() != Path('reverse-owner.txt').read_text().strip()
+assert 'inc.eq_def' in rows('sibling.jsonl')
+assert json.loads(Path('split-meta.json').read_text())['is_module'] is True
+assert json.loads(Path('child-meta.json').read_text())['is_module'] is False
+print('DIRECT_MODULE_READER_PASS')
+PY

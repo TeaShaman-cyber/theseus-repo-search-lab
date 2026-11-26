@@ -1,0 +1,293 @@
+name: Riemann shard conformance
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-shard-conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  extract:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: direct
+            shard_index: -1
+            artifact_name: riemann-lemmata-direct
+          - mode: shard
+            shard_index: 0
+            artifact_name: riemann-lemmata-shard-000
+          - mode: shard
+            shard_index: 1
+            artifact_name: riemann-lemmata-shard-001
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-lemmata.json
+      PROJECT_PREFIXES: CompanionTheory,Development,Formalism,GroundTheory,Lemmata,PositivityTheory,ReciprocityTheory,Supplements,Statements,Main
+      SHARD_INDEX: ${{ matrix.shard_index }}
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py             --source "$SOURCE_DESCRIPTOR"             --runner producer/runner.json             --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout             --repo-url "https://github.com/${SOURCE_REPO}.git"             --commit "$SOURCE_COMMIT"             --dest _target/source
+          python3 scripts/producer_guard.py verify             --repo-dir _target/source             --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py             --source "$SOURCE_DESCRIPTOR"             --runner producer/runner.json             --checkout-root "$GITHUB_WORKSPACE/_target/source"             --github-env "$GITHUB_ENV"
+
+      - name: Install pinned runner and adapted extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/elan.tar.gz"             "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py             --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean"             --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s\n' "$adapted_sha" >> "$GITHUB_ENV"
+
+      - name: Restore Mathlib and lazy RH cache mappings
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4             python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --               lake exe mathlib/cache get
+          (
+            cd "$SOURCE_ROOT"
+            source scripts/cache-env.sh
+            lake cache get               --repo leanprover-community/riemann-hypothesis               --mappings-only
+          )
+
+      - name: Build Lemmata through lazy project cache
+        if: matrix.mode == 'direct'
+        shell: bash
+        run: |
+          set -euo pipefail
+          (
+            cd "$SOURCE_ROOT"
+            source scripts/cache-env.sh
+            lake build Lemmata
+          )
+
+      - name: Prepare synthetic shard root
+        if: matrix.mode == 'shard'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          python3 scripts/plan_lean_shards.py             --repo-root "$SOURCE_ROOT"             --source-prefix src/Lemmata             --module-prefix Lemmata             --shard-count 2             --out _out/shard-plan.json
+
+          suffix="$(printf '%03d' "$SHARD_INDEX")"
+          shard_root="Lemmata.TheseusShard${suffix}"
+          shard_file="$SOURCE_ROOT/src/Lemmata/TheseusShard${suffix}.lean"
+          python3 - "$SHARD_INDEX" _out/shard-plan.json "$shard_file" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          index = int(sys.argv[1])
+          plan = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          modules = plan["shards"][index]["modules"]
+          Path(sys.argv[3]).write_text(
+              "".join(f"import {module}\n" for module in modules),
+              encoding="utf-8",
+          )
+          PY
+          printf 'SHARD_ROOT=%s\n' "$shard_root" >> "$GITHUB_ENV"
+          printf 'SHARD_FILE=%s\n' "$shard_file" >> "$GITHUB_ENV"
+
+          (
+            cd "$SOURCE_ROOT"
+            source scripts/cache-env.sh
+            lake build "$shard_root"
+          )
+
+      - name: Extract dependency graph
+        shell: bash
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          if [ "$MODE" = "direct" ]; then
+            python3 scripts/producer_guard.py extract-source               --cwd "$SOURCE_ROOT"               --source-container "$GITHUB_WORKSPACE/_target/source"               --source "$SOURCE_DESCRIPTOR"               --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json"               --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json"               --producer-kind lean-dep-viz               --producer-tool-repo "$GITHUB_REPOSITORY"               --producer-tool-commit "$GITHUB_SHA"               --producer-tool-hash "$ADAPTED_EXTRACTOR_SHA256" --               lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean"               --roots "$ROOT_MODULES_CSV"               --include-prefix "$PROJECT_PREFIXES"               --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          else
+            python3 scripts/producer_guard.py extract               --cwd "$SOURCE_ROOT"               --repo-dir "$GITHUB_WORKSPACE/_target/source"               --expected "$SOURCE_COMMIT"               --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json"               --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json"               --source-repo "$SOURCE_REPO"               --source-subdir ""               --root-module "$SHARD_ROOT"               --producer-kind lean-dep-viz               --producer-tool-repo "$GITHUB_REPOSITORY"               --producer-tool-commit "$GITHUB_SHA"               --producer-tool-hash "$ADAPTED_EXTRACTOR_SHA256" --               lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean"               --roots "$SHARD_ROOT"               --include-prefix "$PROJECT_PREFIXES"               --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          fi
+
+      - name: Upload raw graph
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            _out/raw-depgraph.json
+            _out/raw-depgraph-receipt.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Remove disposable source and build outputs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out
+
+  merge:
+    needs: extract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-lemmata.json
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Download direct graph
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: riemann-lemmata-direct
+          path: _in/direct
+
+      - name: Download shard 000
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: riemann-lemmata-shard-000
+          path: _in/shard-000
+
+      - name: Download shard 001
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: riemann-lemmata-shard-001
+          path: _in/shard-001
+
+      - name: Merge shard graphs with provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          source_repo="$(jq -r '.source_repo' "$SOURCE_DESCRIPTOR")"
+          source_commit="$(jq -r '.source_commit' "$SOURCE_DESCRIPTOR")"
+          source_subdir="$(jq -r '.source_subdir' "$SOURCE_DESCRIPTOR")"
+          merge_hash="$(sha256sum scripts/merge_raw_depgraph_shards.py | cut -d ' ' -f 1)"
+
+          scope_args=()
+          while IFS= read -r root; do
+            scope_args+=(--scope-root-module "$root")
+          done < <(jq -r '.root_modules[]' "$SOURCE_DESCRIPTOR")
+
+          python3 scripts/merge_raw_depgraph_shards.py             --input-root _in             --source-repo "$source_repo"             --source-commit "$source_commit"             --source-subdir "$source_subdir"             "${scope_args[@]}"             --producer-kind lean-dep-viz-shard-merge             --producer-tool-repo "$GITHUB_REPOSITORY"             --producer-tool-commit "$GITHUB_SHA"             --producer-tool-hash "$merge_hash"             --out-raw _out/merged-raw-depgraph.json             --out-receipt _out/merged-raw-depgraph-receipt.json
+
+      - name: Compare merged graph with direct extraction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from hashlib import sha256
+          from pathlib import Path
+
+          from theseus_repo_search.sharding import merge_raw_depgraph_shards
+
+          direct_path = Path("_in/direct/raw-depgraph.json")
+          merged_path = Path("_out/merged-raw-depgraph.json")
+          direct = json.loads(direct_path.read_text(encoding="utf-8"))
+          merged = json.loads(merged_path.read_text(encoding="utf-8"))
+          canonical_direct = merge_raw_depgraph_shards([direct])
+          if canonical_direct != merged:
+              raise SystemExit("CONFORMANCE_FAIL: merged shard graph differs from direct extraction")
+
+          receipt = {
+              "schema": "theseus.riemann-shard-conformance.v1",
+              "status": "CONFORMANCE_PASS",
+              "direct_raw_sha256": sha256(direct_path.read_bytes()).hexdigest(),
+              "merged_raw_sha256": sha256(merged_path.read_bytes()).hexdigest(),
+              "nodes": len(merged["nodes"]),
+              "edges": len(merged["edges"]),
+              "shards": 2,
+          }
+          Path("_out/conformance.json").write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(receipt, sort_keys=True))
+          PY
+
+      - name: Verify merged v4 receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          merge_hash="$(sha256sum scripts/merge_raw_depgraph_shards.py | cut -d ' ' -f 1)"
+          python3 - "$merge_hash" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          from theseus_repo_search.cli import _verify_raw_depgraph_receipt
+
+          descriptor = json.loads(
+              Path("producer/pilots/riemann-hypothesis-lemmata.json").read_text(encoding="utf-8")
+          )
+          _verify_raw_depgraph_receipt(
+              Path("_out/merged-raw-depgraph-receipt.json"),
+              Path("_out/merged-raw-depgraph.json"),
+              source_repo=descriptor["source_repo"],
+              source_commit=descriptor["source_commit"],
+              source_subdir=descriptor["source_subdir"],
+              root_modules=tuple(descriptor["root_modules"]),
+              producer_kind="lean-dep-viz-shard-merge",
+              producer_tool_repo="TeaShaman-cyber/theseus-repo-search-lab",
+              producer_tool_commit=__import__("os").environ["GITHUB_SHA"],
+              producer_tool_hash=sys.argv[1],
+          )
+          print("MERGED_V4_RECEIPT_PASS")
+          PY
+
+      - name: Upload conformance receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-lemmata-shard-conformance
+          path: |
+            _out/conformance.json
+            _out/merged-raw-depgraph-receipt.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _in _out

@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .errors import RepoSearchError
-from .projection import ProjectionProvenance, read_projection_provenance
+from .projection import (
+    ProjectionProvenance,
+    QueryConnection,
+    read_projection_provenance,
+)
 
 MAX_DEPTH = 5
 
@@ -43,7 +47,7 @@ def _validate_depth(depth: int) -> None:
 
 
 def _metadata(
-    conn: sqlite3.Connection,
+    conn: QueryConnection,
 ) -> tuple[tuple[str, ...], str, str, ProjectionProvenance]:
     meta = {str(key): str(value) for key, value in conn.execute("SELECT key, value FROM meta")}
     try:
@@ -74,17 +78,11 @@ def _require_elaborated_graph(producer_kind: str) -> None:
     if producer_kind == "lexical_only":
         raise RepoSearchError(
             "UNAVAILABLE_EVIDENCE_GRADE",
-            "artifact does not contain dependency graph evidence",
+            "artifact does not contain elaborated dependency evidence",
         )
 
 
-def _graph_evidence_boundary(producer_kind: str) -> tuple[str, bool]:
-    if producer_kind == "source-static-deps":
-        return "STATIC_REFERENCE", False
-    return "ELABORATED_DEPENDENCY", True
-
-
-def _resolve_name(conn: sqlite3.Connection, name: str) -> str:
+def _resolve_name(conn: QueryConnection, name: str) -> str:
     if name.startswith("lean:"):
         row = conn.execute("SELECT id FROM nodes WHERE id = ?", (name,)).fetchone()
         if row is None:
@@ -113,21 +111,24 @@ def _resolve_name(conn: sqlite3.Connection, name: str) -> str:
 
 
 def _rows_for_frontier(
-    conn: sqlite3.Connection,
+    conn: QueryConnection,
     frontier: list[str],
     *,
     reverse: bool,
+    limit: int | None = None,
 ) -> list[tuple[str, str, str, str, str]]:
     if not frontier:
         return []
     placeholders = ",".join("?" for _ in frontier)
     column = "target_id" if reverse else "source_id"
-    return conn.execute(
-        "SELECT source_id, target_id, relation, evidence_grade, producer "
-        f"FROM edges WHERE {column} IN ({placeholders}) "
-        "ORDER BY relation, target_id, source_id, producer",
-        frontier,
-    ).fetchall()
+    sql = ("SELECT source_id, target_id, relation, evidence_grade, producer "
+           f"FROM edges WHERE {column} IN ({placeholders}) "
+           "ORDER BY relation, target_id, source_id, producer")
+    parameters: tuple[object, ...] = tuple(frontier)
+    if limit is not None:
+        sql += " LIMIT ?"
+        parameters += (limit,)
+    return conn.execute(sql, parameters).fetchall()
 
 
 def _edge_record(
@@ -147,35 +148,47 @@ def _edge_record(
 
 
 def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphResult:
-    _validate_depth(depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind, provenance = _metadata(conn)
-        _require_elaborated_graph(producer_kind)
-        evidence_boundary, complete_within_scope = _graph_evidence_boundary(producer_kind)
-        start = _resolve_name(conn, name)
+        return traverse_connection(conn, name, depth=depth, reverse=reverse)
 
-        visited_nodes = {start}
-        seen_edges: set[tuple[str, str, str, str]] = set()
-        frontier = [start]
-        result_edges: list[dict[str, object]] = []
 
-        for current_depth in range(1, depth + 1):
-            rows = _rows_for_frontier(conn, frontier, reverse=reverse)
-            next_nodes: set[str] = set()
-            for row in rows:
-                source_id, target_id, relation, _, producer = row
-                edge_key = (source_id, target_id, relation, producer)
-                if edge_key not in seen_edges:
-                    seen_edges.add(edge_key)
-                    result_edges.append(_edge_record(row, depth=current_depth))
+def traverse_connection(conn: QueryConnection, name: str, *, depth: int, reverse: bool,
+                        max_edges: int | None = None) -> GraphResult:
+    _validate_depth(depth)
+    roots, boundary, producer_kind, provenance = _metadata(conn)
+    _require_elaborated_graph(producer_kind)
+    start = _resolve_name(conn, name)
 
-                neighbor = source_id if reverse else target_id
-                if neighbor not in visited_nodes:
-                    visited_nodes.add(neighbor)
-                    next_nodes.add(neighbor)
-            frontier = sorted(next_nodes)
-            if not frontier:
-                break
+    visited_nodes = {start}
+    seen_edges: set[tuple[str, str, str, str]] = set()
+    frontier = [start]
+    result_edges: list[dict[str, object]] = []
+
+    remaining = max_edges
+    complete = True
+    for current_depth in range(1, depth + 1):
+        rows = _rows_for_frontier(conn, frontier, reverse=reverse,
+                                  limit=None if remaining is None else remaining + 1)
+        if remaining is not None:
+            if len(rows) > remaining:
+                complete = False
+                rows = rows[:remaining]
+            remaining -= len(rows)
+        next_nodes: set[str] = set()
+        for row in rows:
+            source_id, target_id, relation, _, producer = row
+            edge_key = (source_id, target_id, relation, producer)
+            if edge_key not in seen_edges:
+                seen_edges.add(edge_key)
+                result_edges.append(_edge_record(row, depth=current_depth))
+
+            neighbor = source_id if reverse else target_id
+            if neighbor not in visited_nodes:
+                visited_nodes.add(neighbor)
+                next_nodes.add(neighbor)
+        frontier = sorted(next_nodes)
+        if not complete or not frontier:
+            break
 
     kind = "reverse_dependencies" if reverse else "dependencies"
     return GraphResult(
@@ -183,13 +196,13 @@ def _traverse(db_path: Path, name: str, *, depth: int, reverse: bool) -> GraphRe
         edges=tuple(result_edges),
         scope_root_modules=roots,
         dependency_boundary=boundary,
-        complete_within_scope=complete_within_scope,
+        complete_within_scope=complete and producer_kind not in ("olean-export-deps-preview", "source-static-deps"),
+        evidence_boundary={"olean-export-deps-preview": "COMPILED_REFERENCE", "source-static-deps": "STATIC_REFERENCE"}.get(producer_kind, "ELABORATED_DEPENDENCY"),
         source_kind=provenance.source_kind,
         source_revision=provenance.source_revision,
         source_authority=provenance.source_authority,
         created_from_authoritative_source=provenance.created_from_authoritative_source,
         found=True,
-        evidence_boundary=evidence_boundary,
     )
 
 
@@ -208,55 +221,69 @@ def path(
     *,
     max_depth: int = 5,
 ) -> GraphResult:
-    _validate_depth(max_depth)
     with sqlite3.connect(db_path) as conn:
-        roots, boundary, producer_kind, provenance = _metadata(conn)
-        _require_elaborated_graph(producer_kind)
-        evidence_boundary, complete_within_scope = _graph_evidence_boundary(producer_kind)
-        source_id = _resolve_name(conn, source)
-        target_id = _resolve_name(conn, target)
+        return path_connection(conn, source, target, max_depth=max_depth)
 
-        if source_id == target_id:
-            path_edges: list[dict[str, object]] = []
-            path_found = True
-        else:
-            path_edges = []
-            queue: deque[tuple[str, tuple[dict[str, object], ...], int]] = deque(
-                [(source_id, (), 0)]
-            )
-            visited = {source_id}
-            found_path: tuple[dict[str, object], ...] | None = None
 
-            while queue and found_path is None:
-                current, prior_edges, current_depth = queue.popleft()
-                if current_depth >= max_depth:
-                    continue
-                rows = _rows_for_frontier(conn, [current], reverse=False)
-                for row in rows:
-                    neighbor = row[1]
-                    edge_record = _edge_record(row, depth=current_depth + 1)
-                    next_path = prior_edges + (edge_record,)
-                    if neighbor == target_id:
-                        found_path = next_path
-                        break
-                    if neighbor not in visited:
-                        visited.add(neighbor)
-                        queue.append((neighbor, next_path, current_depth + 1))
+def path_connection(conn: QueryConnection, source: str, target: str, *, max_depth: int = 5,
+                    max_edges: int | None = None) -> GraphResult:
+    _validate_depth(max_depth)
+    roots, boundary, producer_kind, provenance = _metadata(conn)
+    _require_elaborated_graph(producer_kind)
+    source_id = _resolve_name(conn, source)
+    target_id = _resolve_name(conn, target)
 
-            path_found = found_path is not None
-            if found_path is not None:
-                path_edges = list(found_path)
+    complete = True
+    remaining = max_edges
+    if source_id == target_id:
+        path_edges: list[dict[str, object]] = []
+        path_found = True
+    else:
+        path_edges = []
+        queue: deque[tuple[str, tuple[dict[str, object], ...], int]] = deque(
+            [(source_id, (), 0)]
+        )
+        visited = {source_id}
+        found_path: tuple[dict[str, object], ...] | None = None
+
+        while queue and found_path is None:
+            current, prior_edges, current_depth = queue.popleft()
+            if current_depth >= max_depth:
+                continue
+            rows = _rows_for_frontier(conn, [current], reverse=False,
+                                      limit=None if remaining is None else remaining + 1)
+            if remaining is not None:
+                if len(rows) > remaining:
+                    complete = False
+                    rows = rows[:remaining]
+                remaining -= len(rows)
+            for row in rows:
+                neighbor = row[1]
+                edge_record = _edge_record(row, depth=current_depth + 1)
+                next_path = (*prior_edges, edge_record)
+                if neighbor == target_id:
+                    found_path = next_path
+                    break
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append((neighbor, next_path, current_depth + 1))
+            if not complete:
+                break
+
+        path_found = found_path is not None
+        if found_path is not None:
+            path_edges = list(found_path)
 
     return GraphResult(
         query=f"path:{source}->{target}",
         edges=tuple(path_edges),
         scope_root_modules=roots,
         dependency_boundary=boundary,
-        complete_within_scope=complete_within_scope,
+        complete_within_scope=complete and producer_kind not in ("olean-export-deps-preview", "source-static-deps"),
+        evidence_boundary={"olean-export-deps-preview": "COMPILED_REFERENCE", "source-static-deps": "STATIC_REFERENCE"}.get(producer_kind, "ELABORATED_DEPENDENCY"),
         source_kind=provenance.source_kind,
         source_revision=provenance.source_revision,
         source_authority=provenance.source_authority,
         created_from_authoritative_source=provenance.created_from_authoritative_source,
         found=path_found,
-        evidence_boundary=evidence_boundary,
     )

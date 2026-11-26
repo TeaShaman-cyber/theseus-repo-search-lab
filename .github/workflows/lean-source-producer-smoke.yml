@@ -38,6 +38,9 @@ jobs:
           - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
             replay_script: scripts/replay_ten_proofs_multicolor.py
             artifact_name: openai-ten-proofs-multicolor-repo-index-v1
+          - source_descriptor: producer/sources/openai-navier-stokes.json
+            replay_script: scripts/replay_navier_stokes.py
+            artifact_name: openai-navier-stokes-repo-index-v1
           - source_descriptor: producer/sources/decreasing-diagrams-complete.json
             replay_script: scripts/replay_decreasing_diagrams.py
             artifact_name: decreasing-diagrams-complete-repo-index-v2
@@ -383,6 +386,9 @@ jobs:
           - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
             replay_script: scripts/replay_ten_proofs_multicolor.py
             artifact_name: openai-ten-proofs-multicolor-repo-index-v1
+          - source_descriptor: producer/sources/openai-navier-stokes.json
+            replay_script: scripts/replay_navier_stokes.py
+            artifact_name: openai-navier-stokes-repo-index-v1
           - source_descriptor: producer/sources/decreasing-diagrams-complete.json
             replay_script: scripts/replay_decreasing_diagrams.py
             artifact_name: decreasing-diagrams-complete-repo-index-v2
@@ -445,6 +451,9 @@ jobs:
             --out "_consumer/${SOURCE_ID}-replay.json"
 
       - name: Write consumer acceptance receipt
+        env:
+          RECEIPT_WORKFLOW_REF: ${{ github.workflow_ref }}
+          RECEIPT_WORKFLOW_SHA: ${{ github.workflow_sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -460,8 +469,8 @@ jobs:
             --repository-head "${{ github.sha }}" \
             --workflow-run-id "${{ github.run_id }}" \
             --workflow-run-attempt "${{ github.run_attempt }}" \
-            --workflow-ref "${{ github.workflow_ref }}" \
-            --workflow-sha "${{ github.workflow_sha }}" \
+            --workflow-ref "$RECEIPT_WORKFLOW_REF" \
+            --workflow-sha "$RECEIPT_WORKFLOW_SHA" \
             --out "_consumer/${SOURCE_ID}-consumer-receipt.json"
 
       - name: Upload consumer acceptance receipt

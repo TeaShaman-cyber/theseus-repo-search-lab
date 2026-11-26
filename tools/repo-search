@@ -1,0 +1,7 @@
+#!/bin/sh
+# Run from a versioned checkout, without requiring installation or a special cwd.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+export REPO_SEARCH_CATALOG="${REPO_SEARCH_CATALOG:-$ROOT/producer/accepted-corpora.json}"
+export PYTHONPATH="$ROOT/src:$ROOT"
+exec python3 -P -m theseus_repo_search "$@"

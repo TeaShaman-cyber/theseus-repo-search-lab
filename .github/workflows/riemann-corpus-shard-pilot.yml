@@ -1,0 +1,200 @@
+name: Riemann corpus shard pilot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-corpus-shard-pilot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lemmata-pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-lemmata.json
+      PROJECT_PREFIXES: CompanionTheory,Development,Formalism,GroundTheory,Lemmata,PositivityTheory,ReciprocityTheory,Supplements,Statements,Main
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py             --source "$SOURCE_DESCRIPTOR"             --runner producer/runner.json             --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout             --repo-url "https://github.com/${SOURCE_REPO}.git"             --commit "$SOURCE_COMMIT"             --dest _target/source
+          python3 scripts/producer_guard.py verify             --repo-dir _target/source             --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py             --source "$SOURCE_DESCRIPTOR"             --runner producer/runner.json             --checkout-root "$GITHUB_WORKSPACE/_target/source"             --github-env "$GITHUB_ENV"
+
+      - name: Install pinned runner and extractor
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/elan.tar.gz"             "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2             --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.upstream.lean" | sha256sum --check
+          python3 scripts/adapt_leandepviz_lean436.py             --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean"             --output "$RUNNER_TEMP/LeanDepVizMain.lean"
+          adapted_sha="$(sha256sum "$RUNNER_TEMP/LeanDepVizMain.lean" | cut -d ' ' -f 1)"
+          printf 'ADAPTED_EXTRACTOR_SHA256=%s\n' "$adapted_sha" >> "$GITHUB_ENV"
+
+      - name: Restore Mathlib and lazy RH cache mappings
+        id: cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4             python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" --               lake exe mathlib/cache get
+          (
+            cd "$SOURCE_ROOT"
+            source scripts/cache-env.sh
+            printf 'cache_services_begin\n'
+            lake cache services
+            printf 'cache_services_end\n'
+            lake cache get               --repo leanprover-community/riemann-hypothesis               --mappings-only
+          )
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+          df -h /
+          du -sh "$SOURCE_ROOT/.lake" "$HOME/.cache/mathlib" 2>/dev/null || true
+
+      - name: Build Lemmata through lazy project cache
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          (
+            cd "$SOURCE_ROOT"
+            source scripts/cache-env.sh
+            lake build Lemmata
+          )
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+          du -sh "$SOURCE_ROOT/.lake/build" "$SOURCE_ROOT/.lake/cache" 2>/dev/null || true
+          df -h /
+
+      - name: Extract exact Lemmata dependency graph
+        id: extract
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py extract-source             --cwd "$SOURCE_ROOT"             --source-container "$GITHUB_WORKSPACE/_target/source"             --source "$SOURCE_DESCRIPTOR"             --raw-depgraph "$GITHUB_WORKSPACE/_out/raw-depgraph.json"             --receipt "$GITHUB_WORKSPACE/_out/raw-depgraph-receipt.json"             --producer-kind lean-dep-viz             --producer-tool-repo "$GITHUB_REPOSITORY"             --producer-tool-commit "$GITHUB_SHA"             --producer-tool-hash "$ADAPTED_EXTRACTOR_SHA256" --             lake env lean --run "$RUNNER_TEMP/LeanDepVizMain.lean"             --roots "$ROOT_MODULES_CSV"             --include-prefix "$PROJECT_PREFIXES"             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+
+      - name: Build and measure bounded Repo Search projection
+        id: project
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date +%s)"
+          python3 -m pip install -e .
+          python3 -m theseus_repo_search build-source-artifact             --source "$SOURCE_DESCRIPTOR"             --source-root "$SOURCE_ROOT"             --source-container "$GITHUB_WORKSPACE/_target/source"             --raw-depgraph _out/raw-depgraph.json             --raw-depgraph-receipt _out/raw-depgraph-receipt.json             --producer-kind lean-dep-viz             --producer-tool-repo "$GITHUB_REPOSITORY"             --producer-tool-commit "$GITHUB_SHA"             --producer-tool-hash "$ADAPTED_EXTRACTOR_SHA256"             --out _out/lemmata-artifact
+          python3 -m theseus_repo_search verify-artifact --artifact _out/lemmata-artifact
+          python3 -m theseus_repo_search build-index             --artifact _out/lemmata-artifact             --db _out/lemmata.sqlite
+          finished="$(date +%s)"
+          printf 'seconds=%s\n' "$((finished-started))" >> "$GITHUB_OUTPUT"
+
+      - name: Write size and density receipt
+        shell: bash
+        env:
+          CACHE_SECONDS: ${{ steps.cache.outputs.seconds }}
+          BUILD_SECONDS: ${{ steps.build.outputs.seconds }}
+          EXTRACT_SECONDS: ${{ steps.extract.outputs.seconds }}
+          PROJECT_SECONDS: ${{ steps.project.outputs.seconds }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, sqlite3
+          from pathlib import Path
+
+          raw_path=Path("_out/raw-depgraph.json")
+          raw=json.loads(raw_path.read_text())
+          artifact=Path("_out/lemmata-artifact")
+          db=Path("_out/lemmata.sqlite")
+          with sqlite3.connect(db) as conn:
+              counts={name:conn.execute(f"select count(*) from {name}").fetchone()[0]
+                      for name in ("nodes","edges","sources")}
+              quick=conn.execute("pragma quick_check").fetchone()[0]
+          source_root=Path(os.environ["SOURCE_ROOT"])
+          source_files=list((source_root/"Lemmata").rglob("*.lean"))
+          source_bytes=sum(p.stat().st_size for p in source_files)
+          metrics={
+              "schema":"theseus.repo-search-riemann-shard-pilot.v1",
+              "source_commit":os.environ["SOURCE_COMMIT"],
+              "slice":"Lemmata",
+              "root_modules":len(os.environ["ROOT_MODULES_CSV"].split(",")),
+              "source_files":len(source_files),
+              "source_bytes":source_bytes,
+              "raw_nodes":len(raw["nodes"]),
+              "raw_edges":len(raw["edges"]),
+              "normalized_nodes":counts["nodes"],
+              "normalized_edges":counts["edges"],
+              "source_chunks":counts["sources"],
+              "sqlite_bytes":db.stat().st_size,
+              "artifact_bytes":{
+                  name:(artifact/name).stat().st_size
+                  for name in ("nodes.jsonl","edges.jsonl","sources.jsonl","raw-depgraph.json")
+              },
+              "timings_seconds":{
+                  "cache":int(os.environ["CACHE_SECONDS"]),
+                  "build":int(os.environ["BUILD_SECONDS"]),
+                  "extract":int(os.environ["EXTRACT_SECONDS"]),
+                  "project":int(os.environ["PROJECT_SECONDS"]),
+              },
+              "extractor":{
+                  "upstream_repo":os.environ["EXTRACTOR_REPO"],
+                  "upstream_commit":os.environ["EXTRACTOR_COMMIT"],
+                  "upstream_sha256":os.environ["EXTRACTOR_MAIN_SHA256"],
+                  "adapter_repo":os.environ["GITHUB_REPOSITORY"],
+                  "adapter_commit":os.environ["GITHUB_SHA"],
+                  "adapted_sha256":os.environ["ADAPTED_EXTRACTOR_SHA256"],
+              },
+              "sqlite_quick_check":quick,
+          }
+          Path("_out/pilot-metrics.json").write_text(
+              json.dumps(metrics,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(metrics,sort_keys=True,indent=2))
+          PY
+
+      - name: Upload metrics only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-lemmata-pilot-metrics
+          path: _out/pilot-metrics.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Remove disposable source and build outputs
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out
