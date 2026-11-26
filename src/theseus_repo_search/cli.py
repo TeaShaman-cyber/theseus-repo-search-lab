@@ -35,6 +35,7 @@ from .model import (
 )
 from .multicorpus import ensure_local_catalog, ensure_local_corpus, search_local_catalog
 from .normalize import normalize_leandepviz
+from .overlap import catalog_overlap
 from .producer_config import (
     LeanArchiveSource,
     LeanGitSource,
@@ -1058,6 +1059,10 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
         "REPO_SEARCH_TURSO_PLATFORM_URL", "https://api.turso.tech"
     )
     args.platform_token_env = args.platform_token_env or os.environ.get("REPO_SEARCH_TURSO_TOKEN_ENV")
+    if args.operation == "overlap":
+        _emit(catalog_overlap(catalog, _turso_client(args), limit=args.limit,
+                              occurrence_limit=args.occurrences, raw=args.raw))
+        return 0
     if args.operation in ("search", "graph-search"):
         if args.operation == "graph-search" and (not 1 <= args.limit <= 10 or not 1 <= args.depth <= 3 or not 1 <= args.graph_limit <= 50):
             raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "graph-search: limit 1..10, depth 1..3, graph-limit 1..50")
@@ -1095,6 +1100,10 @@ def _add_agent_query(subparsers) -> None:
     parser.set_defaults(func=_cmd_agent_query)
     ops = parser.add_subparsers(dest="operation", required=True)
     ops.add_parser("corpora", help="list catalog identities (not live availability)")
+    overlap = ops.add_parser("overlap", help="cross-corpus short-name candidates with noise filtering")
+    overlap.add_argument("--limit", type=int, default=20)
+    overlap.add_argument("--occurrences", type=int, default=10)
+    overlap.add_argument("--raw", action="store_true")
     for operation in ("search", "graph-search"):
         search = ops.add_parser(operation)
         search.add_argument("query")
