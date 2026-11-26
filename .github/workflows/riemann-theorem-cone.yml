@@ -1,0 +1,312 @@
+name: Riemann headline theorem cone
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/riemann-theorem-cone.yml'
+      - 'scripts/riemann_compressed_cache.py'
+      - 'scripts/restore_riemann_ci_cache_subset.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: riemann-theorem-cone-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
+      SOURCE_DESCRIPTOR: producer/pilots/riemann-hypothesis-full.json
+      TRUST_MODULES: Init,Std,Lean,Lake,Mathlib,Batteries,Aesop,Qq,ProofWidgets,ImportGraph,LeanSearchClient,Plausible
+
+    steps:
+      - name: Checkout Repository Search
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load pinned producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout exact RH source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+
+      - name: Resolve source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "$SOURCE_DESCRIPTOR" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Install pinned Lean runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build pinned upstream olean-export with its locked dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url https://github.com/sdiehl/olean-export.git \
+            --commit 8318f1d4e4fc5b530d34ff1ee3d73321587565b9 \
+            --dest _target/olean-export
+          rustup toolchain install 1.100.0 --profile minimal
+          (cd _target/olean-export; cargo +1.100.0 build --locked --release --bin olean-export)
+          _target/olean-export/target/release/olean-export --version
+          _target/olean-export/target/release/olean-export deps --help
+
+      - name: Verify actual generated deps invocation before heavy restoration
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          lean_bin="$(cd "$SOURCE_ROOT"; elan which lean)"
+          python3 - "$lean_bin" <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          from types import SimpleNamespace
+          from scripts.riemann_compressed_cache import reader_command
+          lean = Path(sys.argv[1])
+          root = Path.cwd()
+          args = SimpleNamespace(reader=root/'_target/olean-export/target/release/olean-export',
+                                 jobs=2, trust='Mathlib', constant='Nat')
+          output = root/'_out/reader-cli-preflight.jsonl'
+          # Exercise the same command generator with both repeatable search
+          # arguments and the actual -c/--trust options, before cache restore.
+          env = os.environ.copy()
+          env.pop('LEAN_PATH', None)
+          env.pop('LEAN_SYSROOT', None)
+          subprocess.run(reader_command(args, ['Init.Prelude'],
+                         [root/'_target/olean-export', lean.parent.parent/'lib/lean'],
+                         output), env=env, check=True)
+          rows = [json.loads(line) for line in output.read_text().splitlines()]
+          assert any(row['name']=='Nat' and row['module']=='Init.Prelude' for row in rows)
+          print('GENERATED_DEPS_COMMAND_PASS')
+          PY
+
+      - name: Restore Mathlib cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          MATHLIB_CACHE_GET_URL=https://cache.mathlib.org/mathlib4 \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- \
+              lake exe mathlib/cache get
+
+      - name: Verify dependency inputs and measure Main import closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          test "$(git -C "$SOURCE_ROOT" rev-parse HEAD)" = "$SOURCE_COMMIT"
+          git -C "$SOURCE_ROOT" diff --exit-code
+          test "$(cat "$SOURCE_ROOT/lean-toolchain")" = 'leanprover/lean4:v4.36.0'
+          (cd "$SOURCE_ROOT"; lean --version) | tee _out/lean-version.txt
+          grep -F 'commit 611c117bfaf7b7ae1cfcf246ce6fba31e8f509e9' _out/lean-version.txt
+          python3 - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          root = Path(os.environ['SOURCE_ROOT'])
+          manifest = json.loads((root/'lake-manifest.json').read_text())
+          for package in manifest['packages']:
+              path = root/'.lake/packages'/package['name']
+              assert subprocess.check_output(['git','-C',str(path),'rev-parse','HEAD'],text=True).strip() == package['rev']
+              subprocess.run(['git','-C',str(path),'diff','--exit-code','HEAD'],check=True)
+          Path('_out/dependency-manifest.json').write_bytes((root/'lake-manifest.json').read_bytes())
+          PY
+          printf 'Main\n' > _out/modules.txt
+          lean_bin="$(cd "$SOURCE_ROOT"; elan which lean)"
+          env -u LEAN_PATH "$lean_bin" --run scripts/lean_project_import_closure.lean \
+            "$SOURCE_ROOT/src" "$GITHUB_WORKSPACE/_out/modules.txt" > _out/project-closure.txt
+          grep -Fx Main _out/project-closure.txt
+          df -h "$SOURCE_ROOT" | tee _out/disk-before.txt
+          df -i "$SOURCE_ROOT" | tee _out/inodes-before.txt
+          # Verify the previously measured closure at this exact source pin.
+          echo "390af5fb692aa6fc120b2b8e2ff9817f1251479a966b71de52837f54e4b64cbc  _out/project-closure.txt" | sha256sum --check
+
+      - name: Prepare compressed filesystem tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v mksquashfs >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends squashfs-tools
+          fi
+          mksquashfs -version
+          sudo -n true
+          mkdir -p _target/compressed _out/control
+
+      - name: Compare the real RH graph on plain and compressed storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          cat > _out/control/roots.txt <<'ROOTS'
+          CompanionTheory.AutomorphicTheory.BesselWaveGrids.InterlacingGrids.PairOKOfInterlace
+          Lemmata.GeneralBFactSecondVersion.Imports
+          Development.AbelianVarietyTheory.Definitions.Divisors.PullbackBijectiveDegreesOneTwo
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.FinrankEigenCoindMackeyDoubleCosets
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.ExistsDerivationEqIteratePrimeCharP
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.LocallyFinitePresentationOfEtaleCoverStatement
+          Development.AbelianVarietyTheory.Proofs.AdelicLatticeProofs.ContinuousSymmFinite
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.QuaternionNormOneTraceOpenPi
+          Development.AbelianVarietyTheory.Proofs.DivisorProofs.EventuallyExistsIntegralCharpolySplitPlace
+          ROOTS
+          lean_bin="$(cd "$SOURCE_ROOT"; elan which lean)"
+          env -u LEAN_PATH "$lean_bin" --run scripts/lean_project_import_closure.lean \
+            "$SOURCE_ROOT/src" "$root/_out/control/roots.txt" > _out/control/modules.txt
+          # Same pinned scope as the independently verified #170 pilot.
+          test "$(wc -l < _out/control/modules.txt)" -eq 1740
+          cd "$SOURCE_ROOT"
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o "$root/_out/control/time.txt" \
+            lake env python3 "$root/scripts/riemann_compressed_cache.py" \
+              --project "$SOURCE_ROOT" --modules-file "$root/_out/control/modules.txt" \
+              --roots-file "$root/_out/control/roots.txt" \
+              --reader "$root/_target/olean-export/target/release/olean-export" \
+              --trust "$TRUST_MODULES" --batch-size 512 --jobs 4 --compare-plain \
+              --work-dir "$root/_target/compressed" \
+              --output "$root/_out/control/rh-deps.jsonl" \
+              --metrics-out "$root/_out/control/receipt.json"
+          python3 - "$root/_out/control/receipt.json" <<'PY'
+          import json, sys
+          receipt = json.load(open(sys.argv[1]))
+          assert receipt['status'] == 'PASS'
+          assert receipt['mount_cleanup_verified']
+          assert receipt['plain_graph'] == receipt['compressed_graph']
+          assert receipt['compressed_graph'][0] == 61496
+          assert len(receipt['batches']) >= 2
+          assert receipt['image_bytes'] < receipt['olean_bytes']
+          print('REAL_RH_COMPRESSED_GRAPH_PARITY_PASS')
+          PY
+
+      - name: Preserve control evidence before full restore
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-compressed-control
+          path: _out/control/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Restore compressed Main closure and read the headline cone
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE"
+          bin="$root/_target/olean-export/target/release"
+          cd "$SOURCE_ROOT"
+          /usr/bin/time -f 'wall_s=%e peak_kib=%M' -o "$root/_out/theorem-cone-time.txt" \
+            lake env python3 "$root/scripts/riemann_compressed_cache.py" \
+              --project "$SOURCE_ROOT" --modules-file "$root/_out/project-closure.txt" \
+              --roots-file "$root/_out/modules.txt" \
+              --reader "$bin/olean-export" --trust "$TRUST_MODULES" \
+              --constant riemannHypothesis --batch-size 4096 --jobs 4 \
+              --work-dir "$root/_target/compressed" \
+              --output "$root/_out/theorem-cone.jsonl" \
+              --metrics-out "$root/_out/restore-receipt.json" \
+              --native-reader "$root/producer/lean/ReadModuleFacts.lean"
+          sha256sum "$bin/olean-export" > "$root/_out/upstream-binary.sha256"
+          df -h "$SOURCE_ROOT" | tee "$root/_out/disk-after-restore.txt"
+
+      - name: Verify headline boundary and record cone coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import collections, hashlib, json, os, subprocess
+          from pathlib import Path
+          out = Path('_out')
+          closure = set(out.joinpath('project-closure.txt').read_text().splitlines())
+          restore = json.loads(out.joinpath('restore-receipt.json').read_text())
+          assert restore['status'] == 'PASS' and restore['mount_cleanup_verified']
+          assert restore['selected_project_modules'] == len(closure)
+          expected = {r['full_name']:set(r['type_dependencies'])|set(r['value_dependencies'])
+                      for r in map(json.loads,out.joinpath('Main.jsonl').read_text().splitlines())}
+          counts = collections.Counter()
+          headline = []
+          references = 0
+          with out.joinpath('theorem-cone.jsonl').open() as stream:
+              for line in stream:
+                  row = json.loads(line)
+                  counts[row['module']] += 1
+                  references += len(row['uses'])
+                  if row['module']=='Main': headline.append(row)
+          assert counts and set(counts) <= closure, 'output outside pinned project closure'
+          root = [r for r in headline if r['name']=='riemannHypothesis']
+          assert len(root)==1 and 'riemannHypothesis' in expected
+          actual = set(root[0]['uses'])
+          native = expected['riemannHypothesis']
+          assert 'LFunction_ne_zero_of_half_lt_re' in actual
+          receipt = {'schema':'theseus.rh-headline-cone.v1',
+                     'source_commit':os.environ['SOURCE_COMMIT'],
+                     'upstream_commit':'8318f1d4e4fc5b530d34ff1ee3d73321587565b9',
+                     'producer_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                     'project_import_closure_modules':len(closure), 'cone_modules':len(counts),
+                     'cone_rows':sum(counts.values()),'cone_references':references,
+                     'headline_rows':headline,'root_missing_refs':sorted(native-actual),
+                     'root_extra_refs':sorted(actual-native),
+                     'timings':{p.name:p.read_text().strip() for p in out.glob('*time.txt')},
+                     'file_hashes':{}}
+          for p in out.iterdir():
+              if p.is_file():
+                  with p.open('rb') as stream:
+                      receipt['file_hashes'][p.name]=hashlib.file_digest(stream,'sha256').hexdigest()
+          out.joinpath('receipt.json').write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(receipt))
+          PY
+
+      - name: Upload theorem cone and partial evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: riemann-headline-cone
+          path: _out/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Remove disposable workspace
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Cleanup only this workflow's mountpoints, including interrupted batches.
+          if test -d _target/compressed; then
+            for mount in "$GITHUB_WORKSPACE"/_target/compressed/compressed-*/mount-*; do
+              test -d "$mount" || continue
+              if mountpoint -q "$mount"; then sudo umount "$mount"; fi
+              if mountpoint -q "$mount"; then exit 1; fi
+            done
+          fi
+          rm -rf _target _out
+          test ! -e _target
+          test ! -e _out
