@@ -9,6 +9,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from .errors import RepoSearchError
+from .json_contract import require_integer, require_string, strict_json_loads
 from .model import (
     ArchiveAuthority,
     ArtifactManifest,
@@ -389,8 +390,8 @@ def _integrity(message: str) -> RepoSearchError:
 
 def _validate_authority_receipt_bytes(data: bytes, manifest: ArtifactManifestAny) -> str:
     try:
-        receipt = json.loads(data.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        receipt = strict_json_loads(data.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
         raise _integrity(f"invalid authority receipt: {exc}") from exc
     if not isinstance(receipt, dict):
         raise _integrity("invalid authority receipt: root must be an object")
@@ -502,27 +503,13 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
         for line in path.read_text(encoding="utf-8").splitlines():
             if not line:
                 continue
-            value = json.loads(line)
+            value = strict_json_loads(line)
             if not isinstance(value, dict):
                 raise ValueError("JSONL row is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
             rows.append(value)
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         raise _integrity(f"invalid artifact member {path.name}: {exc}") from exc
     return rows
-
-
-def _require_str(data: dict[str, object], key: str) -> str:
-    value = data[key]
-    if not isinstance(value, str):
-        raise TypeError(f"{key} must be a string")
-    return value
-
-
-def _require_int(data: dict[str, object], key: str) -> int:
-    value = data[key]
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{key} must be an integer")
-    return value
 
 
 def _optional_str(data: dict[str, object], key: str) -> str | None:
@@ -548,25 +535,25 @@ def _node_from_dict(data: dict[str, object], *, revision_key: str) -> Node:
     if forbidden_key in data:
         raise TypeError(f"{forbidden_key} is not valid for this artifact schema")
     return Node(
-        id=_require_str(data, "id"),
-        full_name=_require_str(data, "full_name"),
-        name=_require_str(data, "name"),
-        kind=_require_str(data, "kind"),
-        module=_require_str(data, "module"),
+        id=require_string(data["id"], "id"),
+        full_name=require_string(data["full_name"], "full_name"),
+        name=require_string(data["name"], "name"),
+        kind=require_string(data["kind"], "kind"),
+        module=require_string(data["module"], "module"),
         source_path=_optional_str(data, "source_path"),
         source_start_line=_optional_int(data, "source_start_line"),
         source_end_line=_optional_int(data, "source_end_line"),
-        source_commit=_require_str(data, revision_key),
+        source_commit=require_string(data[revision_key], revision_key),
     )
 
 
 def _edge_from_dict(data: dict[str, object]) -> Edge:
     return Edge(
-        source_id=_require_str(data, "source_id"),
-        target_id=_require_str(data, "target_id"),
-        relation=_require_str(data, "relation"),
-        evidence_grade=EvidenceGrade(_require_str(data, "evidence_grade")),
-        producer=_require_str(data, "producer"),
+        source_id=require_string(data["source_id"], "source_id"),
+        target_id=require_string(data["target_id"], "target_id"),
+        relation=require_string(data["relation"], "relation"),
+        evidence_grade=EvidenceGrade(require_string(data["evidence_grade"], "evidence_grade")),
+        producer=require_string(data["producer"], "producer"),
     )
 
 
@@ -575,14 +562,14 @@ def _source_from_dict(data: dict[str, object], *, revision_key: str) -> SourceCh
     if forbidden_key in data:
         raise TypeError(f"{forbidden_key} is not valid for this artifact schema")
     return SourceChunk(
-        id=_require_str(data, "id"),
-        source_commit=_require_str(data, revision_key),
-        source_path=_require_str(data, "source_path"),
-        source_start_line=_require_int(data, "source_start_line"),
-        source_end_line=_require_int(data, "source_end_line"),
+        id=require_string(data["id"], "id"),
+        source_commit=require_string(data[revision_key], revision_key),
+        source_path=require_string(data["source_path"], "source_path"),
+        source_start_line=require_integer(data["source_start_line"], "source_start_line"),
+        source_end_line=require_integer(data["source_end_line"], "source_end_line"),
         declaration_hint=_optional_str(data, "declaration_hint"),
-        text=_require_str(data, "text"),
-        content_sha256=_require_str(data, "content_sha256"),
+        text=require_string(data["text"], "text"),
+        content_sha256=require_string(data["content_sha256"], "content_sha256"),
     )
 
 
@@ -590,7 +577,7 @@ def load_artifact(
     path: Path,
 ) -> tuple[ArtifactManifestAny, list[Node], list[Edge], list[SourceChunk]]:
     try:
-        manifest_data = json.loads((path / "manifest.json").read_text(encoding="utf-8"))
+        manifest_data = strict_json_loads((path / "manifest.json").read_text(encoding="utf-8"))
         if not isinstance(manifest_data, dict):
             raise ValueError("manifest is not an object")  # noqa: TRY004 -- normalized to artifact-integrity error below
         schema = manifest_data.get("schema")
@@ -600,7 +587,7 @@ def load_artifact(
             manifest = ArtifactManifestV2.from_dict(manifest_data)
         else:
             raise ValueError(f"unsupported schema: {schema}")
-    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError, ValueError, AssertionError) as exc:
+    except (OSError, UnicodeError, KeyError, TypeError, ValueError, AssertionError) as exc:
         raise _integrity(f"invalid manifest: {exc}") from exc
     if manifest.producer.kind == "olean-export-deps-preview" and manifest.created_from_authoritative_source:
         raise _integrity("preview producer cannot claim authoritative corpus acceptance")
@@ -792,8 +779,8 @@ def load_artifact(
 
     if manifest.created_from_authoritative_source and manifest.producer.kind != "lexical_only":
         try:
-            raw_value = json.loads(raw_depgraph_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raw_value = strict_json_loads(raw_depgraph_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError) as exc:
             raise _integrity(f"invalid raw dependency graph member: {exc}") from exc
         if not isinstance(raw_value, dict):
             raise _integrity("raw dependency graph member must be a JSON object")

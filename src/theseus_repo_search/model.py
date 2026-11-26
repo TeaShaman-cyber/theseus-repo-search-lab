@@ -3,22 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from .json_contract import require_integer, require_string
+
 
 def _require_dict(value: object, field: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise TypeError(f"{field} must be an object")
-    return value
-
-
-def _require_str(value: object, field: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{field} must be a string")
-    return value
-
-
-def _require_int(value: object, field: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{field} must be an integer")
     return value
 
 
@@ -31,7 +21,7 @@ def _require_bool(value: object, field: str) -> bool:
 def _require_optional_str(value: object, field: str) -> str | None:
     if value is None:
         return None
-    return _require_str(value, field)
+    return require_string(value, field)
 
 
 class EvidenceGrade(str, Enum):
@@ -77,19 +67,19 @@ SourceAuthority = GitAuthority | ArchiveAuthority
 
 
 def source_authority_from_dict(data: dict[str, object]) -> SourceAuthority:
-    kind = _require_str(data.get("kind"), "source.kind")
+    kind = require_string(data.get("kind"), "source.kind")
     if kind == "git":
         return GitAuthority(
-            repo=_require_str(data.get("repo"), "source.repo"),
-            commit=_require_str(data.get("commit"), "source.commit"),
-            subdir=_require_str(data.get("subdir"), "source.subdir"),
+            repo=require_string(data.get("repo"), "source.repo"),
+            commit=require_string(data.get("commit"), "source.commit"),
+            subdir=require_string(data.get("subdir"), "source.subdir"),
         )
     if kind == "archive":
         return ArchiveAuthority(
-            url=_require_str(data.get("url"), "source.url"),
-            sha256=_require_str(data.get("sha256"), "source.sha256"),
-            format=_require_str(data.get("format"), "source.format"),
-            subdir=_require_str(data.get("subdir"), "source.subdir"),
+            url=require_string(data.get("url"), "source.url"),
+            sha256=require_string(data.get("sha256"), "source.sha256"),
+            format=require_string(data.get("format"), "source.format"),
+            subdir=require_string(data.get("subdir"), "source.subdir"),
         )
     raise ValueError(f"unsupported source authority kind: {kind}")
 
@@ -291,30 +281,30 @@ class ArtifactManifest:
         exclude_prefixes = scope.get("exclude_source_prefixes", [])
         if not isinstance(exclude_prefixes, list) or not all(isinstance(item, str) for item in exclude_prefixes):
             raise TypeError("scope.exclude_source_prefixes must be an array of strings")
-        nodes_count = _require_int(counts["nodes"], "counts.nodes")
-        edges_count = _require_int(counts["edges"], "counts.edges")
+        nodes_count = require_integer(counts["nodes"], "counts.nodes")
+        edges_count = require_integer(counts["edges"], "counts.edges")
         if nodes_count < 0 or edges_count < 0:
             raise ValueError("artifact counts must be non-negative")
         return cls(
-            schema=_require_str(data["schema"], "schema"),
-            source_repo=_require_str(source["repo"], "source.repo"),
-            source_commit=_require_str(source["commit"], "source.commit"),
-            source_subdir=_require_str(source["subdir"], "source.subdir"),
+            schema=require_string(data["schema"], "schema"),
+            source_repo=require_string(source["repo"], "source.repo"),
+            source_commit=require_string(source["commit"], "source.commit"),
+            source_subdir=require_string(source["subdir"], "source.subdir"),
             producer=ProducerPin(
-                kind=_require_str(producer["kind"], "producer.kind"),
-                tool_repo=_require_str(producer["tool_repo"], "producer.tool_repo"),
-                tool_commit=_require_str(producer["tool_commit"], "producer.tool_commit"),
-                tool_hash=_require_str(producer["tool_hash"], "producer.tool_hash"),
+                kind=require_string(producer["kind"], "producer.kind"),
+                tool_repo=require_string(producer["tool_repo"], "producer.tool_repo"),
+                tool_commit=require_string(producer["tool_commit"], "producer.tool_commit"),
+                tool_hash=require_string(producer["tool_hash"], "producer.tool_hash"),
             ),
             scope=ArtifactScope(
                 root_modules=tuple(roots),
-                dependency_boundary=_require_str(
+                dependency_boundary=require_string(
                     scope["dependency_boundary"], "scope.dependency_boundary"
                 ),
                 exclude_source_prefixes=tuple(exclude_prefixes),
             ),
-            nodes_sha256=_require_str(nodes_member["sha256"], "members.nodes.sha256"),
-            edges_sha256=_require_str(edges_member["sha256"], "members.edges.sha256"),
+            nodes_sha256=require_string(nodes_member["sha256"], "members.nodes.sha256"),
+            edges_sha256=require_string(edges_member["sha256"], "members.edges.sha256"),
             sources_sha256=_require_optional_str(
                 sources_member["sha256"], "members.sources.sha256"
             ),
@@ -411,28 +401,28 @@ class ArtifactManifestV2:
         exclude_prefixes = scope.get("exclude_source_prefixes", [])
         if not isinstance(exclude_prefixes, list) or not all(isinstance(item, str) for item in exclude_prefixes):
             raise TypeError("scope.exclude_source_prefixes must be an array of strings")
-        nodes_count = _require_int(counts["nodes"], "counts.nodes")
-        edges_count = _require_int(counts["edges"], "counts.edges")
+        nodes_count = require_integer(counts["nodes"], "counts.nodes")
+        edges_count = require_integer(counts["edges"], "counts.edges")
         if nodes_count < 0 or edges_count < 0:
             raise ValueError("artifact counts must be non-negative")
         return cls(
-            schema=_require_str(data["schema"], "schema"),
+            schema=require_string(data["schema"], "schema"),
             source_authority=source,
             producer=ProducerPin(
-                kind=_require_str(producer["kind"], "producer.kind"),
-                tool_repo=_require_str(producer["tool_repo"], "producer.tool_repo"),
-                tool_commit=_require_str(producer["tool_commit"], "producer.tool_commit"),
-                tool_hash=_require_str(producer["tool_hash"], "producer.tool_hash"),
+                kind=require_string(producer["kind"], "producer.kind"),
+                tool_repo=require_string(producer["tool_repo"], "producer.tool_repo"),
+                tool_commit=require_string(producer["tool_commit"], "producer.tool_commit"),
+                tool_hash=require_string(producer["tool_hash"], "producer.tool_hash"),
             ),
             scope=ArtifactScope(
                 root_modules=tuple(roots),
-                dependency_boundary=_require_str(
+                dependency_boundary=require_string(
                     scope["dependency_boundary"], "scope.dependency_boundary"
                 ),
                 exclude_source_prefixes=tuple(exclude_prefixes),
             ),
-            nodes_sha256=_require_str(nodes_member["sha256"], "members.nodes.sha256"),
-            edges_sha256=_require_str(edges_member["sha256"], "members.edges.sha256"),
+            nodes_sha256=require_string(nodes_member["sha256"], "members.nodes.sha256"),
+            edges_sha256=require_string(edges_member["sha256"], "members.edges.sha256"),
             sources_sha256=_require_optional_str(
                 sources_member["sha256"], "members.sources.sha256"
             ),

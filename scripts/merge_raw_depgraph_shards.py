@@ -168,4 +168,4 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
         print(f"BLOCKED_SHARD_MERGE: {exc}", file=sys.stderr)
-        raise SystemExit(2)
+        raise SystemExit(2) from exc

@@ -39,9 +39,9 @@ def normalize_olean_references(
             raise RepoSearchError(
                 "BLOCKED_ARTIFACT_INTEGRITY", "invalid olean-export deps row"
             )
-        assert (
-            isinstance(module, str) and isinstance(name, str) and isinstance(kind, str)
-        )
+        assert isinstance(module, str)
+        assert isinstance(name, str)
+        assert isinstance(kind, str)
         if (module, name) in seen:
             raise RepoSearchError(
                 "BLOCKED_ARTIFACT_INTEGRITY", "repeated module/name occurrence"

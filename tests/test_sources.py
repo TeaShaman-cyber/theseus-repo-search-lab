@@ -4,9 +4,11 @@ import tempfile
 import unittest
 from hashlib import sha256
 from pathlib import Path
+from unittest.mock import patch
 
 from theseus_repo_search.model import Node, SourceChunk
 from theseus_repo_search.sources import (
+    _chunks_from_text,
     bind_node_sources,
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
@@ -44,6 +46,11 @@ class LeanQuotedModuleSourcePathTests(unittest.TestCase):
 
 
 class SourceChunkTests(unittest.TestCase):
+    def test_inconsistent_chunk_boundaries_cannot_silently_drop_declarations(self):
+        text = "theorem first : True := by trivial\ntheorem second : True := by trivial\n"
+        with patch("theseus_repo_search.sources._chunk_starts", return_value=[0]), self.assertRaises(ValueError):
+            _chunks_from_text("Fixture.lean", text, source_revision="abc123")
+
     def test_extracts_declarations_with_exact_provenance_and_hash(self):
         chunks = scan_lean_sources(FIXTURE_ROOT, source_commit="abc123")
         self.assertEqual(len(chunks), 2)
@@ -340,6 +347,37 @@ class SourceChunkTests(unittest.TestCase):
                     member_manifest_path=manifest_path,
                 )
             self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_MISMATCH")
+
+    def test_manifest_backed_scan_rejects_ambiguous_decoded_keys(self):
+        import json
+
+        from theseus_repo_search.errors import RepoSearchError
+
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            data = b"theorem authoritative : True := by trivial\n"
+            (root / "Main.lean").write_bytes(data)
+            payload = {
+                "schema": "theseus.archive-member-manifest.v1",
+                "source": {
+                    "kind": "archive", "url": "https://example.invalid/source.zip",
+                    "sha256": "a" * 64, "format": "zip", "subdir": ".",
+                },
+                "source_root_relative": ".",
+                "members": [{
+                    "path": "Main.lean", "source_path": "Main.lean",
+                    "sha256": sha256(data).hexdigest(),
+                }],
+            }
+            raw = (r'{"\u0073chema":null,' + json.dumps(payload)[1:]).encode()
+            manifest = root / "members.json"
+            manifest.write_bytes(raw)
+            with self.assertRaisesRegex(RepoSearchError, "duplicate JSON object key") as caught:
+                scan_manifest_backed_lean_sources(
+                    root, source_revision="a" * 64, member_manifest_path=manifest,
+                    expected_manifest_sha256=sha256(raw).hexdigest(),
+                )
+            self.assertEqual(caught.exception.code, "BLOCKED_SOURCE_BINDING")
 
     def test_manifest_backed_scan_rejects_changed_member_manifest_bytes(self):
         import json

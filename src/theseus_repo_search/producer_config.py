@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -8,6 +7,7 @@ from typing import TypeAlias
 from urllib.parse import urlparse
 
 from .errors import RepoSearchError
+from .json_contract import strict_json_loads
 
 SOURCE_SCHEMA_V1 = "theseus.lean-git-source.v1"
 SOURCE_SCHEMA_V2 = "theseus.lean-git-source.v2"
@@ -247,8 +247,8 @@ class RunnerPins:
 
 def _load_json_object(path: Path) -> dict[str, object]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        value = strict_json_loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
         raise _blocked(f"cannot load producer config {path}: {exc}") from exc
     if not isinstance(value, dict):
         raise _blocked(f"producer config must be a JSON object: {path}")
@@ -257,7 +257,7 @@ def _load_json_object(path: Path) -> dict[str, object]:
 
 def load_lean_source(path: Path) -> LeanSource:
     data = _load_json_object(path)
-    schema = data.get("schema")
+    schema = _require_str(data, "schema")
     if schema in {SOURCE_SCHEMA_V1, SOURCE_SCHEMA_V2}:
         return LeanGitSource.from_dict(data)
     if schema == ARCHIVE_SOURCE_SCHEMA_V1:

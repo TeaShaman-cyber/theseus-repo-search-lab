@@ -122,23 +122,16 @@ def load_accepted_catalog(path: Path) -> AcceptedCatalog:
 
     seen_source_ids: set[str] = set()
     seen_release_tags: set[str] = set()
-    seen_release_assets: set[tuple[str, str]] = set()
     seen_artifact_ids: set[str] = set()
     for corpus in corpora:
         if corpus.source_id in seen_source_ids:
             raise ValueError(f"duplicate source_id: {corpus.source_id}")
         if corpus.release_tag in seen_release_tags:
             raise ValueError(f"duplicate release_tag: {corpus.release_tag}")
-        release_asset = (corpus.release_tag, corpus.package_asset)
-        if release_asset in seen_release_assets:
-            raise ValueError(
-                f"duplicate package asset within release: {corpus.release_tag} {corpus.package_asset}"
-            )
         if corpus.artifact_identity in seen_artifact_ids:
             raise ValueError(f"duplicate artifact_identity: {corpus.artifact_identity}")
         seen_source_ids.add(corpus.source_id)
         seen_release_tags.add(corpus.release_tag)
-        seen_release_assets.add(release_asset)
         seen_artifact_ids.add(corpus.artifact_identity)
 
     return AcceptedCatalog(

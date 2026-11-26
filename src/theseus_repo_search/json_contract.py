@@ -26,3 +26,15 @@ def strict_json_loads(text: str) -> object:
             object_pairs_hook=_unique_object,
         ),
     )
+
+
+def require_string(value: object, field: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field} must be a string")
+    return value
+
+
+def require_integer(value: object, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{field} must be an integer")
+    return value

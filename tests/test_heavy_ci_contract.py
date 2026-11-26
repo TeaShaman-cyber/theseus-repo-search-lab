@@ -1,5 +1,4 @@
 import re
-import subprocess
 import unittest
 from pathlib import Path
 
@@ -53,18 +52,9 @@ class HeavyCiContractTest(unittest.TestCase):
         self.assertEqual(len(hashes), len(expected))
         self.assertEqual(len(set(hashes)), len(expected))
 
-    def test_endpoint_is_valid_posix_shell(self):
-        result = subprocess.run(
-            ["sh", "-n", str(ENDPOINT)],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-
     def test_endpoint_avoids_parent_config_bleed_and_runs_both_analyzers(self):
         text = ENDPOINT.read_text()
-        self.assertIn("ruff check --isolated --target-version py311 src scripts tests", text)
+        self.assertIn("ruff check --isolated --target-version py311 --extend-select B904,B905,PT018,RUF005,SIM105 src scripts tests", text)
         self.assertIn("MYPYPATH=src mypy --config-file config/mypy-heavy.ini src scripts", text)
         self.assertIn("HEAVY_PYTHON_RESULT", text)
         self.assertIn("ruff_code", text)

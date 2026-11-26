@@ -160,6 +160,9 @@ argument. A credential-injecting provider proxy may instead be selected with
 it does not replace immutable accepted releases or the versioned accepted-corpus
 catalog.
 
+For Turso and MotherDuck resource ownership, retention and verified cleanup,
+follow [cloud resource housekeeping](docs/cloud-resource-housekeeping.md).
+
 ### Read-only hosted search from the governed workbench
 
 The same accepted catalog and retrieval logic can query the existing Turso
@@ -230,3 +233,168 @@ Current v0 scenarios live under `qa/research-smoke/`. Search probes explicitly d
 After accepting a new corpus, select only relevant scenarios from `qa/research-smoke/` and run them on that corpus's fresh projection with `scripts/run_research_smoke.py`; do not run the full corpus producer matrix just for the smoke. The versioned `annals-marton-seam-v0.json` links to [Math #56](https://github.com/TeaShaman-cyber/theseus-math-research-lab/issues/56). Its first live source-specific [experimental hosted run #37768026926](https://github.com/TeaShaman-cyber/theseus-repo-search-lab/actions/runs/37768026926) passed producer, source-free fresh consumer and research smoke on exact head `54cdadd8c336ecb2d359cf01d0872751b634a63d`, yielding `CORPUS_BOUNDARY`, `scientific_authority=NONE`. The Actions artifact is **transient**, not an immutable accepted-artifact release. Onboarding it to `main` does not itself publish a durable release or prove Marton. For unchanged producer fingerprints, reuse an existing accepted artifact on a source-free consumer rather than rerun the full producer matrix. An absent mathematical bridge is not a smoke regression.
 
 Smoke dispositions are non-blocking evidence states, not mathematical verdicts. `regression_detected` records loss of a previously demonstrated capability without converting the smoke layer into scientific acceptance authority.
+
+### Static workflow and shell checks
+
+The normal `tools/dev/check` parses every POSIX endpoint in `tools/ci/` and
+`tools/dev/` using `sh -n`. The hosted Workflow and shell analysis job runs
+digest-pinned jactionlint, zizmor and ShellCheck. With the versions pinned in
+`.github/workflows/workflow-lint.yml` installed on PATH, the same analysis can
+run locally:
+
+```sh
+jactionlint --no-online
+zizmor --offline --no-config --strict-collection .github/workflows
+shellcheck tools/ci/* tools/dev/*
+```
+
+These tools replace generic syntax checks and add workflow correctness and
+security diagnostics. Concurrency findings remain warnings: cancellation
+policy for existing acceptance runs is not changed by linting. Keep
+project-specific tests for exact workflow pins, accepted corpus matrices,
+provenance, fail-closed behavior and producer/consumer phase boundaries.
+The lint job does not change branch protection or accepted corpus policy.
+
+### JSON lint
+
+The hosted static analysis job also uses standalone Biome 2.6.6 with the
+repository-specific `biome.json` profile based on Session Search
+(`89a261a1092fd693b3ae95d05e69d1ed6fef037b`). No Node.js dependencies are
+required. The JSON-only profile explicitly disallows comments and trailing
+commas, empty keys, scalar roots and duplicate keys. Three individually
+enabled nursery rules reject unsafe interoperation values (including integers
+outside the IEEE-754 safe range), non-NFC object keys and a leading UTF-8 BOM.
+These are policies for checked-in configuration/evidence JSON, not constraints
+on arbitrary mathematical corpus data. Formatter and assist are disabled;
+no blanket nursery preset or automatic rewriting is enabled. Review these
+experimental rules when upgrading the pinned Biome version. Run `tools/ci/json-lint` with that version of Biome on PATH. It
+checks all tracked JSON, treats warnings (including files skipped for size)
+as failures, and does not reformat or modify files. The local dev check uses
+this endpoint when Biome is installed; otherwise its original basic
+fixture-syntax check remains available without additional dependencies.
+The hosted job always executes the full Biome check.
+
+Static lint is not runtime validation: Biome 2.6.6 misses equivalent
+escaped object keys (for example `"a"` and `"\u0061"`). Keep strict runtime
+parsing, provenance and domain-invariant tests. JSONL and downloaded corpus
+artifacts are not part of this tracked-JSON lint scope.
+
+## Unified agent query CLI (read-only)
+
+Use the same command for corpus discovery, lexical search, dependency traversal,
+paths and bounded source context. From a checked-out repository, set the
+authorized connection profile once:
+
+```sh
+export REPO_SEARCH_TURSO_ORGANIZATION='<your organization>'
+export REPO_SEARCH_TURSO_PLATFORM_URL=https://turso.int.exe.xyz
+```
+
+The proxy example is specific to an authorized exe.dev workbench with the
+Turso integration attached. The launcher defaults to the checked-out accepted
+catalog; override with `REPO_SEARCH_CATALOG`. Other environments can configure
+the official API URL and `REPO_SEARCH_TURSO_TOKEN_ENV` (the **name** of an
+environment variable containing a platform token). Do not paste tokens into
+arguments, logs or source. This workbench route is not an agent-facing
+credential boundary for untrusted remote clients.
+
+```sh
+./tools/repo-search query corpora
+./tools/repo-search query search 'spectral measure' --limit 5
+./tools/repo-search query search 'coeffMoments_atV' --source zeta23
+./tools/repo-search query deps zeta23 Zeta23.XiPrime.coeffMoments_atV
+./tools/repo-search query rdeps zeta23 Zeta23.XiPrime.GzMoments
+./tools/repo-search query path zeta23 Zeta23.XiPrime.coeffMoments_atV Zeta23.XiPrime.CoeffMoments
+./tools/repo-search query context zeta23 Zeta23.XiPrime.coeffMoments_atV --token-budget 2000
+```
+
+All results are JSON. Search hits carry accepted artifact identities alongside
+source IDs and provenance. `corpora` lists the catalog, not live availability;
+search reports unavailable corpora and distinguishes partial coverage from
+zero hits. `--source` restricts search to one accepted corpus without changing
+the catalog identity. Single-corpus graph operations name a corpus; federated graph queries preserve
+each corpus identity and do not infer cross-corpus edges.
+Use the existing `discovery` (OR) or `evidence` (AND) search mode.
+A successful process exit does not imply a complete result: inspect `status`
+and coverage fields. Profile flags may precede the operation, for example
+`query --catalog /path/catalog.json corpora`.
+
+Lexical and evidence queries use existing Turso read-only data-plane queries.
+Local SQLite commands remain available. Kusto is an additional selected graph
+projection (below), not an Azure SQL dependency. MCP hosting,
+declaration grouping and feedback remain separate work (#123, #159, #162).
+
+### Kusto graph analytics in the same CLI
+
+On the authorized exe.dev workbench configure the existing ADX cluster and
+database in the same environment profile:
+
+```sh
+export REPO_SEARCH_KUSTO_CLUSTER='https://<cluster>.<region>.kusto.windows.net'
+export REPO_SEARCH_KUSTO_DATABASE=repository_search
+./tools/repo-search query reach zeta23 Zeta23.XiPrime.coeffMoments_atV --depth 3 --limit 100
+./tools/repo-search query reach zeta23 Zeta23.XiPrime.coeffMoments_atV --reverse
+./tools/repo-search query reach-all Zeta23.XiPrime.coeffMoments_atV --depth 2
+./tools/repo-search query graph-search finite --limit 9 --depth 2 --graph-limit 30
+```
+
+Use the exact declaration ID from search. Reach returns unique reachable
+declarations and their shortest distance (excluding the root), with depth
+1–3 and limit 1–500. It uses ADX graph-match, not a client-side walk.
+The result carries accepted artifact identity, revision, root modules and dependency
+boundary; result completeness is limited to that indexed graph and depth.
+It does not certify a proof. Existing deps/rdeps/path/context still return
+typed evidence via Turso. ADX uses the governed az-owner workbench wrapper;
+this is not a least-privilege external serving credential.
+
+`reach-all` checks the exact declaration across the entire accepted catalog and
+returns independent per-corpus results (limit is per corpus).
+`graph-search` performs federated Turso retrieval followed by native Kusto
+reachability for distinct declaration occurrences selected by lexical Top-K.
+Its separate lexical and graph coverage/status fields distinguish unavailable
+corpora, missing roots, lexical-only hits without a declaration ID, and
+truncated neighborhoods. Graph expansion is not exhaustive over every lexical
+match; at most ten seeds, 1–50 graph nodes per seed. Equal names are never
+merged between artifacts. No synthetic inter-corpus edges are introduced.
+
+Corpora without a verified selected ADX projection fail explicitly;
+there is no silent backend switch. An identity-specific ready table is
+written only after exact row parity with the accepted local projection.
+The v2 ready metadata preserves Git/archive provenance and module scope.
+The read-only query checks the ready record, artifact identity and current
+row counts (not a full content audit on every request). For materialization,
+verify the immutable release, rebuild and verify its projection with the
+existing consumer, record resource ownership in an Issue, then use
+`scripts/materialize_kusto_graph.py` with the independently established
+projection fingerprint. Small accepted graphs use bounded inline ingestion.
+Larger graphs use gzip streaming after a table-scoped schema-cache refresh
+with explicit successful readback; a rejected empty batch can fall back to
+inline ingestion. No ambiguous write is automatically replayed. Do not overwrite existing tables; reconcile
+an interrupted materialization before retry. The explicit reconciliation modes
+`--resume-empty` and `--verify-existing` require confirmed ownership and
+respectively empty or exactly matching graph tables. The ready record is not corpus
+authority. No new cluster or database is required.
+
+### Cross-corpus overlap and noise filtering
+
+```sh
+./tools/repo-search query overlap --limit 20
+./tools/repo-search query overlap --raw --limit 20
+```
+
+This read-only Turso catalog scan groups **short declaration names**, not
+mathematically equivalent statements. By default it considers theorem
+occurrences and filters likely generated Lean theorems only when a known
+generated suffix, compatible parent kind, and missing recorded source location
+agree. This is a conservative heuristic, not an authoritative generated flag.
+Uncorroborated names remain visible and are flagged as possible generated names.
+The raw mode retains all node kinds and occurrences. Filtering precedes grouping
+and result limits; no source or graph rows are changed. Exact lookup, normal
+lexical search and graph traversal retain their original behavior.
+
+The response includes total scanned nodes, suppression counts over the whole
+scan, raw and filtered cross-corpus counts, per-corpus coverage and bounded
+occurrence provenance. Groups and occurrence lists can be truncated separately.
+Each corpus scan is bounded to 100,000 nodes; an unavailable or oversized corpus
+is reported rather than counted as a successful empty result. The result does
+not include external Mathlib dependencies or establish semantic equivalence.

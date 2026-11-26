@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout exact PR head
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          persist-credentials: false
 
       - name: Restore cached PostgreSQL 17.11 image
         id: postgres-image-cache
@@ -27,10 +29,12 @@ jobs:
           key: repo-search-postgres-${{ runner.os }}-${{ runner.arch }}-17.11-trixie-3cec7eb015ba8adb28139fa5c83b8489cdf0e666e53dfdf20f598ae0cc8739e3
 
       - name: Load or seed PostgreSQL image cache
+        env:
+          POSTGRES_CACHE_HIT: ${{ steps.postgres-image-cache.outputs.cache-hit }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${{ steps.postgres-image-cache.outputs.cache-hit }}" = "true" ]; then
+          if [ "$POSTGRES_CACHE_HIT" = "true" ]; then
             docker load --input "$POSTGRES_IMAGE_TAR"
           else
             docker pull "$POSTGRES_IMAGE_SOURCE"
@@ -57,7 +61,7 @@ jobs:
             --env POSTGRES_PASSWORD=postgres \
             --env POSTGRES_DB=repo_search_contract \
             "$POSTGRES_IMAGE_LOCAL"
-          for attempt in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             if docker exec repo-search-postgres \
               pg_isready -U postgres -d repo_search_contract >/dev/null 2>&1; then
               exit 0
