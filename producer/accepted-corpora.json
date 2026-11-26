@@ -48,6 +48,16 @@
       "fingerprint_sha256": "7af3e1efe51626f2ced7e5d64e7ff67416b6508285347d679e576cbd3e680c53"
     },
     {
+      "source_id": "imperial-flt-partial",
+      "release_tag": "accepted-artifact/imperial-flt-partial/d218f9a11ea084b4",
+      "package_asset": "imperial-flt-partial-accepted.tar.gz",
+      "receipt_asset": "imperial-flt-partial-release-receipt.json",
+      "source_descriptor": "producer/sources/imperial-flt-partial.json",
+      "artifact_identity": "d218f9a11ea084b44ade06dd3fcb22ee006fd0db196f6c51497706f718c5657a",
+      "fingerprint_sha256": "94992da7aceb954c523fc2161454496918733fef46002edb00850feccbc85d88",
+      "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
+    },
+    {
       "source_id": "leanprover-community-con-nf",
       "release_tag": "accepted-artifact/leanprover-community-con-nf/e6bf117b57945fd4",
       "package_asset": "leanprover-community-con-nf-accepted.tar.gz",
