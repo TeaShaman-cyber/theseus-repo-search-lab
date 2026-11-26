@@ -17,6 +17,10 @@ EXPECTED_SOURCE_IDS = {
     "openai-euler",
     "openai-ten-proofs-sphere-packing",
     "openai-ten-proofs-permanent",
+    "openai-ten-proofs-compactness-degeneracy",
+    "openai-ten-proofs-ehrhart",
+    "openai-ten-proofs-metric-codes",
+    "openai-ten-proofs-non-sofic",
     "anthropic-fermats-last-theorem",
     "decreasing-diagrams-complete",
     "leanprover-community-con-nf",
@@ -146,13 +150,13 @@ class AcceptedCatalogTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises((ValueError, TypeError)):
                 self._load(_payload(corpora=[_entry(runner_config=path)]))
 
-    def test_repository_catalog_has_exact_sorted_seventeen_sources(self):
+    def test_repository_catalog_has_exact_sorted_twenty_one_sources(self):
         path = Path(__file__).resolve().parents[1] / "producer" / "accepted-corpora.json"
         catalog = load_accepted_catalog(path)
         source_ids = [entry.source_id for entry in catalog.corpora]
         self.assertEqual(set(source_ids), EXPECTED_SOURCE_IDS)
         self.assertEqual(source_ids, sorted(source_ids))
-        self.assertEqual(len(source_ids), 17)
+        self.assertEqual(len(source_ids), 21)
 
 
 if __name__ == "__main__":

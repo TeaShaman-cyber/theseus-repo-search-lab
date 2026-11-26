@@ -112,6 +112,33 @@
       "fingerprint_sha256": "9d8564138fd2574a67cb978fef3ad0fcdc8db3c725f4184726929363e2a59ca1"
     },
     {
+      "source_id": "openai-ten-proofs-compactness-degeneracy",
+      "release_tag": "accepted-artifact/openai-ten-proofs-compactness-degeneracy/56fd3aaaa913054f",
+      "package_asset": "openai-ten-proofs-compactness-degeneracy-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-compactness-degeneracy-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-compactness-degeneracy.json",
+      "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+      "fingerprint_sha256": "11d07c3c06204e008c4d9bbe35cbaec3dedc24434f2662df58c22224809d0545"
+    },
+    {
+      "source_id": "openai-ten-proofs-ehrhart",
+      "release_tag": "accepted-artifact/openai-ten-proofs-ehrhart/58dd32b798fbac04",
+      "package_asset": "openai-ten-proofs-ehrhart-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-ehrhart-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-ehrhart.json",
+      "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+      "fingerprint_sha256": "dfa7ca99797b28662ef00f4e0bdee91fdf46b6802128c59c1f06c3133153d199"
+    },
+    {
+      "source_id": "openai-ten-proofs-metric-codes",
+      "release_tag": "accepted-artifact/openai-ten-proofs-metric-codes/4185b2baa6fc54bf",
+      "package_asset": "openai-ten-proofs-metric-codes-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-metric-codes-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-metric-codes.json",
+      "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+      "fingerprint_sha256": "70b9f4109d4afdc7f88d12ed26f16e34f7b4fdd34376b05c02be32c7ca484b2c"
+    },
+    {
       "source_id": "openai-ten-proofs-multicolor",
       "release_tag": "accepted-artifact/openai-ten-proofs-multicolor/3f2d8edd1077cc4d",
       "package_asset": "openai-ten-proofs-multicolor-accepted.tar.gz",
@@ -119,6 +146,15 @@
       "source_descriptor": "producer/sources/openai-ten-proofs-multicolor.json",
       "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
       "fingerprint_sha256": "c5bf25665d4d22b943e30df80f83773bbb0dc7135ff241ba1056618663ff7d51"
+    },
+    {
+      "source_id": "openai-ten-proofs-non-sofic",
+      "release_tag": "accepted-artifact/openai-ten-proofs-non-sofic/1aebfced96d3d61c",
+      "package_asset": "openai-ten-proofs-non-sofic-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-non-sofic-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-non-sofic.json",
+      "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+      "fingerprint_sha256": "04c4fb190a1e7d8b149976c5ed73e029e7e23652dbe3aa69c013550b1b518097"
     },
     {
       "source_id": "openai-ten-proofs-permanent",
