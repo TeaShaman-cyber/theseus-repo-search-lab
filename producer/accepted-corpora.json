@@ -122,6 +122,15 @@
       "fingerprint_sha256": "9d8564138fd2574a67cb978fef3ad0fcdc8db3c725f4184726929363e2a59ca1"
     },
     {
+      "source_id": "openai-prime-gaps-186",
+      "release_tag": "accepted-artifact/openai-prime-gaps-186/c2179956c151e840",
+      "package_asset": "openai-prime-gaps-186-accepted.tar.gz",
+      "receipt_asset": "openai-prime-gaps-186-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-prime-gaps-186.json",
+      "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+      "fingerprint_sha256": "724042c62dee2f58b8e405182b7986bd3dc8a0bdae16d6de25169d94179b5d70"
+    },
+    {
       "source_id": "openai-ten-proofs-compactness-degeneracy",
       "release_tag": "accepted-artifact/openai-ten-proofs-compactness-degeneracy/56fd3aaaa913054f",
       "package_asset": "openai-ten-proofs-compactness-degeneracy-accepted.tar.gz",
@@ -129,6 +138,15 @@
       "source_descriptor": "producer/sources/openai-ten-proofs-compactness-degeneracy.json",
       "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
       "fingerprint_sha256": "11d07c3c06204e008c4d9bbe35cbaec3dedc24434f2662df58c22224809d0545"
+    },
+    {
+      "source_id": "openai-ten-proofs-connes-rigidity",
+      "release_tag": "accepted-artifact/openai-ten-proofs-connes-rigidity/ab6b61dd51b05980",
+      "package_asset": "openai-ten-proofs-connes-rigidity-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-connes-rigidity-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-connes-rigidity.json",
+      "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+      "fingerprint_sha256": "38e8eafd362b9237779903a60ad78275b0052616ad4ac326932abf32567593b4"
     },
     {
       "source_id": "openai-ten-proofs-ehrhart",
