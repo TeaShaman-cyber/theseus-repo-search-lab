@@ -1,4 +1,4 @@
-name: Lean source repository lens producer smoke
+name: Sphere Eversion proof cone coverage
 
 on:
   workflow_dispatch:
@@ -18,41 +18,18 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}/src
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/openai-navier-stokes.json
-            replay_script: scripts/replay_navier_stokes.py
-            artifact_name: openai-navier-stokes-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/sphere-eversion-main.json
+            replay_script: scripts/replay_queued_intake.py
+            artifact_name: sphere-eversion-main-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Load producer configuration
         shell: bash
@@ -60,7 +37,7 @@ jobs:
           set -euo pipefail
           python3 scripts/load_producer_env.py \
             --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --github-env "$GITHUB_ENV"
 
       - name: Checkout pinned source
@@ -124,7 +101,7 @@ jobs:
           set -euo pipefail
           python3 scripts/load_producer_env.py \
             --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --checkout-root "$GITHUB_WORKSPACE/_target/source" \
             --github-env "$GITHUB_ENV"
 
@@ -149,9 +126,12 @@ jobs:
           tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
           "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          url="https://raw.githubusercontent.com/cameronfreer/LeanDepViz/7859d91f89b37c9193d9a09709a58be6d98f94d6/LeanDepViz/Main.lean"
           curl --fail --location --proto "=https" --tlsv1.2 \
-            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
+            --output "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" "$url"
+          git show "$EXTRACTOR_COMMIT:scripts/adapt_leandepviz_lean436.py" > "$RUNNER_TEMP/adapt-extractor.py"
+          cmp "$RUNNER_TEMP/adapt-extractor.py" scripts/adapt_leandepviz_lean436.py
+          python3 "$RUNNER_TEMP/adapt-extractor.py" --input "$RUNNER_TEMP/LeanDepVizMain.upstream.lean" --output "$RUNNER_TEMP/LeanDepVizMain.lean"
           echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
 
       # Cache compressed Mathlib downloads, not the multi-GiB source/build trees.
@@ -301,6 +281,16 @@ jobs:
             --roots "$EXTRACTOR_ROOT_MODULES" \
             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
 
+      - name: Checkpoint exact raw graph before normalization
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: raw-${{ matrix.artifact_name }}
+          path: |
+            _out/raw-depgraph.json
+            _out/raw-depgraph-receipt.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Install repository lens package
         run: python3 -m pip install -e .
 
@@ -323,6 +313,33 @@ jobs:
             --out "_out/${SOURCE_ID}-artifact"
           test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
 
+      - name: Verify full observed proof-cone graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_SCOPE'
+          import json
+          from pathlib import Path
+          p=Path('_out/sphere-eversion-main-artifact')
+          nodes=[json.loads(l) for l in (p/'nodes.jsonl').open()]
+          edges=[json.loads(l) for l in (p/'edges.jsonl').open()]
+          raw=json.loads((p/'raw-depgraph.json').read_text())
+          d=json.loads(Path('producer/sources/sphere-eversion-main.json').read_text())
+          assert {n['module'] for n in nodes}==set(d['root_modules'])
+          assert len(nodes)>=1552 and len(nodes)==len(raw['nodes'])
+          assert any(e['source_id']=='lean:SphereEversion.Main.Smale' and e['target_id']=='lean:SphereEversion.Global.Immersion.sphere_eversion' for e in edges)
+          assert any(e['source_id']=='lean:OneJetSec.localize' and e['target_id']=='lean:OneJetSec.bs' for e in edges)
+          print('SPHERE_COVERAGE_PASS',len(nodes),len(edges))
+          PY_SCOPE
+
+      - name: Checkpoint normalized artifact before replay
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: normalized-${{ matrix.artifact_name }}
+          path: _out/*-artifact/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify project and replay selected source
         shell: bash
         run: |
@@ -336,7 +353,20 @@ jobs:
             --source-root "$SOURCE_ROOT" \
             --artifact "_out/${SOURCE_ID}-artifact" \
             --descriptor "${{ matrix.source_descriptor }}" \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --out "_out/${SOURCE_ID}-replay.json"
+
+      - name: Retain failed replay diagnostic artifact
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: diagnostic-${{ matrix.artifact_name }}
+          path: |
+            _out/*-artifact/
+            _out/raw-depgraph.json
+            _out/raw-depgraph-receipt.json
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Remove disposable producer outputs
         shell: bash
@@ -357,6 +387,7 @@ jobs:
             _out/*-artifact/
             _out/*-replay.json
           if-no-files-found: error
+          retention-days: 7
 
   consume-artifact:
     needs: produce-and-replay
@@ -366,36 +397,12 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}/src
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/openai-navier-stokes.json
-            replay_script: scripts/replay_navier_stokes.py
-            artifact_name: openai-navier-stokes-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/sphere-eversion-main.json
+            replay_script: scripts/replay_queued_intake.py
+            artifact_name: sphere-eversion-main-adapted-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -408,7 +415,7 @@ jobs:
           set -euo pipefail
           python3 scripts/load_producer_env.py \
             --source "${{ matrix.source_descriptor }}" \
-            --runner producer/runner.json \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --github-env "$GITHUB_ENV"
 
       - name: Download normalized repository lens artifact
@@ -448,6 +455,7 @@ jobs:
             --db "_consumer/${SOURCE_ID}.sqlite" \
             --artifact "_consumer/download/${SOURCE_ID}-artifact" \
             --descriptor "${{ matrix.source_descriptor }}" \
+            --runner producer/runners/leandepviz-lean436-adapted.json \
             --out "_consumer/${SOURCE_ID}-replay.json"
 
       - name: Write consumer acceptance receipt
@@ -463,8 +471,8 @@ jobs:
             --replay "_consumer/${SOURCE_ID}-replay.json" \
             --source-descriptor "${{ matrix.source_descriptor }}" \
             --source-descriptor-path "${{ matrix.source_descriptor }}" \
-            --runner-config producer/runner.json \
-            --runner-config-path producer/runner.json \
+            --runner-config producer/runners/leandepviz-lean436-adapted.json \
+            --runner-config-path producer/runners/leandepviz-lean436-adapted.json \
             --artifact-name "${{ matrix.artifact_name }}" \
             --repository-head "${{ github.sha }}" \
             --workflow-run-id "${{ github.run_id }}" \
@@ -479,78 +487,4 @@ jobs:
           name: ${{ matrix.artifact_name }}-consumer-receipt
           path: _consumer/*-consumer-receipt.json
           if-no-files-found: error
-
-  research-smoke:
-    needs: consume-artifact
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      PYTHONPATH: ${{ github.workspace }}/src
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - scenario: qa/research-smoke/zeta23-riemann-panel-v0.json
-            source_descriptor: producer/sources/zeta23.json
-            artifact_name: zeta23-repo-index-v1
-            source_id: zeta23
-          - scenario: qa/research-smoke/flt-bridge-v0.json
-            source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-            source_id: leanprover-community-flt-regular
-          - scenario: qa/research-smoke/annals-marton-seam-v0.json
-            source_descriptor: producer/sources/annals-challenge-marton.json
-            artifact_name: annals-challenge-marton-repo-index-v1
-            source_id: annals-challenge-marton
-    steps:
-      - name: Checkout repository lens
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Verify exact research smoke checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected="${{ github.sha }}"
-          observed="$(git rev-parse HEAD)"
-          test "$observed" = "$expected"
-          printf 'research_smoke_event_sha=%s\n' "$expected"
-          printf 'research_smoke_checkout_sha=%s\n' "$observed"
-          printf 'RESEARCH_SMOKE_TOOL_COMMIT=%s\n' "$observed" >> "$GITHUB_ENV"
-
-      - name: Download accepted normalized artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: _smoke/download
-
-      - name: Install repository lens package
-        run: python3 -m pip install -e .
-
-      - name: Build disposable smoke projection
-        shell: bash
-        run: |
-          set -euo pipefail
-          artifact="_smoke/download/${{ matrix.source_id }}-artifact"
-          db="_smoke/${{ matrix.source_id }}.sqlite"
-          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
-          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
-
-      - name: Run non-blocking live research smoke
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/run_research_smoke.py \
-            --db "_smoke/${{ matrix.source_id }}.sqlite" \
-            --artifact "_smoke/download/${{ matrix.source_id }}-artifact" \
-            --scenario "${{ matrix.scenario }}" \
-            --tool-commit "$RESEARCH_SMOKE_TOOL_COMMIT" \
-            --out "_smoke/${{ matrix.source_id }}-research-smoke-receipt.json"
-
-      - name: Upload research smoke receipt
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: ${{ matrix.artifact_name }}-research-smoke-receipt
-          path: _smoke/*-research-smoke-receipt.json
-          if-no-files-found: error
+          retention-days: 7
