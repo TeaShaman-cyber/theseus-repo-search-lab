@@ -64,7 +64,7 @@ class SplitIntakeTests(unittest.TestCase):
         from theseus_repo_search.split_intake import materialize_motherduck
 
         with (
-            patch("theseus_repo_search.split_intake._md_rows", return_value=[["1"]]) as remote,
+            patch("theseus_repo_search.split_intake._md_rows", return_value=[["1","1"]]) as remote,
             patch("theseus_repo_search.split_intake._export_graph") as export,
             self.assertRaisesRegex(RepoSearchError, "partial"),
         ):
@@ -88,7 +88,7 @@ class SplitIntakeTests(unittest.TestCase):
             schema.extend([table.rsplit(".",1)[1],name,kind,str(pos)] for pos,(name,kind) in enumerate(columns,1))
         schema.sort(key=lambda row:(row[0],int(row[3])))
         with (
-            patch("theseus_repo_search.split_intake._md_rows", side_effect=[[["3"]], schema, [["2","1","0","1","0","0","1"]]]),
+            patch("theseus_repo_search.split_intake._md_rows", side_effect=[[["3","3"]], schema, [["2","1","0","1","0","0","1"]]]),
             patch("theseus_repo_search.split_intake._export_graph"),
             self.assertRaisesRegex(RepoSearchError, "parity"),
         ):
@@ -138,9 +138,24 @@ class SplitIntakeTests(unittest.TestCase):
         from theseus_repo_search.split_intake import materialize_motherduck
 
         with (
-            patch("theseus_repo_search.split_intake._md_rows", side_effect=[[["3"]],[["wrong","column","INTEGER","1"]]]),
+            patch("theseus_repo_search.split_intake._md_rows", side_effect=[[["3","3"]],[["wrong","column","INTEGER","1"]]]),
             patch("theseus_repo_search.split_intake._export_graph"),
             self.assertRaisesRegex(RepoSearchError, "schema"),
         ):
             materialize_motherduck(self.item, self.root, self.receipt,
                                    launcher=self.root/"launcher.py", database="my_db")
+
+    def test_existing_views_are_blocked_before_export(self):
+        from theseus_repo_search.split_intake import materialize_motherduck
+
+        def query(launcher,database,sql,**kwargs):
+            if "information_schema.tables" in sql:
+                return [["3","0"]] if "BASE TABLE" in sql else [["3"]]
+            return []
+        with (
+            patch("theseus_repo_search.split_intake._md_rows",side_effect=query),
+            patch("theseus_repo_search.split_intake._export_graph") as export,
+            self.assertRaisesRegex(RepoSearchError,"partial"),
+        ):
+            materialize_motherduck(self.item,self.root,self.receipt,launcher=self.root/"launcher.py",database="my_db")
+        export.assert_not_called()

@@ -106,3 +106,34 @@ class SplitGraphQueryTests(unittest.TestCase):
         ):
             self.assertEqual(session.query("SELECT fixture"), [])
             self.assertEqual(session.query("SELECT fixture"), [("a","b","r","g","p")])
+
+    def test_missing_executable_is_structured_unavailable(self):
+        from theseus_repo_search.split_graph_query import NativeGraphSession
+
+        with self.assertRaises(RepoSearchError) as error:
+            NativeGraphSession(str(self.root/"missing-duckdb"), self.prepared/"graph.duckdb")
+        self.assertEqual(error.exception.code, "UNAVAILABLE_LOCAL_GRAPH")
+
+    def test_cold_recovery_precedes_read_token_mint(self):
+        from theseus_repo_search import cli
+
+        args = cli.build_parser().parse_args([
+            "turso-graph", "--catalog", "catalog.json", "--source-id", self.item.source_id,
+            "--organization", "example", "--operation", "deps", "--name", "a",
+        ])
+        events = []
+        def recover(*args, **kwargs):
+            events.append("recover")
+            return self.prepared/"graph.duckdb"
+        def connect(*args, **kwargs):
+            events.append("token")
+            return Mock()
+        with (
+            patch.object(cli, "ensure_serving_graph", side_effect=recover),
+            patch.object(cli, "connect_corpus", side_effect=connect),
+            patch.object(cli, "_turso_client"),
+            patch.object(cli, "query_graph", side_effect=RepoSearchError("FIXTURE","stop after connection")),
+            self.assertRaises(RepoSearchError),
+        ):
+            cli._cmd_turso_graph(args, catalog=self.catalog)
+        self.assertEqual(events, ["recover","token"])

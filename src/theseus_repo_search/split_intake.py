@@ -74,12 +74,12 @@ def materialize_motherduck(item: AcceptedCorpus, root: Path, receipt: dict[str, 
     def run(sql: str) -> list[list[str]]:
         return _md_rows(launcher, database, sql, excluded_env=excluded_env)
     count = run(f"""
-        SELECT count(*) FROM information_schema.tables
+        SELECT count(*), count(*) FILTER (WHERE table_type = 'BASE TABLE') FROM information_schema.tables
         WHERE table_catalog='{database}' AND table_schema='main' AND table_name IN ({names});
     """)
-    if count not in ([["0"]], [["3"]]):
+    if count not in ([["0","0"]], [["3","3"]]):
         raise RepoSearchError("BLOCKED_GRAPH_TARGET", "partial or ambiguous MotherDuck graph target")
-    status = "REUSED" if count == [["3"]] else "CREATED"
+    status = "REUSED" if count == [["3","3"]] else "CREATED"
     with tempfile.TemporaryDirectory(prefix="repo-search-md-graph-", dir=root) as tmp:
         staging = Path(tmp)
         _export_graph(root, staging, executable)

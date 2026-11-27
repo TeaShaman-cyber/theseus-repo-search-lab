@@ -106,9 +106,9 @@ class NativeGraphSession:
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                 env={"PATH": os.environ.get("PATH", ""), "HOME": self.home.name},
             )
-        except OSError:
+        except OSError as exc:
             self.home.cleanup()
-            raise
+            raise RepoSearchError("UNAVAILABLE_LOCAL_GRAPH", "native graph executable unavailable") from exc
 
     def query(self, sql: str) -> list[tuple[object, ...]]:
         p = self.process

@@ -965,11 +965,13 @@ def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | Non
     item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
     if item is None:
         raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
-    conn: QueryConnection = connect_corpus(item, _turso_client(args))
+    db: Path | None = None
     if item.split_projection_sha256 is not None:
         cache = Path(os.environ.get("REPO_SEARCH_GRAPH_CACHE", str(Path.home() / ".cache/theseus-repo-search")))
         db = ensure_serving_graph(catalog, item, repository_root=args.catalog.resolve().parent.parent,
                                   cache_root=cache)
+    conn: QueryConnection = connect_corpus(item, _turso_client(args))
+    if db is not None:
         conn = SplitGraphConnection(conn, db)
     with (conn if isinstance(conn, SplitGraphConnection) else nullcontext(conn)):
         result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
