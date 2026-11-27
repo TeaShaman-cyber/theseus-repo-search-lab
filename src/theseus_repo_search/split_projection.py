@@ -15,7 +15,12 @@ from hashlib import file_digest
 from pathlib import Path
 
 from .json_contract import strict_json_loads
-from .projection import _fingerprint_rows
+from .projection import (
+    _FTS_STATEMENT,
+    _V1_SCHEMA_STATEMENTS,
+    _V2_SCHEMA_STATEMENTS,
+    _fingerprint_rows,
+)
 
 PROFILE = "repo-search-split-v1"
 FILES = ("search.sqlite", "nodes.csv", "edges.csv")
@@ -72,6 +77,18 @@ def _inspect(root: Path, expected_full: str) -> dict[str, object]:
             not isinstance(k, str) or not isinstance(v, str) for k, v in rows_meta
         ):
             raise ValueError("invalid or duplicate metadata rows")
+        # Query semantics depend on collation, constraints, triggers and FTS
+        # shadow schemas, not only on row values. Compare the complete schema
+        # against a fresh projection of the same supported version.
+        statements = _V2_SCHEMA_STATEMENTS if metadata.get("artifact_schema") == "theseus.repo-index.v2" else _V1_SCHEMA_STATEMENTS
+        with sqlite3.connect(":memory:") as reference:
+            for statement in statements:
+                reference.execute(statement)
+            reference.execute(_FTS_STATEMENT)
+            reference.execute("DROP TABLE edges")
+            schema_query = "SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name"
+            if conn.execute(schema_query).fetchall() != reference.execute(schema_query).fetchall():
+                raise ValueError("split query schema differs from canonical projection")
         if metadata.pop("projection_profile", None) != PROFILE:
             raise ValueError("invalid search-only projection profile")
         identity = metadata.get("artifact_identity", "")

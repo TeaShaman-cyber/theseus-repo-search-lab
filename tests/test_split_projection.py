@@ -111,6 +111,31 @@ class SplitProjectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "metadata"):
             verify_split_projection(out, self.fingerprint)
 
+    def test_query_schema_collation_drift_rejected_even_with_new_file_hash(self):
+        from hashlib import file_digest
+
+        from theseus_repo_search.split_projection import (
+            build_split_projection,
+            verify_split_projection,
+        )
+
+        out = self.root / "split"
+        build_split_projection(self.full, out, self.fingerprint)
+        search = out / "search.sqlite"
+        with sqlite3.connect(search) as c:
+            schema = c.execute("SELECT sql FROM sqlite_master WHERE name='nodes'").fetchone()[0]
+            c.execute("ALTER TABLE nodes RENAME TO original_nodes")
+            c.execute(schema.replace("id TEXT PRIMARY KEY", "id TEXT COLLATE NOCASE PRIMARY KEY"))
+            c.execute("INSERT INTO nodes SELECT * FROM original_nodes")
+            c.execute("DROP TABLE original_nodes")
+        p = out / "receipt.json"
+        r = json.loads(p.read_text())
+        with search.open("rb") as f:
+            r["files"]["search.sqlite"] = {"sha256": file_digest(f, "sha256").hexdigest(), "bytes": search.stat().st_size}
+        p.write_text(json.dumps(r))
+        with self.assertRaisesRegex(ValueError, "schema"):
+            verify_split_projection(out, self.fingerprint)
+
     def test_changed_search_identity_is_rejected(self):
         from theseus_repo_search.split_projection import (
             build_split_projection,
