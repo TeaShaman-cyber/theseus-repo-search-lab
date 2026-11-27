@@ -17,6 +17,11 @@ from theseus_repo_search.accepted_catalog import (
 from theseus_repo_search.artifact import artifact_identity, load_artifact
 from theseus_repo_search.corpus_coverage import coverage_report, validate_live_witness
 from theseus_repo_search.json_contract import strict_json_loads
+from theseus_repo_search.projection import build_projection
+from theseus_repo_search.split_intake import motherduck_targets
+from theseus_repo_search.split_projection import PROFILE as SPLIT_PROFILE
+from theseus_repo_search.split_projection import build_split_projection
+from theseus_repo_search.split_turso import split_database_name, split_projection_sha256
 
 SCHEMA = "theseus.corpus-selection-coverage.v1"
 CATALOG = Path("producer/accepted-corpora.json")
@@ -53,18 +58,76 @@ def validate_context(context, witness, item):
                        and x.get("source_path") == witness["source_path"]
                        for x in context.get("chunks", []))):
         raise ValueError("live context did not recover expected source")
+    if item.split_projection_sha256 is not None and (
+        context.get("graph_backend") != "local-duckdb"
+        or context.get("split_projection_sha256") != item.split_projection_sha256
+    ):
+        raise ValueError("live context did not use the selected local split graph")
 
 
-def capture_live(catalog_path, item, plan):
+def validate_split_evidence(evidence, item, report):
+    if item.split_projection_sha256 is None:
+        if evidence is not None:
+            raise ValueError("unexpected split evidence for full projection")
+        return
+    if evidence is None:
+        raise ValueError("missing split projection evidence")
+    if not isinstance(evidence, dict):
+        raise TypeError("invalid split projection evidence")
+    split = evidence.get("split", {})
+    search = evidence.get("search", {})
+    graph = evidence.get("graph", {})
+    try:
+        tables = graph["tables"]
+        database = tables[0].split(".", 1)[0]
+        valid = (
+            split["profile"] == SPLIT_PROFILE
+            and split["artifact_identity"] == item.artifact_identity
+            and split_projection_sha256(split) == item.split_projection_sha256
+            and (split["nodes"], split["edges"]) == (report["graph_nodes"], report["graph_edges"])
+            and search["status"] in ("CREATED", "REUSED")
+            and search["database"] == split_database_name(item)
+            and search["artifact_identity"] == item.artifact_identity
+            and search["split_projection_sha256"] == item.split_projection_sha256
+            and graph["status"] in ("CREATED", "REUSED")
+            and tables == list(motherduck_targets(item, database))
+            and (graph["nodes"], graph["edges"]) == (report["graph_nodes"], report["graph_edges"])
+        )
+    except (KeyError, IndexError, AttributeError, TypeError, ValueError) as exc:
+        raise ValueError("invalid split projection evidence") from exc
+    if not valid:
+        raise ValueError("split projection identity or target evidence mismatch")
+
+
+def verify_split_pin(item, artifact_path):
+    if item.split_projection_sha256 is None:
+        return
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        full = root / "full.sqlite"
+        fingerprint = build_projection(artifact_path, full)
+        split = build_split_projection(full, root / "split", fingerprint)
+        if split_projection_sha256(split) != item.split_projection_sha256:
+            raise ValueError("split pin differs from independently reconstructed accepted artifact")
+
+
+
+def capture_live(catalog_path, item, plan, *, split_evidence=None, profile=PROFILE):
     catalog = load_accepted_catalog(catalog_path)
     receipt = {"schema": SCHEMA, "source_id": item.source_id,
                "artifact_identity": item.artifact_identity,
                "fingerprint_sha256": item.fingerprint_sha256,
                "catalog_sha256": accepted_catalog_sha256(catalog),
                "plan_sha256": digest(plan), "plan": plan, "witnesses": []}
+    if item.split_projection_sha256 is not None:
+        if split_evidence is None:
+            raise ValueError("split projection evidence required")
+        receipt["split_evidence"] = split_evidence
+    elif split_evidence is not None:
+        raise ValueError("unexpected split evidence")
     for w in plan["witnesses"]:
         root = "lean:" + w["declaration"]
-        args = [str(PROFILE), "query", "--catalog", str(catalog_path.resolve())]
+        args = [str(profile), "query", "--catalog", str(catalog_path.resolve())]
         result = run_json([*args, "graph-search", root, "--source", item.source_id,
                            "--limit", "1", "--mode", "evidence", "--depth", "1",
                            "--graph-limit", "50", *(["--reverse"] if w["direction"] == "reverse" else [])])
@@ -91,6 +154,7 @@ def validate_receipt(receipt, item, catalog, report):
                 "plan_sha256": digest(receipt["plan"])}
     if any(receipt.get(k) != v for k, v in expected.items()):
         raise ValueError("coverage receipt identity or plan mismatch")
+    validate_split_evidence(receipt.get("split_evidence"), item, report)
     witnesses = receipt["plan"]["witnesses"]
     if len(receipt["witnesses"]) != len(witnesses):
         raise ValueError("coverage receipt missing live witnesses")
@@ -117,6 +181,7 @@ def verify_selection(item, catalog, receipt, artifact_path):
     raw = read_json(artifact_path / "raw-depgraph.json")
     report = coverage_report(raw, nodes, edges, sources, receipt["plan"], manifest.producer.kind)
     validate_receipt(receipt, item, catalog, report)
+    verify_split_pin(item, artifact_path)
     for captured in receipt["witnesses"]:
         result, context = captured["graph_search"], captured["context"]
         graph = result["graphs"][0]
@@ -202,13 +267,17 @@ def main():
     r.add_argument("--source-id",required=True)
     r.add_argument("--plan",type=Path,required=True)
     r.add_argument("--out",type=Path,required=True)
+    r.add_argument("--split-evidence",type=Path)
+    r.add_argument("--profile",type=Path,default=PROFILE)
     args = p.parse_args()
     if args.command == "check-pr":
         check_pr(args.base)
     else:
         catalog = load_accepted_catalog(args.catalog)
         item = next(x for x in catalog.corpora if x.source_id == args.source_id)
-        receipt = capture_live(args.catalog,item,read_json(args.plan))
+        receipt = capture_live(args.catalog,item,read_json(args.plan),
+                               split_evidence=read_json(args.split_evidence) if args.split_evidence else None,
+                               profile=args.profile.resolve())
         args.out.parent.mkdir(parents=True,exist_ok=True)
         args.out.write_text(json.dumps(receipt,ensure_ascii=False,sort_keys=True,indent=2)+"\n")
         print("LIVE_CORPUS_WITNESSES_CAPTURED",item.source_id)

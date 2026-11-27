@@ -1,6 +1,6 @@
 {
   "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-  "catalog_sha256": "87e4f127185b5349e53a59f6adb892d2174eb4dc468a7717654afe7218678c6a",
+  "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
   "fingerprint_sha256": "3305095057197a44b5497e3279e2efa4ba870f3571c865c6836c1d4ff928519c",
   "plan": {
     "excluded_raw_declarations": {},
@@ -636,11 +636,53 @@
   "plan_sha256": "a1d5b44d42911eb3d3f2cb3e8b6a7eaba781df654cea630a50c087784f0a3917",
   "schema": "theseus.corpus-selection-coverage.v1",
   "source_id": "openai-matrix-exponent",
+  "split_evidence": {
+    "graph": {
+      "edges": 542320,
+      "nodes": 27884,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_7d91ed397f6a92693bee466f9a2886c7_nodes",
+        "my_db.main.rs_split_7d91ed397f6a92693bee466f9a2886c7_edges",
+        "my_db.main.rs_split_7d91ed397f6a92693bee466f9a2886c7_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
+      "database": "repo-search-s-openai-matrix-exponen-7d91ed397f6a9269",
+      "split_projection_sha256": "6c848a462e1d9d26ba440ce44e0ad062e9a1470d90e907a1811fee10dcd591ea",
+      "sqlite_bytes": 100450304,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
+      "edges": 542320,
+      "files": {
+        "edges.csv": {
+          "bytes": 65167935,
+          "sha256": "51ef0cd92ce81c2ee7a35b2ad97c1f7115bc2ff0d7d8b6bfc51829f11451b271"
+        },
+        "nodes.csv": {
+          "bytes": 2040663,
+          "sha256": "ac4c53e119ff59325bcfa11bea6d1830cf3a3aae071793fc5914fce01e0f8716"
+        },
+        "search.sqlite": {
+          "bytes": 100450304,
+          "sha256": "63735dc9598890d5c167a8feb4c1e81d43ad68def8dd4dc617684eebe04812f1"
+        }
+      },
+      "full_projection_fingerprint": "40992f7f2f0f4194b756f15b8f7dd371c14b402705e7dfc3771c75ca10fb026d",
+      "nodes": 27884,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "c5970b6c41df52dae99e9d8227a8d8735251cdf0bba36e35fca48094e807bde5",
+      "sources": 89507
+    }
+  },
   "witnesses": [
     {
       "context": {
         "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-        "catalog_sha256": "87e4f127185b5349e53a59f6adb892d2174eb4dc468a7717654afe7218678c6a",
+        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
         "chunks": [
           {
             "declaration_hint": "OAI.LinearAlgebra.SpectralBooks.SignedMachine.Program.Reachable",
@@ -678,6 +720,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 127,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [
           {
             "depth": 1,
@@ -737,13 +780,14 @@
         "source_id": "openai-matrix-exponent",
         "source_kind": "git",
         "source_revision": "3344da59991ed94f9ba711217b29c1d760badfa6",
+        "split_projection_sha256": "6c848a462e1d9d26ba440ce44e0ad062e9a1470d90e907a1811fee10dcd591ea",
         "status": "FOUND",
         "target_id": "lean:OAI.LinearAlgebra.SpectralBooks.SignedMachine.Program.Reachable",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "87e4f127185b5349e53a59f6adb892d2174eb4dc468a7717654afe7218678c6a",
+        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,
@@ -1419,7 +1463,7 @@
     {
       "context": {
         "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-        "catalog_sha256": "87e4f127185b5349e53a59f6adb892d2174eb4dc468a7717654afe7218678c6a",
+        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
         "chunks": [
           {
             "declaration_hint": "OAI.LinearAlgebra.SpectralBooks.SignedProgram.Frame.tick_correct",
@@ -1677,6 +1721,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 1936,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [
           {
             "depth": 1,
@@ -2120,13 +2165,14 @@
         "source_id": "openai-matrix-exponent",
         "source_kind": "git",
         "source_revision": "3344da59991ed94f9ba711217b29c1d760badfa6",
+        "split_projection_sha256": "6c848a462e1d9d26ba440ce44e0ad062e9a1470d90e907a1811fee10dcd591ea",
         "status": "DEGRADED",
         "target_id": "lean:OAI.LinearAlgebra.SpectralBooks.SignedProgram.Frame.tick_correct",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "87e4f127185b5349e53a59f6adb892d2174eb4dc468a7717654afe7218678c6a",
+        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,
@@ -2994,7 +3040,7 @@
     {
       "context": {
         "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-        "catalog_sha256": "87e4f127185b5349e53a59f6adb892d2174eb4dc468a7717654afe7218678c6a",
+        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
         "chunks": [
           {
             "declaration_hint": "square_exponent",
@@ -3052,6 +3098,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 354,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [
           {
             "depth": 1,
@@ -3135,13 +3182,14 @@
         "source_id": "openai-matrix-exponent",
         "source_kind": "git",
         "source_revision": "3344da59991ed94f9ba711217b29c1d760badfa6",
+        "split_projection_sha256": "6c848a462e1d9d26ba440ce44e0ad062e9a1470d90e907a1811fee10dcd591ea",
         "status": "FOUND",
         "target_id": "lean:OAI.LinearAlgebra.SpectralBooks.square_exponent",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "87e4f127185b5349e53a59f6adb892d2174eb4dc468a7717654afe7218678c6a",
+        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,

@@ -989,6 +989,9 @@ def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | Non
         payload["source_kind"] = provenance.source_kind
     if not payload["complete_within_scope"]:
         payload["status"] = "DEGRADED"
+    if item.split_projection_sha256 is not None:
+        payload["graph_backend"] = "local-duckdb"
+        payload["split_projection_sha256"] = item.split_projection_sha256
     _emit(_compact_graph_scope({**payload, "source_id": item.source_id, "artifact_identity": item.artifact_identity,
            "catalog_sha256": accepted_catalog_sha256(catalog)}))
     return 0
