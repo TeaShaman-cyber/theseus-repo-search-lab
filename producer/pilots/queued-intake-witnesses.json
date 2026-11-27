@@ -102,5 +102,23 @@
     "source_hint": "riemannHypothesis",
     "corpus_class": "PROOF_CORPUS",
     "issue": 131
+  },
+  "formal-conjectures-rh-equivalents": {
+    "declaration": "RiemannHypothesis.weil_positivity_criterion",
+    "path": "FormalConjectures/Paper/RiemannHypothesisEquivalents.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35
+  },
+  "formal-conjectures-navier-stokes": {
+    "declaration": "NavierStokes.navier_stokes_breakdown_R3",
+    "path": "FormalConjectures/Millennium/NavierStokes.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35
+  },
+  "formal-conjectures-poincare-statement": {
+    "declaration": "PoincareConjecture.poincare_conjecture",
+    "path": "FormalConjectures/Millennium/Poincare.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35
   }
 }

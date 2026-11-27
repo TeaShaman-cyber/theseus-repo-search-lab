@@ -39,6 +39,33 @@
       "fingerprint_sha256": "c3a52418f50906ebd70c5c84a1d8086ecde0ddb3af665c946d709e9944c58d0e"
     },
     {
+      "source_id": "formal-conjectures-navier-stokes",
+      "release_tag": "accepted-artifact/formal-conjectures-navier-stokes/362cfdbf1a35ae42",
+      "package_asset": "formal-conjectures-navier-stokes-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-navier-stokes-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-navier-stokes.json",
+      "artifact_identity": "362cfdbf1a35ae4288d58c7569b359687dac4e9b754637320ce748d15be0e273",
+      "fingerprint_sha256": "cc4080a9c5192f65079f631da54a15780d20d765684819660de5eb3b6ef23144"
+    },
+    {
+      "source_id": "formal-conjectures-poincare-statement",
+      "release_tag": "accepted-artifact/formal-conjectures-poincare-statement/5da3aacc4fdbf4ea",
+      "package_asset": "formal-conjectures-poincare-statement-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-poincare-statement-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-poincare-statement.json",
+      "artifact_identity": "5da3aacc4fdbf4eaa85b7ad5fd0d12b8373e3ab4e7de7e5c60b53f9dcb85b582",
+      "fingerprint_sha256": "69cc6f887457632bc94b9e31bdc09eeb953745ceeb7a083819136e6966d2e13f"
+    },
+    {
+      "source_id": "formal-conjectures-rh-equivalents",
+      "release_tag": "accepted-artifact/formal-conjectures-rh-equivalents/8707f81430307cff",
+      "package_asset": "formal-conjectures-rh-equivalents-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-rh-equivalents-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-rh-equivalents.json",
+      "artifact_identity": "8707f81430307cffcbe2d73c48f0dfd073234649d511f0a32cf2b4ffd607514e",
+      "fingerprint_sha256": "32c560e09cdbc29a4767bfbd58b9faeca4e762e0ece81505274c6248d120fcc4"
+    },
+    {
       "source_id": "formal-conjectures-riemann",
       "release_tag": "accepted-artifact/formal-conjectures-riemann/d56ca7204a9a991c",
       "package_asset": "formal-conjectures-riemann-accepted.tar.gz",
