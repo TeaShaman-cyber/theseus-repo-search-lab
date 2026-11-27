@@ -569,7 +569,8 @@ class TursoHttpClient:
         return decoded
 
     def query_rows(
-        self, hostname: str, token: str, sql: str, parameters: tuple[object, ...] = ()
+        self, hostname: str, token: str, sql: str, parameters: tuple[object, ...] = (),
+        *, verification: bool = False,
     ) -> list[tuple[object, ...]]:
         # Only repository-owned read queries use this internal method. Bind all
         # user values as Hrana arguments, never as SQL fragments.
@@ -585,6 +586,7 @@ class TursoHttpClient:
             "POST", f"https://{hostname}/v2/pipeline",
             payload={"requests": [{"type": "execute", "stmt": {"sql": sql, "args": args}}, {"type": "close"}]},
             token=token,
+            timeout_seconds=self.verification_timeout_seconds if verification else None,
         )
         if not isinstance(payload, dict) or not isinstance(payload.get("results"), list) or len(payload["results"]) != 2:
             raise RepoSearchError("TURSO_API_INVALID_RESPONSE", "invalid read-query result count")
