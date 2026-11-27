@@ -42,7 +42,7 @@ def _comment_lines(lines: list[str]) -> list[bool]:
     for line in lines:
         line_starts_in_block = block_depth > 0
         first_token_is_comment = False
-        code_seen = False
+        code_seen = in_string
         index = 0
 
         while index < len(line):
@@ -228,7 +228,14 @@ def _qualify_collisions(
         if _SCOPE_PREFIX.match(line):
             command = _SCOPE_COMMAND.fullmatch(line.rstrip())
             if command is None:
-                return declarations
+                # Earlier unique dotted declarations have independent scope
+                # evidence. Later unsupported syntax cannot change that prefix.
+                # Repeated hints still require a complete scan to disambiguate.
+                qualified = dict(result)
+                return [
+                    (i, qualified.get(i, n) if counts[n] == 1 else n)
+                    for i, n in declarations
+                ]
             kind, name = command.group("kind", "name")
             if kind == "namespace":
                 if not name or name.split(".", 1)[0] == "_root_":

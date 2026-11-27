@@ -742,6 +742,30 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
                          ["marker", "Real.D.x"])
         self.assertEqual(chunks[1].source_start_line, 7)
 
+    def test_later_unsupported_scope_preserves_prior_unique_dotted_hint(self):
+        text = ("namespace A\ntheorem B.x : True := by trivial\nend A\n"
+                "namespace «odd name»\ntheorem D.y : True := by trivial\nend «odd name»\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["A.B.x", "D.y"])
+
+    def test_later_unsupported_scope_does_not_resolve_prior_collisions(self):
+        text = ("namespace A\ntheorem B.x : True := by trivial\nend A\n"
+                "namespace «odd name»\ntheorem B.x : True := by trivial\nend «odd name»\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["B.x", "B.x"])
+
+    def test_multiline_string_closing_quote_stays_in_its_own_chunk(self):
+        for comment in ("-- comment", "/- comment -/"):
+            with self.subTest(comment=comment):
+                text = ('def marker : String := "line one\n'
+                        f'closing" {comment}\n'
+                        'theorem next : True := by trivial\n')
+                chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+                self.assertEqual([c.declaration_hint for c in chunks], ["marker", "next"])
+                self.assertEqual([c.source_start_line for c in chunks], [1, 3])
+                self.assertEqual(chunks[0].source_end_line, 2)
+                self.assertIn('closing"', chunks[0].text)
+
     def test_mismatched_end_does_not_guess_scope(self):
         text = ("namespace A.B\nnamespace C\n"
                 "theorem D.x : True := by trivial\nend X.C\n")
