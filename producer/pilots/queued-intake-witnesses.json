@@ -120,5 +120,31 @@
     "path": "FormalConjectures/Millennium/Poincare.lean",
     "corpus_class": "STATEMENT_CORPUS",
     "issue": 35
+  },
+  "formal-conjectures-bsd": {
+    "declaration": "WeierstrassCurve.Affine.NumberField.weakBSD",
+    "path": "FormalConjectures/Millennium/BSD.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35,
+    "source_hint": "WeierstrassCurve.Affine.NumberField.weakBSD"
+  },
+  "formal-conjectures-p-vs-np": {
+    "declaration": "ComplexityTheory.P_ne_NP",
+    "path": "FormalConjectures/Millennium/PvsNP.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35
+  },
+  "formal-conjectures-zeta-moments": {
+    "declaration": "RiemannZetaMoments.moment_isEquiv",
+    "path": "FormalConjectures/Paper/RiemannZetaMoments.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35
+  },
+  "formal-conjectures-zeta-zeros": {
+    "declaration": "riemannZeta.simple_prop_two_thirds",
+    "path": "FormalConjectures/Paper/RiemannZetaZeros.lean",
+    "corpus_class": "STATEMENT_CORPUS",
+    "issue": 35,
+    "source_hint": "riemannZeta.simple_prop_two_thirds"
   }
 }

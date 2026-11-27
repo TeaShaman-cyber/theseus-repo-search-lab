@@ -120,3 +120,26 @@ class SelectionReceiptTests(unittest.TestCase):
         receipt['plan_sha256']=digest(plan)
         with self.assertRaisesRegex(ValueError,'missing live witnesses'):
             validate_receipt(receipt,item,catalog,{'graph_nodes':3,'graph_edges':2})
+
+
+class HistoricalReleaseLocatorTests(unittest.TestCase):
+    def test_historical_longer_exact_identity_prefix_is_valid(self):
+        from scripts.check_corpus_selection import validate_release_tag
+        item = NS(release_tag="accepted-artifact/anthropic-fermats-last-theorem/21b6b292cb3160fa3",
+                  artifact_identity="21b6b292cb3160fa33a962ad72e1890691250279e016c251150cdb2f84ce62c3")
+        validate_release_tag(item)
+        item.release_tag = "accepted-artifact/anthropic-fermats-last-theorem/21b6b292cb3160fa4"
+        with self.assertRaises(ValueError):
+            validate_release_tag(item)
+
+
+class LiveSourceRevisionTests(unittest.TestCase):
+    def test_legacy_and_current_fields_must_bind_same_exact_revision(self):
+        from scripts.check_corpus_selection import validate_source_revision
+        for row in ({"source_commit":"abc"}, {"source_revision":"abc"},
+                    {"source_commit":"abc","source_revision":"abc"}):
+            validate_source_revision(row,"abc")
+        for row in ({}, {"source_commit":"wrong"}, {"source_revision":"wrong"},
+                    {"source_commit":"wrong","source_revision":"abc"}):
+            with self.assertRaises(ValueError):
+                validate_source_revision(row,"abc")

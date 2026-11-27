@@ -104,6 +104,12 @@ def validate_receipt(receipt, item, catalog, report):
         validate_context(context, w, item)
 
 
+def validate_source_revision(row, expected):
+    observed = [row[key] for key in ("source_revision", "source_commit") if key in row]
+    if not observed or any(value != expected for value in observed):
+        raise ValueError("live witness source revision mismatch")
+
+
 def verify_selection(item, catalog, receipt, artifact_path):
     manifest, nodes, edges, sources = load_artifact(artifact_path)
     if artifact_identity(manifest) != item.artifact_identity:
@@ -115,11 +121,17 @@ def verify_selection(item, catalog, receipt, artifact_path):
         result, context = captured["graph_search"], captured["context"]
         graph = result["graphs"][0]
         hit = result["hits"][0]
-        if any(row.get("source_revision") != manifest.source_revision for row in (graph,hit,context)):
-            raise ValueError("live witness source revision mismatch")
+        for row in (graph, hit, context):
+            validate_source_revision(row, manifest.source_revision)
         if graph.get("producer_kind") != manifest.producer.kind:
             raise ValueError("live witness producer kind mismatch")
     return report
+
+
+def validate_release_tag(item):
+    match = re.fullmatch(r"accepted-artifact/[A-Za-z0-9_-]+/([0-9a-f]{16,64})", item.release_tag)
+    if match is None or not item.artifact_identity.startswith(match.group(1)):
+        raise ValueError("unsafe or mismatched release identity prefix")
 
 
 def check_pr(base_sha):
@@ -148,8 +160,7 @@ def check_pr(base_sha):
                 raise ValueError(f"missing corpus coverage receipt: {item.source_id}")
         for item in selected:
             receipt = read_json(Path("producer/coverage") / (item.source_id+".json"))
-            if not re.fullmatch(r"accepted-artifact/[A-Za-z0-9_-]+/[0-9a-f]{16}", item.release_tag):
-                raise ValueError("unsafe or noncanonical release tag")
+            validate_release_tag(item)
             for asset in (item.package_asset, item.receipt_asset):
                 if not re.fullmatch(r"[A-Za-z0-9_.-]+", asset) or asset in (".",".."):
                     raise ValueError("unsafe release asset basename")

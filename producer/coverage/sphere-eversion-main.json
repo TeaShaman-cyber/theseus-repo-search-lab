@@ -1,0 +1,722 @@
+{
+  "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+  "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+  "fingerprint_sha256": "2314f870187d7b003fcc49783e6e4723826d88bae6a697e93cc8f69cafc65563",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Lexical files outside observed main-proof import cone are source context only.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Sphere Eversion complete observed main-proof dependency cone; includes all 51 prior imported modules, not unused repository files.",
+    "required_modules": [
+      "SphereEversion.Global.Gromov",
+      "SphereEversion.Global.Immersion",
+      "SphereEversion.Global.Localisation",
+      "SphereEversion.Global.LocalisationData",
+      "SphereEversion.Global.LocalizedConstruction",
+      "SphereEversion.Global.OneJetBundle",
+      "SphereEversion.Global.OneJetSec",
+      "SphereEversion.Global.ParametricityForFree",
+      "SphereEversion.Global.Relation",
+      "SphereEversion.Global.SmoothEmbedding",
+      "SphereEversion.Global.TwistOneJetSec",
+      "SphereEversion.Indexing",
+      "SphereEversion.InductiveConstructions",
+      "SphereEversion.Local.AmpleRelation",
+      "SphereEversion.Local.Corrugation",
+      "SphereEversion.Local.DualPair",
+      "SphereEversion.Local.HPrinciple",
+      "SphereEversion.Local.OneJet",
+      "SphereEversion.Local.Relation",
+      "SphereEversion.Loops.Basic",
+      "SphereEversion.Loops.DeltaMollifier",
+      "SphereEversion.Loops.Exists",
+      "SphereEversion.Loops.Reparametrization",
+      "SphereEversion.Loops.Surrounding",
+      "SphereEversion.Main",
+      "SphereEversion.Notations",
+      "SphereEversion.ToMathlib.Algebra.Ring.Periodic",
+      "SphereEversion.ToMathlib.Analysis.Calculus",
+      "SphereEversion.ToMathlib.Analysis.ContDiff",
+      "SphereEversion.ToMathlib.Analysis.Convex.Basic",
+      "SphereEversion.ToMathlib.Analysis.CutOff",
+      "SphereEversion.ToMathlib.Analysis.InnerProductSpace.CrossProduct",
+      "SphereEversion.ToMathlib.Analysis.InnerProductSpace.Rotation",
+      "SphereEversion.ToMathlib.Analysis.NormedSpace.Misc",
+      "SphereEversion.ToMathlib.Analysis.NormedSpace.OperatorNorm.Prod",
+      "SphereEversion.ToMathlib.Data.Nat.Basic",
+      "SphereEversion.ToMathlib.Equivariant",
+      "SphereEversion.ToMathlib.ExistsOfConvex",
+      "SphereEversion.ToMathlib.Geometry.Manifold.Algebra.SmoothGerm",
+      "SphereEversion.ToMathlib.Geometry.Manifold.Immersion",
+      "SphereEversion.ToMathlib.Geometry.Manifold.IsManifold.ExtChartAt",
+      "SphereEversion.ToMathlib.Geometry.Manifold.Metrizable",
+      "SphereEversion.ToMathlib.Geometry.Manifold.VectorBundle.Misc",
+      "SphereEversion.ToMathlib.LinearAlgebra.FiniteDimensional",
+      "SphereEversion.ToMathlib.MeasureTheory.ParametricIntervalIntegral",
+      "SphereEversion.ToMathlib.Partition",
+      "SphereEversion.ToMathlib.SmoothBarycentric",
+      "SphereEversion.ToMathlib.Topology.Algebra.Module",
+      "SphereEversion.ToMathlib.Topology.Misc",
+      "SphereEversion.ToMathlib.Topology.Paracompact",
+      "SphereEversion.ToMathlib.Topology.Path"
+    ],
+    "witnesses": [
+      {
+        "declaration": "SphereEversion.Main.Smale",
+        "direction": "forward",
+        "neighbor": "SphereEversion.Global.Immersion.sphere_eversion",
+        "source_path": "SphereEversion/Main.lean"
+      },
+      {
+        "declaration": "OneJetSec.localize",
+        "direction": "forward",
+        "neighbor": "OneJetSec.bs",
+        "source_path": "SphereEversion/Global/Relation.lean"
+      }
+    ]
+  },
+  "plan_sha256": "dfe9f1550d2317cea607b63a3cf829ebf154ec7ec9f072ab0cd4f6e799f12c2d",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "sphere-eversion-main",
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "chunks": [
+          {
+            "declaration_hint": "Smale",
+            "declaration_id": "lean:SphereEversion.Main.Smale",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 59,
+            "source_path": "SphereEversion/Main.lean",
+            "source_start_line": 24
+          },
+          {
+            "declaration_hint": "sphere_eversion",
+            "declaration_id": "lean:SphereEversion.Global.Immersion.sphere_eversion",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 349,
+            "source_path": "SphereEversion/Global/Immersion.lean",
+            "source_start_line": 306
+          },
+          {
+            "declaration_hint": "Immersion",
+            "declaration_id": "lean:SphereEversion.ToMathlib.Geometry.Manifold.Immersion.Immersion",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 61,
+            "source_path": "SphereEversion/ToMathlib/Geometry/Manifold/Immersion.lean",
+            "source_start_line": 57
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 928,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "type_dependency",
+            "source_id": "lean:SphereEversion.Main.Smale",
+            "target_id": "lean:SphereEversion.ToMathlib.Geometry.Manifold.Immersion.Immersion"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:SphereEversion.Main.Smale",
+            "target_id": "lean:SphereEversion.Global.Immersion.instFactEqNatFinrankRealEuclideanSpaceFin_sphereEversion"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:SphereEversion.Main.Smale",
+            "target_id": "lean:SphereEversion.Global.Immersion.sphere_eversion"
+          }
+        ],
+        "query": "lean:SphereEversion.Main.Smale",
+        "scope_root_module_count": 51,
+        "scope_root_modules": [
+          "SphereEversion.Global.Gromov",
+          "SphereEversion.Global.Immersion",
+          "SphereEversion.Global.Localisation",
+          "SphereEversion.Global.LocalisationData",
+          "SphereEversion.Global.LocalizedConstruction",
+          "SphereEversion.Global.OneJetBundle",
+          "SphereEversion.Global.OneJetSec",
+          "SphereEversion.Global.ParametricityForFree",
+          "SphereEversion.Global.Relation",
+          "SphereEversion.Global.SmoothEmbedding",
+          "SphereEversion.Global.TwistOneJetSec",
+          "SphereEversion.Indexing",
+          "SphereEversion.InductiveConstructions",
+          "SphereEversion.Local.AmpleRelation",
+          "SphereEversion.Local.Corrugation",
+          "SphereEversion.Local.DualPair",
+          "SphereEversion.Local.HPrinciple",
+          "SphereEversion.Local.OneJet",
+          "SphereEversion.Local.Relation",
+          "SphereEversion.Loops.Basic",
+          "SphereEversion.Loops.DeltaMollifier",
+          "SphereEversion.Loops.Exists",
+          "SphereEversion.Loops.Reparametrization",
+          "SphereEversion.Loops.Surrounding",
+          "SphereEversion.Main",
+          "SphereEversion.Notations",
+          "SphereEversion.ToMathlib.Algebra.Ring.Periodic",
+          "SphereEversion.ToMathlib.Analysis.Calculus",
+          "SphereEversion.ToMathlib.Analysis.ContDiff",
+          "SphereEversion.ToMathlib.Analysis.Convex.Basic",
+          "SphereEversion.ToMathlib.Analysis.CutOff",
+          "SphereEversion.ToMathlib.Analysis.InnerProductSpace.CrossProduct"
+        ],
+        "scope_root_modules_sha256": "eac78bcd5339558f53ab355a4d9007699c64281bfa983cf51c95a7358b91eaa1",
+        "scope_root_modules_truncated": true,
+        "source_id": "sphere-eversion-main",
+        "source_kind": "git",
+        "source_revision": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+        "status": "FOUND",
+        "target_id": "lean:SphereEversion.Main.Smale",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+            "backend": "kusto",
+            "candidate_id": "sphere-eversion-main::lean:SphereEversion.Main.Smale",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.Immersion.instFactEqNatFinrankRealEuclideanSpaceFin_sphereEversion"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.Immersion.sphere_eversion"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.ToMathlib.Geometry.Manifold.Immersion.Immersion"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 10947,
+            "projection_nodes": 1552,
+            "root": "lean:SphereEversion.Main.Smale",
+            "scope_root_modules": [
+              "SphereEversion.Global.Gromov",
+              "SphereEversion.Global.Immersion",
+              "SphereEversion.Global.Localisation",
+              "SphereEversion.Global.LocalisationData",
+              "SphereEversion.Global.LocalizedConstruction",
+              "SphereEversion.Global.OneJetBundle",
+              "SphereEversion.Global.OneJetSec",
+              "SphereEversion.Global.ParametricityForFree",
+              "SphereEversion.Global.Relation",
+              "SphereEversion.Global.SmoothEmbedding",
+              "SphereEversion.Global.TwistOneJetSec",
+              "SphereEversion.Indexing",
+              "SphereEversion.InductiveConstructions",
+              "SphereEversion.Local.AmpleRelation",
+              "SphereEversion.Local.Corrugation",
+              "SphereEversion.Local.DualPair",
+              "SphereEversion.Local.HPrinciple",
+              "SphereEversion.Local.OneJet",
+              "SphereEversion.Local.Relation",
+              "SphereEversion.Loops.Basic",
+              "SphereEversion.Loops.DeltaMollifier",
+              "SphereEversion.Loops.Exists",
+              "SphereEversion.Loops.Reparametrization",
+              "SphereEversion.Loops.Surrounding",
+              "SphereEversion.Main",
+              "SphereEversion.Notations",
+              "SphereEversion.ToMathlib.Algebra.Ring.Periodic",
+              "SphereEversion.ToMathlib.Analysis.Calculus",
+              "SphereEversion.ToMathlib.Analysis.ContDiff",
+              "SphereEversion.ToMathlib.Analysis.Convex.Basic",
+              "SphereEversion.ToMathlib.Analysis.CutOff",
+              "SphereEversion.ToMathlib.Analysis.InnerProductSpace.CrossProduct",
+              "SphereEversion.ToMathlib.Analysis.InnerProductSpace.Rotation",
+              "SphereEversion.ToMathlib.Analysis.NormedSpace.Misc",
+              "SphereEversion.ToMathlib.Analysis.NormedSpace.OperatorNorm.Prod",
+              "SphereEversion.ToMathlib.Data.Nat.Basic",
+              "SphereEversion.ToMathlib.Equivariant",
+              "SphereEversion.ToMathlib.ExistsOfConvex",
+              "SphereEversion.ToMathlib.Geometry.Manifold.Algebra.SmoothGerm",
+              "SphereEversion.ToMathlib.Geometry.Manifold.Immersion",
+              "SphereEversion.ToMathlib.Geometry.Manifold.IsManifold.ExtChartAt",
+              "SphereEversion.ToMathlib.Geometry.Manifold.Metrizable",
+              "SphereEversion.ToMathlib.Geometry.Manifold.VectorBundle.Misc",
+              "SphereEversion.ToMathlib.LinearAlgebra.FiniteDimensional",
+              "SphereEversion.ToMathlib.MeasureTheory.ParametricIntervalIntegral",
+              "SphereEversion.ToMathlib.Partition",
+              "SphereEversion.ToMathlib.SmoothBarycentric",
+              "SphereEversion.ToMathlib.Topology.Algebra.Module",
+              "SphereEversion.ToMathlib.Topology.Misc",
+              "SphereEversion.ToMathlib.Topology.Paracompact",
+              "SphereEversion.ToMathlib.Topology.Path"
+            ],
+            "source_authority": null,
+            "source_id": "sphere-eversion-main",
+            "source_kind": "git",
+            "source_revision": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+            "candidate_id": "sphere-eversion-main::lean:SphereEversion.Main.Smale",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "Smale",
+            "declaration_id": "lean:SphereEversion.Main.Smale",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 59,
+            "source_id": "sphere-eversion-main",
+            "source_path": "SphereEversion/Main.lean",
+            "source_row_id": "src:SphereEversion/Main.lean:24:59",
+            "source_start_line": 24
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:SphereEversion.Main.Smale",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "sphere-eversion-main",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "chunks": [
+          {
+            "declaration_hint": "OneJetSec.localize",
+            "declaration_id": "lean:OneJetSec.localize",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 573,
+            "source_path": "SphereEversion/Global/Relation.lean",
+            "source_start_line": 551
+          },
+          {
+            "declaration_hint": "deleteme1",
+            "declaration_id": "lean:SphereEversion.Global.OneJetBundle.deleteme1",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 72,
+            "source_path": "SphereEversion/Global/OneJetBundle.lean",
+            "source_start_line": 68
+          },
+          {
+            "declaration_hint": "OneJetSpace",
+            "declaration_id": "lean:SphereEversion.Global.OneJetBundle.OneJetSpace",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 125,
+            "source_path": "SphereEversion/Global/OneJetBundle.lean",
+            "source_start_line": 96
+          },
+          {
+            "declaration_hint": "OneJetBundle",
+            "declaration_id": "lean:SphereEversion.Global.OneJetBundle.OneJetBundle",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 136,
+            "source_path": "SphereEversion/Global/OneJetBundle.lean",
+            "source_start_line": 126
+          },
+          {
+            "declaration_hint": "OpenSmoothEmbedding",
+            "declaration_id": "lean:SphereEversion.Global.SmoothEmbedding.OpenSmoothEmbedding",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 49,
+            "source_path": "SphereEversion/Global/SmoothEmbedding.lean",
+            "source_start_line": 30
+          },
+          {
+            "declaration_hint": "fderiv",
+            "declaration_id": "lean:OpenSmoothEmbedding.fderiv",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 115,
+            "source_path": "SphereEversion/Global/SmoothEmbedding.lean",
+            "source_start_line": 90
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1147,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "type_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:OneJetSec.bs"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "type_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:OpenSmoothEmbedding.toFun"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "type_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.OneJetSec.OneJetSec"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "type_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.SmoothEmbedding.OpenSmoothEmbedding"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:OneJetSec.bs"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:OneJetSec.mk"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:OpenSmoothEmbedding.fderiv"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:OpenSmoothEmbedding.invFun"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:OpenSmoothEmbedding.toFun"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.OneJetBundle.OneJetBundle"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.OneJetBundle.OneJetSpace"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.OneJetBundle.deleteme1"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.OneJetSec.OneJetSec"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.OneJetSec.instFunLikeOneJetSecOneJetBundle"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@42c69557c92bcb4d36aaf08e60cba4203c740954",
+            "relation": "value_dependency",
+            "source_id": "lean:OneJetSec.localize",
+            "target_id": "lean:SphereEversion.Global.SmoothEmbedding.OpenSmoothEmbedding"
+          }
+        ],
+        "query": "lean:OneJetSec.localize",
+        "scope_root_module_count": 51,
+        "scope_root_modules": [
+          "SphereEversion.Global.Gromov",
+          "SphereEversion.Global.Immersion",
+          "SphereEversion.Global.Localisation",
+          "SphereEversion.Global.LocalisationData",
+          "SphereEversion.Global.LocalizedConstruction",
+          "SphereEversion.Global.OneJetBundle",
+          "SphereEversion.Global.OneJetSec",
+          "SphereEversion.Global.ParametricityForFree",
+          "SphereEversion.Global.Relation",
+          "SphereEversion.Global.SmoothEmbedding",
+          "SphereEversion.Global.TwistOneJetSec",
+          "SphereEversion.Indexing",
+          "SphereEversion.InductiveConstructions",
+          "SphereEversion.Local.AmpleRelation",
+          "SphereEversion.Local.Corrugation",
+          "SphereEversion.Local.DualPair",
+          "SphereEversion.Local.HPrinciple",
+          "SphereEversion.Local.OneJet",
+          "SphereEversion.Local.Relation",
+          "SphereEversion.Loops.Basic",
+          "SphereEversion.Loops.DeltaMollifier",
+          "SphereEversion.Loops.Exists",
+          "SphereEversion.Loops.Reparametrization",
+          "SphereEversion.Loops.Surrounding",
+          "SphereEversion.Main",
+          "SphereEversion.Notations",
+          "SphereEversion.ToMathlib.Algebra.Ring.Periodic",
+          "SphereEversion.ToMathlib.Analysis.Calculus",
+          "SphereEversion.ToMathlib.Analysis.ContDiff",
+          "SphereEversion.ToMathlib.Analysis.Convex.Basic",
+          "SphereEversion.ToMathlib.Analysis.CutOff",
+          "SphereEversion.ToMathlib.Analysis.InnerProductSpace.CrossProduct"
+        ],
+        "scope_root_modules_sha256": "eac78bcd5339558f53ab355a4d9007699c64281bfa983cf51c95a7358b91eaa1",
+        "scope_root_modules_truncated": true,
+        "source_id": "sphere-eversion-main",
+        "source_kind": "git",
+        "source_revision": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+        "status": "FOUND",
+        "target_id": "lean:OneJetSec.localize",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+            "backend": "kusto",
+            "candidate_id": "sphere-eversion-main::lean:OneJetSec.localize",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:OneJetSec.bs"
+              },
+              {
+                "depth": 1,
+                "id": "lean:OneJetSec.mk"
+              },
+              {
+                "depth": 1,
+                "id": "lean:OpenSmoothEmbedding.fderiv"
+              },
+              {
+                "depth": 1,
+                "id": "lean:OpenSmoothEmbedding.invFun"
+              },
+              {
+                "depth": 1,
+                "id": "lean:OpenSmoothEmbedding.toFun"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.OneJetBundle.OneJetBundle"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.OneJetBundle.OneJetSpace"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.OneJetBundle.deleteme1"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.OneJetSec.OneJetSec"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.OneJetSec.instFunLikeOneJetSecOneJetBundle"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SphereEversion.Global.SmoothEmbedding.OpenSmoothEmbedding"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 10947,
+            "projection_nodes": 1552,
+            "root": "lean:OneJetSec.localize",
+            "scope_root_modules": [
+              "SphereEversion.Global.Gromov",
+              "SphereEversion.Global.Immersion",
+              "SphereEversion.Global.Localisation",
+              "SphereEversion.Global.LocalisationData",
+              "SphereEversion.Global.LocalizedConstruction",
+              "SphereEversion.Global.OneJetBundle",
+              "SphereEversion.Global.OneJetSec",
+              "SphereEversion.Global.ParametricityForFree",
+              "SphereEversion.Global.Relation",
+              "SphereEversion.Global.SmoothEmbedding",
+              "SphereEversion.Global.TwistOneJetSec",
+              "SphereEversion.Indexing",
+              "SphereEversion.InductiveConstructions",
+              "SphereEversion.Local.AmpleRelation",
+              "SphereEversion.Local.Corrugation",
+              "SphereEversion.Local.DualPair",
+              "SphereEversion.Local.HPrinciple",
+              "SphereEversion.Local.OneJet",
+              "SphereEversion.Local.Relation",
+              "SphereEversion.Loops.Basic",
+              "SphereEversion.Loops.DeltaMollifier",
+              "SphereEversion.Loops.Exists",
+              "SphereEversion.Loops.Reparametrization",
+              "SphereEversion.Loops.Surrounding",
+              "SphereEversion.Main",
+              "SphereEversion.Notations",
+              "SphereEversion.ToMathlib.Algebra.Ring.Periodic",
+              "SphereEversion.ToMathlib.Analysis.Calculus",
+              "SphereEversion.ToMathlib.Analysis.ContDiff",
+              "SphereEversion.ToMathlib.Analysis.Convex.Basic",
+              "SphereEversion.ToMathlib.Analysis.CutOff",
+              "SphereEversion.ToMathlib.Analysis.InnerProductSpace.CrossProduct",
+              "SphereEversion.ToMathlib.Analysis.InnerProductSpace.Rotation",
+              "SphereEversion.ToMathlib.Analysis.NormedSpace.Misc",
+              "SphereEversion.ToMathlib.Analysis.NormedSpace.OperatorNorm.Prod",
+              "SphereEversion.ToMathlib.Data.Nat.Basic",
+              "SphereEversion.ToMathlib.Equivariant",
+              "SphereEversion.ToMathlib.ExistsOfConvex",
+              "SphereEversion.ToMathlib.Geometry.Manifold.Algebra.SmoothGerm",
+              "SphereEversion.ToMathlib.Geometry.Manifold.Immersion",
+              "SphereEversion.ToMathlib.Geometry.Manifold.IsManifold.ExtChartAt",
+              "SphereEversion.ToMathlib.Geometry.Manifold.Metrizable",
+              "SphereEversion.ToMathlib.Geometry.Manifold.VectorBundle.Misc",
+              "SphereEversion.ToMathlib.LinearAlgebra.FiniteDimensional",
+              "SphereEversion.ToMathlib.MeasureTheory.ParametricIntervalIntegral",
+              "SphereEversion.ToMathlib.Partition",
+              "SphereEversion.ToMathlib.SmoothBarycentric",
+              "SphereEversion.ToMathlib.Topology.Algebra.Module",
+              "SphereEversion.ToMathlib.Topology.Misc",
+              "SphereEversion.ToMathlib.Topology.Paracompact",
+              "SphereEversion.ToMathlib.Topology.Path"
+            ],
+            "source_authority": null,
+            "source_id": "sphere-eversion-main",
+            "source_kind": "git",
+            "source_revision": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+            "candidate_id": "sphere-eversion-main::lean:OneJetSec.localize",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "OneJetSec.localize",
+            "declaration_id": "lean:OneJetSec.localize",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+            "source_end_line": 573,
+            "source_id": "sphere-eversion-main",
+            "source_path": "SphereEversion/Global/Relation.lean",
+            "source_row_id": "src:SphereEversion/Global/Relation.lean:551:573",
+            "source_start_line": 551
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:OneJetSec.localize",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "sphere-eversion-main",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

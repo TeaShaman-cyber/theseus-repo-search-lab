@@ -1,0 +1,140 @@
+{
+  "artifact_identity": "21b6b292cb3160fa33a962ad72e1890691250279e016c251150cdb2f84ce62c3",
+  "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+  "fingerprint_sha256": "174f3a74e8176256ca3b7e997f53db2dd1def67d77aaf53cfea66e3e605b9c73",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Static theorem-file reference graph; other lexical material is context only.",
+    "producer_kind": "source-static-deps",
+    "purpose": "Historical static FLT corpus; repair release locator only, no elaborated graph claim.",
+    "required_modules": [
+      "Theorems.Thm_fermat_last_theorem"
+    ],
+    "witnesses": [
+      {
+        "declaration": "fermat_last_theorem",
+        "direction": "forward",
+        "neighbor": "FLT.fermatLastTheorem",
+        "source_path": "Theorems/Thm_fermat_last_theorem.lean"
+      }
+    ]
+  },
+  "plan_sha256": "2141ef40beb78176e901f02d779bad2d7e4f1089b80724cc7e1cc79bdde0b037",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "anthropic-fermats-last-theorem",
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "21b6b292cb3160fa33a962ad72e1890691250279e016c251150cdb2f84ce62c3",
+        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "chunks": [
+          {
+            "declaration_hint": "fermat_last_theorem",
+            "declaration_id": "lean:fermat_last_theorem",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+            "source_end_line": 128,
+            "source_path": "Theorems/Thm_fermat_last_theorem.lean",
+            "source_start_line": 127
+          }
+        ],
+        "complete_within_scope": false,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 49,
+        "evidence_boundary": "STATIC_REFERENCE",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "STATIC_REFERENCE",
+            "producer": "TeaShaman-cyber/theseus-repo-search-lab@568be7069314db3de357dd5076cb5cc422e5be65",
+            "relation": "static_reference",
+            "source_id": "lean:fermat_last_theorem",
+            "target_id": "lean:FLT.fermatLastTheorem"
+          }
+        ],
+        "query": "lean:fermat_last_theorem",
+        "scope_root_modules": [
+          "Theorems"
+        ],
+        "source_id": "anthropic-fermats-last-theorem",
+        "source_kind": "git",
+        "source_revision": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+        "status": "DEGRADED",
+        "target_id": "lean:fermat_last_theorem",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "DEGRADED",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "21b6b292cb3160fa33a962ad72e1890691250279e016c251150cdb2f84ce62c3",
+            "backend": "kusto",
+            "candidate_id": "anthropic-fermats-last-theorem::lean:fermat_last_theorem",
+            "complete_within_scope": false,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:FLT.fermatLastTheorem"
+              }
+            ],
+            "producer_kind": "source-static-deps",
+            "projection_edges": 106853,
+            "projection_nodes": 29511,
+            "root": "lean:fermat_last_theorem",
+            "scope_root_modules": [
+              "Theorems"
+            ],
+            "source_authority": null,
+            "source_id": "anthropic-fermats-last-theorem",
+            "source_kind": "git",
+            "source_revision": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+            "status": "DEGRADED"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "21b6b292cb3160fa33a962ad72e1890691250279e016c251150cdb2f84ce62c3",
+            "candidate_id": "anthropic-fermats-last-theorem::lean:fermat_last_theorem",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "fermat_last_theorem",
+            "declaration_id": "lean:fermat_last_theorem",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "6e837e75355538c7f80bab5b956861e86c4eacc2",
+            "source_end_line": 128,
+            "source_id": "anthropic-fermats-last-theorem",
+            "source_path": "Theorems/Thm_fermat_last_theorem.lean",
+            "source_row_id": "src:Theorems/Thm_fermat_last_theorem.lean:127:128",
+            "source_start_line": 127
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:fermat_last_theorem",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "anthropic-fermats-last-theorem",
+        "status": "DEGRADED",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
