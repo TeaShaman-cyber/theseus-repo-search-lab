@@ -720,6 +720,34 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
         self.assertEqual([n.source_start_line for n in bind_node_sources(nodes, chunks)],
                          [3, 5])
 
+    def test_combined_namespace_end_preserves_qualified_hints(self):
+        text = ("namespace A.B\nnamespace C\n"
+                "theorem D.x : True := by trivial\nend B.C\n"
+                "theorem E.y : True := by trivial\nend A\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["A.B.C.D.x", "A.E.y"])
+
+    def test_multiline_string_is_not_namespace_or_declaration_evidence(self):
+        text = ('def marker : String := "line one\n'
+                'namespace Fake\n'
+                'theorem Ghost.x : True\n'
+                '/- not a comment\n'
+                'closing"\n'
+                'namespace Real\n'
+                'theorem D.x : True := by trivial\n'
+                'end Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["marker", "Real.D.x"])
+        self.assertEqual(chunks[1].source_start_line, 7)
+
+    def test_mismatched_end_does_not_guess_scope(self):
+        text = ("namespace A.B\nnamespace C\n"
+                "theorem D.x : True := by trivial\nend X.C\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual(chunks[0].declaration_hint, "D.x")
+
     def test_qualified_and_unqualified_competing_hints_are_ambiguous(self):
         node = Node.from_lean(full_name="PNat.pow_add_pow_ne_pow", name="pow_add_pow_ne_pow",
                               kind="thm", module="FermatsLastTheorem", source_commit="abc123")
