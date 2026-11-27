@@ -78,7 +78,7 @@ def materialize_split_search(item: AcceptedCorpus, root: Path, expected_full: st
             status = "REUSED"
         token = client.mint_database_token(name, expiration="5m", authorization="read-only")
         def read(sql: str) -> list[tuple[object, ...]]:
-            return client.query_rows(host, token, sql)
+            return client.query_rows(host, token, sql, verification=True)
         expected = {
             "SELECT key,value FROM meta WHERE key IN ('artifact_identity','projection_profile','split_projection_sha256') ORDER BY key":
                 [("artifact_identity", item.artifact_identity), ("projection_profile", PROFILE), ("split_projection_sha256", pin)],
@@ -88,11 +88,49 @@ def materialize_split_search(item: AcceptedCorpus, root: Path, expected_full: st
             "SELECT count(*) FROM sqlite_master WHERE name='edges'": [(0,)],
             "PRAGMA quick_check": [("ok",)],
             "PRAGMA page_size": [expected_geometry[0]],
-            "PRAGMA page_count": [expected_geometry[1]],
         }
         for sql, rows in expected.items():
             if read(sql) != rows:
                 raise RepoSearchError("TURSO_REMOTE_PROJECTION_MISMATCH", "split remote state differs from verified candidate")
+        with closing(sqlite3.connect(upload)) as local:
+            _verify_remote_content(local, client, host, token)
         client.set_delete_protection(name, True)
         return {"status": status, "database": name, "artifact_identity": item.artifact_identity,
                 "split_projection_sha256": pin, "sqlite_bytes": upload.stat().st_size}
+
+
+def _verify_remote_content(local: sqlite3.Connection, client: TursoHttpClient,
+                           host: str, token: str) -> None:
+    """Compare query-relevant schema, rows and FTS shadow contents in bounded pages.
+
+    Database page allocation is not identity. FTS segment representation is
+    checked conservatively against the upload; an independent FTS rebuild
+    may require a new verification strategy, never a silent reuse.
+    """
+    def compare(sql: str, params: tuple[object, ...] = ()) -> list[tuple[object, ...]]:
+        expected = local.execute(sql, params).fetchall()
+        actual = client.query_rows(host, token, sql, params, verification=True)
+        if actual != expected:
+            raise RepoSearchError("TURSO_REMOTE_PROJECTION_MISMATCH", "split remote content or schema differs")
+        return expected
+
+    compare("SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name")
+    compare("SELECT key,value FROM meta ORDER BY key")
+    compare("SELECT k,v FROM sources_fts_config ORDER BY k")
+    # Compare rowid mapping too: FTS external content depends on source rowid.
+    for table, columns, key in (
+        ("nodes", "rowid,*", "rowid"),
+        ("sources", "rowid,*", "rowid"),
+        ("sources_fts_data", "id,hex(block)", "id"),
+        ("sources_fts_docsize", "id,hex(sz)", "id"),
+    ):
+        prefix = f"SELECT {columns} FROM {table}"
+        page = compare(f"{prefix} ORDER BY {key} LIMIT 64")
+        while page:
+            page = compare(f"{prefix} WHERE {key}>? ORDER BY {key} LIMIT 64", (page[-1][0],))
+    # FTS index keys are composite; hex(term) is an order-preserving encoding
+    # of the BLOB and avoids extending the network parameter type contract.
+    prefix = "SELECT segid,hex(term),pgno FROM sources_fts_idx"
+    page = compare(prefix + " ORDER BY segid,term LIMIT 64")
+    while page:
+        page = compare(prefix + " WHERE (segid,hex(term))>(?,?) ORDER BY segid,term LIMIT 64", page[-1][:2])

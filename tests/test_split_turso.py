@@ -44,7 +44,7 @@ class SplitTursoTests(unittest.TestCase):
             with sqlite3.connect(db) as source, sqlite3.connect(self.remote) as target:
                 source.backup(target)
         client.upload_sqlite.side_effect = upload
-        def query(host, token, sql, parameters=()):
+        def query(host, token, sql, parameters=(), *, verification=False):
             with sqlite3.connect(self.remote) as c:
                 return c.execute(sql, parameters).fetchall()
         client.query_rows.side_effect = query
@@ -77,3 +77,34 @@ class SplitTursoTests(unittest.TestCase):
         with self.assertRaises(RepoSearchError):
             materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")
         self.assertEqual(client.upload_sqlite.call_count, 1)
+
+
+    def test_reuse_rejects_changed_text_with_unchanged_counts(self):
+        client = self.client()
+        materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")
+        with sqlite3.connect(self.remote) as c:
+            before = c.execute("SELECT text FROM sources ORDER BY id LIMIT 1").fetchone()
+            c.execute("UPDATE sources SET text=substr(text,1,length(text)-1)||CASE substr(text,-1) WHEN 'x' THEN 'y' ELSE 'x' END WHERE id=(SELECT min(id) FROM sources)")
+            self.assertNotEqual(before, c.execute("SELECT text FROM sources ORDER BY id LIMIT 1").fetchone())
+        with self.assertRaisesRegex(RepoSearchError, "content"):
+            materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")
+        self.assertEqual(client.upload_sqlite.call_count, 1)
+
+    def test_reuse_allows_different_free_page_layout(self):
+        client = self.client()
+        materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")
+        with sqlite3.connect(self.remote) as c:
+            before = c.execute("PRAGMA page_count").fetchone()
+            c.execute("CREATE TABLE scratch (v BLOB)")
+            c.execute("INSERT INTO scratch VALUES (zeroblob(1048576))")
+            c.execute("DROP TABLE scratch")
+            self.assertNotEqual(before, c.execute("PRAGMA page_count").fetchone())
+        self.assertEqual(materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")["status"], "REUSED")
+
+    def test_reuse_rejects_changed_fts_postings(self):
+        client = self.client()
+        materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")
+        with sqlite3.connect(self.remote) as c:
+            c.execute("INSERT INTO sources_fts(sources_fts) VALUES ('delete-all')")
+        with self.assertRaises(RepoSearchError):
+            materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")
