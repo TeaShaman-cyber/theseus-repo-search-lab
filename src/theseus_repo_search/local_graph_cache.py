@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import errno
 import os
 import subprocess
 import tempfile
@@ -9,7 +10,6 @@ from pathlib import Path
 from typing import TextIO
 
 from .accepted_catalog import AcceptedCatalog
-from .multicorpus import ensure_local_corpus
 from .split_projection import build_split_projection, verify_split_projection
 
 _LIMITS = "SET memory_limit='512MB'; SET threads=2; SET autoinstall_known_extensions=false; SET autoload_known_extensions=false;"
@@ -80,8 +80,15 @@ def _verify_graph(root: Path, db: Path, executable: str) -> None:
 def prepare_local_graph(full: Path, root: Path, expected_full: str, *,
                         executable: str = "duckdb") -> dict[str, object]:
     """One idempotent preparation operation; do not select or upload anything."""
-    receipt = (verify_split_projection(root, expected_full) if root.exists()
-               else build_split_projection(full, root, expected_full))
+    if root.exists():
+        receipt = verify_split_projection(root, expected_full)
+    else:
+        try:
+            receipt = build_split_projection(full, root, expected_full)
+        except OSError as exc:
+            if not (isinstance(exc, FileExistsError) or exc.errno == errno.ENOTEMPTY) or not root.exists():
+                raise
+            receipt = verify_split_projection(root, expected_full)
     db = root / "graph.duckdb"
     if db.exists():
         _verify_graph(root, db, executable)
@@ -107,6 +114,8 @@ def prepare_catalog_graph(catalog: AcceptedCatalog, source_id: str, *,
                           repository_root: Path, cache_root: Path,
                           executable: str = "duckdb") -> dict[str, object]:
     """Use the existing accepted-release recovery path, not manual file transfer."""
+    from .multicorpus import ensure_local_corpus
+
     state = ensure_local_corpus(catalog, source_id, repository_root=repository_root,
                                 cache_root=cache_root)
     root = cache_root / "split-v1" / state.artifact_identity / state.projection_fingerprint
