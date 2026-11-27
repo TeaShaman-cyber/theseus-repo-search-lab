@@ -816,6 +816,28 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
         chunks = _chunks_from_text("M.lean", text, source_revision="abc")
         self.assertEqual([c.declaration_hint for c in chunks], ["quoted", "Real.D.x"])
 
+    def test_escaped_identifier_quote_does_not_hide_later_declaration(self):
+        text = ('def «a"b» := 1\n'
+                'namespace Real\ntheorem D.x : True := by trivial\nend Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertIn("Real.D.x", [c.declaration_hint for c in chunks])
+
+    def test_interpolation_nested_string_masks_fake_namespace(self):
+        text = ('def marker := s!"{"first\n'
+                'namespace Fake\n'
+                'theorem Ghost.x : True\n'
+                'last"}"\n'
+                'namespace Real\ntheorem D.x : True := by trivial\nend Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["marker", "Real.D.x"])
+
+    def test_interpolation_nested_braces_and_comment_do_not_close_outer(self):
+        text = ('def marker := s!"{(fun x => {x}) /- } " -/\n'
+                '  s!"{"first\nnamespace Fake\nlast"}"}"\n'
+                'namespace Real\ntheorem D.x : True := by trivial\nend Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["marker", "Real.D.x"])
+
     def test_mismatched_end_does_not_guess_scope(self):
         text = ("namespace A.B\nnamespace C\n"
                 "theorem D.x : True := by trivial\nend X.C\n")

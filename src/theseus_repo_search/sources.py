@@ -35,169 +35,143 @@ _RAW_STRING_START = re.compile(r"(?<![\w'])r(#+)?\"" )
 _CHAR_LITERAL = re.compile(r"(?<![\w'])(?:'[^'\\\r\n]'|'\\(?:[xuU][0-9A-Fa-f]+|[^\r\n])')")
 
 
-def _comment_lines(lines: list[str]) -> list[bool]:
-    """Return whether each line begins in comment context.
+_INTERPOLATED_START = re.compile(r"(?<![\w'])(?:s|m|f)!\x22")
 
-    This is intentionally only the lexical state needed by the chunker, not a
-    full Lean parser. Block comments are nested; comment delimiters inside
-    strings and line comments do not affect block depth.
+
+def _blank(text: str) -> str:
+    return "".join("\n" if ch == "\n" else " " for ch in text)
+
+
+def _scan_lines(lines: list[str]) -> tuple[list[str], list[bool]]:
+    """Mask non-code payloads and derive comment boundaries in one pass.
+
+    Interpolation expressions may nest literals and braces. Their content is
+    not top-level declaration evidence. This is a lexical subset, not a parser.
     """
+    rendered: list[str] = []
     flags: list[bool] = []
-    block_depth = 0
-    in_string = False
+    # Frames are (mode, delimiter); braces are nested expression frames.
+    stack: list[tuple[str, str]] = []
     escaped = False
-    raw_end: str | None = None
-
     for line in lines:
-        line_starts_in_block = block_depth > 0
-        first_token_is_comment = False
-        code_seen = in_string or raw_end is not None
-        index = 0
+        out: list[str] = []
+        starts_comment = bool(stack and all(mode == "comment" for mode, _ in stack))
+        code_seen = bool(stack) and not starts_comment
+        first_comment = False
+        i = 0
 
-        while index < len(line):
-            if block_depth > 0:
-                if line.startswith("/-", index):
-                    block_depth += 1
-                    index += 2
-                    continue
-                if line.startswith("-/", index):
-                    block_depth -= 1
-                    index += 2
-                    continue
-                index += 1
-                continue
-
-            char = line[index]
-            if raw_end is not None:
-                if line.startswith(raw_end, index):
-                    index += len(raw_end)
-                    raw_end = None
+        while i < len(line):
+            ch = line[i]
+            mode, delimiter = stack[-1] if stack else ("code", "")
+            if mode == "comment":
+                if line.startswith("/-", i):
+                    stack.append(("comment", "-/"))
+                    out.extend(_blank(line[i:i+(2)]))
+                    i += 2
+                elif line.startswith("-/", i):
+                    stack.pop()
+                    out.extend(_blank(line[i:i+(2)]))
+                    i += 2
                 else:
-                    index += 1
+                    out.extend(_blank(line[i:i+(1)]))
+                    i += 1
                 continue
-            if in_string:
+            if mode in ("raw", "identifier"):
+                if line.startswith(delimiter, i):
+                    stack.pop()
+                    if not stack:
+                        out.extend(delimiter)
+                    else:
+                        out.extend(_blank(line[i:i+len(delimiter)]))
+                    i += len(delimiter)
+                else:
+                    out.extend(_blank(line[i:i+(1)]))
+                    i += 1
+                continue
+            if mode in ("string", "interpolated"):
                 if escaped:
                     escaped = False
-                elif char == "\\":
+                elif ch == "\\":
                     escaped = True
-                elif char == '"':
-                    in_string = False
-                index += 1
+                elif ch == '"':
+                    stack.pop()
+                    if not stack:
+                        out.append(ch)
+                        i += 1
+                        continue
+                elif mode == "interpolated" and ch == "{":
+                    if line.startswith("{{", i):
+                        out.extend(_blank(line[i:i+(2)]))
+                        i += 2
+                        continue
+                    stack.append(("expression", "}"))
+                out.extend(_blank(line[i:i+(1)]))
+                i += 1
                 continue
 
-            if line.startswith("--", index):
-                if not code_seen:
-                    first_token_is_comment = True
+            visible = not stack
+            if line.startswith("--", i):
+                if visible and not code_seen:
+                    first_comment = True
+                out.extend(_blank(line[i:]))
                 break
-            if line.startswith("/-", index):
-                if not code_seen:
-                    first_token_is_comment = True
-                block_depth += 1
-                index += 2
+            if line.startswith("/-", i):
+                if visible and not code_seen:
+                    first_comment = True
+                stack.append(("comment", "-/"))
+                out.extend(_blank(line[i:i+(2)]))
+                i += 2
                 continue
-            literal = _CHAR_LITERAL.match(line, index) if char == "'" else None
+            if not ch.isspace():
+                code_seen = True
+            literal = _CHAR_LITERAL.match(line, i) if ch == "'" else None
             if literal:
-                code_seen = True
-                index = literal.end()
+                n = literal.end()-i
+                if visible:
+                    out.extend("'" + " "*(n-2) + "'")
+                else:
+                    out.extend(_blank(line[i:i+(n)]))
+                i += n
                 continue
-            raw = _RAW_STRING_START.match(line, index) if char == "r" else None
-            if raw:
-                code_seen = True
-                raw_end = '"' + (raw.group(1) or "")
-                index = raw.end()
+            raw = _RAW_STRING_START.match(line, i) if ch == "r" else None
+            interpolated = _INTERPOLATED_START.match(line, i)
+            if raw or interpolated:
+                token = raw or interpolated
+                assert token is not None
+                if raw:
+                    stack.append(("raw", '"' + (raw.group(1) or "")))
+                else:
+                    stack.append(("interpolated", '"'))
+                n = token.end()-i
+                if visible:
+                    out.extend(token.group(0))
+                else:
+                    out.extend(_blank(line[i:i+(n)]))
+                i += n
                 continue
-            if char == '"':
-                code_seen = True
-                in_string = True
-                index += 1
-                continue
-            if not char.isspace():
-                code_seen = True
-            index += 1
+            if ch in ('"', "«"):
+                stack.append(("string", '"') if ch == '"' else ("identifier", "»"))
+            elif mode == "expression":
+                if ch == "{":
+                    stack.append(("expression", "}"))
+                elif ch == "}":
+                    stack.pop()
+            if visible:
+                out.append(ch)
+            else:
+                out.extend(_blank(line[i:i+(1)]))
+            i += 1
+        rendered.append("".join(out))
+        flags.append(starts_comment or first_comment)
+    return rendered, flags
 
-        flags.append(line_starts_in_block or first_token_is_comment)
 
-    return flags
+def _comment_lines(lines: list[str]) -> list[bool]:
+    return _scan_lines(lines)[1]
 
 
 def _code_lines(lines: list[str]) -> list[str]:
-    """Return source lines with actual comments blanked for declaration matching."""
-    rendered: list[str] = []
-    block_depth = 0
-    in_string = False
-    escaped = False
-    raw_end: str | None = None
-
-    for line in lines:
-        out: list[str] = []
-        index = 0
-
-        while index < len(line):
-            if block_depth > 0:
-                if line.startswith("/-", index):
-                    block_depth += 1
-                    out.extend("  ")
-                    index += 2
-                    continue
-                if line.startswith("-/", index):
-                    block_depth -= 1
-                    out.extend("  ")
-                    index += 2
-                    continue
-                out.append("\n" if line[index] == "\n" else " ")
-                index += 1
-                continue
-
-            char = line[index]
-            if raw_end is not None:
-                if line.startswith(raw_end, index):
-                    out.extend(raw_end)
-                    index += len(raw_end)
-                    raw_end = None
-                else:
-                    out.append("\n" if char == "\n" else " ")
-                    index += 1
-                continue
-            if in_string:
-                out.append("\n" if char == "\n" else " ")
-                if escaped:
-                    escaped = False
-                elif char == "\\":
-                    escaped = True
-                elif char == '"':
-                    in_string = False
-                    out[-1] = char
-                index += 1
-                continue
-
-            if line.startswith("--", index):
-                out.extend("\n" if value == "\n" else " " for value in line[index:])
-                index = len(line)
-                continue
-            if line.startswith("/-", index):
-                block_depth += 1
-                out.extend("  ")
-                index += 2
-                continue
-            literal = _CHAR_LITERAL.match(line, index) if char == "'" else None
-            if literal:
-                out.extend("'" + " " * (literal.end() - index - 2) + "'")
-                index = literal.end()
-                continue
-            raw = _RAW_STRING_START.match(line, index) if char == "r" else None
-            if raw:
-                raw_end = '"' + (raw.group(1) or "")
-                out.extend(raw.group(0))
-                index = raw.end()
-                continue
-            out.append(char)
-            if char == '"':
-                in_string = True
-            index += 1
-
-        rendered.append("".join(out))
-
-    return _mask_syntax_quotations(rendered)
+    return _mask_syntax_quotations(_scan_lines(lines)[0])
 
 
 def _mask_syntax_quotations(lines: list[str]) -> list[str]:
