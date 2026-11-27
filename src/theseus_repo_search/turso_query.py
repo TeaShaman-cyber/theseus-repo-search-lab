@@ -13,6 +13,8 @@ from .errors import RepoSearchError
 from .graph import GraphResult, path_connection, traverse_connection
 from .multicorpus import MultiCorpusResult, federate_search
 from .retrieval import SearchHit, SearchMode, context_connection, search_connection
+from .split_projection import PROFILE
+from .split_turso import split_database_name
 from .turso_materializer import (
     TursoHttpClient,
     _database_hostname,
@@ -43,7 +45,7 @@ class ReadConnection:
 
 
 def connect_corpus(item: AcceptedCorpus, client: TursoHttpClient) -> ReadConnection:
-    name = derive_database_name(item.source_id, item.artifact_identity)
+    name = split_database_name(item) if item.split_projection_sha256 is not None else derive_database_name(item.source_id, item.artifact_identity)
     db = client.get_database(name)
     if db is None:
         raise RepoSearchError("UNAVAILABLE_TURSO_CORPUS", "identity-bound database not found")
@@ -52,6 +54,12 @@ def connect_corpus(item: AcceptedCorpus, client: TursoHttpClient) -> ReadConnect
     row = conn.execute("SELECT value FROM meta WHERE key='artifact_identity'").fetchone()
     if row != (item.artifact_identity,):
         raise RepoSearchError("TURSO_DATABASE_IDENTITY_MISMATCH", "database does not match accepted artifact")
+    if item.split_projection_sha256 is not None:
+        rows = conn.execute(
+            "SELECT key,value FROM meta WHERE key IN ('projection_profile','split_projection_sha256') ORDER BY key"
+        ).fetchall()
+        if rows != [("projection_profile", PROFILE), ("split_projection_sha256", item.split_projection_sha256)]:
+            raise RepoSearchError("BLOCKED_PROJECTION_INTEGRITY", "split projection receipt or profile mismatch")
     return conn
 
 

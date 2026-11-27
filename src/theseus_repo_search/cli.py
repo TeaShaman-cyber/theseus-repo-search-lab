@@ -822,6 +822,9 @@ def _cmd_materialize_turso(args: argparse.Namespace) -> int:
             f"accepted corpus catalog invalid: {exc}",
         ) from exc
 
+    item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
+    if item is not None and item.split_projection_sha256 is not None:
+        raise RepoSearchError("BLOCKED_PROJECTION_PROFILE", "split projection requires its explicit materializer")
     repository_root = args.catalog.resolve().parent.parent
     state = ensure_local_corpus(
         catalog,
@@ -857,6 +860,8 @@ def _cmd_sync_turso_catalog(args: argparse.Namespace) -> int:
 
     for corpus in catalog.corpora:
         try:
+            if corpus.split_projection_sha256 is not None:
+                raise RepoSearchError("BLOCKED_PROJECTION_PROFILE", "split projection requires its explicit materializer")
             state = ensure_local_corpus(
                 catalog,
                 corpus.source_id,
@@ -938,6 +943,8 @@ def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | Non
     item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
     if item is None:
         raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
+    if item.split_projection_sha256 is not None:
+        raise RepoSearchError("UNAVAILABLE_GRAPH_BACKEND", "split graph query route not configured")
     conn = connect_corpus(item, _turso_client(args))
     result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
                          max_edges=args.max_edges, token_budget=args.token_budget)

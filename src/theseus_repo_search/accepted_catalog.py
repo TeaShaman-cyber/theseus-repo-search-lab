@@ -35,6 +35,7 @@ class AcceptedCorpus:
     artifact_identity: str
     fingerprint_sha256: str
     runner_config: str | None = None
+    split_projection_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,7 @@ def _validate_descriptor_path(value: str) -> None:
 
 def _parse_corpus(raw: object, *, index: int) -> AcceptedCorpus:
     obj = _require_object(raw, where=f"corpora[{index}]")
-    fields = _CORPUS_FIELDS | ({"runner_config"} if "runner_config" in obj else set())
+    fields = _CORPUS_FIELDS | ({"runner_config", "split_projection_sha256"} & obj.keys())
     _require_exact_fields(
         obj, expected=frozenset(fields), where=f"corpora[{index}]"
     )
@@ -94,6 +95,8 @@ def _parse_corpus(raw: object, *, index: int) -> AcceptedCorpus:
         raise ValueError("artifact_identity must be 64 lowercase hexadecimal characters")
     if not _HEX64.fullmatch(values["fingerprint_sha256"]):
         raise ValueError("fingerprint_sha256 must be 64 lowercase hexadecimal characters")
+    if "split_projection_sha256" in values and not _HEX64.fullmatch(values["split_projection_sha256"]):
+        raise ValueError("split_projection_sha256 must be 64 lowercase hexadecimal characters")
     _validate_descriptor_path(values["source_descriptor"])
     if "runner_config" in values and not re.fullmatch(r"producer/runners/[A-Za-z0-9_-]+\.json", values["runner_config"]):
         raise ValueError("runner_config must be a pinned JSON file under producer/runners/")
