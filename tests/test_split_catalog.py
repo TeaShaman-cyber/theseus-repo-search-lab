@@ -77,3 +77,26 @@ class SplitCatalogTests(unittest.TestCase):
             with self.assertRaisesRegex(RepoSearchError, "split"):
                 args.func(args)
             ensure.assert_not_called()
+
+    def test_explicit_split_materializer_uses_verified_local_preparation(self):
+        from unittest.mock import Mock, patch
+
+        from theseus_repo_search import cli
+        from theseus_repo_search.accepted_catalog import AcceptedCatalog
+
+        item = self.load(split_projection_sha256="a" * 64)
+        catalog = AcceptedCatalog("theseus.repo-search.accepted-catalog.v1", "example/repo", (item,))
+        args = cli.build_parser().parse_args([
+            "materialize-split-turso", "--catalog", "catalog.json", "--source-id", item.source_id,
+            "--cache-dir", "cache", "--organization", "example", "--group", "repo-search",
+        ])
+        prepared = {"directory": "cache/verified", "split": {"full_projection_fingerprint": "b"*64}}
+        with (
+            patch.object(cli, "load_accepted_catalog", return_value=catalog),
+            patch.object(cli, "prepare_catalog_graph", return_value=prepared),
+            patch.object(cli, "_turso_client", return_value=Mock()),
+            patch.object(cli, "materialize_split_search", return_value={"status":"REUSED"}) as materialize,
+            patch.object(cli, "_emit"),
+        ):
+            self.assertEqual(args.func(args), 0)
+        self.assertEqual(materialize.call_args.args[:3], (item, Path("cache/verified"), "b"*64))

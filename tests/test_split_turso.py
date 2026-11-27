@@ -47,7 +47,7 @@ class SplitTursoTests(unittest.TestCase):
         client.upload_sqlite.side_effect = upload
         def query(host, token, sql, parameters=(), *, verification=False):
             with sqlite3.connect(self.remote) as c:
-                c.create_function("sha256", 1, lambda x: sha256(x.encode()).digest())
+                c.create_function("crypto_sha256", 1, lambda x: sha256(x.encode()).digest())
                 return c.execute(sql, parameters).fetchall()
         client.query_rows.side_effect = query
         return client
@@ -115,6 +115,8 @@ class SplitTursoTests(unittest.TestCase):
     def test_verification_uses_bounded_server_hashes_with_extended_timeout(self):
         client = self.client()
         materialize_split_search(self.item, self.split, self.fp, client, group="repo-search")
-        calls = [call for call in client.query_rows.call_args_list if "hex(sha256(" in call.args[2]]
+        calls = [call for call in client.query_rows.call_args_list if "hex(crypto_sha256(" in call.args[2]]
         self.assertTrue(calls)
+        self.assertTrue(all("LIMIT 4096" in call.args[2] for call in calls))
+        self.assertTrue(any("sources_fts_idx" in call.args[2] for call in calls))
         self.assertTrue(all(call.kwargs.get("verification") is True for call in calls))

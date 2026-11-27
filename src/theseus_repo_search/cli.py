@@ -26,6 +26,7 @@ from .errors import RepoSearchError
 from .graph import GraphResult, dependencies, reverse_dependencies
 from .graph import path as graph_path
 from .kusto_query import KustoClient, expand_search_hits, federated_reach, reach
+from .local_graph_cache import prepare_catalog_graph
 from .model import (
     ArchiveAuthority,
     ArtifactScope,
@@ -55,6 +56,7 @@ from .sources import (
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
 )
+from .split_turso import materialize_split_search
 from .turso_materializer import TursoHttpClient, TursoMaterializer
 from .turso_query import connect_corpus, query_graph, search_turso_catalog
 
@@ -844,6 +846,24 @@ def _cmd_materialize_turso(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_materialize_split_turso(args: argparse.Namespace) -> int:
+    catalog = load_accepted_catalog(args.catalog)
+    item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
+    if item is None or item.split_projection_sha256 is None:
+        raise RepoSearchError("BLOCKED_PROJECTION_PROFILE", "explicit split catalog pin required")
+    prepared = prepare_catalog_graph(catalog, item.source_id,
+                                     repository_root=args.catalog.resolve().parent.parent,
+                                     cache_root=args.cache_dir, executable=args.duckdb)
+    split = prepared["split"]
+    if not isinstance(split, dict):
+        raise RepoSearchError("BLOCKED_PROJECTION_INTEGRITY", "invalid prepared receipt")
+    result = materialize_split_search(item, Path(str(prepared["directory"])),
+                                      split["full_projection_fingerprint"], _turso_client(args),
+                                      group=args.group)
+    _emit(result)
+    return 0
+
+
 def _cmd_sync_turso_catalog(args: argparse.Namespace) -> int:
     try:
         catalog = load_accepted_catalog(args.catalog)
@@ -1252,6 +1272,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="environment variable containing the Turso Platform API token",
     )
     turso.set_defaults(func=_cmd_materialize_turso)
+
+    split_turso = subparsers.add_parser("materialize-split-turso")
+    for option in ("--catalog", "--cache-dir"):
+        split_turso.add_argument(option, type=Path, required=True)
+    for option in ("--source-id", "--organization", "--group"):
+        split_turso.add_argument(option, required=True)
+    split_turso.add_argument("--platform-base-url", default="https://api.turso.tech")
+    split_turso.add_argument("--platform-token-env")
+    split_turso.add_argument("--duckdb", default="duckdb")
+    split_turso.set_defaults(func=_cmd_materialize_split_turso)
 
     turso_sync = subparsers.add_parser("sync-turso-catalog")
     turso_sync.add_argument("--catalog", type=Path, required=True)

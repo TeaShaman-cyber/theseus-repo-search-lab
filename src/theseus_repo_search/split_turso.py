@@ -121,7 +121,7 @@ def _verify_remote_content(local: sqlite3.Connection, client: TursoHttpClient,
     # and FTS segment BLOBs across the network. Include rowid because external
     # content FTS is keyed by it. The same SQL is evaluated against the local
     # verified upload with a standard SHA-256 implementation.
-    local.create_function("sha256", 1, lambda text: sha256(text.encode("utf-8")).digest())
+    local.create_function("crypto_sha256", 1, lambda text: sha256(text.encode("utf-8")).digest())
     for table, columns, key in (
         ("nodes", "rowid,*", "rowid"),
         ("sources", "rowid,*", "rowid"),
@@ -131,17 +131,28 @@ def _verify_remote_content(local: sqlite3.Connection, client: TursoHttpClient,
         if columns == "rowid,*":
             columns = "rowid," + ",".join('"' + row[1].replace('"', '""') + '"'
                                           for row in local.execute(f"PRAGMA table_info({table})"))
-        prefix = f"SELECT {key} k,hex(sha256(json_array({columns}))) h FROM {table}"
+        prefix = f"SELECT {key} k,hex(crypto_sha256(json_array({columns}))) h FROM {table}"
         suffix = f" ORDER BY {key} LIMIT 4096"
         where = ""
         params: tuple[object, ...] = ()
         while True:
-            sql = "SELECT count(*),max(k),hex(sha256(coalesce(group_concat(h,''),''))) FROM (" + prefix + where + suffix + ")"
+            sql = "SELECT count(*),max(k),hex(crypto_sha256(coalesce(group_concat(h,''),''))) FROM (" + prefix + where + suffix + ")"
             count, last, _ = compare(sql, params)[0]
             if not count:
                 break
             where = f" WHERE {key}>?"
             params = (last,)
-    compare("SELECT count(*),hex(sha256(coalesce(group_concat(h,''),''))) FROM ("
-            "SELECT hex(sha256(json_array(segid,hex(term),pgno))) h "
-            "FROM sources_fts_idx ORDER BY segid,term)")
+    where = ""
+    params = ()
+    while True:
+        prefix = "SELECT segid,hex(term) term_hex,hex(crypto_sha256(json_array(segid,hex(term),pgno))) h FROM sources_fts_idx"
+        # Select the last composite key from the same bounded ordered block.
+        sql = ("WITH page AS (" + prefix + where + " ORDER BY segid,term LIMIT 4096) "
+               "SELECT count(*), (SELECT segid FROM page ORDER BY segid DESC,term_hex DESC LIMIT 1),"
+               "(SELECT term_hex FROM page ORDER BY segid DESC,term_hex DESC LIMIT 1),"
+               "hex(crypto_sha256(coalesce(group_concat(h,''),''))) FROM (SELECT * FROM page ORDER BY segid,term_hex)")
+        count, segid, term, _ = compare(sql, params)[0]
+        if not count:
+            break
+        where = " WHERE (segid,hex(term))>(?,?)"
+        params = (segid, term)
