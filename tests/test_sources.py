@@ -766,6 +766,42 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
                 self.assertEqual(chunks[0].source_end_line, 2)
                 self.assertIn('closing"', chunks[0].text)
 
+    def test_complete_collision_group_survives_later_unsupported_scope(self):
+        text = ("namespace A\ntheorem x : True := by trivial\nend A\n"
+                "namespace B\ntheorem x : True := by trivial\nend B\n"
+                "namespace «later»\ntheorem y : True := by trivial\nend «later»\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["A.x", "B.x", "y"])
+
+    def test_named_section_suffix_does_not_change_namespace(self):
+        text = ("namespace Real\nsection A\nsection B\n"
+                "theorem D.x : True := by trivial\nend A.B\n"
+                "theorem D.y : True := by trivial\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["Real.D.x", "Real.D.y"])
+
+    def test_mixed_named_scope_suffix_and_dotted_section(self):
+        text = ("namespace Real\nsection A.B\nnamespace C\n"
+                "theorem D.x : True := by trivial\nend B.C\n"
+                "theorem D.y : True := by trivial\nend A\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["Real.C.D.x", "Real.D.y"])
+
+    def test_raw_string_hash_delimiters_mask_fake_commands(self):
+        for hashes in ("#", "##"):
+            with self.subTest(hashes=hashes):
+                text = (f'def marker : String := r{hashes}"line one\n'
+                        'namespace Fake\n'
+                        'unmatched ordinary quote " inside\n'
+                        'theorem Ghost.x : True\n'
+                        f'closing"{hashes} -- comment\n'
+                        'namespace Real\n'
+                        'theorem D.x : True := by trivial\n'
+                        'end Real\n')
+                chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+                self.assertEqual([c.declaration_hint for c in chunks], ["marker", "Real.D.x"])
+                self.assertEqual(chunks[0].source_end_line, 6)
+
     def test_mismatched_end_does_not_guess_scope(self):
         text = ("namespace A.B\nnamespace C\n"
                 "theorem D.x : True := by trivial\nend X.C\n")

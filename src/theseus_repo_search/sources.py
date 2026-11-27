@@ -27,6 +27,9 @@ DECL_HEADER_ONLY_RE = re.compile(
     r"(?:theorem|lemma)\s*$"
 )
 
+_RAW_STRING_START = re.compile(r"(?<![\w'])r(#+)?\"" )
+
+
 def _comment_lines(lines: list[str]) -> list[bool]:
     """Return whether each line begins in comment context.
 
@@ -38,11 +41,12 @@ def _comment_lines(lines: list[str]) -> list[bool]:
     block_depth = 0
     in_string = False
     escaped = False
+    raw_end: str | None = None
 
     for line in lines:
         line_starts_in_block = block_depth > 0
         first_token_is_comment = False
-        code_seen = in_string
+        code_seen = in_string or raw_end is not None
         index = 0
 
         while index < len(line):
@@ -59,6 +63,13 @@ def _comment_lines(lines: list[str]) -> list[bool]:
                 continue
 
             char = line[index]
+            if raw_end is not None:
+                if line.startswith(raw_end, index):
+                    index += len(raw_end)
+                    raw_end = None
+                else:
+                    index += 1
+                continue
             if in_string:
                 if escaped:
                     escaped = False
@@ -78,6 +89,12 @@ def _comment_lines(lines: list[str]) -> list[bool]:
                     first_token_is_comment = True
                 block_depth += 1
                 index += 2
+                continue
+            raw = _RAW_STRING_START.match(line, index) if char == "r" else None
+            if raw:
+                code_seen = True
+                raw_end = '"' + (raw.group(1) or "")
+                index = raw.end()
                 continue
             if char == '"':
                 code_seen = True
@@ -99,6 +116,7 @@ def _code_lines(lines: list[str]) -> list[str]:
     block_depth = 0
     in_string = False
     escaped = False
+    raw_end: str | None = None
 
     for line in lines:
         out: list[str] = []
@@ -121,6 +139,15 @@ def _code_lines(lines: list[str]) -> list[str]:
                 continue
 
             char = line[index]
+            if raw_end is not None:
+                if line.startswith(raw_end, index):
+                    out.extend(raw_end)
+                    index += len(raw_end)
+                    raw_end = None
+                else:
+                    out.append("\n" if char == "\n" else " ")
+                    index += 1
+                continue
             if in_string:
                 out.append("\n" if char == "\n" else " ")
                 if escaped:
@@ -141,6 +168,12 @@ def _code_lines(lines: list[str]) -> list[str]:
                 block_depth += 1
                 out.extend("  ")
                 index += 2
+                continue
+            raw = _RAW_STRING_START.match(line, index) if char == "r" else None
+            if raw:
+                raw_end = '"' + (raw.group(1) or "")
+                out.extend(raw.group(0))
+                index = raw.end()
                 continue
             out.append(char)
             if char == '"':
@@ -232,8 +265,9 @@ def _qualify_collisions(
                 # evidence. Later unsupported syntax cannot change that prefix.
                 # Repeated hints still require a complete scan to disambiguate.
                 qualified = dict(result)
+                processed = Counter(names[i] for i in qualified)
                 return [
-                    (i, qualified.get(i, n) if counts[n] == 1 else n)
+                    (i, qualified[i] if processed[n] == counts[n] else n)
                     for i, n in declarations
                 ]
             kind, name = command.group("kind", "name")
@@ -242,16 +276,16 @@ def _qualify_collisions(
                     return declarations
                 scopes.extend((kind, part) for part in name.split("."))
             elif kind == "section":
-                scopes.append((kind, name or ""))
+                scopes.extend((kind, part) for part in (name or "").split("."))
             elif kind == "mutual":
                 if name:
                     return declarations
                 scopes.append((kind, ""))
             elif not scopes:
                 return declarations
-            elif name and scopes[-1] != ("section", name):
-                suffix = [("namespace", part) for part in name.split(".")]
-                if scopes[-len(suffix):] != suffix:
+            elif name:
+                suffix = name.split(".")
+                if [part for _, part in scopes[-len(suffix):]] != suffix:
                     return declarations
                 del scopes[-len(suffix):]
             else:
