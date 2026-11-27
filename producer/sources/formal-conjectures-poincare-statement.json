@@ -1,0 +1,29 @@
+{
+  "schema": "theseus.lean-git-source.v2",
+  "source_id": "formal-conjectures-poincare-statement",
+  "source_repo": "google-deepmind/formal-conjectures",
+  "source_commit": "ea8e3e198ded6fc73efb7f5653b74b28ac4ae1a8",
+  "source_subdir": "",
+  "root_modules": [
+    "FormalConjectures.Millennium.Poincare"
+  ],
+  "build_target": "FormalConjectures.Millennium.Poincare",
+  "exclude_source_prefixes": [
+    "FormalConjectures/Arxiv/",
+    "FormalConjectures/Books/",
+    "FormalConjectures/ErdosProblems/",
+    "FormalConjectures/GreensOpenProblems/",
+    "FormalConjectures/HilbertProblems/",
+    "FormalConjectures/Kourovka/",
+    "FormalConjectures/LittProblems/",
+    "FormalConjectures/Mathoverflow/",
+    "FormalConjectures/OEIS/",
+    "FormalConjectures/OpenQuantumProblems/",
+    "FormalConjectures/OptimizationConstants/",
+    "FormalConjectures/Other/",
+    "FormalConjectures/Paper/",
+    "FormalConjectures/Subsets/",
+    "FormalConjectures/Wikipedia/",
+    "FormalConjectures/WrittenOnTheWallII/"
+  ]
+}
