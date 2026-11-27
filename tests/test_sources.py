@@ -714,3 +714,51 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
                                    "theorem Other.pow_add_pow_ne_pow : True := by trivial\n",
                                    source_revision="abc123")
         self.assertIsNone(bind_node_sources([node], chunks)[0].source_path)
+
+
+class NamespaceCollisionTests(unittest.TestCase):
+    def test_same_short_name_in_distinct_namespaces_binds_each_exact_location(self):
+        text = ("@[expose] public section\n"
+                "namespace WeierstrassCurve.Affine\n"
+                "namespace NumberField\n"
+                "theorem weakBSD : True := by trivial\n"
+                "end NumberField\n"
+                "namespace Rat\n"
+                "section Named\n"
+                "theorem weakBSD : True := by trivial\n"
+                "end Named\n"
+                "end Rat\n"
+                "end WeierstrassCurve.Affine\n")
+        chunks = _chunks_from_text("BSD.lean", text, source_revision="abc")
+        nodes = [Node.from_lean(full_name=f"WeierstrassCurve.Affine.{ns}.weakBSD",
+                                name="weakBSD", kind="thm", module="BSD",
+                                source_commit="abc") for ns in ("NumberField", "Rat")]
+        bound = bind_node_sources(nodes, chunks)
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         [n.full_name for n in nodes])
+        self.assertEqual([n.source_start_line for n in bound], [4, 8])
+
+    def test_scope_commands_inside_comments_do_not_change_binding(self):
+        text = ("namespace riemannZeta\n"
+                "/- namespace Incorrect -/\n"
+                "theorem simple_prop_two_thirds : True := by trivial\n"
+                "end riemannZeta\n"
+                "namespace DirichletCharacter\n"
+                "theorem simple_prop_two_thirds : True := by trivial\n"
+                "end DirichletCharacter\n")
+        chunks = _chunks_from_text("Zeros.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["riemannZeta.simple_prop_two_thirds",
+                          "DirichletCharacter.simple_prop_two_thirds"])
+
+    def test_unsupported_scope_fails_closed_for_collisions(self):
+        text = ("namespace «odd name»\n"
+                "theorem shared : True := by trivial\n"
+                "end «odd name»\n"
+                "namespace B\n"
+                "theorem shared : True := by trivial\n"
+                "end B\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        n = Node.from_lean(full_name="B.shared",name="shared",kind="thm",
+                           module="M",source_commit="abc")
+        self.assertIsNone(bind_node_sources([n],chunks)[0].source_path)

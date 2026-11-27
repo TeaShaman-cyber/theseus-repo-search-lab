@@ -6,6 +6,7 @@ import os
 import re
 import stat
 import subprocess
+from collections import Counter
 from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
@@ -200,6 +201,55 @@ def tracked_lean_files(
         files.append(path)
     return sorted(files, key=lambda path: path.relative_to(source_root).as_posix())
 
+# Only qualify colliding lexical hints in the supported command subset.
+# Unique hints retain the existing artifact contract.
+_SCOPE_NAME = r"[^\W\d][\w']*(?:\.[^\W\d][\w']*)*"
+_SCOPE_COMMAND = re.compile(
+    rf"^(?:@\[[^\]\n]*\]\s+)?(?:(?:public|noncomputable)\s+)*"
+    rf"(?P<kind>namespace|section|end)(?:\s+(?P<name>{_SCOPE_NAME}))?\s*$"
+)
+_SCOPE_PREFIX = re.compile(
+    r"^\s*(?:@\[[^\]\n]*\]\s+)?(?:(?:public|private|noncomputable|meta)\s+)*"
+    r"(?:namespace|section|end)\b"
+)
+
+
+def _qualify_collisions(
+    code_lines: list[str], declarations: list[tuple[int, str]]
+) -> list[tuple[int, str]]:
+    counts = Counter(name for _, name in declarations)
+    if all(count == 1 for count in counts.values()):
+        return declarations
+    names = dict(declarations)
+    scopes: list[tuple[str, str]] = []
+    result: list[tuple[int, str]] = []
+    for index, line in enumerate(code_lines):
+        if _SCOPE_PREFIX.match(line):
+            command = _SCOPE_COMMAND.fullmatch(line.rstrip())
+            if command is None:
+                return declarations
+            kind, name = command.group("kind", "name")
+            if kind == "namespace":
+                if not name or name.startswith("_root_"):
+                    return declarations
+                scopes.append((kind, name))
+            elif kind == "section":
+                scopes.append((kind, name or ""))
+            elif not scopes or (name and scopes[-1][1] != name):
+                return declarations
+            else:
+                scopes.pop()
+        if index not in names:
+            continue
+        name = names[index]
+        if counts[name] > 1 and not name.startswith("_root_"):
+            prefix = ".".join(value for kind, value in scopes if kind == "namespace")
+            if prefix:
+                name = f"{prefix}.{name}"
+        result.append((index, name))
+    return result
+
+
 def _chunks_from_text(
     relative_path: str,
     text: str,
@@ -230,6 +280,7 @@ def _chunks_from_text(
     if not declarations:
         return []
 
+    declarations = _qualify_collisions(code_lines, declarations)
     declaration_lines = [index for index, _ in declarations]
     starts = _chunk_starts(lines, declaration_lines)
     chunks: list[SourceChunk] = []
