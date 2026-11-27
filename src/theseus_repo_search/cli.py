@@ -6,6 +6,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+from contextlib import nullcontext
 from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
@@ -970,8 +971,9 @@ def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | Non
         db = ensure_serving_graph(catalog, item, repository_root=args.catalog.resolve().parent.parent,
                                   cache_root=cache)
         conn = SplitGraphConnection(conn, db)
-    result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
-                         max_edges=args.max_edges, token_budget=args.token_budget)
+    with (conn if isinstance(conn, SplitGraphConnection) else nullcontext(conn)):
+        result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
+                             max_edges=args.max_edges, token_budget=args.token_budget)
     if isinstance(result, GraphResult):
         payload = _graph_payload(result)
         payload["found"] = result.found

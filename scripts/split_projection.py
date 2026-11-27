@@ -67,6 +67,7 @@ def main():
             receipt = materialize_corpus(
                 catalog, args.source_id, **kwargs, client=client, group=args.group,
                 launcher=args.motherduck_launcher, database=args.motherduck_db,
+                platform_token_env=args.platform_token_env,
             )
     elif args.operation == "prepare":
         receipt = prepare_local_graph(args.full, args.out, args.full_fingerprint, executable=args.duckdb)

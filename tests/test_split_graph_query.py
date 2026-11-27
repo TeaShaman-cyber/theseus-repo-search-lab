@@ -72,3 +72,37 @@ class SplitGraphQueryTests(unittest.TestCase):
             db = publish_serving_graph(self.item, {"split": self.receipt, "directory": str(self.prepared)}, cache_root=self.root)
         prepare.assert_not_called()
         self.assertEqual(db.read_bytes(), (self.prepared / "graph.duckdb").read_bytes())
+
+
+    def test_multiple_frontiers_use_one_native_session(self):
+        from theseus_repo_search.split_graph_query import SplitGraphConnection
+
+        sql = ("SELECT source_id, target_id, relation, evidence_grade, producer "
+               "FROM edges WHERE source_id IN (?) ORDER BY relation, target_id, source_id, producer LIMIT ?")
+        with patch("theseus_repo_search.split_graph_query.NativeGraphSession") as session:
+            session.return_value.query.return_value = [("a","b","r","g","p")]
+            with SplitGraphConnection(Mock(), self.prepared/"graph.duckdb") as conn:
+                self.assertEqual(conn.execute(sql, ("a",5)).fetchall(), [("a","b","r","g","p")])
+                self.assertEqual(conn.execute(sql, ("b",5)).fetchall(), [("a","b","r","g","p")])
+            session.assert_called_once()
+            self.assertEqual(session.return_value.query.call_count,2)
+            session.return_value.close.assert_called_once()
+
+    def test_native_empty_result_is_valid_and_session_can_continue(self):
+        import time
+
+        from theseus_repo_search.split_graph_query import NativeGraphSession
+
+        session = NativeGraphSession.__new__(NativeGraphSession)
+        session.process = Mock()
+        session.buffer = b""
+        session.deadline = time.monotonic() + 10
+        with (
+            patch("theseus_repo_search.split_graph_query.select.select", return_value=([session.process.stdout],[],[])),
+            patch("theseus_repo_search.split_graph_query.os.read", side_effect=[
+                b'\n{"repo_search_end":1}\n',
+                b'{"source_id":"a","target_id":"b","relation":"r","evidence_grade":"g","producer":"p"}\n{"repo_search_end":1}\n',
+            ]),
+        ):
+            self.assertEqual(session.query("SELECT fixture"), [])
+            self.assertEqual(session.query("SELECT fixture"), [("a","b","r","g","p")])

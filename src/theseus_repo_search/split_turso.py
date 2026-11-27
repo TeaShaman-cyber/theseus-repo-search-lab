@@ -96,7 +96,8 @@ def materialize_split_search(item: AcceptedCorpus, root: Path, expected_full: st
             _verify_remote_content(local, client, host, token)
         client.set_delete_protection(name, True)
         return {"status": status, "database": name, "artifact_identity": item.artifact_identity,
-                "split_projection_sha256": pin, "sqlite_bytes": upload.stat().st_size}
+                "split_projection_sha256": pin, "sqlite_bytes": upload.stat().st_size,
+                "database_id": db.get("DbId") or db.get("id") or db.get("db_id")}
 
 
 def _verify_remote_content(local: sqlite3.Connection, client: TursoHttpClient,
