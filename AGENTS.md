@@ -38,6 +38,10 @@ not a replacement for that scope.
   acceptance; keep exe.dev/MarcoPolo orchestration bounded. Preserve exact
   source, extraction scope, and producer identity. Enable candidate
   optimizations only after the applicable parity and recovery checks.
+- **Corpus selection:** follow [coverage acceptance](docs/corpus-coverage.md).
+  Record intended graph scope, explicit exclusions, and meaningful live
+  Turso+Kusto witnesses before changing the accepted catalog. Do not equate
+  graph availability or count parity with mathematical coverage.
 - **Verify:** use the repository's `./tools/dev/check` first. For search-runtime
   changes, also exercise real cold/warm corpus queries and report absent or
   unavailable corpora explicitly; green unit tests alone do not prove usability.

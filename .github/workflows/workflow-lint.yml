@@ -14,11 +14,12 @@ concurrency:
 jobs:
   workflow-lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Install digest-pinned static analyzers
         shell: bash
@@ -68,3 +69,11 @@ jobs:
 
       - name: Verify strict runtime JSON parser conformance
         run: PYTHONPATH=src python3 scripts/check_json_contract.py --corpus .qa-json-testsuite
+
+      - name: Verify changed corpus selection coverage
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PYTHONPATH: .:src
+        run: python3 scripts/check_corpus_selection.py check-pr --base "$BASE_SHA"
