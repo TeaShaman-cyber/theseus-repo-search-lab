@@ -105,6 +105,16 @@ disposition; it does not impose an audit gate on search or onboarding.
 
 The heavy producer stores only `$HOME/.cache/mathlib` download archives in GitHub Actions Cache, keyed by byte-level hashes of the source-owned `lean-toolchain` and `lake-manifest.json` and the runner OS. Persistence is skipped if pins are missing, the archive directory is empty, or its uncompressed size exceeds 750,000 KiB. The multi-GiB `.lake/packages` and `.lake/build` directories are **not** cached. `lake exe cache get` still runs and may restore or fetch dependencies; actual speedup requires a hosted cache-hit measurement and is not inferred from the static QA tests. Reuse of an already accepted source artifact through a source-free consumer is preferable to running the producer again when the producer fingerprint is unchanged. These download archives are operational acceleration, never source or proof authority.
 
+### Efficient future corpus intake
+
+For every new corpus or producer rebuild, follow the
+[producer efficiency runbook](docs/producer-efficiency.md) before selecting a
+heavy build route. Prefer existing accepted artifacts, measure the necessary
+source scope, and use recoverable build stages for long compilations. Native
+Lake cache transfer and early extractor filtering are evidence-gated candidates,
+not blanket changes to the pinned producer. Existing accepted corpora need no
+rebuild merely because these optimizations were discovered.
+
 ## Lexical search modes
 
 `repo-search search` defaults to `--mode discovery`: multi-term lexical search may use broad OR matching and reports such hits as `CANDIDATE`. Use `--mode evidence` when all query terms must match the same source chunk; qualifying hits report `FOUND`. Exact declaration lookup remains `FOUND` in either mode.
