@@ -38,6 +38,17 @@ class PropertyCiContractTest(unittest.TestCase):
         self.assertIn("PROPERTY_TEST_PASS", text)
         self.assertIn("HYPOTHESIS_STORAGE_DIRECTORY", text)
 
+    def test_native_lexical_oracle_is_pinned_and_scope_guarded(self):
+        text = WORKFLOW.read_text()
+        self.assertIn("lean-native-lexical:", text)
+        self.assertIn("lean +leanprover/lean4:v4.34.1", text)
+        self.assertIn("df0b2b3a439961ffcbb3985214365ffe40f49bc871df04dff268c7d8e21ca8b2", text)
+        self.assertIn("git diff --name-only", text)
+        self.assertIn("src/theseus_repo_search", text)
+        self.assertIn("python3 scripts/check_lean_lexical_oracle.py", text)
+        self.assertIn("tests/fixtures/lean_lexical_oracle.lean", text)
+        self.assertNotIn("lake build", text)
+
     def test_property_settings_are_bounded_and_database_free(self):
         text = PROPERTY_TEST.read_text()
         self.assertIn("max_examples=200", text)
