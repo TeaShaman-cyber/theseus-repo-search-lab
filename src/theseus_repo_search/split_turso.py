@@ -117,20 +117,31 @@ def _verify_remote_content(local: sqlite3.Connection, client: TursoHttpClient,
     compare("SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name")
     compare("SELECT key,value FROM meta ORDER BY key")
     compare("SELECT k,v FROM sources_fts_config ORDER BY k")
-    # Compare rowid mapping too: FTS external content depends on source rowid.
+    # Hash bounded ordered blocks remotely rather than transferring source text
+    # and FTS segment BLOBs across the network. Include rowid because external
+    # content FTS is keyed by it. The same SQL is evaluated against the local
+    # verified upload with a standard SHA-256 implementation.
+    local.create_function("sha256", 1, lambda text: sha256(text.encode("utf-8")).digest())
     for table, columns, key in (
         ("nodes", "rowid,*", "rowid"),
         ("sources", "rowid,*", "rowid"),
         ("sources_fts_data", "id,hex(block)", "id"),
         ("sources_fts_docsize", "id,hex(sz)", "id"),
     ):
-        prefix = f"SELECT {columns} FROM {table}"
-        page = compare(f"{prefix} ORDER BY {key} LIMIT 64")
-        while page:
-            page = compare(f"{prefix} WHERE {key}>? ORDER BY {key} LIMIT 64", (page[-1][0],))
-    # FTS index keys are composite; hex(term) is an order-preserving encoding
-    # of the BLOB and avoids extending the network parameter type contract.
-    prefix = "SELECT segid,hex(term),pgno FROM sources_fts_idx"
-    page = compare(prefix + " ORDER BY segid,term LIMIT 64")
-    while page:
-        page = compare(prefix + " WHERE (segid,hex(term))>(?,?) ORDER BY segid,term LIMIT 64", page[-1][:2])
+        if columns == "rowid,*":
+            columns = "rowid," + ",".join('"' + row[1].replace('"', '""') + '"'
+                                          for row in local.execute(f"PRAGMA table_info({table})"))
+        prefix = f"SELECT {key} k,hex(sha256(json_array({columns}))) h FROM {table}"
+        suffix = f" ORDER BY {key} LIMIT 4096"
+        where = ""
+        params: tuple[object, ...] = ()
+        while True:
+            sql = "SELECT count(*),max(k),hex(sha256(coalesce(group_concat(h,''),''))) FROM (" + prefix + where + suffix + ")"
+            count, last, _ = compare(sql, params)[0]
+            if not count:
+                break
+            where = f" WHERE {key}>?"
+            params = (last,)
+    compare("SELECT count(*),hex(sha256(coalesce(group_concat(h,''),''))) FROM ("
+            "SELECT hex(sha256(json_array(segid,hex(term),pgno))) h "
+            "FROM sources_fts_idx ORDER BY segid,term)")
