@@ -1,8 +1,9 @@
 #!/bin/sh
-# Reuse Session Search's exact Biome 2.6.6 profile over tracked JSON only.
+# Strict decoded-key validation plus the existing Biome profile over tracked JSON.
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
+PYTHONPATH="$ROOT/src${PYTHONPATH:+:$PYTHONPATH}" python3 scripts/check_json_contract.py
 test "$(biome --version)" = 'Version: 2.6.6'
 paths=$(mktemp)
 trap 'rm -f "$paths"' EXIT

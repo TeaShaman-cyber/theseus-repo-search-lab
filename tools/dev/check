@@ -204,10 +204,8 @@ printf '%s\n' '== JSON lint =='
 if [ -f biome.json ] && command -v biome >/dev/null 2>&1; then
     tools/ci/json-lint
 else
-    printf '%s\n' 'Biome unavailable: basic fixture syntax only; hosted JSON lint remains authoritative'
-    find tests -type f -name '*.json' -print | sort | while IFS= read -r path; do
-        python3 -m json.tool "$path" >/dev/null
-    done
+    printf '%s\n' 'Biome unavailable: strict tracked JSON check still required; hosted Biome lint remains authoritative'
+    python3 scripts/check_json_contract.py
 fi
 
 printf '%s\n' '== whitespace =='
