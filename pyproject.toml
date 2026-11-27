@@ -14,3 +14,8 @@ repo-search = "theseus_repo_search.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.mutmut]
+source_paths = ["src/theseus_repo_search"]
+only_mutate = ["src/theseus_repo_search/normalize.py"]
+pytest_add_cli_args_test_selection = ["tests/test_normalize.py"]
