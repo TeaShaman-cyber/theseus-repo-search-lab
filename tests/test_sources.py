@@ -714,3 +714,92 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
                                    "theorem Other.pow_add_pow_ne_pow : True := by trivial\n",
                                    source_revision="abc123")
         self.assertIsNone(bind_node_sources([node], chunks)[0].source_path)
+
+
+class NamespaceCollisionTests(unittest.TestCase):
+    def test_same_short_name_in_distinct_namespaces_binds_each_exact_location(self):
+        text = ("@[expose] public section\n"
+                "namespace WeierstrassCurve.Affine\n"
+                "namespace NumberField\n"
+                "theorem weakBSD : True := by trivial\n"
+                "end NumberField\n"
+                "namespace Rat\n"
+                "section Named\n"
+                "theorem weakBSD : True := by trivial\n"
+                "end Named\n"
+                "end Rat\n"
+                "end WeierstrassCurve.Affine\n")
+        chunks = _chunks_from_text("BSD.lean", text, source_revision="abc")
+        nodes = [Node.from_lean(full_name=f"WeierstrassCurve.Affine.{ns}.weakBSD",
+                                name="weakBSD", kind="thm", module="BSD",
+                                source_commit="abc") for ns in ("NumberField", "Rat")]
+        bound = bind_node_sources(nodes, chunks)
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         [n.full_name for n in nodes])
+        self.assertEqual([n.source_start_line for n in bound], [4, 8])
+
+    def test_scope_commands_inside_comments_do_not_change_binding(self):
+        text = ("namespace riemannZeta\n"
+                "/- namespace Incorrect -/\n"
+                "theorem simple_prop_two_thirds : True := by trivial\n"
+                "end riemannZeta\n"
+                "namespace DirichletCharacter\n"
+                "theorem simple_prop_two_thirds : True := by trivial\n"
+                "end DirichletCharacter\n")
+        chunks = _chunks_from_text("Zeros.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["riemannZeta.simple_prop_two_thirds",
+                          "DirichletCharacter.simple_prop_two_thirds"])
+
+    def test_unsupported_scope_fails_closed_for_collisions(self):
+        text = ("namespace «odd name»\n"
+                "theorem shared : True := by trivial\n"
+                "end «odd name»\n"
+                "namespace B\n"
+                "theorem shared : True := by trivial\n"
+                "end B\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        n = Node.from_lean(full_name="B.shared",name="shared",kind="thm",
+                           module="M",source_commit="abc")
+        self.assertIsNone(bind_node_sources([n],chunks)[0].source_path)
+
+    def test_root_and_namespace_collision_with_both_graph_nodes(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = ("theorem shared : True := by trivial\n"
+                "namespace A\n"
+                "theorem shared : True := by trivial\n"
+                "end A\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        nodes = [Node.from_lean(full_name=name, name="shared", kind="thm",
+                                module="M", source_commit="abc")
+                 for name in ("shared", "A.shared")]
+        for binder in (bind_node_sources, bind_manifest_backed_node_sources):
+            with self.subTest(binder=binder.__name__):
+                bound = binder(nodes, chunks)
+                self.assertEqual([n.source_start_line for n in bound], [1, 3])
+
+    def test_indented_scopes_and_mutual_end_do_not_lose_namespace(self):
+        text = ("namespace A\n"
+                "  mutual\n"
+                "    def helper : Nat := 0\n"
+                "  end\n"
+                "  theorem shared : True := by trivial\n"
+                "end A\n"
+                "  namespace B\n"
+                "  theorem shared : True := by trivial\n"
+                "  end B\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["helper", "A.shared", "B.shared"])
+
+    def test_root_helpers_is_an_ordinary_namespace(self):
+        text = ("namespace _root_helpers\n"
+                "theorem shared : True := by trivial\n"
+                "end _root_helpers\n"
+                "namespace B\n"
+                "theorem shared : True := by trivial\n"
+                "end B\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["_root_helpers.shared", "B.shared"])

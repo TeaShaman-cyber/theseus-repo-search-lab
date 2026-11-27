@@ -6,6 +6,7 @@ import os
 import re
 import stat
 import subprocess
+from collections import Counter
 from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
@@ -200,6 +201,59 @@ def tracked_lean_files(
         files.append(path)
     return sorted(files, key=lambda path: path.relative_to(source_root).as_posix())
 
+# Only qualify colliding lexical hints in the supported command subset.
+# Unique hints retain the existing artifact contract.
+_SCOPE_NAME = r"[^\W\d][\w']*(?:\.[^\W\d][\w']*)*"
+_SCOPE_COMMAND = re.compile(
+    rf"^\s*(?:@\[[^\]\n]*\]\s+)?(?:(?:public|noncomputable)\s+)*"
+    rf"(?P<kind>namespace|section|mutual|end)(?:\s+(?P<name>{_SCOPE_NAME}))?\s*$"
+)
+_SCOPE_PREFIX = re.compile(
+    r"^\s*(?:@\[[^\]\n]*\]\s+)?(?:(?:public|private|noncomputable|meta)\s+)*"
+    r"(?:namespace|section|mutual|end)\b"
+)
+
+
+def _qualify_collisions(
+    code_lines: list[str], declarations: list[tuple[int, str]]
+) -> list[tuple[int, str]]:
+    counts = Counter(name for _, name in declarations)
+    if all(count == 1 for count in counts.values()):
+        return declarations
+    names = dict(declarations)
+    scopes: list[tuple[str, str]] = []
+    result: list[tuple[int, str]] = []
+    for index, line in enumerate(code_lines):
+        if _SCOPE_PREFIX.match(line):
+            command = _SCOPE_COMMAND.fullmatch(line.rstrip())
+            if command is None:
+                return declarations
+            kind, name = command.group("kind", "name")
+            if kind == "namespace":
+                if not name or name.split(".", 1)[0] == "_root_":
+                    return declarations
+                scopes.append((kind, name))
+            elif kind == "section":
+                scopes.append((kind, name or ""))
+            elif kind == "mutual":
+                if name:
+                    return declarations
+                scopes.append((kind, ""))
+            elif not scopes or (name and scopes[-1][1] != name):
+                return declarations
+            else:
+                scopes.pop()
+        if index not in names:
+            continue
+        name = names[index]
+        if counts[name] > 1 and name.split(".", 1)[0] != "_root_":
+            prefix = ".".join(value for kind, value in scopes if kind == "namespace")
+            if prefix:
+                name = f"{prefix}.{name}"
+        result.append((index, name))
+    return result
+
+
 def _chunks_from_text(
     relative_path: str,
     text: str,
@@ -230,6 +284,7 @@ def _chunks_from_text(
     if not declarations:
         return []
 
+    declarations = _qualify_collisions(code_lines, declarations)
     declaration_lines = [index for index, _ in declarations]
     starts = _chunk_starts(lines, declaration_lines)
     chunks: list[SourceChunk] = []
@@ -445,6 +500,25 @@ def _chunk_declares_member(chunk: SourceChunk, name: str) -> bool:
     return re.search(rf"(?m)^[ \t]*{re.escape(name)}[ \t]*:", chunk.text) is not None
 
 
+def _disambiguate_owned_hint(
+    node: Node, matches: list[SourceChunk], module_names: set[tuple[str, str]]
+) -> list[SourceChunk]:
+    """Use an exact hint only when competing hints are owned by distinct nodes.
+
+    A short hint alone is not proof of a root declaration. Without an observed
+    competing graph node or when hints repeat, retain the old ambiguity.
+    """
+    if len(matches) <= 1:
+        return matches
+    exact = [c for c in matches if c.declaration_hint == node.full_name]
+    hints = {c.declaration_hint for c in matches}
+    if len(exact) != 1 or len(hints) != len(matches):
+        return matches
+    if all(hint is not None and (node.module, hint) in module_names for hint in hints):
+        return exact
+    return matches
+
+
 def bind_manifest_backed_node_sources(
     nodes: list[Node], sources: list[SourceChunk]
 ) -> list[Node]:
@@ -454,6 +528,7 @@ def bind_manifest_backed_node_sources(
             continue
         by_path.setdefault(chunk.source_path, []).append(chunk)
 
+    module_names = {(node.module, node.full_name) for node in nodes}
     bound: list[Node] = []
     for node in nodes:
         expected_path = lean_module_source_path(node.module)
@@ -470,6 +545,7 @@ def bind_manifest_backed_node_sources(
             if chunk.declaration_hint is not None
             and _full_name_matches_hint(node.full_name, chunk.declaration_hint)
         ]
+        matches = _disambiguate_owned_hint(node, matches, module_names)
         if len(matches) > 1:
             raise _source_mismatch(
                 "archive node is ambiguously backed by authoritative source chunks: "
@@ -554,6 +630,7 @@ def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Nod
             (chunk.source_path, chunk.declaration_hint), []
         ).append(chunk)
 
+    module_names = {(node.module, node.full_name) for node in nodes}
     bound: list[Node] = []
     for node in nodes:
         if node.source_path is not None:
@@ -563,6 +640,7 @@ def bind_node_sources(nodes: list[Node], sources: list[SourceChunk]) -> list[Nod
         hints = {node.name, node.full_name}
         matches = [chunk for hint in sorted(hints)
                    for chunk in by_path_and_name.get((expected_path, hint), [])]
+        matches = _disambiguate_owned_hint(node, matches, module_names)
         if len(matches) != 1:
             bound.append(node)
             continue
