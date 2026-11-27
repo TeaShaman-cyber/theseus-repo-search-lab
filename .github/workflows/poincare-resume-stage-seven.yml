@@ -2,13 +2,11 @@ name: Poincare resume from stage seven
 
 on:
   workflow_dispatch:
-    inputs:
-      origin_artifact_id:
-        required: true
-        type: string
-      origin_digest:
-        required: true
-        type: string
+  push:
+    branches: [corpus/poincare-resume-stage-seven]
+    paths:
+      - .github/workflows/poincare-resume-stage-seven.yml
+      - producer/pilots/poincare-resume-seven-plan.json
 
 permissions:
   contents: read
@@ -212,8 +210,8 @@ jobs:
       - name: Verify origin checkpoint and download exact ZIP
         env:
           GH_TOKEN: ${{ github.token }}
-          ORIGIN_ARTIFACT_ID: ${{ inputs.origin_artifact_id }}
-          ORIGIN_DIGEST: ${{ inputs.origin_digest }}
+          ORIGIN_ARTIFACT_ID: '15235032063'
+          ORIGIN_DIGEST: '5a3b9d24aa77fca10ec977d7a1832d7d3d81cff2e0af4267aff20d8dc234fd10'
         shell: bash
         run: |
           set -euo pipefail

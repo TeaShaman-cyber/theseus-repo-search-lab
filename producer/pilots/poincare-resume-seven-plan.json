@@ -11134,6 +11134,15 @@
     "header_graph_sha256": "9ef472bc96fa189475902e3dae8295bebcd2fa6b25e70700c9c163bd5bf62a45",
     "target_after_stage_10": 11088,
     "remaining_after_stage_10": 12466,
-    "min_free_before_build_gib": 20
+    "min_free_before_build_gib": 20,
+    "origin_checkpoint": {
+      "artifact_id": 15235032063,
+      "digest": "5a3b9d24aa77fca10ec977d7a1832d7d3d81cff2e0af4267aff20d8dc234fd10",
+      "size": 2372075473,
+      "run": 46056918409,
+      "job": 140751324172,
+      "head": "ac16b928735d1a7620b3d8ab2e526f1b55d464c8",
+      "modules": 8388
+    }
   }
 }
