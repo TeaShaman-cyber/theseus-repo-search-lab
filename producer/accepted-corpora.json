@@ -177,12 +177,12 @@
     },
     {
       "source_id": "openai-matrix-exponent",
-      "release_tag": "accepted-artifact/openai-matrix-exponent/69a978eec3b557ff",
+      "release_tag": "accepted-artifact/openai-matrix-exponent/db43e3627eeb6d8f",
       "package_asset": "openai-matrix-exponent-accepted.tar.gz",
       "receipt_asset": "openai-matrix-exponent-release-receipt.json",
       "source_descriptor": "producer/sources/openai-matrix-exponent.json",
-      "artifact_identity": "69a978eec3b557ffc9f3073e86f5c41b2b325edc28f706849119bf9df6d23cd1",
-      "fingerprint_sha256": "ec7a66bf941ff6b3ec83da7caed6044c4caf5a69a060b671659fd025be706bb4"
+      "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
+      "fingerprint_sha256": "3305095057197a44b5497e3279e2efa4ba870f3571c865c6836c1d4ff928519c"
     },
     {
       "source_id": "openai-navier-stokes",
