@@ -33,6 +33,11 @@ not a replacement for that scope.
   exact intended target, owner Issue, purpose, source identity and retirement
   condition; reconcile actual resources at completion or record pending cleanup.
   Follow [cloud resource housekeeping](docs/cloud-resource-housekeeping.md).
+- **Future corpus intake:** follow the [producer efficiency runbook](docs/producer-efficiency.md).
+  Use Codespaces for interactive heavy diagnosis and hosted CI for reproducible
+  acceptance; keep exe.dev/MarcoPolo orchestration bounded. Preserve exact
+  source, extraction scope, and producer identity. Enable candidate
+  optimizations only after the applicable parity and recovery checks.
 - **Verify:** use the repository's `./tools/dev/check` first. For search-runtime
   changes, also exercise real cold/warm corpus queries and report absent or
   unavailable corpora explicitly; green unit tests alone do not prove usability.
