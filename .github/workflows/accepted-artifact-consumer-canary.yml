@@ -81,6 +81,24 @@ jobs:
                   assert c.execute('SELECT source_path,source_start_line,source_end_line FROM nodes WHERE id=?',(node,)).fetchone()==(path,start,end)
                   assert c.execute('SELECT count(*) FROM edges WHERE source_id=? OR target_id=?',(node,node)).fetchone()[0]>0
               counts={k:c.execute(f'SELECT count(*) FROM {k}').fetchone()[0] for k in ('nodes','edges','sources')}
+          from theseus_repo_search.artifact import load_artifact
+          from theseus_repo_search.corpus_coverage import coverage_report
+          artifact=Path('_verified/artifact')
+          m,n,e,chunks=load_artifact(artifact)
+          raw=json.loads((artifact/'raw-depgraph.json').read_text())
+          plan=dict(purpose='Expanded Matrix formalization: retain every extracted declaration across the observed graph scope, including previously missing signed-machine and signed-frame witnesses.',
+                    producer_kind=m.producer.kind,required_modules=sorted({x['module'] for x in raw['nodes']}),
+                    excluded_raw_modules={},excluded_raw_declarations={},
+                    lexical_boundary='Additional indexed Lean files outside the observed elaborated scope are lexical context, not graph coverage.',
+                    witnesses=[
+                      dict(declaration='OAI.LinearAlgebra.SpectralBooks.SignedMachine.Program.Reachable',source_path='OAI/LinearAlgebra/SpectralBooks/SignedMachine.lean',direction='forward',neighbor='OAI.LinearAlgebra.SpectralBooks.SignedMachine.Program'),
+                      dict(declaration='OAI.LinearAlgebra.SpectralBooks.SignedProgram.Frame.tick_correct',source_path='OAI/LinearAlgebra/SpectralBooks/SignedProgram/SignedFrameStep.lean',direction='forward',neighbor='OAI.LinearAlgebra.SpectralBooks.ProgramCode.ActionArity'),
+                      dict(declaration='OAI.LinearAlgebra.SpectralBooks.square_exponent',source_path='OAI/LinearAlgebra/SpectralBooks/ExactExponent.lean',direction='forward',neighbor='OAI.LinearAlgebra.SpectralBooks.formalOmega_square_eq_omega')])
+          coverage=coverage_report(raw,n,e,chunks,plan,m.producer.kind)
+          assert coverage['raw_nodes']==coverage['graph_nodes']==27884
+          assert coverage['raw_modules']==coverage['graph_modules']==602
+          (p/'coverage-plan.json').write_text(json.dumps(plan,indent=2,sort_keys=True)+'\n')
+          (p/'coverage-report.json').write_text(json.dumps(coverage,indent=2,sort_keys=True)+'\n')
           verification=json.loads((p/'verification.json').read_text())
           result={'artifact_identity':verification['artifact_identity'],'projection_fingerprint':projection_fingerprint(db),'counts':counts,'files':{}}
           for f in sorted(p.iterdir()):
