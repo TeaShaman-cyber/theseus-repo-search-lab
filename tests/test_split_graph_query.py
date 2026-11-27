@@ -137,3 +137,28 @@ class SplitGraphQueryTests(unittest.TestCase):
         ):
             cli._cmd_turso_graph(args, catalog=self.catalog)
         self.assertEqual(events, ["recover","token"])
+
+    def test_cold_recovery_failure_is_structured(self):
+        import subprocess
+
+        from theseus_repo_search.split_graph_query import ensure_serving_graph
+
+        for failure in (FileNotFoundError("duckdb"), subprocess.CalledProcessError(1,["duckdb"]),
+                        subprocess.TimeoutExpired(["duckdb"],1), PermissionError("cache")):
+            with (
+                self.subTest(failure=type(failure).__name__),
+                patch("theseus_repo_search.split_graph_query.prepare_catalog_graph",side_effect=failure),
+                self.assertRaises(RepoSearchError) as error,
+            ):
+                ensure_serving_graph(self.catalog,self.item,repository_root=self.root,cache_root=self.root)
+            self.assertEqual(error.exception.code,"UNAVAILABLE_LOCAL_GRAPH")
+
+    def test_cold_recovery_integrity_failure_remains_blocked(self):
+        from theseus_repo_search.split_graph_query import ensure_serving_graph
+
+        with (
+            patch("theseus_repo_search.split_graph_query.prepare_catalog_graph",side_effect=ValueError("invalid projection")),
+            self.assertRaises(RepoSearchError) as error,
+        ):
+            ensure_serving_graph(self.catalog,self.item,repository_root=self.root,cache_root=self.root)
+        self.assertEqual(error.exception.code,"BLOCKED_LOCAL_GRAPH_INTEGRITY")

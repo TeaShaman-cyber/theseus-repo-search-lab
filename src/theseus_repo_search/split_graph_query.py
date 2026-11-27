@@ -62,9 +62,14 @@ def ensure_serving_graph(catalog: AcceptedCatalog, item: AcceptedCorpus, *,
     root = _serving_root(item, cache_root)
     if root.exists():
         return _check_cache(root, item)
-    prepared = prepare_catalog_graph(catalog, item.source_id, repository_root=repository_root,
-                                     cache_root=cache_root, executable=executable)
-    return publish_serving_graph(item, prepared, cache_root=cache_root)
+    try:
+        prepared = prepare_catalog_graph(catalog, item.source_id, repository_root=repository_root,
+                                         cache_root=cache_root, executable=executable)
+        return publish_serving_graph(item, prepared, cache_root=cache_root)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RepoSearchError("UNAVAILABLE_LOCAL_GRAPH", "local graph recovery unavailable") from exc
+    except (ValueError, TypeError, KeyError) as exc:
+        raise RepoSearchError("BLOCKED_LOCAL_GRAPH_INTEGRITY", "local graph recovery failed verification") from exc
 
 
 def publish_serving_graph(item: AcceptedCorpus, prepared: dict[str, object], *, cache_root: Path) -> Path:
