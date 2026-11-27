@@ -384,79 +384,89 @@ def _hash_json_member(digest, key: str, *, first: bool) -> None:
     digest.update(b":")
 
 
+def _fingerprint_rows(conn: sqlite3.Connection, edges, metadata) -> str:
+    fts_schema, fts_averages, revision_column = _logical_fingerprint_context(conn)
+    digest = sha256()
+    digest.update(b"{")
+
+    _hash_json_member(digest, "edges", first=True)
+    _hash_json_rows(
+        digest,
+        edges,
+    )
+
+    _hash_json_member(digest, "fts_averages", first=False)
+    digest.update(_canonical_json(fts_averages))
+
+    _hash_json_member(digest, "fts_docsize", first=False)
+    _hash_json_rows(
+        digest,
+        conn.execute(
+            """
+            SELECT s.id,hex(d.sz)
+            FROM sources_fts_docsize d
+            JOIN sources s ON s.rowid=d.id
+            ORDER BY s.id
+            """
+        ),
+    )
+
+    _hash_json_member(digest, "fts_postings", first=False)
+    _hash_json_rows(
+        digest,
+        conn.execute(
+            """
+            SELECT s.id,v.term,v.col,v.offset
+            FROM temp.sources_fts_vocab v
+            JOIN sources s ON s.rowid=v.doc
+            ORDER BY s.id,v.term,v.col,v.offset
+            """
+        ),
+    )
+
+    _hash_json_member(digest, "fts_schema", first=False)
+    digest.update(_canonical_json(fts_schema))
+
+    _hash_json_member(digest, "meta", first=False)
+    _hash_json_rows(
+        digest,
+        metadata,
+    )
+
+    _hash_json_member(digest, "nodes", first=False)
+    _hash_json_rows(
+        digest,
+        conn.execute(
+            "SELECT id, name, kind, module, source_path, source_start_line, "
+            f"source_end_line, {revision_column} FROM nodes ORDER BY id"
+        ),
+    )
+
+    _hash_json_member(digest, "sources", first=False)
+    _hash_json_rows(
+        digest,
+        conn.execute(
+            f"SELECT id, {revision_column}, source_path, source_start_line, "
+            "source_end_line, declaration_hint, text, content_sha256 "
+            "FROM sources ORDER BY id"
+        ),
+    )
+    digest.update(b"}")
+    return digest.hexdigest()
+
+
 def projection_fingerprint(db_path: Path) -> str:
     with sqlite3.connect(db_path) as conn:
-        fts_schema, fts_averages, revision_column = _logical_fingerprint_context(conn)
-        digest = sha256()
-        digest.update(b"{")
-
-        _hash_json_member(digest, "edges", first=True)
-        _hash_json_rows(
-            digest,
+        if conn.execute("SELECT value FROM meta WHERE key='projection_profile'").fetchone() is not None:
+            raise ValueError("full projection fingerprint requires a full projection")
+        return _fingerprint_rows(
+            conn,
             conn.execute(
                 "SELECT source_id, target_id, relation, evidence_grade, producer "
                 "FROM edges ORDER BY source_id, target_id, relation, producer"
             ),
-        )
-
-        _hash_json_member(digest, "fts_averages", first=False)
-        digest.update(_canonical_json(fts_averages))
-
-        _hash_json_member(digest, "fts_docsize", first=False)
-        _hash_json_rows(
-            digest,
-            conn.execute(
-                """
-                SELECT s.id,hex(d.sz)
-                FROM sources_fts_docsize d
-                JOIN sources s ON s.rowid=d.id
-                ORDER BY s.id
-                """
-            ),
-        )
-
-        _hash_json_member(digest, "fts_postings", first=False)
-        _hash_json_rows(
-            digest,
-            conn.execute(
-                """
-                SELECT s.id,v.term,v.col,v.offset
-                FROM temp.sources_fts_vocab v
-                JOIN sources s ON s.rowid=v.doc
-                ORDER BY s.id,v.term,v.col,v.offset
-                """
-            ),
-        )
-
-        _hash_json_member(digest, "fts_schema", first=False)
-        digest.update(_canonical_json(fts_schema))
-
-        _hash_json_member(digest, "meta", first=False)
-        _hash_json_rows(
-            digest,
             conn.execute("SELECT key, value FROM meta ORDER BY key"),
         )
-
-        _hash_json_member(digest, "nodes", first=False)
-        _hash_json_rows(
-            digest,
-            conn.execute(
-                "SELECT id, name, kind, module, source_path, source_start_line, "
-                f"source_end_line, {revision_column} FROM nodes ORDER BY id"
-            ),
-        )
-
-        _hash_json_member(digest, "sources", first=False)
-        _hash_json_rows(
-            digest,
-            conn.execute(
-                f"SELECT id, {revision_column}, source_path, source_start_line, "
-                "source_end_line, declaration_hint, text, content_sha256 "
-                "FROM sources ORDER BY id"
-            ),
-        )
-        digest.update(b"}")
-        return digest.hexdigest()
 
 
 def _populate_projection(artifact_dir: Path, db_path: Path) -> None:
