@@ -31,6 +31,7 @@ class SplitIntakeTests(unittest.TestCase):
         prepared = {"split": self.receipt, "directory": str(self.root), "graph_status": "REUSED"}
         with (
             patch("theseus_repo_search.split_intake.prepare_catalog_graph", return_value=prepared),
+            patch("theseus_repo_search.split_intake.publish_serving_graph", return_value=self.root/"graph.duckdb"),
             patch("theseus_repo_search.split_intake.materialize_split_search", return_value={"status": "CREATED"}) as search,
             patch("theseus_repo_search.split_intake.materialize_motherduck", return_value={"status": "REUSED"}) as graph,
         ):

@@ -14,6 +14,7 @@ from typing import Any
 from .accepted_catalog import AcceptedCatalog, AcceptedCorpus
 from .errors import RepoSearchError
 from .local_graph_cache import _literal, _native, prepare_catalog_graph
+from .split_graph_query import publish_serving_graph
 from .split_turso import materialize_split_search, split_projection_sha256
 from .turso_materializer import TursoHttpClient
 
@@ -109,6 +110,7 @@ def materialize_corpus(catalog: AcceptedCatalog, source_id: str, *,
     receipt: Any = prepared["split"]
     if item.artifact_identity != receipt["artifact_identity"] or item.split_projection_sha256 != split_projection_sha256(receipt):
         raise RepoSearchError("BLOCKED_PROJECTION_INTEGRITY", "prepared split differs from catalog pin")
+    serving_graph = publish_serving_graph(item, prepared, cache_root=cache_root)
     root = Path(str(prepared["directory"]))
     search = materialize_split_search(item, root, receipt["full_projection_fingerprint"],
                                       client, group=group)
@@ -116,4 +118,4 @@ def materialize_corpus(catalog: AcceptedCatalog, source_id: str, *,
                                    database=database, executable=executable)
     return {"source_id": source_id, "artifact_identity": item.artifact_identity,
             "split_projection_sha256": item.split_projection_sha256,
-            "local": prepared, "search": search, "graph": graph}
+            "local": prepared, "serving_graph": str(serving_graph), "search": search, "graph": graph}

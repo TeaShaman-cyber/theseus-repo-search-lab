@@ -44,7 +44,7 @@ from .producer_config import (
     load_lean_archive_source,
     load_lean_source,
 )
-from .projection import build_projection, read_projection_provenance
+from .projection import QueryConnection, build_projection, read_projection_provenance
 from .retrieval import SearchHit
 from .retrieval import context as build_context
 from .retrieval import search as search_repo
@@ -56,6 +56,7 @@ from .sources import (
     scan_lean_sources,
     scan_manifest_backed_lean_sources,
 )
+from .split_graph_query import SplitGraphConnection, ensure_serving_graph
 from .split_turso import materialize_split_search
 from .turso_materializer import TursoHttpClient, TursoMaterializer
 from .turso_query import connect_corpus, query_graph, search_turso_catalog
@@ -963,9 +964,12 @@ def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | Non
     item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
     if item is None:
         raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
+    conn: QueryConnection = connect_corpus(item, _turso_client(args))
     if item.split_projection_sha256 is not None:
-        raise RepoSearchError("UNAVAILABLE_GRAPH_BACKEND", "split graph query route not configured")
-    conn = connect_corpus(item, _turso_client(args))
+        cache = Path(os.environ.get("REPO_SEARCH_GRAPH_CACHE", str(Path.home() / ".cache/theseus-repo-search")))
+        db = ensure_serving_graph(catalog, item, repository_root=args.catalog.resolve().parent.parent,
+                                  cache_root=cache)
+        conn = SplitGraphConnection(conn, db)
     result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
                          max_edges=args.max_edges, token_budget=args.token_budget)
     if isinstance(result, GraphResult):
