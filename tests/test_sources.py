@@ -762,3 +762,44 @@ class NamespaceCollisionTests(unittest.TestCase):
         n = Node.from_lean(full_name="B.shared",name="shared",kind="thm",
                            module="M",source_commit="abc")
         self.assertIsNone(bind_node_sources([n],chunks)[0].source_path)
+
+    def test_root_and_namespace_collision_with_both_graph_nodes(self):
+        from theseus_repo_search.sources import bind_manifest_backed_node_sources
+
+        text = ("theorem shared : True := by trivial\n"
+                "namespace A\n"
+                "theorem shared : True := by trivial\n"
+                "end A\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        nodes = [Node.from_lean(full_name=name, name="shared", kind="thm",
+                                module="M", source_commit="abc")
+                 for name in ("shared", "A.shared")]
+        for binder in (bind_node_sources, bind_manifest_backed_node_sources):
+            with self.subTest(binder=binder.__name__):
+                bound = binder(nodes, chunks)
+                self.assertEqual([n.source_start_line for n in bound], [1, 3])
+
+    def test_indented_scopes_and_mutual_end_do_not_lose_namespace(self):
+        text = ("namespace A\n"
+                "  mutual\n"
+                "    def helper : Nat := 0\n"
+                "  end\n"
+                "  theorem shared : True := by trivial\n"
+                "end A\n"
+                "  namespace B\n"
+                "  theorem shared : True := by trivial\n"
+                "  end B\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["helper", "A.shared", "B.shared"])
+
+    def test_root_helpers_is_an_ordinary_namespace(self):
+        text = ("namespace _root_helpers\n"
+                "theorem shared : True := by trivial\n"
+                "end _root_helpers\n"
+                "namespace B\n"
+                "theorem shared : True := by trivial\n"
+                "end B\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["_root_helpers.shared", "B.shared"])
