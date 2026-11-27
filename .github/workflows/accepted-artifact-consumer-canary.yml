@@ -1,119 +1,99 @@
-name: Accepted artifact consumer canary
-
+name: Matrix source-free package and projection
 on:
   workflow_dispatch:
-
 permissions:
   contents: read
-
+  actions: read
 concurrency:
-  group: accepted-artifact-consumer-${{ github.ref }}
-  cancel-in-progress: true
-
+  group: matrix-package-projection-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  consume-flt-release:
+  package-projection:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
-      PYTHONPATH: ${{ github.workspace }}/src
+      PYTHONPATH: .:src
       GH_TOKEN: ${{ github.token }}
-      RELEASE_TAG: accepted-artifact/flt-regular/41bfa1d236ee59a8
-      PACKAGE_ASSET: leanprover-community-flt-regular-accepted.tar.gz
-      RECEIPT_ASSET: leanprover-community-flt-regular-release-receipt.json
-      SOURCE_DESCRIPTOR: producer/sources/leanprover-community-flt-regular.json
-      SOURCE_ID: leanprover-community-flt-regular
+      SOURCE_ID: openai-matrix-exponent
+      ACCEPTED_HEAD: d2304b5ea6e81979ce009b0b3df19acc0d9ee306
+      ACCEPTED_RUN: '46068207056'
     steps:
-      - name: Checkout repository lens
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-
-      - name: Verify exact consumer checkout
+          fetch-depth: 0
+      - name: Verify successful origin and exact artifact digests
         shell: bash
         run: |
           set -euo pipefail
-          observed="$(git rev-parse HEAD)"
-          test "$observed" = "${{ github.sha }}"
-          printf 'consumer_checkout_sha=%s\n' "$observed"
-
-      - name: Verify immutable release and download exact assets
+          git diff --exit-code "$ACCEPTED_HEAD" HEAD -- src scripts producer
+          mkdir -p _in _out
+          python3 - <<'PY_ORIGIN'
+          import hashlib,json,os,subprocess,zipfile
+          from pathlib import Path,PurePosixPath
+          repo=os.environ['GITHUB_REPOSITORY'];run=int(os.environ['ACCEPTED_RUN']);head=os.environ['ACCEPTED_HEAD']
+          sid=os.environ['SOURCE_ID'];name=sid+'-repo-index-v1'
+          def get(path):
+              return json.loads(subprocess.check_output(['gh','api',f'repos/{repo}/{path}']))
+          r=get(f'actions/runs/{run}')
+          assert r['head_sha']==head and r['status']=='completed' and r['conclusion']=='success'
+          jobs=get(f'actions/runs/{run}/jobs')['jobs']
+          assert len(jobs)==2 and all(j['conclusion']=='success' and j['head_sha']==head for j in jobs)
+          for n in ('Verify project and replay selected source','Verify exact Matrix research witnesses','Write consumer acceptance receipt'):
+              assert any(s['name']==n and s['conclusion']=='success' for j in jobs for s in j['steps']),n
+          arts=get(f'actions/runs/{run}/artifacts')['artifacts']
+          for expected in (name,name+'-consumer-receipt'):
+              a,=[x for x in arts if x['name']==expected]
+              assert not a['expired'] and a['workflow_run']['id']==run and a['workflow_run']['head_sha']==head
+              z=Path('_in')/(expected+'.zip')
+              with z.open('wb') as f:subprocess.run(['gh','api',f'repos/{repo}/actions/artifacts/{a["id"]}/zip'],stdout=f,check=True)
+              assert hashlib.sha256(z.read_bytes()).hexdigest()==a['digest'].removeprefix('sha256:')
+              with zipfile.ZipFile(z) as f:
+                  assert all(not PurePosixPath(n).is_absolute() and '..' not in PurePosixPath(n).parts for n in f.namelist())
+                  f.extractall('_in')
+              print('ORIGIN_PASS',expected,a['id'],a['digest'])
+          PY_ORIGIN
+      - name: Package and independently consume accepted artifact
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p _release
-          gh release verify "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
-          gh release download "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --pattern "$PACKAGE_ASSET" \
-            --pattern "$RECEIPT_ASSET" \
-            --dir _release
-          gh release verify-asset "$RELEASE_TAG" "_release/$PACKAGE_ASSET" --repo "$GITHUB_REPOSITORY"
-          gh release verify-asset "$RELEASE_TAG" "_release/$RECEIPT_ASSET" --repo "$GITHUB_REPOSITORY"
-          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')"
-          receipt_head="$(jq -r '.acceptance.repository_head' "_release/$RECEIPT_ASSET")"
-          test "$tag_sha" = "$receipt_head"
-          printf 'release_tag_sha=%s\n' "$tag_sha"
-
-      - name: Install repository lens package
-        run: python3 -m pip install -e .
-
-      - name: Verify accepted package against current producer fingerprint
+          s="$SOURCE_ID"
+          python3 scripts/package_accepted_artifact.py --artifact "_in/$s-artifact" --replay "_in/$s-replay.json" --source-descriptor "producer/sources/$s.json" --runner-config producer/runner.json --consumer-receipt "_in/$s-consumer-receipt.json" --repository-root . --archive "_out/$s-accepted.tar.gz" --receipt "_out/$s-release-receipt.json"
+          python3 scripts/consume_accepted_release.py --archive "_out/$s-accepted.tar.gz" --receipt "_out/$s-release-receipt.json" --source-descriptor "producer/sources/$s.json" --runner-config producer/runner.json --dest _verified --out _out/verification.json
+      - name: Build verified projection and check exact research witnesses
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/consume_accepted_release.py \
-            --archive "_release/$PACKAGE_ASSET" \
-            --receipt "_release/$RECEIPT_ASSET" \
-            --source-descriptor "$SOURCE_DESCRIPTOR" \
-            --runner-config producer/runner.json \
-            --dest _consumer/release \
-            --out _consumer/release-consumer-verification.json
-
-      - name: Build fresh disposable projection
-        shell: bash
-        run: |
-          set -euo pipefail
-          artifact="_consumer/release/artifact"
-          db="_consumer/${SOURCE_ID}.sqlite"
-          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
-          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
-          python3 - "$db" <<'PY_SQLITE'
-          import sqlite3
-          import sys
-          with sqlite3.connect(sys.argv[1]) as conn:
-              observed = conn.execute("PRAGMA quick_check").fetchone()[0]
-          if observed != "ok":
-              raise SystemExit(f"SQLite quick_check failed: {observed}")
-          print(f"sqlite_quick_check={observed}")
-          PY_SQLITE
-
-      - name: Replay accepted artifact with current consumer
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/replay_flt_regular.py \
-            --db "_consumer/${SOURCE_ID}.sqlite" \
-            --artifact _consumer/release/artifact \
-            --descriptor "$SOURCE_DESCRIPTOR" \
-            --out "_consumer/${SOURCE_ID}-replay.json"
-
-      - name: Run fresh FLT research smoke
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/run_research_smoke.py \
-            --db "_consumer/${SOURCE_ID}.sqlite" \
-            --artifact _consumer/release/artifact \
-            --scenario qa/research-smoke/flt-bridge-v0.json \
-            --tool-commit "${{ github.sha }}" \
-            --out "_consumer/${SOURCE_ID}-research-smoke-receipt.json"
-
-      - name: Upload consumer-only canary receipts
+          python3 -m theseus_repo_search build-index --artifact _verified/artifact --db _out/index.sqlite
+          python3 scripts/replay_queued_intake.py --db _out/index.sqlite --artifact _verified/artifact --descriptor "producer/sources/$SOURCE_ID.json" --runner producer/runner.json --out _out/replay.json
+          python3 - <<'PY_PROJECTION'
+          import hashlib,json,sqlite3
+          from pathlib import Path
+          from theseus_repo_search.projection import projection_fingerprint
+          p=Path('_out');db=p/'index.sqlite'
+          with sqlite3.connect(db.resolve().as_uri()+'?mode=ro',uri=True) as c:
+              assert c.execute('PRAGMA quick_check').fetchone()==('ok',)
+              assert c.execute('SELECT count(*) FROM nodes').fetchone()==(27884,)
+              for name,path,start,end in (
+                  ('OAI.LinearAlgebra.SpectralBooks.SignedMachine.Program.Reachable','OAI/LinearAlgebra/SpectralBooks/SignedMachine.lean',191,196),
+                  ('OAI.LinearAlgebra.SpectralBooks.SignedProgram.Frame.tick_correct','OAI/LinearAlgebra/SpectralBooks/SignedProgram/SignedFrameStep.lean',64,107)):
+                  node='lean:'+name
+                  assert c.execute('SELECT source_path,source_start_line,source_end_line FROM nodes WHERE id=?',(node,)).fetchone()==(path,start,end)
+                  assert c.execute('SELECT count(*) FROM edges WHERE source_id=? OR target_id=?',(node,node)).fetchone()[0]>0
+              counts={k:c.execute(f'SELECT count(*) FROM {k}').fetchone()[0] for k in ('nodes','edges','sources')}
+          verification=json.loads((p/'verification.json').read_text())
+          result={'artifact_identity':verification['artifact_identity'],'projection_fingerprint':projection_fingerprint(db),'counts':counts,'files':{}}
+          for f in sorted(p.iterdir()):
+              if f.is_file():
+                  with f.open('rb') as stream: digest=hashlib.file_digest(stream,'sha256').hexdigest()
+                  result['files'][f.name]={'size':f.stat().st_size,'sha256':digest}
+          (p/'projection-receipt.json').write_text(json.dumps(result,sort_keys=True)+'\n')
+          print('MATRIX_PROJECTION_PASS',result)
+          PY_PROJECTION
+      - name: Retain independently verified package and projection
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: flt-accepted-release-consumer-canary
-          path: |
-            _consumer/release-consumer-verification.json
-            _consumer/*-replay.json
-            _consumer/*-research-smoke-receipt.json
+          name: matrix-accepted-package-and-projection
+          path: _out/
           if-no-files-found: error
+          retention-days: 7
