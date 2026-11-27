@@ -140,6 +140,15 @@
       "fingerprint_sha256": "dfa7ca99797b28662ef00f4e0bdee91fdf46b6802128c59c1f06c3133153d199"
     },
     {
+      "source_id": "openai-ten-proofs-gap-cvp",
+      "release_tag": "accepted-artifact/openai-ten-proofs-gap-cvp/5ef64520d8fa1150",
+      "package_asset": "openai-ten-proofs-gap-cvp-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-gap-cvp-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-gap-cvp.json",
+      "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+      "fingerprint_sha256": "e1b49405a6ee24b497bce70f552e4e83c67ce398404dd398abb7617301c5f4a6"
+    },
+    {
       "source_id": "openai-ten-proofs-metric-codes",
       "release_tag": "accepted-artifact/openai-ten-proofs-metric-codes/4185b2baa6fc54bf",
       "package_asset": "openai-ten-proofs-metric-codes-accepted.tar.gz",
@@ -174,6 +183,15 @@
       "source_descriptor": "producer/sources/openai-ten-proofs-permanent.json",
       "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
       "fingerprint_sha256": "b609443a04a2f21d7a23c59a624c6a4bf1512bcec2aeb513147dd64b545c4a70"
+    },
+    {
+      "source_id": "openai-ten-proofs-quantum-repetition",
+      "release_tag": "accepted-artifact/openai-ten-proofs-quantum-repetition/48895ebe70405d1d",
+      "package_asset": "openai-ten-proofs-quantum-repetition-accepted.tar.gz",
+      "receipt_asset": "openai-ten-proofs-quantum-repetition-release-receipt.json",
+      "source_descriptor": "producer/sources/openai-ten-proofs-quantum-repetition.json",
+      "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+      "fingerprint_sha256": "2c92fb87860a38234b01430ba0361c5ee676aab73b96b71502382db711272afe"
     },
     {
       "source_id": "openai-ten-proofs-sphere-packing",
