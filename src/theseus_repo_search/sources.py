@@ -30,6 +30,11 @@ DECL_HEADER_ONLY_RE = re.compile(
 _RAW_STRING_START = re.compile(r"(?<![\w'])r(#+)?\"" )
 
 
+# Lean character literals are single lexical tokens. An apostrophe in an
+# identifier is not a character opener. Recognize ordinary and escaped chars.
+_CHAR_LITERAL = re.compile(r"(?<![\w'])(?:'[^'\\\r\n]'|'\\(?:[xuU][0-9A-Fa-f]+|[^\r\n])')")
+
+
 def _comment_lines(lines: list[str]) -> list[bool]:
     """Return whether each line begins in comment context.
 
@@ -89,6 +94,11 @@ def _comment_lines(lines: list[str]) -> list[bool]:
                     first_token_is_comment = True
                 block_depth += 1
                 index += 2
+                continue
+            literal = _CHAR_LITERAL.match(line, index) if char == "'" else None
+            if literal:
+                code_seen = True
+                index = literal.end()
                 continue
             raw = _RAW_STRING_START.match(line, index) if char == "r" else None
             if raw:
@@ -169,6 +179,11 @@ def _code_lines(lines: list[str]) -> list[str]:
                 out.extend("  ")
                 index += 2
                 continue
+            literal = _CHAR_LITERAL.match(line, index) if char == "'" else None
+            if literal:
+                out.extend("'" + " " * (literal.end() - index - 2) + "'")
+                index = literal.end()
+                continue
             raw = _RAW_STRING_START.match(line, index) if char == "r" else None
             if raw:
                 raw_end = '"' + (raw.group(1) or "")
@@ -182,7 +197,38 @@ def _code_lines(lines: list[str]) -> list[str]:
 
         rendered.append("".join(out))
 
-    return rendered
+    return _mask_syntax_quotations(rendered)
+
+
+def _mask_syntax_quotations(lines: list[str]) -> list[str]:
+    """Do not interpret a quoted command as an actual Lean command.
+
+    Input already has literal payloads and comments masked. This handles
+    parenthesized quotations, not macro expansion or arbitrary Lean syntax.
+    """
+    result: list[str] = []
+    depth = 0
+    for line in lines:
+        out: list[str] = []
+        index = 0
+        while index < len(line):
+            char = line[index]
+            if depth:
+                if char == "(":
+                    depth += 1
+                elif char == ")":
+                    depth -= 1
+                out.append(char if depth == 0 or char == "\n" else " ")
+            elif line.startswith(chr(96) + "(", index):
+                depth = 1
+                out.extend(line[index:index + 2])
+                index += 2
+                continue
+            else:
+                out.append(char)
+            index += 1
+        result.append("".join(out))
+    return result
 
 
 def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:

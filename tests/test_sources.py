@@ -802,6 +802,20 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
                 self.assertEqual([c.declaration_hint for c in chunks], ["marker", "Real.D.x"])
                 self.assertEqual(chunks[0].source_end_line, 6)
 
+    def test_character_literal_does_not_open_multiline_string(self):
+        text = ("def quote : Char := '\"'\n"
+                "namespace Real\ntheorem D.x : True := by trivial\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["quote", "Real.D.x"])
+
+    def test_quoted_commands_are_not_scope_or_declaration_evidence(self):
+        text = ("def quoted := `(command|\n"
+                "namespace Fake\n"
+                "theorem Ghost.x : True := by trivial)\n"
+                "namespace Real\ntheorem D.x : True := by trivial\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["quoted", "Real.D.x"])
+
     def test_mismatched_end_does_not_guess_scope(self):
         text = ("namespace A.B\nnamespace C\n"
                 "theorem D.x : True := by trivial\nend X.C\n")
