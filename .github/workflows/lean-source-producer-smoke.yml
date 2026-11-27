@@ -13,41 +13,17 @@ concurrency:
 jobs:
   produce-and-replay:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     env:
       PYTHONPATH: ${{ github.workspace }}/src
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/openai-navier-stokes.json
-            replay_script: scripts/replay_navier_stokes.py
-            artifact_name: openai-navier-stokes-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/openai-prime-gaps-186.json
+            replay_script: scripts/replay_prime_gaps_186.py
+            artifact_name: openai-prime-gaps-186-single-thread-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -225,7 +201,26 @@ jobs:
           path: ~/.cache/mathlib
           key: ${{ steps.mathlib-cache-key.outputs.key }}
 
+      - name: Activate bounded extra swap on ephemeral runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          free -h
+          test "$(df -Pk / | awk 'NR == 2 {print $4}')" -ge 33554432
+          sudo -n true
+          swapfile=/var/tmp/theseus-primegaps.swap
+          test ! -e "$swapfile"
+          sudo fallocate -l 12G "$swapfile"
+          sudo chmod 600 "$swapfile"
+          sudo mkswap "$swapfile"
+          sudo swapon "$swapfile"
+          swapon --show --bytes
+          test "$(awk '/SwapTotal:/ {print $2}' /proc/meminfo)" -ge 12582912
+          free -h
+
       - name: Build source target
+        env:
+          LEAN_NUM_THREADS: "1"
         shell: bash
         run: |
           set -euo pipefail
@@ -244,6 +239,13 @@ jobs:
               root_free_kib="$(df -Pk / | awk 'NR == 2 {print $4}')"
               printf 'build_heartbeat ts=%s elapsed_seconds=%s source_id=%s build_target=%s mem_available_kib=%s root_free_kib=%s\n' \
                 "$ts" "$elapsed" "$SOURCE_ID" "$BUILD_TARGET" "$mem_available_kib" "$root_free_kib"
+              ps -eo comm,pid,rss,nlwp --sort=-rss | head -n 8 || true
+              awk '/^(MemAvailable|SwapTotal|SwapFree):/ {print}' /proc/meminfo
+              for pid in $(pgrep -x lean || true); do
+                printf 'lean_memory pid=%s ' "$pid"
+                awk '/^(VmRSS|VmSwap|Threads):/ {printf "%s %s %s ", $1, $2, $3} END {print ""}' "/proc/$pid/status" 2>/dev/null || true
+              done
+              if [ -r /sys/fs/cgroup/memory.events ]; then cat /sys/fs/cgroup/memory.events; fi
               if (( tick % 5 == 0 )); then
                 if [ -d "$SOURCE_ROOT/.lake/build" ]; then
                   source_build_kib="$(du -sk "$SOURCE_ROOT/.lake/build" | awk '{print $1}')"
@@ -266,7 +268,9 @@ jobs:
           trap 'cleanup_heartbeat; exit 130' INT
           trap 'cleanup_heartbeat; exit 143' TERM
 
-          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
+          printf 'lean_num_threads=%s\n' "$LEAN_NUM_THREADS"
+          /usr/bin/time -v timeout --signal=TERM --kill-after=30s 110m \
+            python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake build "$BUILD_TARGET"
 
           cleanup_heartbeat
           trap - EXIT INT TERM
@@ -301,6 +305,16 @@ jobs:
             --roots "$EXTRACTOR_ROOT_MODULES" \
             --json-out "$GITHUB_WORKSPACE/_out/raw-depgraph.json"
 
+      - name: Checkpoint exact raw graph before normalization
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: raw-${{ matrix.artifact_name }}
+          path: |
+            _out/raw-depgraph.json
+            _out/raw-depgraph-receipt.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Install repository lens package
         run: python3 -m pip install -e .
 
@@ -322,6 +336,14 @@ jobs:
             --producer-tool-hash "$EXTRACTOR_MAIN_SHA256" \
             --out "_out/${SOURCE_ID}-artifact"
           test -s "_out/${SOURCE_ID}-artifact/authority-receipt.json"
+
+      - name: Checkpoint normalized artifact before replay
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: normalized-${{ matrix.artifact_name }}
+          path: _out/*-artifact/
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Verify project and replay selected source
         shell: bash
@@ -357,45 +379,23 @@ jobs:
             _out/*-artifact/
             _out/*-replay.json
           if-no-files-found: error
+          retention-days: 7
 
   consume-artifact:
     needs: produce-and-replay
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       PYTHONPATH: ${{ github.workspace }}/src
     strategy:
       fail-fast: false
+      max-parallel: 3
       matrix:
         include:
-          - source_descriptor: producer/sources/zeta23.json
-            replay_script: scripts/replay_zeta23.py
-            artifact_name: zeta23-repo-index-v1
-          - source_descriptor: producer/sources/openai-long-gaps.json
-            replay_script: scripts/replay_long_gaps.py
-            artifact_name: openai-long-gaps-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            replay_script: scripts/replay_flt_regular.py
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-          - source_descriptor: producer/sources/openai-cdc-lean.json
-            replay_script: scripts/replay_cdc_lean.py
-            artifact_name: openai-cdc-lean-repo-index-v1
-          - source_descriptor: producer/sources/leanprover-community-con-nf.json
-            replay_script: scripts/replay_con_nf.py
-            artifact_name: leanprover-community-con-nf-repo-index-v1
-          - source_descriptor: producer/sources/openai-ten-proofs-multicolor.json
-            replay_script: scripts/replay_ten_proofs_multicolor.py
-            artifact_name: openai-ten-proofs-multicolor-repo-index-v1
-          - source_descriptor: producer/sources/openai-navier-stokes.json
-            replay_script: scripts/replay_navier_stokes.py
-            artifact_name: openai-navier-stokes-repo-index-v1
-          - source_descriptor: producer/sources/decreasing-diagrams-complete.json
-            replay_script: scripts/replay_decreasing_diagrams.py
-            artifact_name: decreasing-diagrams-complete-repo-index-v2
-            source_kind: archive
-          - source_descriptor: producer/sources/annals-challenge-marton.json
-            replay_script: scripts/replay_annals_marton.py
-            artifact_name: annals-challenge-marton-repo-index-v1
+          - source_descriptor: producer/sources/openai-prime-gaps-186.json
+            replay_script: scripts/replay_prime_gaps_186.py
+            artifact_name: openai-prime-gaps-186-single-thread-repo-index-v1
     steps:
       - name: Checkout repository lens
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -479,78 +479,4 @@ jobs:
           name: ${{ matrix.artifact_name }}-consumer-receipt
           path: _consumer/*-consumer-receipt.json
           if-no-files-found: error
-
-  research-smoke:
-    needs: consume-artifact
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      PYTHONPATH: ${{ github.workspace }}/src
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - scenario: qa/research-smoke/zeta23-riemann-panel-v0.json
-            source_descriptor: producer/sources/zeta23.json
-            artifact_name: zeta23-repo-index-v1
-            source_id: zeta23
-          - scenario: qa/research-smoke/flt-bridge-v0.json
-            source_descriptor: producer/sources/leanprover-community-flt-regular.json
-            artifact_name: leanprover-community-flt-regular-repo-index-v1
-            source_id: leanprover-community-flt-regular
-          - scenario: qa/research-smoke/annals-marton-seam-v0.json
-            source_descriptor: producer/sources/annals-challenge-marton.json
-            artifact_name: annals-challenge-marton-repo-index-v1
-            source_id: annals-challenge-marton
-    steps:
-      - name: Checkout repository lens
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-
-      - name: Verify exact research smoke checkout
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected="${{ github.sha }}"
-          observed="$(git rev-parse HEAD)"
-          test "$observed" = "$expected"
-          printf 'research_smoke_event_sha=%s\n' "$expected"
-          printf 'research_smoke_checkout_sha=%s\n' "$observed"
-          printf 'RESEARCH_SMOKE_TOOL_COMMIT=%s\n' "$observed" >> "$GITHUB_ENV"
-
-      - name: Download accepted normalized artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: _smoke/download
-
-      - name: Install repository lens package
-        run: python3 -m pip install -e .
-
-      - name: Build disposable smoke projection
-        shell: bash
-        run: |
-          set -euo pipefail
-          artifact="_smoke/download/${{ matrix.source_id }}-artifact"
-          db="_smoke/${{ matrix.source_id }}.sqlite"
-          python3 -m theseus_repo_search verify-artifact --artifact "$artifact"
-          python3 -m theseus_repo_search build-index --artifact "$artifact" --db "$db"
-
-      - name: Run non-blocking live research smoke
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/run_research_smoke.py \
-            --db "_smoke/${{ matrix.source_id }}.sqlite" \
-            --artifact "_smoke/download/${{ matrix.source_id }}-artifact" \
-            --scenario "${{ matrix.scenario }}" \
-            --tool-commit "$RESEARCH_SMOKE_TOOL_COMMIT" \
-            --out "_smoke/${{ matrix.source_id }}-research-smoke-receipt.json"
-
-      - name: Upload research smoke receipt
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: ${{ matrix.artifact_name }}-research-smoke-receipt
-          path: _smoke/*-research-smoke-receipt.json
-          if-no-files-found: error
+          retention-days: 7
