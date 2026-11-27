@@ -56,3 +56,15 @@ jobs:
           zizmor --offline --no-config --strict-collection .github/workflows
           shellcheck tools/ci/* tools/dev/*
           tools/ci/json-lint
+
+      - name: Checkout pinned JSONTestSuite corpus
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: nst/JSONTestSuite
+          ref: 1ef36fa01286573e846ac449e8683f8833c5b26a
+          path: .qa-json-testsuite
+          sparse-checkout: test_parsing
+          persist-credentials: false
+
+      - name: Verify strict runtime JSON parser conformance
+        run: PYTHONPATH=src python3 scripts/check_json_contract.py --corpus .qa-json-testsuite

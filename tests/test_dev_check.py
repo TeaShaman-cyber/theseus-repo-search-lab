@@ -19,7 +19,7 @@ class DevCheckContractTest(unittest.TestCase):
             "PYTHONPYCACHEPREFIX",
             "python3 -m unittest discover",
             "python3 -m compileall",
-            "python3 -m json.tool",
+            "python3 scripts/check_json_contract.py",
             "git diff --check",
             "DEV_CHECK_PASS",
         ):
@@ -38,6 +38,11 @@ class DevCheckContractTest(unittest.TestCase):
                 (root / rel).mkdir(parents=True, exist_ok=True)
             copied = root / "tools/dev/check"
             shutil.copy2(CHECK, copied)
+            shutil.copy2(ROOT / "scripts/check_json_contract.py", root / "scripts/check_json_contract.py")
+            package = root / "src/theseus_repo_search"
+            package.mkdir()
+            shutil.copy2(ROOT / "src/theseus_repo_search/json_contract.py", package / "json_contract.py")
+            (root / "tests/valid.json").write_text("{}\n", encoding="utf-8")
             (root / "docs/superpowers/plans/example.md").write_text(plan_text, encoding="utf-8")
             (root / "tests/test_smoke.py").write_text(
                 "import unittest\n\nclass SmokeTest(unittest.TestCase):\n    def test_smoke(self):\n        self.assertTrue(True)\n",
@@ -78,6 +83,13 @@ class DevCheckContractTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+
+    def test_dev_check_rejects_tracked_escaped_duplicate_without_biome(self):
+        result = self._run_copied_check_with_plan(
+            "# JSON gate\n", repo_files={"producer/bad.json": r'{"a":1,"\u0061":2}'},
+        )
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("producer/bad.json: duplicate JSON object key: a", result.stderr)
 
     def test_dev_check_rejects_module_level_unittest_method_snippet(self):
         result = self._run_copied_check_with_plan(
