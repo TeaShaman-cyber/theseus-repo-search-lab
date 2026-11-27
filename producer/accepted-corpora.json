@@ -22,7 +22,7 @@
     },
     {
       "source_id": "anthropic-fermats-last-theorem",
-      "release_tag": "accepted-artifact/anthropic-fermats-last-theorem/21b6b292cb3160fa",
+      "release_tag": "accepted-artifact/anthropic-fermats-last-theorem/21b6b292cb3160fa3",
       "package_asset": "anthropic-fermats-last-theorem-accepted.tar.gz",
       "receipt_asset": "anthropic-fermats-last-theorem-release-receipt.json",
       "source_descriptor": "producer/sources/anthropic-fermats-last-theorem.json",
@@ -39,6 +39,15 @@
       "fingerprint_sha256": "c3a52418f50906ebd70c5c84a1d8086ecde0ddb3af665c946d709e9944c58d0e"
     },
     {
+      "source_id": "formal-conjectures-bsd",
+      "release_tag": "accepted-artifact/formal-conjectures-bsd/e6f46dcbbaeca2c6",
+      "package_asset": "formal-conjectures-bsd-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-bsd-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-bsd.json",
+      "artifact_identity": "e6f46dcbbaeca2c6431fb78b373cea380b26a7327109a377cc8bd1c885d5a5b1",
+      "fingerprint_sha256": "389145de4e597fa025f6453a8a54de3e63ffe0116223c7eb8e51397dc49d6790"
+    },
+    {
       "source_id": "formal-conjectures-navier-stokes",
       "release_tag": "accepted-artifact/formal-conjectures-navier-stokes/362cfdbf1a35ae42",
       "package_asset": "formal-conjectures-navier-stokes-accepted.tar.gz",
@@ -46,6 +55,15 @@
       "source_descriptor": "producer/sources/formal-conjectures-navier-stokes.json",
       "artifact_identity": "362cfdbf1a35ae4288d58c7569b359687dac4e9b754637320ce748d15be0e273",
       "fingerprint_sha256": "cc4080a9c5192f65079f631da54a15780d20d765684819660de5eb3b6ef23144"
+    },
+    {
+      "source_id": "formal-conjectures-p-vs-np",
+      "release_tag": "accepted-artifact/formal-conjectures-p-vs-np/23733a97119fe99a",
+      "package_asset": "formal-conjectures-p-vs-np-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-p-vs-np-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-p-vs-np.json",
+      "artifact_identity": "23733a97119fe99ac175f8bf781141c74036ce5016420fa8185ae4ce6cda4d99",
+      "fingerprint_sha256": "a986944bb8c5f5fad9af3c59ad86ef351e10a7dc0cec301399015f8e6d09a2df"
     },
     {
       "source_id": "formal-conjectures-poincare-statement",
@@ -73,6 +91,24 @@
       "source_descriptor": "producer/sources/formal-conjectures-riemann.json",
       "artifact_identity": "d56ca7204a9a991c1e046b2760c1a84a99eb8e38597cd33cc6cab5bb26930eec",
       "fingerprint_sha256": "7af3e1efe51626f2ced7e5d64e7ff67416b6508285347d679e576cbd3e680c53"
+    },
+    {
+      "source_id": "formal-conjectures-zeta-moments",
+      "release_tag": "accepted-artifact/formal-conjectures-zeta-moments/8614fceceabc4d59",
+      "package_asset": "formal-conjectures-zeta-moments-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-zeta-moments-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-zeta-moments.json",
+      "artifact_identity": "8614fceceabc4d599200e1eb1f9ff13ad5f20dd5753a6ffbdba39ecc9e965ada",
+      "fingerprint_sha256": "fa3f4d46f3a3b1ccc3fb8ce5120df8017895bd53689524ab431095e591eb8adc"
+    },
+    {
+      "source_id": "formal-conjectures-zeta-zeros",
+      "release_tag": "accepted-artifact/formal-conjectures-zeta-zeros/bce024f4450c928b",
+      "package_asset": "formal-conjectures-zeta-zeros-accepted.tar.gz",
+      "receipt_asset": "formal-conjectures-zeta-zeros-release-receipt.json",
+      "source_descriptor": "producer/sources/formal-conjectures-zeta-zeros.json",
+      "artifact_identity": "bce024f4450c928b2537c9264f9a75b379d00b8a228b196e94475d9dc97a3fa2",
+      "fingerprint_sha256": "d1638e336bfcb8f17123e410836c803004e21949f7706bd1ead3d5b5c3ce6252"
     },
     {
       "source_id": "imperial-flt-partial",
@@ -258,12 +294,12 @@
     },
     {
       "source_id": "sphere-eversion-main",
-      "release_tag": "accepted-artifact/sphere-eversion-main/c239fe589a525d9a",
+      "release_tag": "accepted-artifact/sphere-eversion-main/37e76b8ebaecb87a",
       "package_asset": "sphere-eversion-main-accepted.tar.gz",
       "receipt_asset": "sphere-eversion-main-release-receipt.json",
       "source_descriptor": "producer/sources/sphere-eversion-main.json",
-      "artifact_identity": "c239fe589a525d9aa21a5f5db0e40b963448bcd4b0086983db464c241fdc6bc7",
-      "fingerprint_sha256": "b766735d66ffba2855e0f95806c028c807cdeff6a2ac78f50fbef1ada04e9f45",
+      "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+      "fingerprint_sha256": "2314f870187d7b003fcc49783e6e4723826d88bae6a697e93cc8f69cafc65563",
       "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
     },
     {
