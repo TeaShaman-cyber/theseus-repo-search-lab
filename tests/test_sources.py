@@ -698,6 +698,152 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
         self.assertEqual(result.source_path, "FermatsLastTheorem.lean")
         self.assertEqual(result.source_start_line, 1)
 
+    def test_relative_qualified_declarations_under_namespaces_bind_exactly(self):
+        text = (
+            "namespace OAI\n"
+            "namespace SignedMachine\n"
+            "inductive Program.Reachable : Prop\n"
+            "  | initial : Program.Reachable\n"
+            "theorem Frame.tick_correct : True := by trivial\n"
+            "end SignedMachine\n"
+            "end OAI\n"
+        )
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc123")
+        nodes = [
+            Node.from_lean(full_name=f"OAI.SignedMachine.{hint}",
+                           name=hint.rsplit(".", 1)[1], kind=kind,
+                           module="M", source_commit="abc123")
+            for hint, kind in (("Program.Reachable", "inductive"), ("Frame.tick_correct", "thm"))
+        ]
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         [n.full_name for n in nodes])
+        self.assertEqual([n.source_start_line for n in bind_node_sources(nodes, chunks)],
+                         [3, 5])
+
+    def test_combined_namespace_end_preserves_qualified_hints(self):
+        text = ("namespace A.B\nnamespace C\n"
+                "theorem D.x : True := by trivial\nend B.C\n"
+                "theorem E.y : True := by trivial\nend A\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["A.B.C.D.x", "A.E.y"])
+
+    def test_multiline_string_is_not_namespace_or_declaration_evidence(self):
+        text = ('def marker : String := "line one\n'
+                'namespace Fake\n'
+                'theorem Ghost.x : True\n'
+                '/- not a comment\n'
+                'closing"\n'
+                'namespace Real\n'
+                'theorem D.x : True := by trivial\n'
+                'end Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         ["marker", "Real.D.x"])
+        self.assertEqual(chunks[1].source_start_line, 7)
+
+    def test_later_unsupported_scope_preserves_prior_unique_dotted_hint(self):
+        text = ("namespace A\ntheorem B.x : True := by trivial\nend A\n"
+                "namespace «odd name»\ntheorem D.y : True := by trivial\nend «odd name»\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["A.B.x", "D.y"])
+
+    def test_later_unsupported_scope_does_not_resolve_prior_collisions(self):
+        text = ("namespace A\ntheorem B.x : True := by trivial\nend A\n"
+                "namespace «odd name»\ntheorem B.x : True := by trivial\nend «odd name»\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["B.x", "B.x"])
+
+    def test_multiline_string_closing_quote_stays_in_its_own_chunk(self):
+        for comment in ("-- comment", "/- comment -/"):
+            with self.subTest(comment=comment):
+                text = ('def marker : String := "line one\n'
+                        f'closing" {comment}\n'
+                        'theorem next : True := by trivial\n')
+                chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+                self.assertEqual([c.declaration_hint for c in chunks], ["marker", "next"])
+                self.assertEqual([c.source_start_line for c in chunks], [1, 3])
+                self.assertEqual(chunks[0].source_end_line, 2)
+                self.assertIn('closing"', chunks[0].text)
+
+    def test_complete_collision_group_survives_later_unsupported_scope(self):
+        text = ("namespace A\ntheorem x : True := by trivial\nend A\n"
+                "namespace B\ntheorem x : True := by trivial\nend B\n"
+                "namespace «later»\ntheorem y : True := by trivial\nend «later»\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["A.x", "B.x", "y"])
+
+    def test_named_section_suffix_does_not_change_namespace(self):
+        text = ("namespace Real\nsection A\nsection B\n"
+                "theorem D.x : True := by trivial\nend A.B\n"
+                "theorem D.y : True := by trivial\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["Real.D.x", "Real.D.y"])
+
+    def test_mixed_named_scope_suffix_and_dotted_section(self):
+        text = ("namespace Real\nsection A.B\nnamespace C\n"
+                "theorem D.x : True := by trivial\nend B.C\n"
+                "theorem D.y : True := by trivial\nend A\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["Real.C.D.x", "Real.D.y"])
+
+    def test_raw_string_hash_delimiters_mask_fake_commands(self):
+        for hashes in ("#", "##"):
+            with self.subTest(hashes=hashes):
+                text = (f'def marker : String := r{hashes}"line one\n'
+                        'namespace Fake\n'
+                        'unmatched ordinary quote " inside\n'
+                        'theorem Ghost.x : True\n'
+                        f'closing"{hashes} -- comment\n'
+                        'namespace Real\n'
+                        'theorem D.x : True := by trivial\n'
+                        'end Real\n')
+                chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+                self.assertEqual([c.declaration_hint for c in chunks], ["marker", "Real.D.x"])
+                self.assertEqual(chunks[0].source_end_line, 6)
+
+    def test_character_literal_does_not_open_multiline_string(self):
+        text = ("def quote : Char := '\"'\n"
+                "namespace Real\ntheorem D.x : True := by trivial\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["quote", "Real.D.x"])
+
+    def test_quoted_commands_are_not_scope_or_declaration_evidence(self):
+        text = ("def quoted := `(command|\n"
+                "namespace Fake\n"
+                "theorem Ghost.x : True := by trivial)\n"
+                "namespace Real\ntheorem D.x : True := by trivial\nend Real\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["quoted", "Real.D.x"])
+
+    def test_escaped_identifier_quote_does_not_hide_later_declaration(self):
+        text = ('def «a"b» := 1\n'
+                'namespace Real\ntheorem D.x : True := by trivial\nend Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertIn("Real.D.x", [c.declaration_hint for c in chunks])
+
+    def test_interpolation_nested_string_masks_fake_namespace(self):
+        text = ('def marker := s!"{"first\n'
+                'namespace Fake\n'
+                'theorem Ghost.x : True\n'
+                'last"}"\n'
+                'namespace Real\ntheorem D.x : True := by trivial\nend Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["marker", "Real.D.x"])
+
+    def test_interpolation_nested_braces_and_comment_do_not_close_outer(self):
+        text = ('def marker := s!"{(fun x => {x}) /- } " -/\n'
+                '  s!"{"first\nnamespace Fake\nlast"}"}"\n'
+                'namespace Real\ntheorem D.x : True := by trivial\nend Real\n')
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual([c.declaration_hint for c in chunks], ["marker", "Real.D.x"])
+
+    def test_mismatched_end_does_not_guess_scope(self):
+        text = ("namespace A.B\nnamespace C\n"
+                "theorem D.x : True := by trivial\nend X.C\n")
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc")
+        self.assertEqual(chunks[0].declaration_hint, "D.x")
+
     def test_qualified_and_unqualified_competing_hints_are_ambiguous(self):
         node = Node.from_lean(full_name="PNat.pow_add_pow_ne_pow", name="pow_add_pow_ne_pow",
                               kind="thm", module="FermatsLastTheorem", source_commit="abc123")

@@ -27,128 +27,182 @@ DECL_HEADER_ONLY_RE = re.compile(
     r"(?:theorem|lemma)\s*$"
 )
 
-def _comment_lines(lines: list[str]) -> list[bool]:
-    """Return whether each line begins in comment context.
+_RAW_STRING_START = re.compile(r"(?<![\w'])r(#+)?\"" )
 
-    This is intentionally only the lexical state needed by the chunker, not a
-    full Lean parser. Block comments are nested; comment delimiters inside
-    strings and line comments do not affect block depth.
+
+# Lean character literals are single lexical tokens. An apostrophe in an
+# identifier is not a character opener. Recognize ordinary and escaped chars.
+_CHAR_LITERAL = re.compile(r"(?<![\w'])(?:'[^'\\\r\n]'|'\\(?:[xuU][0-9A-Fa-f]+|[^\r\n])')")
+
+
+_INTERPOLATED_START = re.compile(r"(?<![\w'])(?:s|m|f)!\x22")
+
+
+def _blank(text: str) -> str:
+    return "".join("\n" if ch == "\n" else " " for ch in text)
+
+
+def _scan_lines(lines: list[str]) -> tuple[list[str], list[bool]]:
+    """Mask non-code payloads and derive comment boundaries in one pass.
+
+    Interpolation expressions may nest literals and braces. Their content is
+    not top-level declaration evidence. This is a lexical subset, not a parser.
     """
+    rendered: list[str] = []
     flags: list[bool] = []
-    block_depth = 0
-
+    # Frames are (mode, delimiter); braces are nested expression frames.
+    stack: list[tuple[str, str]] = []
+    escaped = False
     for line in lines:
-        line_starts_in_block = block_depth > 0
-        first_token_is_comment = False
-        code_seen = False
-        in_string = False
-        escaped = False
-        index = 0
+        out: list[str] = []
+        starts_comment = bool(stack and all(mode == "comment" for mode, _ in stack))
+        code_seen = bool(stack) and not starts_comment
+        first_comment = False
+        i = 0
 
-        while index < len(line):
-            if block_depth > 0:
-                if line.startswith("/-", index):
-                    block_depth += 1
-                    index += 2
-                    continue
-                if line.startswith("-/", index):
-                    block_depth -= 1
-                    index += 2
-                    continue
-                index += 1
+        while i < len(line):
+            ch = line[i]
+            mode, delimiter = stack[-1] if stack else ("code", "")
+            if mode == "comment":
+                if line.startswith("/-", i):
+                    stack.append(("comment", "-/"))
+                    out.extend(_blank(line[i:i+(2)]))
+                    i += 2
+                elif line.startswith("-/", i):
+                    stack.pop()
+                    out.extend(_blank(line[i:i+(2)]))
+                    i += 2
+                else:
+                    out.extend(_blank(line[i:i+(1)]))
+                    i += 1
                 continue
-
-            char = line[index]
-            if in_string:
+            if mode in ("raw", "identifier"):
+                if line.startswith(delimiter, i):
+                    stack.pop()
+                    if not stack:
+                        out.extend(delimiter)
+                    else:
+                        out.extend(_blank(line[i:i+len(delimiter)]))
+                    i += len(delimiter)
+                else:
+                    out.extend(_blank(line[i:i+(1)]))
+                    i += 1
+                continue
+            if mode in ("string", "interpolated"):
                 if escaped:
                     escaped = False
-                elif char == "\\":
+                elif ch == "\\":
                     escaped = True
-                elif char == '"':
-                    in_string = False
-                index += 1
+                elif ch == '"':
+                    stack.pop()
+                    if not stack:
+                        out.append(ch)
+                        i += 1
+                        continue
+                elif mode == "interpolated" and ch == "{":
+                    if line.startswith("{{", i):
+                        out.extend(_blank(line[i:i+(2)]))
+                        i += 2
+                        continue
+                    stack.append(("expression", "}"))
+                out.extend(_blank(line[i:i+(1)]))
+                i += 1
                 continue
 
-            if line.startswith("--", index):
-                if not code_seen:
-                    first_token_is_comment = True
+            visible = not stack
+            if line.startswith("--", i):
+                if visible and not code_seen:
+                    first_comment = True
+                out.extend(_blank(line[i:]))
                 break
-            if line.startswith("/-", index):
-                if not code_seen:
-                    first_token_is_comment = True
-                block_depth += 1
-                index += 2
+            if line.startswith("/-", i):
+                if visible and not code_seen:
+                    first_comment = True
+                stack.append(("comment", "-/"))
+                out.extend(_blank(line[i:i+(2)]))
+                i += 2
                 continue
-            if char == '"':
+            if not ch.isspace():
                 code_seen = True
-                in_string = True
-                index += 1
+            literal = _CHAR_LITERAL.match(line, i) if ch == "'" else None
+            if literal:
+                n = literal.end()-i
+                if visible:
+                    out.extend("'" + " "*(n-2) + "'")
+                else:
+                    out.extend(_blank(line[i:i+(n)]))
+                i += n
                 continue
-            if not char.isspace():
-                code_seen = True
-            index += 1
+            raw = _RAW_STRING_START.match(line, i) if ch == "r" else None
+            interpolated = _INTERPOLATED_START.match(line, i)
+            if raw or interpolated:
+                token = raw or interpolated
+                assert token is not None
+                if raw:
+                    stack.append(("raw", '"' + (raw.group(1) or "")))
+                else:
+                    stack.append(("interpolated", '"'))
+                n = token.end()-i
+                if visible:
+                    out.extend(token.group(0))
+                else:
+                    out.extend(_blank(line[i:i+(n)]))
+                i += n
+                continue
+            if ch in ('"', "«"):
+                stack.append(("string", '"') if ch == '"' else ("identifier", "»"))
+            elif mode == "expression":
+                if ch == "{":
+                    stack.append(("expression", "}"))
+                elif ch == "}":
+                    stack.pop()
+            if visible:
+                out.append(ch)
+            else:
+                out.extend(_blank(line[i:i+(1)]))
+            i += 1
+        rendered.append("".join(out))
+        flags.append(starts_comment or first_comment)
+    return rendered, flags
 
-        flags.append(line_starts_in_block or first_token_is_comment)
 
-    return flags
+def _comment_lines(lines: list[str]) -> list[bool]:
+    return _scan_lines(lines)[1]
 
 
 def _code_lines(lines: list[str]) -> list[str]:
-    """Return source lines with actual comments blanked for declaration matching."""
-    rendered: list[str] = []
-    block_depth = 0
+    return _mask_syntax_quotations(_scan_lines(lines)[0])
 
+
+def _mask_syntax_quotations(lines: list[str]) -> list[str]:
+    """Do not interpret a quoted command as an actual Lean command.
+
+    Input already has literal payloads and comments masked. This handles
+    parenthesized quotations, not macro expansion or arbitrary Lean syntax.
+    """
+    result: list[str] = []
+    depth = 0
     for line in lines:
         out: list[str] = []
-        in_string = False
-        escaped = False
         index = 0
-
         while index < len(line):
-            if block_depth > 0:
-                if line.startswith("/-", index):
-                    block_depth += 1
-                    out.extend("  ")
-                    index += 2
-                    continue
-                if line.startswith("-/", index):
-                    block_depth -= 1
-                    out.extend("  ")
-                    index += 2
-                    continue
-                out.append("\n" if line[index] == "\n" else " ")
-                index += 1
-                continue
-
             char = line[index]
-            if in_string:
-                out.append(char)
-                if escaped:
-                    escaped = False
-                elif char == "\\":
-                    escaped = True
-                elif char == '"':
-                    in_string = False
-                index += 1
-                continue
-
-            if line.startswith("--", index):
-                out.extend("\n" if value == "\n" else " " for value in line[index:])
-                index = len(line)
-                continue
-            if line.startswith("/-", index):
-                block_depth += 1
-                out.extend("  ")
+            if depth:
+                if char == "(":
+                    depth += 1
+                elif char == ")":
+                    depth -= 1
+                out.append(char if depth == 0 or char == "\n" else " ")
+            elif line.startswith(chr(96) + "(", index):
+                depth = 1
+                out.extend(line[index:index + 2])
                 index += 2
                 continue
-            out.append(char)
-            if char == '"':
-                in_string = True
+            else:
+                out.append(char)
             index += 1
-
-        rendered.append("".join(out))
-
-    return rendered
+        result.append("".join(out))
+    return result
 
 
 def _chunk_starts(lines: list[str], declaration_lines: list[int]) -> list[int]:
@@ -201,8 +255,8 @@ def tracked_lean_files(
         files.append(path)
     return sorted(files, key=lambda path: path.relative_to(source_root).as_posix())
 
-# Only qualify colliding lexical hints in the supported command subset.
-# Unique hints retain the existing artifact contract.
+# Qualify colliding hints and relative dotted declarations in supported scopes.
+# Unique undotted hints retain the existing artifact contract.
 _SCOPE_NAME = r"[^\W\d][\w']*(?:\.[^\W\d][\w']*)*"
 _SCOPE_COMMAND = re.compile(
     rf"^\s*(?:@\[[^\]\n]*\]\s+)?(?:(?:public|noncomputable)\s+)*"
@@ -218,7 +272,7 @@ def _qualify_collisions(
     code_lines: list[str], declarations: list[tuple[int, str]]
 ) -> list[tuple[int, str]]:
     counts = Counter(name for _, name in declarations)
-    if all(count == 1 for count in counts.values()):
+    if all(count == 1 and "." not in name for name, count in counts.items()):
         return declarations
     names = dict(declarations)
     scopes: list[tuple[str, str]] = []
@@ -227,26 +281,39 @@ def _qualify_collisions(
         if _SCOPE_PREFIX.match(line):
             command = _SCOPE_COMMAND.fullmatch(line.rstrip())
             if command is None:
-                return declarations
+                # Earlier unique dotted declarations have independent scope
+                # evidence. Later unsupported syntax cannot change that prefix.
+                # Repeated hints still require a complete scan to disambiguate.
+                qualified = dict(result)
+                processed = Counter(names[i] for i in qualified)
+                return [
+                    (i, qualified[i] if processed[n] == counts[n] else n)
+                    for i, n in declarations
+                ]
             kind, name = command.group("kind", "name")
             if kind == "namespace":
                 if not name or name.split(".", 1)[0] == "_root_":
                     return declarations
-                scopes.append((kind, name))
+                scopes.extend((kind, part) for part in name.split("."))
             elif kind == "section":
-                scopes.append((kind, name or ""))
+                scopes.extend((kind, part) for part in (name or "").split("."))
             elif kind == "mutual":
                 if name:
                     return declarations
                 scopes.append((kind, ""))
-            elif not scopes or (name and scopes[-1][1] != name):
+            elif not scopes:
                 return declarations
+            elif name:
+                suffix = name.split(".")
+                if [part for _, part in scopes[-len(suffix):]] != suffix:
+                    return declarations
+                del scopes[-len(suffix):]
             else:
                 scopes.pop()
         if index not in names:
             continue
         name = names[index]
-        if counts[name] > 1 and name.split(".", 1)[0] != "_root_":
+        if (counts[name] > 1 or "." in name) and name.split(".", 1)[0] != "_root_":
             prefix = ".".join(value for kind, value in scopes if kind == "namespace")
             if prefix:
                 name = f"{prefix}.{name}"
