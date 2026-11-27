@@ -46,6 +46,29 @@ class LeanQuotedModuleSourcePathTests(unittest.TestCase):
 
 
 class SourceChunkTests(unittest.TestCase):
+    def test_multiline_theorem_name_binds_exact_source(self):
+        text = ("namespace Fixture\n"
+                "theorem first : True := by trivial\n"
+                "theorem\n"
+                "    long_named_witness : True := by trivial\n"
+                "theorem last : True := by trivial\n")
+        chunks = _chunks_from_text("Fixture.lean", text, source_revision="abc123")
+        self.assertEqual([c.declaration_hint for c in chunks], ["first", "long_named_witness", "last"])
+        self.assertEqual((chunks[1].source_start_line, chunks[1].source_end_line), (3, 4))
+        node = Node.from_lean(full_name="Fixture.long_named_witness", name="long_named_witness",
+                              kind="thm", module="Fixture", source_commit="abc123")
+        self.assertEqual(bind_node_sources([node], chunks)[0].source_path, "Fixture.lean")
+
+    def test_multiline_theorem_with_comment_does_not_capture_anonymous_instance(self):
+        text = ("theorem -- comment\n"
+                "    /- name below -/\n"
+                "    real : True := by trivial\n"
+                "instance\n"
+                "    : Inhabited Nat := ⟨0⟩\n"
+                "theorem last : True := by trivial\n")
+        chunks = _chunks_from_text("Fixture.lean", text, source_revision="abc123")
+        self.assertEqual([c.declaration_hint for c in chunks], ["real", "last"])
+
     def test_inconsistent_chunk_boundaries_cannot_silently_drop_declarations(self):
         text = "theorem first : True := by trivial\ntheorem second : True := by trivial\n"
         with patch("theseus_repo_search.sources._chunk_starts", return_value=[0]), self.assertRaises(ValueError):

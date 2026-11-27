@@ -21,6 +21,11 @@ DECL_RE = re.compile(
 )
 
 
+DECL_HEADER_ONLY_RE = re.compile(
+    r"^\s*(?:protected\s+|private\s+|noncomputable\s+|unsafe\s+)*"
+    r"(?:theorem|lemma)\s*$"
+)
+
 def _comment_lines(lines: list[str]) -> list[bool]:
     """Return whether each line begins in comment context.
 
@@ -206,6 +211,20 @@ def _chunks_from_text(
     declarations: list[tuple[int, str]] = []
     for index, line in enumerate(code_lines):
         match = DECL_RE.match(line)
+        if not match and DECL_HEADER_ONLY_RE.fullmatch(line):
+            # A declaration name can follow its keyword on an indented line.
+            # Skip only blank/comment lines; never cross another command.
+            cursor = index + 1
+            while cursor < len(code_lines) and not code_lines[cursor].strip():
+                cursor += 1
+            if cursor < len(code_lines):
+                continuation = code_lines[cursor]
+                if (
+                    continuation[0].isspace()
+                    and not DECL_RE.match(continuation)
+                    and not DECL_HEADER_ONLY_RE.fullmatch(continuation)
+                ):
+                    match = DECL_RE.match(line + continuation)
         if match:
             declarations.append((index, match.group("name")))
     if not declarations:
