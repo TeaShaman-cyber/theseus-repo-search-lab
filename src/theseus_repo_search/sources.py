@@ -201,8 +201,8 @@ def tracked_lean_files(
         files.append(path)
     return sorted(files, key=lambda path: path.relative_to(source_root).as_posix())
 
-# Only qualify colliding lexical hints in the supported command subset.
-# Unique hints retain the existing artifact contract.
+# Qualify colliding hints and relative dotted declarations in supported scopes.
+# Unique undotted hints retain the existing artifact contract.
 _SCOPE_NAME = r"[^\W\d][\w']*(?:\.[^\W\d][\w']*)*"
 _SCOPE_COMMAND = re.compile(
     rf"^\s*(?:@\[[^\]\n]*\]\s+)?(?:(?:public|noncomputable)\s+)*"
@@ -218,7 +218,7 @@ def _qualify_collisions(
     code_lines: list[str], declarations: list[tuple[int, str]]
 ) -> list[tuple[int, str]]:
     counts = Counter(name for _, name in declarations)
-    if all(count == 1 for count in counts.values()):
+    if all(count == 1 and "." not in name for name, count in counts.items()):
         return declarations
     names = dict(declarations)
     scopes: list[tuple[str, str]] = []
@@ -246,7 +246,7 @@ def _qualify_collisions(
         if index not in names:
             continue
         name = names[index]
-        if counts[name] > 1 and name.split(".", 1)[0] != "_root_":
+        if (counts[name] > 1 or "." in name) and name.split(".", 1)[0] != "_root_":
             prefix = ".".join(value for kind, value in scopes if kind == "namespace")
             if prefix:
                 name = f"{prefix}.{name}"

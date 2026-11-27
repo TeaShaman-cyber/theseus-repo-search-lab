@@ -698,6 +698,28 @@ class QualifiedDeclarationBindingTests(unittest.TestCase):
         self.assertEqual(result.source_path, "FermatsLastTheorem.lean")
         self.assertEqual(result.source_start_line, 1)
 
+    def test_relative_qualified_declarations_under_namespaces_bind_exactly(self):
+        text = (
+            "namespace OAI\n"
+            "namespace SignedMachine\n"
+            "inductive Program.Reachable : Prop\n"
+            "  | initial : Program.Reachable\n"
+            "theorem Frame.tick_correct : True := by trivial\n"
+            "end SignedMachine\n"
+            "end OAI\n"
+        )
+        chunks = _chunks_from_text("M.lean", text, source_revision="abc123")
+        nodes = [
+            Node.from_lean(full_name=f"OAI.SignedMachine.{hint}",
+                           name=hint.rsplit(".", 1)[1], kind=kind,
+                           module="M", source_commit="abc123")
+            for hint, kind in (("Program.Reachable", "inductive"), ("Frame.tick_correct", "thm"))
+        ]
+        self.assertEqual([c.declaration_hint for c in chunks],
+                         [n.full_name for n in nodes])
+        self.assertEqual([n.source_start_line for n in bind_node_sources(nodes, chunks)],
+                         [3, 5])
+
     def test_qualified_and_unqualified_competing_hints_are_ambiguous(self):
         node = Node.from_lean(full_name="PNat.pow_add_pow_ne_pow", name="pow_add_pow_ne_pow",
                               kind="thm", module="FermatsLastTheorem", source_commit="abc123")
