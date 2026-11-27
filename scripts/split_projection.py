@@ -9,13 +9,10 @@ from theseus_repo_search.local_graph_cache import (
     prepare_catalog_graph,
     prepare_local_graph,
 )
-from theseus_repo_search.split_intake import materialize_corpus
 from theseus_repo_search.split_projection import (
     build_split_projection,
     verify_split_projection,
 )
-from theseus_repo_search.split_turso import split_projection_sha256
-from theseus_repo_search.turso_materializer import TursoHttpClient
 
 
 def main():
@@ -44,6 +41,8 @@ def main():
             corpus.add_argument("--motherduck-db", required=True)
     args = parser.parse_args()
     if args.operation in ("prepare-corpus", "materialize-corpus"):
+        from theseus_repo_search.split_turso import split_projection_sha256
+
         catalog = load_accepted_catalog(args.catalog)
         kwargs = {"repository_root": args.catalog.resolve().parent.parent,
                   "cache_root": args.cache_dir, "executable": args.duckdb}
@@ -54,6 +53,9 @@ def main():
                 raise ValueError("invalid prepared split receipt")
             receipt["split_projection_sha256"] = split_projection_sha256(split)
         else:
+            from theseus_repo_search.split_intake import materialize_corpus
+            from theseus_repo_search.turso_materializer import TursoHttpClient
+
             token = os.environ.get(args.platform_token_env) if args.platform_token_env else None
             if args.platform_token_env and not token:
                 parser.error("configured Turso token environment variable is empty")
