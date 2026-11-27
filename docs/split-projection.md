@@ -35,3 +35,22 @@ Kusto remains the analytical projection. Existing full Turso targets stay
 selected until the replacement has passed those checks and can be recovered
 from the immutable release. Actual quota savings require provider usage
 readback after retirement; do not equate file bytes with billed storage.
+
+## Automated local preparation
+
+The existing accepted-release consumer is the only download/verification path.
+Prepare the two projections and the native local DuckDB graph by corpus ID:
+
+```sh
+PYTHONPATH=.:src python3 scripts/split_projection.py prepare-corpus --catalog producer/accepted-corpora.json --cache-dir "$CACHE" --source-id openai-matrix-exponent
+```
+
+Or use `prepare` with an already verified full projection and its trusted
+fingerprint (the same arguments as `build`). A second invocation reuses an
+existing graph only after checking its actual serving rows against the
+verified split; it does not rebuild or upload it. The preparation step
+still verifies the full split and stages a compact local graph atomically.
+This is an intake/recovery operation, not an operation to repeat per query.
+The local graph is disposable, no MotherDuck credentials are inherited,
+and no cloud query is made by the native graph builder. Do not select a
+split catalog row until the remote projection and query routing gates pass.
