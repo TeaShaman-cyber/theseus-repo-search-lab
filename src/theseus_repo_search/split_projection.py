@@ -63,7 +63,15 @@ def _inspect(root: Path, expected_full: str) -> dict[str, object]:
         raise ValueError("invalid expected full projection fingerprint")
     conn = _read_only(root / "search.sqlite")
     try:
-        metadata = dict(conn.execute("SELECT key,value FROM meta"))
+        schema = conn.execute("PRAGMA table_info(meta)").fetchall()
+        if schema != [(0, "key", "TEXT", 0, None, 1), (1, "value", "TEXT", 1, None, 0)]:
+            raise ValueError("invalid metadata table schema")
+        rows_meta = conn.execute("SELECT key,value FROM meta ORDER BY key").fetchall()
+        metadata = dict(rows_meta)
+        if len(metadata) != len(rows_meta) or any(
+            not isinstance(k, str) or not isinstance(v, str) for k, v in rows_meta
+        ):
+            raise ValueError("invalid or duplicate metadata rows")
         if metadata.pop("projection_profile", None) != PROFILE:
             raise ValueError("invalid search-only projection profile")
         identity = metadata.get("artifact_identity", "")

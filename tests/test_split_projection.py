@@ -86,6 +86,31 @@ class SplitProjectionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "differs from accepted full"):
             verify_split_projection(out, self.fingerprint)
 
+    def test_duplicate_meta_identity_rejected_even_with_matching_file_hash(self):
+        from hashlib import file_digest
+
+        from theseus_repo_search.split_projection import (
+            build_split_projection,
+            verify_split_projection,
+        )
+
+        out = self.root / "split"
+        build_split_projection(self.full, out, self.fingerprint)
+        search = out / "search.sqlite"
+        with sqlite3.connect(search) as c:
+            c.execute("ALTER TABLE meta RENAME TO original_meta")
+            c.execute("CREATE TABLE meta (key TEXT, value TEXT)")
+            c.execute("INSERT INTO meta VALUES ('artifact_identity', 'spoof')")
+            c.execute("INSERT INTO meta SELECT * FROM original_meta")
+            c.execute("DROP TABLE original_meta")
+        receipt = out / "receipt.json"
+        r = json.loads(receipt.read_text())
+        with search.open("rb") as f:
+            r["files"]["search.sqlite"] = {"sha256": file_digest(f, "sha256").hexdigest(), "bytes": search.stat().st_size}
+        receipt.write_text(json.dumps(r))
+        with self.assertRaisesRegex(ValueError, "metadata"):
+            verify_split_projection(out, self.fingerprint)
+
     def test_changed_search_identity_is_rejected(self):
         from theseus_repo_search.split_projection import (
             build_split_projection,
