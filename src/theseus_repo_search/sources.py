@@ -36,13 +36,13 @@ def _comment_lines(lines: list[str]) -> list[bool]:
     """
     flags: list[bool] = []
     block_depth = 0
+    in_string = False
+    escaped = False
 
     for line in lines:
         line_starts_in_block = block_depth > 0
         first_token_is_comment = False
         code_seen = False
-        in_string = False
-        escaped = False
         index = 0
 
         while index < len(line):
@@ -97,11 +97,11 @@ def _code_lines(lines: list[str]) -> list[str]:
     """Return source lines with actual comments blanked for declaration matching."""
     rendered: list[str] = []
     block_depth = 0
+    in_string = False
+    escaped = False
 
     for line in lines:
         out: list[str] = []
-        in_string = False
-        escaped = False
         index = 0
 
         while index < len(line):
@@ -122,13 +122,14 @@ def _code_lines(lines: list[str]) -> list[str]:
 
             char = line[index]
             if in_string:
-                out.append(char)
+                out.append("\n" if char == "\n" else " ")
                 if escaped:
                     escaped = False
                 elif char == "\\":
                     escaped = True
                 elif char == '"':
                     in_string = False
+                    out[-1] = char
                 index += 1
                 continue
 
@@ -232,15 +233,20 @@ def _qualify_collisions(
             if kind == "namespace":
                 if not name or name.split(".", 1)[0] == "_root_":
                     return declarations
-                scopes.append((kind, name))
+                scopes.extend((kind, part) for part in name.split("."))
             elif kind == "section":
                 scopes.append((kind, name or ""))
             elif kind == "mutual":
                 if name:
                     return declarations
                 scopes.append((kind, ""))
-            elif not scopes or (name and scopes[-1][1] != name):
+            elif not scopes:
                 return declarations
+            elif name and scopes[-1] != ("section", name):
+                suffix = [("namespace", part) for part in name.split(".")]
+                if scopes[-len(suffix):] != suffix:
+                    return declarations
+                del scopes[-len(suffix):]
             else:
                 scopes.pop()
         if index not in names:
