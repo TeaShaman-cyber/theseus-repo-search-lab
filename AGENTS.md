@@ -42,6 +42,11 @@ not a replacement for that scope.
   Record intended graph scope, explicit exclusions, and meaningful live
   Turso+Kusto witnesses before changing the accepted catalog. Do not equate
   graph availability or count parity with mathematical coverage.
+- **Research query discovery:** start with `repo-search query capabilities` or
+  `query --help`. Select by research intent: `graph-search` for structural
+  discovery, `reach/reach-all` for known roots, `context` for source evidence,
+  `search` for text only. Do not rely on remembering database names; inspect
+  returned coverage and evidence boundaries.
 - **Verify:** use the repository's `./tools/dev/check` first. For search-runtime
   changes, also exercise real cold/warm corpus queries and report absent or
   unavailable corpora explicitly; green unit tests alone do not prove usability.
