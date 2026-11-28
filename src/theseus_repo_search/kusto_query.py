@@ -131,8 +131,8 @@ def federated_reach(catalog: AcceptedCatalog, client: KustoClient, name: str, *,
                     workers: int = 4) -> dict[str, object]:
     if not 1 <= len(name) <= 512 or not 1 <= depth <= 3 or not 1 <= limit <= 500:
         raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "reach-all: invalid query bounds")
-    results = []
-    unavailable = []
+    results: list[dict[str, object]] = []
+    unavailable: list[dict[str, object]] = []
     def execute(item: AcceptedCorpus) -> tuple[bool, dict[str, object]]:
         try:
             result = reach(item, client, name, depth=depth, limit=limit, reverse=reverse)
@@ -163,11 +163,10 @@ def expand_search_hits(catalog: AcceptedCatalog, client: KustoClient,
         raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "graph search: at most 10 seeds, depth 1..3, limit 1..50")
     items = {item.source_id: item for item in catalog.corpora}
     seen: set[tuple[str, str | None, str]] = set()
-    graphs = []
-    unavailable = []
+    graphs: list[dict[str, object]] = []
+    unavailable: list[dict[str, object]] = []
     seeds = []
     for hit in hits:
-        item = items[hit.source_id]
         root = hit.hit.declaration_id
         key = (hit.source_id, root, hit.candidate_id if root is None else "")
         if key in seen:

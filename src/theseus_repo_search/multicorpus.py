@@ -9,12 +9,12 @@ import subprocess
 import tempfile
 import uuid
 from collections.abc import Callable
-from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
-from typing import TypeVar
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
+from typing import TypeVar
 
 from scripts.consume_accepted_release import (
     RebuildRequired,

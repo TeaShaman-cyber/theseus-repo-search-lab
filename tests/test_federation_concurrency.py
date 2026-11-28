@@ -1,11 +1,12 @@
 import threading
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from theseus_repo_search.accepted_catalog import AcceptedCatalog, AcceptedCorpus
 from theseus_repo_search.errors import RepoSearchError
-from theseus_repo_search.turso_query import search_turso_catalog
 from theseus_repo_search.kusto_query import federated_reach
+from theseus_repo_search.turso_query import search_turso_catalog
+
 
 class ConcurrentFederationTests(unittest.TestCase):
     def setUp(self):
@@ -58,6 +59,7 @@ class ConcurrentFederationTests(unittest.TestCase):
 
     def test_graph_seed_expansion_parallel_preserves_occurrences(self):
         from types import SimpleNamespace
+
         from theseus_repo_search.kusto_query import expand_search_hits
         hits = [SimpleNamespace(source_id=s, candidate_id=s+"::lean:A",
                     hit=SimpleNamespace(declaration_id="lean:A", source_revision="rev"))
@@ -73,6 +75,7 @@ class ConcurrentFederationTests(unittest.TestCase):
 
     def test_completion_order_does_not_change_global_top_k(self):
         from types import SimpleNamespace
+
         from theseus_repo_search.multicorpus import federate_search
         first = threading.Event()
         exact = SimpleNamespace(declaration_id="lean:A", match_mode="exact")
@@ -92,6 +95,5 @@ class ConcurrentFederationTests(unittest.TestCase):
                          ["a::lean:A", "b::lean:A", "b::lean:B"])
 
     def test_unexpected_programming_error_is_not_no_signal(self):
-        with patch("theseus_repo_search.turso_query._search_one", side_effect=RuntimeError("bug")):
-            with self.assertRaises(RuntimeError):
-                search_turso_catalog(self.catalog, Mock(), query="x", workers=2)
+        with patch("theseus_repo_search.turso_query._search_one", side_effect=RuntimeError("bug")), self.assertRaises(RuntimeError):
+            search_turso_catalog(self.catalog, Mock(), query="x", workers=2)
