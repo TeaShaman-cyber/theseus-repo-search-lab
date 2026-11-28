@@ -193,7 +193,8 @@
       "receipt_asset": "openai-navier-stokes-release-receipt.json",
       "source_descriptor": "producer/sources/openai-navier-stokes.json",
       "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
-      "fingerprint_sha256": "9d8564138fd2574a67cb978fef3ad0fcdc8db3c725f4184726929363e2a59ca1"
+      "fingerprint_sha256": "9d8564138fd2574a67cb978fef3ad0fcdc8db3c725f4184726929363e2a59ca1",
+      "split_projection_sha256": "e467a5949195f269999f388fa59cf8e62bb0394828111d43f45e727c34a47ce5"
     },
     {
       "source_id": "openai-prime-gaps-186",
