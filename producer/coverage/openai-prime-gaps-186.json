@@ -1,0 +1,607 @@
+{
+  "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+  "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+  "fingerprint_sha256": "724042c62dee2f58b8e405182b7986bd3dc8a0bdae16d6de25169d94179b5d70",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "PrimeGaps186"
+    ],
+    "witnesses": [
+      {
+        "declaration": "PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+        "direction": "forward",
+        "neighbor": "PrimeGap186.exceptionalPrimeQuadruples",
+        "source_path": "PrimeGaps186.lean"
+      },
+      {
+        "declaration": "PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+        "direction": "forward",
+        "neighbor": "PrimeGap186.zeroFreeWidth",
+        "source_path": "PrimeGaps186.lean"
+      }
+    ]
+  },
+  "plan_sha256": "0d45d07d8df80e128a5134c2528afe745d81c3ffadf4bce53ecb3ddd44f7cf22",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-prime-gaps-186",
+  "split_evidence": {
+    "graph": {
+      "edges": 18851,
+      "nodes": 4200,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_d60926fdf5377669acb64f3c1d918a67_nodes",
+        "my_db.main.rs_split_d60926fdf5377669acb64f3c1d918a67_edges",
+        "my_db.main.rs_split_d60926fdf5377669acb64f3c1d918a67_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+      "database": "repo-search-s-openai-prime-gaps-186-d60926fdf5377669",
+      "database_id": "01a221ec-0d01-729c-b561-dcb295878a47",
+      "split_projection_sha256": "8e33461201892813d1800786d75ad2b25d88b91cdfb1c586cf04f99379c5f27d",
+      "sqlite_bytes": 17555456,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+      "edges": 18851,
+      "files": {
+        "edges.csv": {
+          "bytes": 2241184,
+          "sha256": "d42d264da0c9871a85f7c557cd385ce30b5de734075bbb28c0693e6d3c2ea7f9"
+        },
+        "nodes.csv": {
+          "bytes": 245535,
+          "sha256": "f4bceb4e408c59b0150e09467f5e9bc48e398ef662030240d7327d6d9b12b3f6"
+        },
+        "search.sqlite": {
+          "bytes": 17555456,
+          "sha256": "146e97dce3e0407c6f85ac6ef2b11c520253a3d74e956a2913673dc2143da056"
+        }
+      },
+      "full_projection_fingerprint": "35ce2894a46ed6c09bb57376d8bd8339b6626dcf39de3bb493c1da8ebe1318c6",
+      "nodes": 4200,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "08f033fc8c72d31d7a854ff029a9a95044cb320a33bb1ba7f8e7a6b9b27ecf5e",
+      "sources": 4012
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "chunks": [
+          {
+            "declaration_hint": "weighted_primeQuadrupleExponentMeasure_real",
+            "declaration_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 141152,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 141138
+          },
+          {
+            "declaration_hint": "primeQuadrupleExponents",
+            "declaration_id": "lean:PrimeGap186.primeQuadrupleExponents",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 79616,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 79609
+          },
+          {
+            "declaration_hint": "exceptionalPrimeQuadruples",
+            "declaration_id": "lean:PrimeGap186.exceptionalPrimeQuadruples",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 140669,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 140666
+          },
+          {
+            "declaration_hint": "reciprocalQuadrupleWeight",
+            "declaration_id": "lean:PrimeGap186.reciprocalQuadrupleWeight",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 140672,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 140670
+          },
+          {
+            "declaration_hint": "primeQuadrupleExponentMeasure",
+            "declaration_id": "lean:PrimeGap186.primeQuadrupleExponentMeasure",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 140685,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 140677
+          },
+          {
+            "declaration_hint": "primeQuadrupleExponents_mem_box",
+            "declaration_id": "lean:PrimeGap186.primeQuadrupleExponents_mem_box",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 140705,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 140696
+          },
+          {
+            "declaration_hint": "integral_primeQuadrupleExponentMeasure",
+            "declaration_id": "lean:PrimeGap186.integral_primeQuadrupleExponentMeasure",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 140725,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 140706
+          },
+          {
+            "declaration_hint": "reciprocalResidualExponent",
+            "declaration_id": "lean:PrimeGap186.reciprocalResidualExponent",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 141074,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 141067
+          },
+          {
+            "declaration_hint": "reciprocalResidualExponent_pos",
+            "declaration_id": "lean:PrimeGap186.reciprocalResidualExponent_pos",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 141079,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 141075
+          },
+          {
+            "declaration_hint": "reciprocalResidualExponent_eq_inv_one_sub_sum_of_mem_box",
+            "declaration_id": "lean:PrimeGap186.reciprocalResidualExponent_eq_inv_one_sub_sum_of_mem_box",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 141084,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 141080
+          },
+          {
+            "declaration_hint": "finiteMeasureWithContinuousDensity",
+            "declaration_id": "lean:PrimeGap186.finiteMeasureWithContinuousDensity",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 141094,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 141085
+          },
+          {
+            "declaration_hint": "finiteMeasureWithContinuousDensity_real",
+            "declaration_id": "lean:PrimeGap186.finiteMeasureWithContinuousDensity_real",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 141128,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 141116
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1418,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.exceptionalPrimeQuadruples"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.finiteMeasureWithContinuousDensity"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.primeQuadrupleExponentMeasure"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.primeQuadrupleExponents"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.reciprocalResidualExponent"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.exceptionalPrimeQuadruples"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.finiteMeasureWithContinuousDensity"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.finiteMeasureWithContinuousDensity_real"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.integral_primeQuadrupleExponentMeasure"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.primeQuadrupleExponentMeasure"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.primeQuadrupleExponents"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.primeQuadrupleExponents_mem_box"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.reciprocalQuadrupleWeight"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.reciprocalResidualExponent"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.reciprocalResidualExponent_eq_inv_one_sub_sum_of_mem_box"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "target_id": "lean:PrimeGap186.reciprocalResidualExponent_pos"
+          }
+        ],
+        "query": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+        "scope_root_modules": [
+          "PrimeGaps186"
+        ],
+        "source_id": "openai-prime-gaps-186",
+        "source_kind": "git",
+        "source_revision": "61340d0b74163003b32756bb16e91d9209a5e330",
+        "split_projection_sha256": "8e33461201892813d1800786d75ad2b25d88b91cdfb1c586cf04f99379c5f27d",
+        "status": "FOUND",
+        "target_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+            "backend": "kusto",
+            "candidate_id": "openai-prime-gaps-186::lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.exceptionalPrimeQuadruples"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.finiteMeasureWithContinuousDensity"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.finiteMeasureWithContinuousDensity_real"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.integral_primeQuadrupleExponentMeasure"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.primeQuadrupleExponentMeasure"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.primeQuadrupleExponents"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.primeQuadrupleExponents_mem_box"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.reciprocalQuadrupleWeight"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.reciprocalResidualExponent"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.reciprocalResidualExponent_eq_inv_one_sub_sum_of_mem_box"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.reciprocalResidualExponent_pos"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 18851,
+            "projection_nodes": 4200,
+            "root": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "scope_root_modules": [
+              "PrimeGaps186"
+            ],
+            "source_authority": null,
+            "source_id": "openai-prime-gaps-186",
+            "source_kind": "git",
+            "source_revision": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+            "candidate_id": "openai-prime-gaps-186::lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "weighted_primeQuadrupleExponentMeasure_real",
+            "declaration_id": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 141152,
+            "source_id": "openai-prime-gaps-186",
+            "source_path": "PrimeGaps186.lean",
+            "source_row_id": "src:PrimeGaps186.lean:141138:141152",
+            "source_start_line": 141138
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:PrimeGap186.weighted_primeQuadrupleExponentMeasure_real",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-prime-gaps-186",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "chunks": [
+          {
+            "declaration_hint": "zeroFreeWidth_le_zetaZeroFreeWidth",
+            "declaration_id": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 43286,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 43272
+          },
+          {
+            "declaration_hint": "zeroFreeWidth",
+            "declaration_id": "lean:PrimeGap186.zeroFreeWidth",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 42697,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 42688
+          },
+          {
+            "declaration_hint": "zetaZeroFreeWidth",
+            "declaration_id": "lean:PrimeGap186.zetaZeroFreeWidth",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 43265,
+            "source_path": "PrimeGaps186.lean",
+            "source_start_line": 43259
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 385,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+            "target_id": "lean:PrimeGap186.zeroFreeWidth"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+            "target_id": "lean:PrimeGap186.zetaZeroFreeWidth"
+          }
+        ],
+        "query": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+        "scope_root_modules": [
+          "PrimeGaps186"
+        ],
+        "source_id": "openai-prime-gaps-186",
+        "source_kind": "git",
+        "source_revision": "61340d0b74163003b32756bb16e91d9209a5e330",
+        "split_projection_sha256": "8e33461201892813d1800786d75ad2b25d88b91cdfb1c586cf04f99379c5f27d",
+        "status": "FOUND",
+        "target_id": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+            "backend": "kusto",
+            "candidate_id": "openai-prime-gaps-186::lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.zeroFreeWidth"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PrimeGap186.zetaZeroFreeWidth"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 18851,
+            "projection_nodes": 4200,
+            "root": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+            "scope_root_modules": [
+              "PrimeGaps186"
+            ],
+            "source_authority": null,
+            "source_id": "openai-prime-gaps-186",
+            "source_kind": "git",
+            "source_revision": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
+            "candidate_id": "openai-prime-gaps-186::lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "zeroFreeWidth_le_zetaZeroFreeWidth",
+            "declaration_id": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "61340d0b74163003b32756bb16e91d9209a5e330",
+            "source_end_line": 43286,
+            "source_id": "openai-prime-gaps-186",
+            "source_path": "PrimeGaps186.lean",
+            "source_row_id": "src:PrimeGaps186.lean:43272:43286",
+            "source_start_line": 43272
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:PrimeGap186.zeroFreeWidth_le_zetaZeroFreeWidth",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-prime-gaps-186",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,1252 @@
+{
+  "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+  "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+  "fingerprint_sha256": "dbd76221cda67976adca51a61aefe7f888225bba606b9298ab5984319436bcc0",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "Zeta23.Analytic.RectangleLogDeriv",
+      "Zeta23.Analytic.Stirling",
+      "Zeta23.Assembly",
+      "Zeta23.Assembly.Certificate",
+      "Zeta23.Assembly.CertificateC3",
+      "Zeta23.Assembly.Inputs",
+      "Zeta23.Assembly.SeamMult",
+      "Zeta23.Chebyshev",
+      "Zeta23.Defs",
+      "Zeta23.Defs.Counting",
+      "Zeta23.Defs.LeafIntegrals",
+      "Zeta23.Defs.Profile",
+      "Zeta23.ExplicitFormula",
+      "Zeta23.ExplicitFormula.Bridge",
+      "Zeta23.Final",
+      "Zeta23.FinalMult",
+      "Zeta23.FromPNTPlus.Auxiliary",
+      "Zeta23.FromPNTPlus.EulerMaclaurin",
+      "Zeta23.FromPNTPlus.Fourier",
+      "Zeta23.FromPNTPlus.Mathlib.Analysis.SpecialFunctions.Log.Basic",
+      "Zeta23.FromPNTPlus.Mertens",
+      "Zeta23.FromPNTPlus.Rectangle",
+      "Zeta23.FromPNTPlus.ResidueCalcOnRectangles",
+      "Zeta23.FromPNTPlus.Sobolev",
+      "Zeta23.FromPNTPlus.StrongPNTPrefix",
+      "Zeta23.FromPNTPlus.Tactic.AdditiveCombination",
+      "Zeta23.FromPNTPlus.ZetaBounds",
+      "Zeta23.FromPNTPlus.ZetaConj",
+      "Zeta23.GammaFacts",
+      "Zeta23.GammaFacts.Complete",
+      "Zeta23.GammaFacts.IntMu",
+      "Zeta23.GammaFacts.Mu",
+      "Zeta23.GammaFacts.Series",
+      "Zeta23.GammaFacts.StirlingVert",
+      "Zeta23.Hypotheses",
+      "Zeta23.Hypotheses.GzGp",
+      "Zeta23.LinAlg.HermitianPosPart",
+      "Zeta23.LinAlg.Inertia",
+      "Zeta23.LinAlg.PosIndex",
+      "Zeta23.LinAlg.RankTrace",
+      "Zeta23.LinAlg.Sylvester",
+      "Zeta23.LinAlg.VonNeumann",
+      "Zeta23.LinAlg.Weyl",
+      "Zeta23.MV",
+      "Zeta23.MV.Duality",
+      "Zeta23.MV.Eigen",
+      "Zeta23.MV.EigenIdentity",
+      "Zeta23.MV.Final",
+      "Zeta23.MV.Quadratic",
+      "Zeta23.MV.Spacing",
+      "Zeta23.Main",
+      "Zeta23.PairCeiling.Bridge",
+      "Zeta23.PairCeiling.Ceiling",
+      "Zeta23.PairCeiling.CeilingLaw256",
+      "Zeta23.PairCeiling.Defs",
+      "Zeta23.PairCeiling.Grid",
+      "Zeta23.PairCeiling.LawN256",
+      "Zeta23.PairCeiling.NearCUE",
+      "Zeta23.PairCeiling.NumericCert",
+      "Zeta23.PairCeiling.RowCert",
+      "Zeta23.PairCeiling.Signed",
+      "Zeta23.PairCeiling.Stability",
+      "Zeta23.PiFacts",
+      "Zeta23.Poisson",
+      "Zeta23.Poisson.PaperFT",
+      "Zeta23.PrimeSideA",
+      "Zeta23.PrimeSideA.Basic",
+      "Zeta23.PrimeSideA.Bridge",
+      "Zeta23.PrimeSideA.CrossMuP",
+      "Zeta23.PrimeSideA.CrossMuPCore",
+      "Zeta23.PrimeSideA.Defs",
+      "Zeta23.PrimeSideA.Ends",
+      "Zeta23.PrimeSideA.EndsCore",
+      "Zeta23.PrimeSideA.EndsE1",
+      "Zeta23.PrimeSideA.EndsE2",
+      "Zeta23.PrimeSideA.EndsNu",
+      "Zeta23.PrimeSideA.EndsWeighted",
+      "Zeta23.PrimeSideA.MuMu",
+      "Zeta23.PrimeSideB",
+      "Zeta23.PrimeSideB.Concrete",
+      "Zeta23.PrimeSideB.Final",
+      "Zeta23.PrimeSideB.PP",
+      "Zeta23.PrimeSideB.PPKernel",
+      "Zeta23.PrimeSideB.PPOffDiag",
+      "Zeta23.PrimeSideB.Traces",
+      "Zeta23.PrimeSideTemp",
+      "Zeta23.RvM.Backlund",
+      "Zeta23.RvM.BacklundDefs",
+      "Zeta23.RvM.CountByIntegral",
+      "Zeta23.RvM.Defs",
+      "Zeta23.RvM.Fold",
+      "Zeta23.RvM.GammaSide",
+      "Zeta23.RvM.Halving",
+      "Zeta23.RvM.LocalCount",
+      "Zeta23.RvM.MainTerm",
+      "Zeta23.RvM.NcountWindow",
+      "Zeta23.RvM.ReZeroCount",
+      "Zeta23.RvM.Statement",
+      "Zeta23.RvM.ZetaGrowth",
+      "Zeta23.Statement",
+      "Zeta23.Statement.Seam",
+      "Zeta23.Statement.SeamClosed",
+      "Zeta23.Tail",
+      "Zeta23.Tail.Basic",
+      "Zeta23.Tail.Count",
+      "Zeta23.Tail.Grid",
+      "Zeta23.Tail.Package",
+      "Zeta23.Tail.RankOne",
+      "Zeta23.Taper",
+      "Zeta23.Taper.Basic",
+      "Zeta23.Taper.Decay",
+      "Zeta23.Taper.Fourier",
+      "Zeta23.Taper.Gevrey",
+      "Zeta23.Taper.GevreyPhi",
+      "Zeta23.Taper.GevreyRamps",
+      "Zeta23.Taper.Norms",
+      "Zeta23.Taper.Params",
+      "Zeta23.Taper.Strip",
+      "Zeta23.ThmD.AssemblyD",
+      "Zeta23.ThmD.BridgeD",
+      "Zeta23.ThmD.Concrete",
+      "Zeta23.ThmD.Endgame",
+      "Zeta23.ThmD.Final",
+      "Zeta23.ThmD.Functional",
+      "Zeta23.ThmD.Limit",
+      "Zeta23.ThmD.Mult",
+      "Zeta23.ThmD.PP",
+      "Zeta23.ThmD.ParamsD",
+      "Zeta23.ThmD.PsiC",
+      "Zeta23.ThmD.Traces",
+      "Zeta23.ThmD.Window",
+      "Zeta23.ThmD.WindowCore",
+      "Zeta23.ThmD.WindowLocalHyps",
+      "Zeta23.ThmD.ZeroSideD",
+      "Zeta23.ThmDE.Concrete",
+      "Zeta23.ThmDE.Endgame",
+      "Zeta23.ThmDE.Final",
+      "Zeta23.ThmDE.Limit",
+      "Zeta23.ThmDE.Mult",
+      "Zeta23.ThmDE.PP",
+      "Zeta23.ThmDE.Traces",
+      "Zeta23.ThmDE.TracesHyp",
+      "Zeta23.ThmDE.ZeroSide",
+      "Zeta23.ThmE.AssemblyQ",
+      "Zeta23.ThmE.BacklundChi",
+      "Zeta23.ThmE.ChebCoprime",
+      "Zeta23.ThmE.ContourChi",
+      "Zeta23.ThmE.CountByIntegralChi",
+      "Zeta23.ThmE.CrossMuPChi",
+      "Zeta23.ThmE.EFLitChi",
+      "Zeta23.ThmE.Final",
+      "Zeta23.ThmE.FoldChi",
+      "Zeta23.ThmE.FullLineChi",
+      "Zeta23.ThmE.FullLineChiAssembly",
+      "Zeta23.ThmE.FullLineChiFold",
+      "Zeta23.ThmE.FullLineChiProof",
+      "Zeta23.ThmE.GammaFactsChiProof",
+      "Zeta23.ThmE.GammaSideChi",
+      "Zeta23.ThmE.GzGpChi",
+      "Zeta23.ThmE.HorizontalChi",
+      "Zeta23.ThmE.Hypotheses",
+      "Zeta23.ThmE.IntMuChi",
+      "Zeta23.ThmE.LGrowth",
+      "Zeta23.ThmE.LandauChi",
+      "Zeta23.ThmE.LocalCountChi",
+      "Zeta23.ThmE.Main",
+      "Zeta23.ThmE.MainChi",
+      "Zeta23.ThmE.MainTermChi",
+      "Zeta23.ThmE.MuMuChi",
+      "Zeta23.ThmE.Mult",
+      "Zeta23.ThmE.PPChi",
+      "Zeta23.ThmE.PrimeSideChi",
+      "Zeta23.ThmE.ReZeroCountChi",
+      "Zeta23.ThmE.RvMChi",
+      "Zeta23.ThmE.RvMChiDefs",
+      "Zeta23.ThmE.SeamL",
+      "Zeta23.ThmE.Statement",
+      "Zeta23.ThmE.TracesChi",
+      "Zeta23.ThmE.TracesHypChi",
+      "Zeta23.ThmE.VerticalLineChi",
+      "Zeta23.TracesBoundsE",
+      "Zeta23.Unconditional",
+      "Zeta23.WeilEF.Contour",
+      "Zeta23.WeilEF.Effective",
+      "Zeta23.WeilEF.FullLine",
+      "Zeta23.WeilEF.FullLineAssembly",
+      "Zeta23.WeilEF.GammaRBracket",
+      "Zeta23.WeilEF.GoodHeights",
+      "Zeta23.WeilEF.Horizontal",
+      "Zeta23.WeilEF.Landau",
+      "Zeta23.WeilEF.Main",
+      "Zeta23.WeilEF.VerticalLine",
+      "Zeta23.WeilEF.XiLogDeriv",
+      "Zeta23.WeilEF.ZeroSumLimit",
+      "Zeta23.WeilEF.ZeroSummability",
+      "Zeta23.XiPrime.Assembly",
+      "Zeta23.XiPrime.Certificate",
+      "Zeta23.XiPrime.Certificate.AtOne",
+      "Zeta23.XiPrime.Certificate.D1",
+      "Zeta23.XiPrime.Certificate.Poly",
+      "Zeta23.XiPrime.CertificateFn",
+      "Zeta23.XiPrime.Coeff",
+      "Zeta23.XiPrime.Coeff.Abel",
+      "Zeta23.XiPrime.Coeff.Basic",
+      "Zeta23.XiPrime.Coeff.DiagLaw",
+      "Zeta23.XiPrime.Coeff.H3",
+      "Zeta23.XiPrime.Coeff.LSeries",
+      "Zeta23.XiPrime.Coeff.LT",
+      "Zeta23.XiPrime.Coeff.LayerOne",
+      "Zeta23.XiPrime.Coeff.MainTerm.Asymp",
+      "Zeta23.XiPrime.Coeff.MainTerm.Squarefree",
+      "Zeta23.XiPrime.Coeff.NonSquarefree",
+      "Zeta23.XiPrime.Coeff.Param",
+      "Zeta23.XiPrime.Coeff.PowerSums",
+      "Zeta23.XiPrime.Coeff.PrimeSums",
+      "Zeta23.XiPrime.Coeff.Reexpansion",
+      "Zeta23.XiPrime.Coeff.ReexpansionGen",
+      "Zeta23.XiPrime.Coeff.ReexpansionW",
+      "Zeta23.XiPrime.Coeff.Tail",
+      "Zeta23.XiPrime.Coeff.Upper",
+      "Zeta23.XiPrime.Defs",
+      "Zeta23.XiPrime.ExplicitFormula",
+      "Zeta23.XiPrime.ExplicitFormula.Contour",
+      "Zeta23.XiPrime.ExplicitFormula.DirichletLine",
+      "Zeta23.XiPrime.ExplicitFormula.EntryError",
+      "Zeta23.XiPrime.ExplicitFormula.Expansion",
+      "Zeta23.XiPrime.ExplicitFormula.FamilyFacts",
+      "Zeta23.XiPrime.ExplicitFormula.FullLine",
+      "Zeta23.XiPrime.ExplicitFormula.GramBridge",
+      "Zeta23.XiPrime.ExplicitFormula.JTerm",
+      "Zeta23.XiPrime.ExplicitFormula.LineBound",
+      "Zeta23.XiPrime.ExplicitFormula.LitCorr",
+      "Zeta23.XiPrime.ExplicitFormula.Main",
+      "Zeta23.XiPrime.ExplicitFormula.PrimeTermJ",
+      "Zeta23.XiPrime.ExplicitFormula.TestWeight",
+      "Zeta23.XiPrime.ExplicitFormula.XiEFAssembly",
+      "Zeta23.XiPrime.ExplicitFormula.ZeroFree",
+      "Zeta23.XiPrime.FamilyFlat",
+      "Zeta23.XiPrime.FamilyHyps",
+      "Zeta23.XiPrime.FamilyHypsV",
+      "Zeta23.XiPrime.Final",
+      "Zeta23.XiPrime.Hardy.Basic",
+      "Zeta23.XiPrime.Hardy.Contour",
+      "Zeta23.XiPrime.Hardy.Count",
+      "Zeta23.XiPrime.Hardy.EFBasic",
+      "Zeta23.XiPrime.Hardy.EFContour",
+      "Zeta23.XiPrime.Hardy.EFContour.Analytic",
+      "Zeta23.XiPrime.Hardy.EFContour.Limit",
+      "Zeta23.XiPrime.Hardy.EFContour.Poles",
+      "Zeta23.XiPrime.Hardy.EFContour.Rectangle",
+      "Zeta23.XiPrime.Hardy.EFExpansion",
+      "Zeta23.XiPrime.Hardy.EFFinal",
+      "Zeta23.XiPrime.Hardy.EFJTermW",
+      "Zeta23.XiPrime.Hardy.EFLitCorrW",
+      "Zeta23.XiPrime.Hardy.EFMain",
+      "Zeta23.XiPrime.Hardy.EFWeights",
+      "Zeta23.XiPrime.Hardy.GoodHeightsW",
+      "Zeta23.XiPrime.Hardy.GramBridgeW",
+      "Zeta23.XiPrime.Hardy.Omega",
+      "Zeta23.XiPrime.Hardy.Seam",
+      "Zeta23.XiPrime.Hardy.TwoLine",
+      "Zeta23.XiPrime.Hardy.ZFunction",
+      "Zeta23.XiPrime.Hardy.ZeroFree",
+      "Zeta23.XiPrime.Inputs",
+      "Zeta23.XiPrime.PrimeSide.Abel",
+      "Zeta23.XiPrime.PrimeSide.Concrete",
+      "Zeta23.XiPrime.PrimeSide.Cross",
+      "Zeta23.XiPrime.PrimeSide.Density",
+      "Zeta23.XiPrime.PrimeSide.Final",
+      "Zeta23.XiPrime.PrimeSide.Moments",
+      "Zeta23.XiPrime.PrimeSide.PP",
+      "Zeta23.XiPrime.PrimeSide.PPUpper",
+      "Zeta23.XiPrime.PrimeSide.Trace",
+      "Zeta23.XiPrime.PrimeSide.Traces",
+      "Zeta23.XiPrime.QuarticWindow.Family",
+      "Zeta23.XiPrime.QuarticWindow.ModWindow",
+      "Zeta23.XiPrime.QuarticWindow.Moments",
+      "Zeta23.XiPrime.QuarticWindow.Params",
+      "Zeta23.XiPrime.QuarticWindow.Quartic",
+      "Zeta23.XiPrime.QuarticWindow.ZeroSide",
+      "Zeta23.XiPrime.Seam",
+      "Zeta23.XiPrime.Statement",
+      "Zeta23.XiPrime.StatementW",
+      "Zeta23.XiPrime.Transfer",
+      "Zeta23.XiPrime.Transfer.Abstract",
+      "Zeta23.XiPrime.Transfer.Dependence",
+      "Zeta23.XiPrime.Transfer.Inputs",
+      "Zeta23.XiPrime.Transfer.InputsW",
+      "Zeta23.XiPrime.Transfer.W",
+      "Zeta23.XiPrime.Window",
+      "Zeta23.XiPrime.Window.FlatAdm",
+      "Zeta23.XiPrime.Window.Quartic",
+      "Zeta23.XiPrime.ZeroCount",
+      "Zeta23.XiPrime.ZeroCount.ArgBound",
+      "Zeta23.XiPrime.ZeroCount.Basic",
+      "Zeta23.XiPrime.ZeroCount.Contour",
+      "Zeta23.XiPrime.ZeroCount.Generic",
+      "Zeta23.XiPrime.ZeroCount.GenericRvM",
+      "Zeta23.XiPrime.ZeroCount.GoodHeights",
+      "Zeta23.XiPrime.ZeroCount.Landau",
+      "Zeta23.XiPrime.ZeroCount.Sides",
+      "Zeta23.XiPrime.ZeroCount.Y",
+      "Zeta23.ZeroSide",
+      "Zeta23.ZeroSide.Final",
+      "Zeta23.ZeroSide.Mult",
+      "Zeta23.ZeroSide.RankTraceMult",
+      "Zeta23.ZeroSide.TightMult",
+      "Zeta23.ZetaReflect"
+    ],
+    "witnesses": [
+      {
+        "declaration": "Zeta23.XiPrime.gzMoments_of_transfer",
+        "direction": "forward",
+        "neighbor": "RHLinalg.frobSq",
+        "source_path": "Zeta23/XiPrime/Assembly.lean"
+      },
+      {
+        "declaration": "Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+        "direction": "forward",
+        "neighbor": "RHLinalg.frobSq",
+        "source_path": "Zeta23/XiPrime/Assembly.lean"
+      }
+    ]
+  },
+  "plan_sha256": "f41ac89ece6a96078aba360995840ca4608e014bab36bcd07a4e4b5746677372",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "zeta23",
+  "split_evidence": {
+    "graph": {
+      "edges": 46563,
+      "nodes": 6046,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_d3aea62b5107264c546c0df347267aba_nodes",
+        "my_db.main.rs_split_d3aea62b5107264c546c0df347267aba_edges",
+        "my_db.main.rs_split_d3aea62b5107264c546c0df347267aba_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+      "database": "repo-search-s-zeta23-d3aea62b5107264c",
+      "database_id": "01a221eb-e001-768f-8ed8-2430a688445f",
+      "split_projection_sha256": "ed2d639c9700b871e55f7ae53e3cda4e01352a9cabd391574b5d2741bc08e4a7",
+      "sqlite_bytes": 10825728,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+      "edges": 46563,
+      "files": {
+        "edges.csv": {
+          "bytes": 5543443,
+          "sha256": "8da40f493cd94d830ce408005da74f245fcb8e6b2586c5ec31fbf70ac38cf921"
+        },
+        "nodes.csv": {
+          "bytes": 263615,
+          "sha256": "4204ad4a38f331c830a13ff138f0499957b090bc7db74c6edf8b6ac5a5816c0d"
+        },
+        "search.sqlite": {
+          "bytes": 10825728,
+          "sha256": "48778064ecab0f812e0f3bc017eb7296eb21baf2d6783652ffe07e80a3dc28f4"
+        }
+      },
+      "full_projection_fingerprint": "c3fd72640b4dea1330372d29722e1f090af85d7e3df99d59fcd0ad0785409c23",
+      "nodes": 6046,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "2cb5b11dc36ab07b4b1d881f452c83d9297f249eef242e7e61804d34d29a3f72",
+      "sources": 5278
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "chunks": [
+          {
+            "declaration_hint": "gzMoments_of_transfer",
+            "declaration_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 66,
+            "source_path": "Zeta23/XiPrime/Assembly.lean",
+            "source_start_line": 34
+          },
+          {
+            "declaration_hint": "frobSq_nonneg",
+            "declaration_id": "lean:Zeta23.Assembly.frobSq_nonneg",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 130,
+            "source_path": "Zeta23/Assembly.lean",
+            "source_start_line": 128
+          },
+          {
+            "declaration_hint": "ZeroConfig",
+            "declaration_id": "lean:Zeta23.ZeroConfig",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 134,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 109
+          },
+          {
+            "declaration_hint": "N",
+            "declaration_id": "lean:Zeta23.ZeroConfig.N",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 146,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 144
+          },
+          {
+            "declaration_hint": "Params",
+            "declaration_id": "lean:Zeta23.Params",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 189,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 183
+          },
+          {
+            "declaration_hint": "d",
+            "declaration_id": "lean:Zeta23.Params.d",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 216,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 214
+          },
+          {
+            "declaration_hint": "hat",
+            "declaration_id": "lean:Zeta23.Params.hat",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 296,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 287
+          },
+          {
+            "declaration_hint": "Gz",
+            "declaration_id": "lean:Zeta23.ZeroConfig.Gz",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 305,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 301
+          },
+          {
+            "declaration_hint": "rtrace",
+            "declaration_id": "lean:RHLinalg.rtrace",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 70,
+            "source_path": "Zeta23/LinAlg/PosIndex.lean",
+            "source_start_line": 67
+          },
+          {
+            "declaration_hint": "frobSq",
+            "declaration_id": "lean:RHLinalg.frobSq",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 73,
+            "source_path": "Zeta23/LinAlg/PosIndex.lean",
+            "source_start_line": 71
+          },
+          {
+            "declaration_hint": "GpC",
+            "declaration_id": "lean:Zeta23.Params.GpC",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 135,
+            "source_path": "Zeta23/XiPrime/Defs.lean",
+            "source_start_line": 132
+          },
+          {
+            "declaration_hint": "CoeffFamily",
+            "declaration_id": "lean:Zeta23.XiPrime.CoeffFamily",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 149,
+            "source_path": "Zeta23/XiPrime/Statement.lean",
+            "source_start_line": 139
+          },
+          {
+            "declaration_hint": "XiTraceTransfer",
+            "declaration_id": "lean:Zeta23.XiPrime.XiTraceTransfer",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 223,
+            "source_path": "Zeta23/XiPrime/Statement.lean",
+            "source_start_line": 209
+          },
+          {
+            "declaration_hint": "CoeffMoments",
+            "declaration_id": "lean:Zeta23.XiPrime.CoeffMoments",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 241,
+            "source_path": "Zeta23/XiPrime/Statement.lean",
+            "source_start_line": 224
+          },
+          {
+            "declaration_hint": "GzMoments",
+            "declaration_id": "lean:Zeta23.XiPrime.GzMoments",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 248,
+            "source_path": "Zeta23/XiPrime/Statement.lean",
+            "source_start_line": 242
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 2067,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.CoeffFamily"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.CoeffMoments"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.GzMoments"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.XiTraceTransfer"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.ZeroConfig"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:RHLinalg.frobSq"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:RHLinalg.rtrace"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.Assembly.frobSq_nonneg"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.Params.GpC"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.Params.d"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.Params.hat"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.CoeffFamily"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.CoeffFamily.c"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.CoeffMoments"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.GzMoments"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.XiPrime.XiTraceTransfer"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.ZeroConfig"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.ZeroConfig.Gz"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "target_id": "lean:Zeta23.ZeroConfig.N"
+          }
+        ],
+        "query": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+        "scope_root_modules": [
+          "Zeta23"
+        ],
+        "source_id": "zeta23",
+        "source_kind": "git",
+        "source_revision": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+        "split_projection_sha256": "ed2d639c9700b871e55f7ae53e3cda4e01352a9cabd391574b5d2741bc08e4a7",
+        "status": "FOUND",
+        "target_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+            "backend": "kusto",
+            "candidate_id": "zeta23::lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:RHLinalg.frobSq"
+              },
+              {
+                "depth": 1,
+                "id": "lean:RHLinalg.rtrace"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Assembly.frobSq_nonneg"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Params"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Params.GpC"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Params.d"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Params.hat"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.XiPrime.CoeffFamily"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.XiPrime.CoeffFamily.c"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.XiPrime.CoeffMoments"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.XiPrime.GzMoments"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.XiPrime.XiTraceTransfer"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.ZeroConfig"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.ZeroConfig.Gz"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.ZeroConfig.N"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 46563,
+            "projection_nodes": 6046,
+            "root": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "scope_root_modules": [
+              "Zeta23"
+            ],
+            "source_authority": null,
+            "source_id": "zeta23",
+            "source_kind": "git",
+            "source_revision": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+            "candidate_id": "zeta23::lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "gzMoments_of_transfer",
+            "declaration_id": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 66,
+            "source_id": "zeta23",
+            "source_path": "Zeta23/XiPrime/Assembly.lean",
+            "source_row_id": "src:Zeta23/XiPrime/Assembly.lean:34:66",
+            "source_start_line": 34
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:Zeta23.XiPrime.gzMoments_of_transfer",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "zeta23",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "chunks": [
+          {
+            "declaration_hint": "kappa_nonneg_of_gzMoments",
+            "declaration_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 107,
+            "source_path": "Zeta23/XiPrime/Assembly.lean",
+            "source_start_line": 84
+          },
+          {
+            "declaration_hint": "frobSq_nonneg",
+            "declaration_id": "lean:Zeta23.Assembly.frobSq_nonneg",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 130,
+            "source_path": "Zeta23/Assembly.lean",
+            "source_start_line": 128
+          },
+          {
+            "declaration_hint": "tendsto_N_atTop",
+            "declaration_id": "lean:Zeta23.Assembly.tendsto_N_atTop",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 757,
+            "source_path": "Zeta23/Assembly.lean",
+            "source_start_line": 753
+          },
+          {
+            "declaration_hint": "ZeroConfig",
+            "declaration_id": "lean:Zeta23.ZeroConfig",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 134,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 109
+          },
+          {
+            "declaration_hint": "N",
+            "declaration_id": "lean:Zeta23.ZeroConfig.N",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 146,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 144
+          },
+          {
+            "declaration_hint": "Params",
+            "declaration_id": "lean:Zeta23.Params",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 189,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 183
+          },
+          {
+            "declaration_hint": "d",
+            "declaration_id": "lean:Zeta23.Params.d",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 216,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 214
+          },
+          {
+            "declaration_hint": "hat",
+            "declaration_id": "lean:Zeta23.Params.hat",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 296,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 287
+          },
+          {
+            "declaration_hint": "Gz",
+            "declaration_id": "lean:Zeta23.ZeroConfig.Gz",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 305,
+            "source_path": "Zeta23/Defs.lean",
+            "source_start_line": 301
+          },
+          {
+            "declaration_hint": "RiemannVonMangoldt",
+            "declaration_id": "lean:Zeta23.RiemannVonMangoldt",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 70,
+            "source_path": "Zeta23/Hypotheses.lean",
+            "source_start_line": 54
+          },
+          {
+            "declaration_hint": "rtrace",
+            "declaration_id": "lean:RHLinalg.rtrace",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 70,
+            "source_path": "Zeta23/LinAlg/PosIndex.lean",
+            "source_start_line": 67
+          },
+          {
+            "declaration_hint": "frobSq",
+            "declaration_id": "lean:RHLinalg.frobSq",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 73,
+            "source_path": "Zeta23/LinAlg/PosIndex.lean",
+            "source_start_line": 71
+          },
+          {
+            "declaration_hint": "GzMoments",
+            "declaration_id": "lean:Zeta23.XiPrime.GzMoments",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 248,
+            "source_path": "Zeta23/XiPrime/Statement.lean",
+            "source_start_line": 242
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1455,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.RiemannVonMangoldt"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.XiPrime.GzMoments"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.ZeroConfig"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:RHLinalg.frobSq"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:RHLinalg.rtrace"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.Assembly.frobSq_nonneg"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.Assembly.tendsto_N_atTop"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.Params.d"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.Params.hat"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.RiemannVonMangoldt"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.XiPrime.GzMoments"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.ZeroConfig"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.ZeroConfig.Gz"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "target_id": "lean:Zeta23.ZeroConfig.N"
+          }
+        ],
+        "query": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+        "scope_root_modules": [
+          "Zeta23"
+        ],
+        "source_id": "zeta23",
+        "source_kind": "git",
+        "source_revision": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+        "split_projection_sha256": "ed2d639c9700b871e55f7ae53e3cda4e01352a9cabd391574b5d2741bc08e4a7",
+        "status": "FOUND",
+        "target_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+            "backend": "kusto",
+            "candidate_id": "zeta23::lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:RHLinalg.frobSq"
+              },
+              {
+                "depth": 1,
+                "id": "lean:RHLinalg.rtrace"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Assembly.frobSq_nonneg"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Assembly.tendsto_N_atTop"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Params"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Params.d"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.Params.hat"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.RiemannVonMangoldt"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.XiPrime.GzMoments"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.ZeroConfig"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.ZeroConfig.Gz"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Zeta23.ZeroConfig.N"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 46563,
+            "projection_nodes": 6046,
+            "root": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "scope_root_modules": [
+              "Zeta23"
+            ],
+            "source_authority": null,
+            "source_id": "zeta23",
+            "source_kind": "git",
+            "source_revision": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
+            "candidate_id": "zeta23::lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "kappa_nonneg_of_gzMoments",
+            "declaration_id": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "fbdc36bbf17d20af3fd0447c6d1a8a02773c9844",
+            "source_end_line": 107,
+            "source_id": "zeta23",
+            "source_path": "Zeta23/XiPrime/Assembly.lean",
+            "source_row_id": "src:Zeta23/XiPrime/Assembly.lean:84:107",
+            "source_start_line": 84
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:Zeta23.XiPrime.kappa_nonneg_of_gzMoments",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "zeta23",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
