@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .accepted_catalog import (
     AcceptedCatalog,
+    AcceptedCorpus,
     accepted_catalog_sha256,
     corpus_payload,
     load_accepted_catalog,
@@ -853,17 +854,28 @@ def _cmd_materialize_split_turso(args: argparse.Namespace) -> int:
     item = next((c for c in catalog.corpora if c.source_id == args.source_id), None)
     if item is None or item.split_projection_sha256 is None:
         raise RepoSearchError("BLOCKED_PROJECTION_PROFILE", "explicit split catalog pin required")
-    prepared = prepare_catalog_graph(catalog, item.source_id,
-                                     repository_root=args.catalog.resolve().parent.parent,
-                                     cache_root=args.cache_dir, executable=args.duckdb)
-    split = prepared["split"]
-    if not isinstance(split, dict):
-        raise RepoSearchError("BLOCKED_PROJECTION_INTEGRITY", "invalid prepared receipt")
-    result = materialize_split_search(item, Path(str(prepared["directory"])),
-                                      split["full_projection_fingerprint"], _turso_client(args),
-                                      group=args.group)
-    _emit(result)
+    _emit(_materialize_selected_split(catalog, item, args, _turso_client(args)))
     return 0
+
+
+def _materialize_selected_split(catalog: AcceptedCatalog, item: AcceptedCorpus,
+                                args: argparse.Namespace, client: TursoHttpClient) -> dict[str, object]:
+    executable = getattr(args, "duckdb", None) or os.environ.get("REPO_SEARCH_DUCKDB", "duckdb")
+    try:
+        prepared = prepare_catalog_graph(catalog, item.source_id,
+                                         repository_root=args.catalog.resolve().parent.parent,
+                                         cache_root=args.cache_dir, executable=executable)
+        split = prepared["split"]
+        if not isinstance(split, dict):
+            raise TypeError("invalid prepared receipt")
+        result = materialize_split_search(item, Path(str(prepared["directory"])),
+                                          split["full_projection_fingerprint"], client,
+                                          group=args.group)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RepoSearchError("UNAVAILABLE_LOCAL_GRAPH", "split preparation unavailable") from exc
+    except (ValueError, TypeError, KeyError) as exc:
+        raise RepoSearchError("BLOCKED_PROJECTION_INTEGRITY", "split preparation or verification failed") from exc
+    return {**result, "source_id": item.source_id}
 
 
 def _cmd_sync_turso_catalog(args: argparse.Namespace) -> int:
@@ -876,14 +888,16 @@ def _cmd_sync_turso_catalog(args: argparse.Namespace) -> int:
         ) from exc
 
     repository_root = args.catalog.resolve().parent.parent
-    materializer = TursoMaterializer(_turso_client(args))
+    client = _turso_client(args)
+    materializer = TursoMaterializer(client)
     results: list[dict[str, object]] = []
     failures: list[dict[str, str]] = []
 
     for corpus in catalog.corpora:
         try:
             if corpus.split_projection_sha256 is not None:
-                raise RepoSearchError("BLOCKED_PROJECTION_PROFILE", "split projection requires its explicit materializer")
+                results.append(_materialize_selected_split(catalog, corpus, args, client))
+                continue
             state = ensure_local_corpus(
                 catalog,
                 corpus.source_id,
@@ -1301,6 +1315,7 @@ def build_parser() -> argparse.ArgumentParser:
     turso_sync.add_argument("--cache-dir", type=Path, required=True)
     turso_sync.add_argument("--organization", required=True)
     turso_sync.add_argument("--group", required=True)
+    turso_sync.add_argument("--duckdb")
     turso_sync.add_argument("--size-limit")
     turso_sync.add_argument("--token-expiration", default="15m")
     turso_sync.add_argument(

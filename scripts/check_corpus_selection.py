@@ -65,6 +65,20 @@ def validate_context(context, witness, item):
         raise ValueError("live context did not use the selected local split graph")
 
 
+def normalize_split_evidence(evidence):
+    """Accept the successful intake output without persisting runtime-local paths."""
+    if not isinstance(evidence, dict):
+        raise TypeError("invalid split evidence")
+    if "local" in evidence:
+        if evidence.get("status") != "READY" or "split" in evidence:
+            raise ValueError("intake not ready or ambiguous split evidence")
+        try:
+            return {"split": evidence["local"]["split"], "search": evidence["search"], "graph": evidence["graph"]}
+        except (KeyError, TypeError) as exc:
+            raise ValueError("invalid intake receipt") from exc
+    return evidence
+
+
 def validate_split_evidence(evidence, item, report):
     if item.split_projection_sha256 is None:
         if evidence is not None:
@@ -87,6 +101,7 @@ def validate_split_evidence(evidence, item, report):
             and (split["nodes"], split["edges"]) == (report["graph_nodes"], report["graph_edges"])
             and search["status"] in ("CREATED", "REUSED")
             and search["database"] == split_database_name(item)
+            and isinstance(search["database_id"], str) and bool(search["database_id"].strip())
             and search["artifact_identity"] == item.artifact_identity
             and search["split_projection_sha256"] == item.split_projection_sha256
             and graph["status"] in ("CREATED", "REUSED")
@@ -122,7 +137,7 @@ def capture_live(catalog_path, item, plan, *, split_evidence=None, profile=PROFI
     if item.split_projection_sha256 is not None:
         if split_evidence is None:
             raise ValueError("split projection evidence required")
-        receipt["split_evidence"] = split_evidence
+        receipt["split_evidence"] = normalize_split_evidence(split_evidence)
     elif split_evidence is not None:
         raise ValueError("unexpected split evidence")
     for w in plan["witnesses"]:

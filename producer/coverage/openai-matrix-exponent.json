@@ -650,6 +650,7 @@
     "search": {
       "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
       "database": "repo-search-s-openai-matrix-exponen-7d91ed397f6a9269",
+      "database_id": "01a21f59-5701-7559-9229-fb36759473cc",
       "split_projection_sha256": "6c848a462e1d9d26ba440ce44e0ad062e9a1470d90e907a1811fee10dcd591ea",
       "sqlite_bytes": 100450304,
       "status": "CREATED"
