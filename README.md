@@ -431,3 +431,15 @@ occurrence provenance. Groups and occurrence lists can be truncated separately.
 Each corpus scan is bounded to 100,000 nodes; an unavailable or oversized corpus
 is reported rather than counted as a successful empty result. The result does
 not include external Mathlib dependencies or establish semantic equivalence.
+
+### Bounded federated execution
+
+Hosted lexical search and Kusto reach-all/graph seed expansion execute
+independent reads concurrently (four workers per operation by default,
+bounded to 1–8 at the Python API). Workers do not change the catalog,
+query bounds, local ranking, global Top-K, evidence grade or availability
+semantics. Results merge in catalog/seed order, not completion order.
+One worker is available for serial comparison. No automatic retries or
+provider fallback are introduced. This is a per-operation bound, not an
+account-wide rate limiter; a future shared serving frontend must govern
+aggregate concurrency independently. Local SQLite federation remains serial.

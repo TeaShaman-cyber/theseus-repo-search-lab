@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .accepted_catalog import AcceptedCatalog, AcceptedCorpus, accepted_catalog_sha256
 from .errors import RepoSearchError
-from .multicorpus import MultiCorpusHit
+from .multicorpus import MultiCorpusHit, ordered_fanout
 
 
 class KustoClient:
@@ -127,18 +127,22 @@ def reach(item: AcceptedCorpus, client: KustoClient, name: str, *, depth: int = 
             "complete_within_scope": complete}
 
 def federated_reach(catalog: AcceptedCatalog, client: KustoClient, name: str, *,
-                    depth: int = 3, limit: int = 100, reverse: bool = False) -> dict[str, object]:
+                    depth: int = 3, limit: int = 100, reverse: bool = False,
+                    workers: int = 4) -> dict[str, object]:
     if not 1 <= len(name) <= 512 or not 1 <= depth <= 3 or not 1 <= limit <= 500:
         raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "reach-all: invalid query bounds")
-    results = []
-    unavailable = []
-    for item in catalog.corpora:
+    results: list[dict[str, object]] = []
+    unavailable: list[dict[str, object]] = []
+    def execute(item: AcceptedCorpus) -> tuple[bool, dict[str, object]]:
         try:
             result = reach(item, client, name, depth=depth, limit=limit, reverse=reverse)
-            results.append({**result, "source_id": item.source_id, "artifact_identity": item.artifact_identity})
+            return True, {**result, "source_id": item.source_id, "artifact_identity": item.artifact_identity}
         except RepoSearchError as exc:
-            unavailable.append({"source_id": item.source_id, "artifact_identity": item.artifact_identity,
-                                "code": exc.code, "message": str(exc)})
+            return False, {"source_id": item.source_id, "artifact_identity": item.artifact_identity,
+                           "code": exc.code, "message": str(exc)}
+
+    for ok, result in ordered_fanout(catalog.corpora, execute, workers):
+        (results if ok else unavailable).append(result)
     incomplete = any(r["status"] == "DEGRADED" for r in results)
     found = any(r["found"] for r in results)
     status = ("UNAVAILABLE" if not results else "DEGRADED" if unavailable or incomplete else
@@ -152,21 +156,27 @@ def federated_reach(catalog: AcceptedCatalog, client: KustoClient, name: str, *,
 
 def expand_search_hits(catalog: AcceptedCatalog, client: KustoClient,
                        hits: Sequence[MultiCorpusHit], *, depth: int = 2,
-                       limit: int = 30, reverse: bool = False) -> dict[str, object]:
+                       limit: int = 30, reverse: bool = False,
+                       workers: int = 4) -> dict[str, object]:
     """Expand only distinct declaration occurrences selected by lexical Top-K."""
     if len(hits) > 10 or not 1 <= depth <= 3 or not 1 <= limit <= 50:
         raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "graph search: at most 10 seeds, depth 1..3, limit 1..50")
     items = {item.source_id: item for item in catalog.corpora}
     seen: set[tuple[str, str | None, str]] = set()
-    graphs = []
-    unavailable = []
+    graphs: list[dict[str, object]] = []
+    unavailable: list[dict[str, object]] = []
+    seeds = []
     for hit in hits:
-        item = items[hit.source_id]
         root = hit.hit.declaration_id
         key = (hit.source_id, root, hit.candidate_id if root is None else "")
         if key in seen:
             continue
         seen.add(key)
+        seeds.append(hit)
+
+    def execute(hit: MultiCorpusHit) -> tuple[bool, dict[str, object]]:
+        item = items[hit.source_id]
+        root = hit.hit.declaration_id
         origin = {"source_id": item.source_id, "artifact_identity": item.artifact_identity,
                   "candidate_id": hit.candidate_id, "root": root}
         try:
@@ -175,9 +185,12 @@ def expand_search_hits(catalog: AcceptedCatalog, client: KustoClient,
             graph = reach(item, client, root, depth=depth, limit=limit, reverse=reverse)
             if graph["source_revision"] != hit.hit.source_revision or not graph["found"]:
                 raise RepoSearchError("BLOCKED_KUSTO_IDENTITY", "search seed does not match graph revision/node")
-            graphs.append({**graph, **origin})
+            return True, {**graph, **origin}
         except RepoSearchError as exc:
-            unavailable.append({**origin, "code": exc.code, "message": str(exc)})
+            return False, {**origin, "code": exc.code, "message": str(exc)}
+
+    for ok, result in ordered_fanout(tuple(seeds), execute, workers):
+        (graphs if ok else unavailable).append(result)
     status = ("UNKNOWN" if not hits else "UNAVAILABLE" if not graphs else
               "DEGRADED" if unavailable or any(g["status"] == "DEGRADED" for g in graphs) else "FOUND")
     return {"graph_status": status, "graph_seeds": len(seen), "graphs": graphs,

@@ -25,9 +25,11 @@ class FederatedGraphTests(unittest.TestCase):
         self.assertEqual([x["artifact_identity"] for x in r["results"]],["a"*64,"c"*64])
 
     def test_unavailable_corpus_not_reported_as_no_signal(self):
-        with patch("theseus_repo_search.kusto_query.reach", side_effect=[
-            {"status":"UNKNOWN","found":False,"complete_within_scope":False,"nodes":[]},
-            RepoSearchError("UNAVAILABLE_KUSTO_QUERY","unavailable")]):
+        def result(item, *_args, **_kwargs):
+            if item.source_id == "second":
+                raise RepoSearchError("UNAVAILABLE_KUSTO_QUERY","unavailable")
+            return {"status":"UNKNOWN","found":False,"complete_within_scope":False,"nodes":[]}
+        with patch("theseus_repo_search.kusto_query.reach", side_effect=result):
             r=federated_reach(self.catalog, Mock(), "A")
         self.assertEqual(r["status"],"DEGRADED")
         self.assertEqual(r["searched_corpora"],1)
@@ -56,11 +58,10 @@ class FederatedGraphTests(unittest.TestCase):
                             hit=SimpleNamespace(declaration_id="lean:A", source_revision="rev"))
             for s in ("first","second","first")
         ]
-        with patch("theseus_repo_search.kusto_query.reach", side_effect=[
-            {"status":"FOUND","found":True,"complete_within_scope":True,
-             "source_revision":"rev","nodes":[]},
-            {"status":"FOUND","found":True,"complete_within_scope":True,
-             "source_revision":"different","nodes":[]}]) as call:
+        def result(item, *_args, **_kwargs):
+            return {"status":"FOUND","found":True,"complete_within_scope":True,
+                    "source_revision":"rev" if item.source_id == "first" else "different","nodes":[]}
+        with patch("theseus_repo_search.kusto_query.reach", side_effect=result) as call:
             r=expand_search_hits(self.catalog, Mock(), hits, depth=1, limit=10)
         self.assertEqual(call.call_count,2)
         self.assertEqual(r["graph_status"],"DEGRADED")
