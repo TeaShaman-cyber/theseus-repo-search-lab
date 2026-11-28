@@ -27,7 +27,7 @@ class QueryCapabilitiesTests(unittest.TestCase):
         turso.assert_not_called()
         kusto.assert_not_called()
         operations = {op["name"]: op for op in result["operations"]}
-        self.assertEqual(set(operations), {"capabilities", "corpora", "search", "graph-search", "reach", "reach-all", "deps", "rdeps", "path", "context", "overlap"})
+        self.assertEqual(set(operations), {"startup", "capabilities", "corpora", "search", "graph-search", "reach", "reach-all", "deps", "rdeps", "path", "context", "overlap"})
         self.assertEqual(result["research_routes"]["discover_structure"], ["graph-search", "context"])
         self.assertEqual(result["research_routes"]["compare_known_declarations"], ["reach-all", "context"])
         self.assertEqual(operations["graph-search"]["backends"], ["turso", "kusto"])

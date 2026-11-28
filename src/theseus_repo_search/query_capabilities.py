@@ -1,8 +1,11 @@
 """Public, offline description of the existing read-only research interface."""
 from __future__ import annotations
 
+from .accepted_catalog import AcceptedCatalog, accepted_catalog_sha256
+
 # Names are public CLI operations, not provider-specific commands.
 _OPERATIONS = (
+    ("startup", "Compact offline architecture, catalog and verification map", (), "query startup"),
     ("capabilities", "Describe research operations without connecting to any backend", (), "query capabilities"),
     ("corpora", "List accepted corpus identities (not live availability)", (), "query corpora"),
     ("search", "Find declarations or source text without graph expansion", ("turso",), "query search 'spectral measure' --limit 5"),
@@ -19,7 +22,7 @@ _OPERATIONS = (
 QUERY_DESCRIPTION = (
     "Read-only mathematical research. Start with graph-search for structural discovery; "
     "use reach/reach-all for known roots and context for source evidence. "
-    "Use search alone for text retrieval. Run capabilities for the machine-readable map."
+    "Use search alone for text retrieval. Run startup for the compact map, capabilities for details."
 )
 
 
@@ -59,4 +62,55 @@ def query_capabilities() -> dict[str, object]:
             "Reachability covers indexed graphs and selected depth, not all imported dependencies; no invented cross-corpus edges.",
             "Lexical hits, overlap and graph paths are research evidence, not proof certification or mathematical equivalence.",
         ],
+    }
+
+
+def query_startup(catalog: AcceptedCatalog | None) -> dict[str, object]:
+    """Small local orientation receipt; never imply a live provider check."""
+    components = {
+        "turso": {
+            "role": "Lexical search and source evidence; full-entry graph compatibility",
+            "check": "query search CovByVAdd --mode evidence --limit 5; inspect unavailable_corpora",
+        },
+        "kusto": {
+            "role": "Analytical graph reachability",
+            "check": "query reach-all ConjectureOfMarton.theorem_1_2 --depth 2 --limit 20; inspect per-corpus status",
+        },
+        "local-duckdb": {
+            "role": "Disposable split graph serving",
+            "check": "query deps and context on a selected split corpus; verify graph receipt",
+        },
+        "motherduck": {
+            "role": "Verified split graph storage, not warm query serving",
+            "check": "Read-only table inventory and artifact/pin identity via governed launcher",
+        },
+        "immutable-releases": {
+            "role": "Accepted artifact recovery authority",
+            "check": "Verify release, assets and accepted fingerprint before recovery or selection",
+        },
+    }
+    catalog_summary: dict[str, object] = {"status": "NOT_CONFIGURED"}
+    if catalog is not None:
+        split = sum(item.split_projection_sha256 is not None for item in catalog.corpora)
+        catalog_summary = {
+            "status": "VALIDATED",
+            "accepted": len(catalog.corpora),
+            "split": split,
+            "full": len(catalog.corpora) - split,
+            "sha256": accepted_catalog_sha256(catalog),
+        }
+    return {
+        "schema": "theseus.repo-search.startup.v1",
+        "availability": "NOT_CHECKED",
+        "catalog": catalog_summary,
+        "components": {
+            name: {
+                **info,
+                "operations": [op for op, _, backends, _ in _OPERATIONS if name in backends],
+            }
+            for name, info in components.items()
+        },
+        "qa": "./tools/dev/check; exact-head CI/review; relevant live query and recovery checks",
+        "boundary": "Search-only; no proof certification or silent fallback. Report unchecked components explicitly.",
+        "details": "repo-search query capabilities",
     }

@@ -303,9 +303,10 @@ artifacts are not part of this tracked-JSON lint scope.
 
 ## Unified agent query CLI (read-only)
 
-Start with `./tools/repo-search query capabilities` (offline JSON) or
-`./tools/repo-search query --help`. The operation map is independent of live
-credentials. For **mathematical structure discovery**, start with
+Start with `./tools/repo-search query startup` for a compact offline architecture,
+catalog and verification map. It reads only the local catalog and never checks
+provider health; `NOT_CHECKED` means exactly that. Use `query capabilities` or
+`query --help` for detailed routes. The map is independent of live credentials. For **mathematical structure discovery**, start with
 `graph-search`, then inspect exact declarations with `context`. For known
 roots, use `reach` / `reach-all` to explore or compare reachable neighborhoods.
 Use `search` alone when only text is needed. Typed edges and bounded paths use
@@ -327,6 +328,7 @@ arguments, logs or source. This workbench route is not an agent-facing
 credential boundary for untrusted remote clients.
 
 ```sh
+./tools/repo-search query startup
 ./tools/repo-search query capabilities
 ./tools/repo-search query corpora
 ./tools/repo-search query graph-search 'spectral measure' --limit 5 --depth 2
