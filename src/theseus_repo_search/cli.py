@@ -47,6 +47,7 @@ from .producer_config import (
     load_lean_source,
 )
 from .projection import QueryConnection, build_projection, read_projection_provenance
+from .query_capabilities import QUERY_DESCRIPTION, operation_help, query_capabilities
 from .retrieval import SearchHit
 from .retrieval import context as build_context
 from .retrieval import search as search_repo
@@ -1049,6 +1050,9 @@ def _agent_kusto_client() -> KustoClient:
 
 
 def _cmd_agent_query(args: argparse.Namespace) -> int:
+    if args.operation == "capabilities":
+        _emit(query_capabilities())
+        return 0
     catalog_path = args.catalog or os.environ.get("REPO_SEARCH_CATALOG")
     if not catalog_path:
         raise RepoSearchError("BLOCKED_QUERY_PROFILE", "set REPO_SEARCH_CATALOG or --catalog")
@@ -1114,7 +1118,8 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
 
 
 def _add_agent_query(subparsers) -> None:
-    parser = subparsers.add_parser("query", help="unified read-only accepted-corpus interface")
+    parser = subparsers.add_parser("query", help="read-only mathematical research (start with query capabilities)",
+                                   description=QUERY_DESCRIPTION)
     parser.add_argument("--catalog", type=Path)
     parser.add_argument("--duckdb")
     parser.add_argument("--organization")
@@ -1122,13 +1127,14 @@ def _add_agent_query(subparsers) -> None:
     parser.add_argument("--platform-token-env")
     parser.set_defaults(func=_cmd_agent_query)
     ops = parser.add_subparsers(dest="operation", required=True)
-    ops.add_parser("corpora", help="list catalog identities (not live availability)")
-    overlap = ops.add_parser("overlap", help="cross-corpus short-name candidates with noise filtering")
+    ops.add_parser("capabilities", help=operation_help("capabilities"), description=operation_help("capabilities"))
+    ops.add_parser("corpora", help=operation_help("corpora"), description=operation_help("corpora"))
+    overlap = ops.add_parser("overlap", help=operation_help("overlap"), description=operation_help("overlap"))
     overlap.add_argument("--limit", type=int, default=20)
     overlap.add_argument("--occurrences", type=int, default=10)
     overlap.add_argument("--raw", action="store_true")
     for operation in ("search", "graph-search"):
-        search = ops.add_parser(operation)
+        search = ops.add_parser(operation, help=operation_help(operation), description=operation_help(operation))
         search.add_argument("query")
         search.add_argument("--source", dest="source_id")
         search.add_argument("--limit", type=int, default=10 if operation == "search" else 5)
@@ -1138,7 +1144,7 @@ def _add_agent_query(subparsers) -> None:
             search.add_argument("--graph-limit", type=int, default=30)
             search.add_argument("--reverse", action="store_true")
     for operation in ("reach", "reach-all"):
-        graph_reach = ops.add_parser(operation, help="Kusto bounded graph reachability")
+        graph_reach = ops.add_parser(operation, help=operation_help(operation), description=operation_help(operation))
         if operation == "reach":
             graph_reach.add_argument("source_id")
         graph_reach.add_argument("name")
@@ -1146,7 +1152,7 @@ def _add_agent_query(subparsers) -> None:
         graph_reach.add_argument("--limit", type=int, default=100)
         graph_reach.add_argument("--reverse", action="store_true")
     for op in ("deps", "rdeps", "path", "context"):
-        graph = ops.add_parser(op)
+        graph = ops.add_parser(op, help=operation_help(op), description=operation_help(op))
         graph.add_argument("source_id")
         graph.add_argument("name")
         if op == "path":

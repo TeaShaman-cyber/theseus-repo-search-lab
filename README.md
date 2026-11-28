@@ -291,9 +291,15 @@ artifacts are not part of this tracked-JSON lint scope.
 
 ## Unified agent query CLI (read-only)
 
-Use the same command for corpus discovery, lexical search, dependency traversal,
-paths and bounded source context. From a checked-out repository, set the
-authorized connection profile once:
+Start with `./tools/repo-search query capabilities` (offline JSON) or
+`./tools/repo-search query --help`. The operation map is independent of live
+credentials. For **mathematical structure discovery**, start with
+`graph-search`, then inspect exact declarations with `context`. For known
+roots, use `reach` / `reach-all` to explore or compare reachable neighborhoods.
+Use `search` alone when only text is needed. Typed edges and bounded paths use
+`deps`, `rdeps`, and `path`. The caller chooses research intent, not a database.
+
+From a checked-out repository, set the authorized connection profile once:
 
 ```sh
 export REPO_SEARCH_TURSO_ORGANIZATION='<your organization>'
@@ -309,7 +315,9 @@ arguments, logs or source. This workbench route is not an agent-facing
 credential boundary for untrusted remote clients.
 
 ```sh
+./tools/repo-search query capabilities
 ./tools/repo-search query corpora
+./tools/repo-search query graph-search 'spectral measure' --limit 5 --depth 2
 ./tools/repo-search query search 'spectral measure' --limit 5
 ./tools/repo-search query search 'coeffMoments_atV' --source zeta23
 ./tools/repo-search query deps zeta23 Zeta23.XiPrime.coeffMoments_atV
@@ -330,8 +338,11 @@ and coverage fields. Profile flags may precede the operation, for example
 `query --catalog /path/catalog.json corpora`.
 
 Lexical and evidence queries use existing Turso read-only data-plane queries.
-Local SQLite commands remain available. Kusto is an additional selected graph
-projection (below), not an Azure SQL dependency. MCP hosting,
+Local SQLite commands remain available. Kusto executes reachability and
+structural discovery. Typed graph operations route by the selected corpus
+profile: full entries use Turso; split entries use local DuckDB for edges and
+Turso for metadata/text. MotherDuck stores verified split graphs, not warm
+query results. MCP hosting,
 declaration grouping and feedback remain separate work (#123, #159, #162).
 
 ### Kusto graph analytics in the same CLI
@@ -354,7 +365,7 @@ declarations and their shortest distance (excluding the root), with depth
 The result carries accepted artifact identity, revision, root modules and dependency
 boundary; result completeness is limited to that indexed graph and depth.
 It does not certify a proof. Existing deps/rdeps/path/context still return
-typed evidence via Turso. ADX uses the governed az-owner workbench wrapper;
+typed evidence via the selected Turso or split local DuckDB graph. ADX uses the governed az-owner workbench wrapper;
 this is not a least-privilege external serving credential.
 
 `reach-all` checks the exact declaration across the entire accepted catalog and
