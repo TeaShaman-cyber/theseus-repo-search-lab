@@ -20,6 +20,14 @@ from scripts.riemann_compressed_cache import (
 )
 
 
+def _process_alive(pid: int) -> bool:
+    try:
+        state = Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0]
+        return state not in ("Z", "X")
+    except (FileNotFoundError, ProcessLookupError):
+        return False
+
+
 class CompressedCacheTests(unittest.TestCase):
     def test_batches_cover_exact_rows_without_overlap(self):
         rows = [[str(i), "input", "archive", "digest"] for i in range(9)]
@@ -137,6 +145,23 @@ class CompressedCacheTests(unittest.TestCase):
                 f.write(json.dumps(rows[1]) + "\n")
             self.assertEqual(canonical_graph_hash(a)[0], 3)
 
+    def test_process_liveness_handles_disappearing_proc_stat(self):
+        for error in (FileNotFoundError, ProcessLookupError):
+            with self.subTest(error=error), patch.object(Path, "read_text", side_effect=error):
+                self.assertFalse(_process_alive(123))
+
+    def test_process_liveness_does_not_hide_permission_errors(self):
+        with patch.object(Path, "read_text", side_effect=PermissionError):
+            with self.assertRaises(PermissionError):
+                _process_alive(123)
+
+    def test_process_liveness_preserves_state_checks(self):
+        for state, alive in (("S", True), ("Z", False), ("X", False)):
+            with self.subTest(state=state), patch.object(
+                Path, "read_text", return_value=f"123 (child) {state} 1"
+            ):
+                self.assertEqual(_process_alive(123), alive)
+
     @unittest.skipUnless(
         Path("/proc").is_dir() and hasattr(os, "killpg"),
         "Linux process groups required",
@@ -156,13 +181,6 @@ class CompressedCacheTests(unittest.TestCase):
                 "subprocess.Popen([sys.executable,'-c',sys.argv[1],sys.argv[2]]);time.sleep(60)"
             )
 
-            def alive(pid):
-                try:
-                    state = Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0]
-                    return state not in ("Z", "X")
-                except FileNotFoundError:
-                    return False
-
             try:
                 with (
                     patch.object(
@@ -175,13 +193,13 @@ class CompressedCacheTests(unittest.TestCase):
                     guard.run([sys.executable, "-c", parent, child, str(pidfile)])
                 pid = int(pidfile.read_text())
                 deadline = time.monotonic() + 1
-                while alive(pid) and time.monotonic() < deadline:
+                while _process_alive(pid) and time.monotonic() < deadline:
                     time.sleep(0.01)
-                self.assertFalse(alive(pid))
+                self.assertFalse(_process_alive(pid))
             finally:
                 if pidfile.exists():
                     pid = int(pidfile.read_text())
-                    if alive(pid):
+                    if _process_alive(pid):
                         os.kill(pid, signal.SIGKILL)
 
     def test_reader_subcommand_precedes_global_flags(self):
