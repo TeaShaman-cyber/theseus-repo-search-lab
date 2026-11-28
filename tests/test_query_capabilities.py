@@ -1,10 +1,10 @@
 import contextlib
 import io
+import json
 import os
 import shlex
 import subprocess
 import sys
-import json
 import unittest
 from unittest.mock import patch
 
