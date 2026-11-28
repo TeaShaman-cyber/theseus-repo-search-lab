@@ -1,0 +1,314 @@
+{
+  "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+  "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+  "fingerprint_sha256": "034c0ab9a11e5e03145372158a78fd388494a84da46df4d18b3a7dd8bacfc03b",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain every accepted lexical chunk, including paths outside the graph; no expansion of accepted declaration authority.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve exact accepted graph and lexical scope in final split migration; witness retrieval, not proof validation.",
+    "required_modules": [
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-ConjectureOfMarton\u00bb"
+    ],
+    "witnesses": [
+      {
+        "declaration": "ConjectureOfMarton.theorem_1_2",
+        "direction": "forward",
+        "neighbor": "ConjectureOfMarton.F",
+        "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean"
+      },
+      {
+        "declaration": "ConjectureOfMarton.F",
+        "direction": "reverse",
+        "neighbor": "ConjectureOfMarton.theorem_1_2",
+        "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean"
+      }
+    ]
+  },
+  "plan_sha256": "6a5ceb7662e90688d0a30cf7f646fa82200f2a8f1e4444041a2f2bbd19fe9ea0",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "annals-challenge-marton",
+  "split_evidence": {
+    "graph": {
+      "edges": 2,
+      "nodes": 2,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_66526e4158b8796e1dd8cc8ede1955f7_nodes",
+        "my_db.main.rs_split_66526e4158b8796e1dd8cc8ede1955f7_edges",
+        "my_db.main.rs_split_66526e4158b8796e1dd8cc8ede1955f7_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+      "database": "repo-search-s-annals-challenge-mart-66526e4158b8796e",
+      "database_id": "01a2222c-7301-75f8-96ca-5ba5324d67fe",
+      "split_projection_sha256": "dca229528c96c1650d13e439b0e5fd62972bfd6e09d6d4dee971dd8bb2aefa92",
+      "sqlite_bytes": 438272,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+      "edges": 2,
+      "files": {
+        "edges.csv": {
+          "bytes": 281,
+          "sha256": "1932ec526eed082e3e89d8e87fba0b41f94d48627c552606f367f2f7d1e85a94"
+        },
+        "nodes.csv": {
+          "bytes": 78,
+          "sha256": "465721b78990cbf1689d08fab1c221ef84edf06966f07f522aa74af9e0e51fb5"
+        },
+        "search.sqlite": {
+          "bytes": 438272,
+          "sha256": "8a620306bd4d5a2c2572b1b87520ed1ec890f5e7a9d2c42251ee2b32f995c757"
+        }
+      },
+      "full_projection_fingerprint": "218cb7e6b62b8997666dafe5b24485405e1dfd60113a6c295910e9700a3f2c7c",
+      "nodes": 2,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "2caa061784aca71eb7ca507788d949ccdc9250d2d73d0abd7bc5f4e879959865",
+      "sources": 362
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "theorem_1_2",
+            "declaration_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 41,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_start_line": 28
+          },
+          {
+            "declaration_hint": "F",
+            "declaration_id": "lean:ConjectureOfMarton.F",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 27,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_start_line": 25
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 143,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "target_id": "lean:ConjectureOfMarton.F"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "target_id": "lean:ConjectureOfMarton.F"
+          }
+        ],
+        "query": "lean:ConjectureOfMarton.theorem_1_2",
+        "scope_root_modules": [
+          "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-ConjectureOfMarton\u00bb"
+        ],
+        "source_id": "annals-challenge-marton",
+        "source_kind": "git",
+        "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+        "split_projection_sha256": "dca229528c96c1650d13e439b0e5fd62972bfd6e09d6d4dee971dd8bb2aefa92",
+        "status": "FOUND",
+        "target_id": "lean:ConjectureOfMarton.theorem_1_2",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+            "backend": "kusto",
+            "candidate_id": "annals-challenge-marton::lean:ConjectureOfMarton.theorem_1_2",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ConjectureOfMarton.F"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 2,
+            "projection_nodes": 2,
+            "root": "lean:ConjectureOfMarton.theorem_1_2",
+            "scope_root_modules": [
+              "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-ConjectureOfMarton\u00bb"
+            ],
+            "source_authority": null,
+            "source_id": "annals-challenge-marton",
+            "source_kind": "git",
+            "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+            "candidate_id": "annals-challenge-marton::lean:ConjectureOfMarton.theorem_1_2",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "theorem_1_2",
+            "declaration_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 41,
+            "source_id": "annals-challenge-marton",
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_row_id": "src:AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean:28:41",
+            "source_start_line": 28
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ConjectureOfMarton.theorem_1_2",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "annals-challenge-marton",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "F",
+            "declaration_id": "lean:ConjectureOfMarton.F",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 27,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_start_line": 25
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 20,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [],
+        "query": "lean:ConjectureOfMarton.F",
+        "scope_root_modules": [
+          "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-ConjectureOfMarton\u00bb"
+        ],
+        "source_id": "annals-challenge-marton",
+        "source_kind": "git",
+        "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+        "split_projection_sha256": "dca229528c96c1650d13e439b0e5fd62972bfd6e09d6d4dee971dd8bb2aefa92",
+        "status": "FOUND",
+        "target_id": "lean:ConjectureOfMarton.F",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+            "backend": "kusto",
+            "candidate_id": "annals-challenge-marton::lean:ConjectureOfMarton.F",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "reverse",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ConjectureOfMarton.theorem_1_2"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 2,
+            "projection_nodes": 2,
+            "root": "lean:ConjectureOfMarton.F",
+            "scope_root_modules": [
+              "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-ConjectureOfMarton\u00bb"
+            ],
+            "source_authority": null,
+            "source_id": "annals-challenge-marton",
+            "source_kind": "git",
+            "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
+            "candidate_id": "annals-challenge-marton::lean:ConjectureOfMarton.F",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "F",
+            "declaration_id": "lean:ConjectureOfMarton.F",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 27,
+            "source_id": "annals-challenge-marton",
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_row_id": "src:AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean:25:27",
+            "source_start_line": 25
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ConjectureOfMarton.F",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "annals-challenge-marton",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

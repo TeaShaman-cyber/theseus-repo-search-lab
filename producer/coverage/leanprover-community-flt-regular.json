@@ -1,0 +1,393 @@
+{
+  "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+  "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+  "fingerprint_sha256": "07a937f3c7f05444ed3390c85476ca696f14c111e9e41386aa7243d3e7f70a7b",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain every accepted lexical chunk, including paths outside the graph; no expansion of accepted declaration authority.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve exact accepted graph and lexical scope in final split migration; witness retrieval, not proof validation.",
+    "required_modules": [
+      "FltRegular.CaseI.Statement",
+      "FltRegular.CaseII.AuxLemmas",
+      "FltRegular.CaseII.InductionStep",
+      "FltRegular.CaseII.Statement",
+      "FltRegular.FltRegular",
+      "FltRegular.MayAssume.Lemmas",
+      "FltRegular.NumberTheory.Cyclotomic.CaseI",
+      "FltRegular.NumberTheory.Cyclotomic.CyclRat",
+      "FltRegular.NumberTheory.Cyclotomic.MoreLemmas",
+      "FltRegular.NumberTheory.Cyclotomic.UnitLemmas",
+      "FltRegular.NumberTheory.CyclotomicRing",
+      "FltRegular.NumberTheory.Hilbert92",
+      "FltRegular.NumberTheory.Hilbert94",
+      "FltRegular.NumberTheory.KummersLemma.Field",
+      "FltRegular.NumberTheory.KummersLemma.KummersLemma",
+      "FltRegular.NumberTheory.RegularPrimes",
+      "FltRegular.NumberTheory.SystemOfUnits",
+      "FltRegular.NumberTheory.Unramified",
+      "FltRegular.SmallNumbers.Cyclotomic",
+      "FltRegular.SmallNumbers.Five.FLT5",
+      "FltRegular.SmallNumbers.OrderOf",
+      "FltRegular.SmallNumbers.PID",
+      "FltRegular.SmallNumbers.Seven.FLT7",
+      "FltRegular.SmallNumbers.Seven.Seven",
+      "FltRegular.SmallNumbers.SmallNumbers"
+    ],
+    "witnesses": [
+      {
+        "declaration": "FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+        "direction": "forward",
+        "neighbor": "FltRegular.FltRegular.flt_regular",
+        "source_path": "FltRegular/SmallNumbers/Five/FLT5.lean"
+      },
+      {
+        "declaration": "FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+        "direction": "forward",
+        "neighbor": "FltRegular.FltRegular.flt_regular",
+        "source_path": "FltRegular/SmallNumbers/Seven/FLT7.lean"
+      }
+    ]
+  },
+  "plan_sha256": "d7d816f8e3eb0974f363a1f2d458c3fe5c823d04c7e1beb48ab39dc9832a5dbb",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "leanprover-community-flt-regular",
+  "split_evidence": {
+    "graph": {
+      "edges": 1080,
+      "nodes": 272,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_a5ebf77bb465975b1d3de36c71dc40da_nodes",
+        "my_db.main.rs_split_a5ebf77bb465975b1d3de36c71dc40da_edges",
+        "my_db.main.rs_split_a5ebf77bb465975b1d3de36c71dc40da_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+      "database": "repo-search-s-leanprover-community-a5ebf77bb465975b",
+      "database_id": "01a2222d-5501-7db2-a80d-ae293ed86676",
+      "split_projection_sha256": "0857a1c7071eea1927c8d80ba56f2a7268e897d23cee02b35ca0062a3283c14c",
+      "sqlite_bytes": 487424,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+      "edges": 1080,
+      "files": {
+        "edges.csv": {
+          "bytes": 125949,
+          "sha256": "a51adfe140677174de0bf6b6b02baf58c255b95d8741a75d0160685c255c1f50"
+        },
+        "nodes.csv": {
+          "bytes": 14668,
+          "sha256": "0fb9abb363658f319b90471fa44616162acf066b473c57f0e71fbdc231a7bcd2"
+        },
+        "search.sqlite": {
+          "bytes": 487424,
+          "sha256": "400339ef51234af27cfaa4abddd61ed502a8eb0647b8188f089a44da3da2f881"
+        }
+      },
+      "full_projection_fingerprint": "d4395f27d3893e7cf2d27dfbd4c0a75f80a2100fce2820c6a59c71fbd46199e3",
+      "nodes": 272,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "36962578480fa781f52c63125756aa039ccbe6e15aa307e217626876c7f898b2",
+      "sources": 238
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "fermatLastTheoremFive",
+            "declaration_id": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 30,
+            "source_path": "FltRegular/SmallNumbers/Five/FLT5.lean",
+            "source_start_line": 27
+          },
+          {
+            "declaration_hint": "flt_regular",
+            "declaration_id": "lean:FltRegular.FltRegular.flt_regular",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 29,
+            "source_path": "FltRegular/FltRegular.lean",
+            "source_start_line": 20
+          },
+          {
+            "declaration_hint": "isRegularPrime_five",
+            "declaration_id": "lean:FltRegular.SmallNumbers.Five.FLT5.isRegularPrime_five",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 26,
+            "source_path": "FltRegular/SmallNumbers/Five/FLT5.lean",
+            "source_start_line": 20
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 221,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+            "target_id": "lean:FltRegular.FltRegular.flt_regular"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+            "target_id": "lean:FltRegular.SmallNumbers.Five.FLT5.isRegularPrime_five"
+          }
+        ],
+        "query": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+        "scope_root_modules": [
+          "FltRegular"
+        ],
+        "source_id": "leanprover-community-flt-regular",
+        "source_kind": "git",
+        "source_revision": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+        "split_projection_sha256": "0857a1c7071eea1927c8d80ba56f2a7268e897d23cee02b35ca0062a3283c14c",
+        "status": "FOUND",
+        "target_id": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+            "backend": "kusto",
+            "candidate_id": "leanprover-community-flt-regular::lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:FltRegular.FltRegular.flt_regular"
+              },
+              {
+                "depth": 1,
+                "id": "lean:FltRegular.SmallNumbers.Five.FLT5.isRegularPrime_five"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 1080,
+            "projection_nodes": 272,
+            "root": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+            "scope_root_modules": [
+              "FltRegular"
+            ],
+            "source_authority": null,
+            "source_id": "leanprover-community-flt-regular",
+            "source_kind": "git",
+            "source_revision": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+            "candidate_id": "leanprover-community-flt-regular::lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "fermatLastTheoremFive",
+            "declaration_id": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 30,
+            "source_id": "leanprover-community-flt-regular",
+            "source_path": "FltRegular/SmallNumbers/Five/FLT5.lean",
+            "source_row_id": "src:FltRegular/SmallNumbers/Five/FLT5.lean:27:30",
+            "source_start_line": 27
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:FltRegular.SmallNumbers.Five.FLT5.fermatLastTheoremFive",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "leanprover-community-flt-regular",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "fermatLastTheoremSeven",
+            "declaration_id": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 31,
+            "source_path": "FltRegular/SmallNumbers/Seven/FLT7.lean",
+            "source_start_line": 28
+          },
+          {
+            "declaration_hint": "flt_regular",
+            "declaration_id": "lean:FltRegular.FltRegular.flt_regular",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 29,
+            "source_path": "FltRegular/FltRegular.lean",
+            "source_start_line": 20
+          },
+          {
+            "declaration_hint": "isRegularPrime_seven",
+            "declaration_id": "lean:FltRegular.SmallNumbers.Seven.FLT7.isRegularPrime_seven",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 27,
+            "source_path": "FltRegular/SmallNumbers/Seven/FLT7.lean",
+            "source_start_line": 21
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 223,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+            "target_id": "lean:FltRegular.FltRegular.flt_regular"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+            "target_id": "lean:FltRegular.SmallNumbers.Seven.FLT7.isRegularPrime_seven"
+          }
+        ],
+        "query": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+        "scope_root_modules": [
+          "FltRegular"
+        ],
+        "source_id": "leanprover-community-flt-regular",
+        "source_kind": "git",
+        "source_revision": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+        "split_projection_sha256": "0857a1c7071eea1927c8d80ba56f2a7268e897d23cee02b35ca0062a3283c14c",
+        "status": "FOUND",
+        "target_id": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+            "backend": "kusto",
+            "candidate_id": "leanprover-community-flt-regular::lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:FltRegular.FltRegular.flt_regular"
+              },
+              {
+                "depth": 1,
+                "id": "lean:FltRegular.SmallNumbers.Seven.FLT7.isRegularPrime_seven"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 1080,
+            "projection_nodes": 272,
+            "root": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+            "scope_root_modules": [
+              "FltRegular"
+            ],
+            "source_authority": null,
+            "source_id": "leanprover-community-flt-regular",
+            "source_kind": "git",
+            "source_revision": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
+            "candidate_id": "leanprover-community-flt-regular::lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "fermatLastTheoremSeven",
+            "declaration_id": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "faae830a27a7b39748b61487a9f2aa81a6d14450",
+            "source_end_line": 31,
+            "source_id": "leanprover-community-flt-regular",
+            "source_path": "FltRegular/SmallNumbers/Seven/FLT7.lean",
+            "source_row_id": "src:FltRegular/SmallNumbers/Seven/FLT7.lean:28:31",
+            "source_start_line": 28
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:FltRegular.SmallNumbers.Seven.FLT7.fermatLastTheoremSeven",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "leanprover-community-flt-regular",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

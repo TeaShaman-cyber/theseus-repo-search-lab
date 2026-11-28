@@ -1,0 +1,1125 @@
+{
+  "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+  "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+  "fingerprint_sha256": "c3a52418f50906ebd70c5c84a1d8086ecde0ddb3af665c946d709e9944c58d0e",
+  "plan": {
+    "excluded_raw_declarations": {
+      "lean:DCR.Driver.casesOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.ctorIdx": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.mk": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.mk.inj": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.mk.injEq": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.mk.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.mk.sizeOf_spec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.noConfusionType": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.rec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.Driver.recOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.casesOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.ctorIdx": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.mk": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.mk.inj": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.mk.injEq": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.mk.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.mk.sizeOf_spec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.noConfusionType": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.rec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSub.recOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSubSpec.casesOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSubSpec.mk": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSubSpec.rec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.FanSubSpec.recOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.below": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.brecOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.brecOn.eq": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.brecOn.go": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.casesOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.ctorElim": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.ctorElimType": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.ctorIdx": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.encode.eq_def": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.leaf": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.leaf.elim": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.leaf.inj": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.leaf.injEq": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.leaf.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.leaf.sizeOf_spec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.noConfusionType": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.node": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.node.elim": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.node.inj": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.node.injEq": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.node.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.node.sizeOf_spec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.rec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.recOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.MTree.size.eq_def": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.casesOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.ctorIdx": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.mk": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.mk.inj": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.mk.injEq": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.mk.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.mk.sizeOf_spec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.noConfusionType": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.rec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.RData.recOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.casesOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.ctorIdx": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.mk": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.mk.inj": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.mk.injEq": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.mk.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.mk.sizeOf_spec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.noConfusion": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.noConfusionType": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.rec": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations).",
+      "lean:DCR.SStage.recOn": "No manifest-backed lexical declaration binding under the immutable archive source authority policy (compiler-generated helpers or other unbound declarations)."
+    },
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain every accepted lexical chunk, including paths outside the graph; no expansion of accepted declaration authority.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve exact accepted graph and lexical scope in final split migration; witness retrieval, not proof validation.",
+    "required_modules": [
+      "Regular",
+      "Singular"
+    ],
+    "witnesses": [
+      {
+        "declaration": "DCR.dcr_three_of_confluent",
+        "direction": "forward",
+        "neighbor": "DCR.Confluent",
+        "source_path": "Singular.lean"
+      },
+      {
+        "declaration": "DCR.dcr_two_of_countable_cfc",
+        "direction": "forward",
+        "neighbor": "DCR.Cofinal",
+        "source_path": "Regular.lean"
+      }
+    ]
+  },
+  "plan_sha256": "200145e6d4f859caa72322b1023dfc7f638dbe3589716a58b0f1cbe897708a18",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "decreasing-diagrams-complete",
+  "split_evidence": {
+    "graph": {
+      "edges": 2116,
+      "nodes": 245,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_7907a22a2b5f899228b2ed4c2e15ed01_nodes",
+        "my_db.main.rs_split_7907a22a2b5f899228b2ed4c2e15ed01_edges",
+        "my_db.main.rs_split_7907a22a2b5f899228b2ed4c2e15ed01_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+      "database": "repo-search-s-decreasing-diagrams-c-7907a22a2b5f8992",
+      "database_id": "01a2222c-7401-75ea-b08e-ad8666ae0ef6",
+      "split_projection_sha256": "e5db6b6803834a3025a9a62d6f7245f79e97db7ccc2e2752226560ed2a8b22e4",
+      "sqlite_bytes": 647168,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+      "edges": 2116,
+      "files": {
+        "edges.csv": {
+          "bytes": 246211,
+          "sha256": "10796eee26e17645466fe8805edacdb109c8746e194af027f0d82cdfbae56a0c"
+        },
+        "nodes.csv": {
+          "bytes": 6828,
+          "sha256": "7082253b89716c3b726d644521035eaaa16870bccaca0c75e107dd82b278bbc0"
+        },
+        "search.sqlite": {
+          "bytes": 647168,
+          "sha256": "185ea10a5bf7bf646f4b3ebadbdd11d83b1326a21e4f08bb4b225fe12376a0d2"
+        }
+      },
+      "full_projection_fingerprint": "09717cee1d92072e913d037ba4ae73315886c9edf8e531814c2af596ecb31d26",
+      "nodes": 245,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "d8aaf7aecea6109fa032c804a3bc1a9a2b97d9f89cb574b91b82d35db5c64682",
+      "sources": 229
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "dcr_three_of_confluent",
+            "declaration_id": "lean:DCR.dcr_three_of_confluent",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 3999,
+            "source_kind": "archive",
+            "source_path": "Singular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 3904
+          },
+          {
+            "declaration_hint": "Star",
+            "declaration_id": "lean:DCR.Star",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 69,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 65
+          },
+          {
+            "declaration_hint": "Confluent",
+            "declaration_id": "lean:DCR.Confluent",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 78,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 75
+          },
+          {
+            "declaration_hint": "Connected",
+            "declaration_id": "lean:DCR.Connected",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 82,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 79
+          },
+          {
+            "declaration_hint": "cfc",
+            "declaration_id": "lean:DCR.cfc",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 92,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 87
+          },
+          {
+            "declaration_hint": "famUnion",
+            "declaration_id": "lean:DCR.famUnion",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 742,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 740
+          },
+          {
+            "declaration_hint": "below",
+            "declaration_id": "lean:DCR.below",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 746,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 743
+          },
+          {
+            "declaration_hint": "below\u2082",
+            "declaration_id": "lean:DCR.below\u2082",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 750,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 747
+          },
+          {
+            "declaration_hint": "Leg",
+            "declaration_id": "lean:DCR.Leg",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 756,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 751
+          },
+          {
+            "declaration_hint": "LocallyDecreasing",
+            "declaration_id": "lean:DCR.LocallyDecreasing",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 762,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 757
+          },
+          {
+            "declaration_hint": "IsDCR",
+            "declaration_id": "lean:DCR.IsDCR",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 770,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 763
+          },
+          {
+            "declaration_hint": "IsDCR.mono",
+            "declaration_id": "lean:DCR.IsDCR.mono",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 825,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 805
+          },
+          {
+            "declaration_hint": "dcr_two_of_countable_cfc",
+            "declaration_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 1681,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 1627
+          },
+          {
+            "declaration_hint": "dcr_three_of_uncountable",
+            "declaration_id": "lean:DCR.dcr_three_of_uncountable",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 3903,
+            "source_kind": "archive",
+            "source_path": "Singular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 3846
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_source": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 3188,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.Confluent"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.IsDCR"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.Confluent"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.Connected"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.IsDCR"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.IsDCR.mono"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.Leg"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.LocallyDecreasing"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.Star"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.below"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.below\u2082"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.cfc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.dcr_three_of_uncountable"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.dcr_two_of_countable_cfc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_three_of_confluent",
+            "target_id": "lean:DCR.famUnion"
+          }
+        ],
+        "query": "lean:DCR.dcr_three_of_confluent",
+        "scope_root_modules": [
+          "Regular",
+          "Singular",
+          "Audit"
+        ],
+        "source_authority": {
+          "format": "zip",
+          "kind": "archive",
+          "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+          "subdir": "decreasing-diagrams-lean",
+          "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+        },
+        "source_id": "decreasing-diagrams-complete",
+        "source_kind": "archive",
+        "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+        "split_projection_sha256": "e5db6b6803834a3025a9a62d6f7245f79e97db7ccc2e2752226560ed2a8b22e4",
+        "status": "FOUND",
+        "target_id": "lean:DCR.dcr_three_of_confluent",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+            "backend": "kusto",
+            "candidate_id": "decreasing-diagrams-complete::lean:DCR.dcr_three_of_confluent",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:DCR.Confluent"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.Connected"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.IsDCR"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.IsDCR.mono"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.Leg"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.LocallyDecreasing"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.Star"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.below"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.below\u2082"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.cfc"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.dcr_three_of_uncountable"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.dcr_two_of_countable_cfc"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.famUnion"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 2116,
+            "projection_nodes": 245,
+            "root": "lean:DCR.dcr_three_of_confluent",
+            "scope_root_modules": [
+              "Regular",
+              "Singular",
+              "Audit"
+            ],
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_id": "decreasing-diagrams-complete",
+            "source_kind": "archive",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+            "candidate_id": "decreasing-diagrams-complete::lean:DCR.dcr_three_of_confluent",
+            "created_from_authoritative_source": true,
+            "declaration_hint": "dcr_three_of_confluent",
+            "declaration_id": "lean:DCR.dcr_three_of_confluent",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 3999,
+            "source_id": "decreasing-diagrams-complete",
+            "source_kind": "archive",
+            "source_path": "Singular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_row_id": "src:Singular.lean:3904:3999",
+            "source_start_line": 3904
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:DCR.dcr_three_of_confluent",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "decreasing-diagrams-complete",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "dcr_two_of_countable_cfc",
+            "declaration_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 1681,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 1627
+          },
+          {
+            "declaration_hint": "Star",
+            "declaration_id": "lean:DCR.Star",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 69,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 65
+          },
+          {
+            "declaration_hint": "Confluent",
+            "declaration_id": "lean:DCR.Confluent",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 78,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 75
+          },
+          {
+            "declaration_hint": "Connected",
+            "declaration_id": "lean:DCR.Connected",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 82,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 79
+          },
+          {
+            "declaration_hint": "Cofinal",
+            "declaration_id": "lean:DCR.Cofinal",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 86,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 83
+          },
+          {
+            "declaration_hint": "cfc",
+            "declaration_id": "lean:DCR.cfc",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 92,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 87
+          },
+          {
+            "declaration_hint": "IsDCR",
+            "declaration_id": "lean:DCR.IsDCR",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 770,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 763
+          },
+          {
+            "declaration_hint": "isDCR_two_of_deterministic_meets",
+            "declaration_id": "lean:DCR.isDCR_two_of_deterministic_meets",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 804,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 771
+          },
+          {
+            "declaration_hint": "exists_strategy",
+            "declaration_id": "lean:DCR.exists_strategy",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 918,
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_start_line": 826
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_source": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 2274,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.Confluent"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.Connected"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.IsDCR"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.cfc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.Cofinal"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.Confluent"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.Connected"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.IsDCR"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.Star"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.cfc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.exists_cofinal_walk"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.exists_strategy"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.isDCR_two_of_deterministic_meets"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "target_id": "lean:DCR.loop_erase"
+          }
+        ],
+        "query": "lean:DCR.dcr_two_of_countable_cfc",
+        "scope_root_modules": [
+          "Regular",
+          "Singular",
+          "Audit"
+        ],
+        "source_authority": {
+          "format": "zip",
+          "kind": "archive",
+          "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+          "subdir": "decreasing-diagrams-lean",
+          "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+        },
+        "source_id": "decreasing-diagrams-complete",
+        "source_kind": "archive",
+        "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+        "split_projection_sha256": "e5db6b6803834a3025a9a62d6f7245f79e97db7ccc2e2752226560ed2a8b22e4",
+        "status": "FOUND",
+        "target_id": "lean:DCR.dcr_two_of_countable_cfc",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+            "backend": "kusto",
+            "candidate_id": "decreasing-diagrams-complete::lean:DCR.dcr_two_of_countable_cfc",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:DCR.Cofinal"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.Confluent"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.Connected"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.IsDCR"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.Star"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.cfc"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.exists_cofinal_walk"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.exists_strategy"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.isDCR_two_of_deterministic_meets"
+              },
+              {
+                "depth": 1,
+                "id": "lean:DCR.loop_erase"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 2116,
+            "projection_nodes": 245,
+            "root": "lean:DCR.dcr_two_of_countable_cfc",
+            "scope_root_modules": [
+              "Regular",
+              "Singular",
+              "Audit"
+            ],
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_id": "decreasing-diagrams-complete",
+            "source_kind": "archive",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
+            "candidate_id": "decreasing-diagrams-complete::lean:DCR.dcr_two_of_countable_cfc",
+            "created_from_authoritative_source": true,
+            "declaration_hint": "dcr_two_of_countable_cfc",
+            "declaration_id": "lean:DCR.dcr_two_of_countable_cfc",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_authority": {
+              "format": "zip",
+              "kind": "archive",
+              "sha256": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+              "subdir": "decreasing-diagrams-lean",
+              "url": "https://zenodo.org/records/23160921/files/decreasing-diagrams-lean.zip?download=1"
+            },
+            "source_end_line": 1681,
+            "source_id": "decreasing-diagrams-complete",
+            "source_kind": "archive",
+            "source_path": "Regular.lean",
+            "source_revision": "4601cfef943144d27e4cd0daef5a2b8308f23dddec8cc6f997274585211e7c0f",
+            "source_row_id": "src:Regular.lean:1627:1681",
+            "source_start_line": 1627
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:DCR.dcr_two_of_countable_cfc",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "decreasing-diagrams-complete",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

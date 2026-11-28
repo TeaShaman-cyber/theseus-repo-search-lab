@@ -1,0 +1,421 @@
+{
+  "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+  "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+  "fingerprint_sha256": "045ff1531967daadf3c3eed435e917db0e7b1eb579227be812e959d6786b7604",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain every accepted lexical chunk, including paths outside the graph; no expansion of accepted declaration authority.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve exact accepted graph and lexical scope in final split migration; witness retrieval, not proof validation.",
+    "required_modules": [
+      "LongGapsBetweenPrimes"
+    ],
+    "witnesses": [
+      {
+        "declaration": "LongGapsBetweenPrimes.LongGapTheorem",
+        "direction": "forward",
+        "neighbor": "LongGapsBetweenPrimes.ConsecutivePrimes",
+        "source_path": "LongGapsBetweenPrimes.lean"
+      },
+      {
+        "declaration": "LongGapsBetweenPrimes.abs_coefficient_mul_le",
+        "direction": "forward",
+        "neighbor": "LongGapsBetweenPrimes.coefficient",
+        "source_path": "LongGapsBetweenPrimes.lean"
+      }
+    ]
+  },
+  "plan_sha256": "03763c2fed91651486cc27ad1302e4426389b389359e796861beac89a48a38ab",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-long-gaps",
+  "split_evidence": {
+    "graph": {
+      "edges": 1709,
+      "nodes": 330,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_3dbeba010d58f1d1830f5a39e073efcc_nodes",
+        "my_db.main.rs_split_3dbeba010d58f1d1830f5a39e073efcc_edges",
+        "my_db.main.rs_split_3dbeba010d58f1d1830f5a39e073efcc_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+      "database": "repo-search-s-openai-long-gaps-3dbeba010d58f1d1",
+      "database_id": "01a2222d-5a01-738f-aab4-a3f90355715e",
+      "split_projection_sha256": "f1b460b5088a12c4e51774016e8a5e03e41d8093e700ed2393c5037d3b0a8736",
+      "sqlite_bytes": 614400,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+      "edges": 1709,
+      "files": {
+        "edges.csv": {
+          "bytes": 199369,
+          "sha256": "02e6dd4a9ecbf0eaa01e1b498c8b2fb34446867a09c5817c27e16e5b6b159bc5"
+        },
+        "nodes.csv": {
+          "bytes": 17601,
+          "sha256": "164bd4d29045115c577f8ab627dde62fd217a19236ec06cdb54ceec6f46cf5a0"
+        },
+        "search.sqlite": {
+          "bytes": 614400,
+          "sha256": "c45952e4a3e9c1d04a3eb2e9cd9d5c604899a77d49af889db3300eb6d1368fee"
+        }
+      },
+      "full_projection_fingerprint": "53ea2308719fc68b31becab37461bf5d17201702077198c2d9b66783be727fcc",
+      "nodes": 330,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "42f7a7d2155da11bf04cda03bfb0eccf3b3b4d54a954918d4c3810a03051e03e",
+      "sources": 322
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "LongGapTheorem",
+            "declaration_id": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 38,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 34
+          },
+          {
+            "declaration_hint": "gapScale",
+            "declaration_id": "lean:LongGapsBetweenPrimes.gapScale",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 29,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 26
+          },
+          {
+            "declaration_hint": "ConsecutivePrimes",
+            "declaration_id": "lean:LongGapsBetweenPrimes.ConsecutivePrimes",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 33,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 30
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 142,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+            "target_id": "lean:LongGapsBetweenPrimes.ConsecutivePrimes"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+            "target_id": "lean:LongGapsBetweenPrimes.gapScale"
+          }
+        ],
+        "query": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+        "scope_root_modules": [
+          "LongGapsBetweenPrimes"
+        ],
+        "source_id": "openai-long-gaps",
+        "source_kind": "git",
+        "source_revision": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+        "split_projection_sha256": "f1b460b5088a12c4e51774016e8a5e03e41d8093e700ed2393c5037d3b0a8736",
+        "status": "FOUND",
+        "target_id": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+            "backend": "kusto",
+            "candidate_id": "openai-long-gaps::lean:LongGapsBetweenPrimes.LongGapTheorem",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:LongGapsBetweenPrimes.ConsecutivePrimes"
+              },
+              {
+                "depth": 1,
+                "id": "lean:LongGapsBetweenPrimes.gapScale"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 1709,
+            "projection_nodes": 330,
+            "root": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+            "scope_root_modules": [
+              "LongGapsBetweenPrimes"
+            ],
+            "source_authority": null,
+            "source_id": "openai-long-gaps",
+            "source_kind": "git",
+            "source_revision": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+            "candidate_id": "openai-long-gaps::lean:LongGapsBetweenPrimes.LongGapTheorem",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "LongGapTheorem",
+            "declaration_id": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 38,
+            "source_id": "openai-long-gaps",
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_row_id": "src:LongGapsBetweenPrimes.lean:34:38",
+            "source_start_line": 34
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:LongGapsBetweenPrimes.LongGapTheorem",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-long-gaps",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "abs_coefficient_mul_le",
+            "declaration_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 844,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 831
+          },
+          {
+            "declaration_hint": "normalizer",
+            "declaration_id": "lean:LongGapsBetweenPrimes.normalizer",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 51,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 48
+          },
+          {
+            "declaration_hint": "coefficient",
+            "declaration_id": "lean:LongGapsBetweenPrimes.coefficient",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 55,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 52
+          },
+          {
+            "declaration_hint": "normalizer_pos",
+            "declaration_id": "lean:LongGapsBetweenPrimes.normalizer_pos",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 72,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 62
+          },
+          {
+            "declaration_hint": "coefficient_neg",
+            "declaration_id": "lean:LongGapsBetweenPrimes.coefficient_neg",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 79,
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_start_line": 73
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 458,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "target_id": "lean:LongGapsBetweenPrimes.coefficient"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "target_id": "lean:LongGapsBetweenPrimes.coefficient"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "target_id": "lean:LongGapsBetweenPrimes.coefficient_neg"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "target_id": "lean:LongGapsBetweenPrimes.normalizer"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "target_id": "lean:LongGapsBetweenPrimes.normalizer_pos"
+          }
+        ],
+        "query": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+        "scope_root_modules": [
+          "LongGapsBetweenPrimes"
+        ],
+        "source_id": "openai-long-gaps",
+        "source_kind": "git",
+        "source_revision": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+        "split_projection_sha256": "f1b460b5088a12c4e51774016e8a5e03e41d8093e700ed2393c5037d3b0a8736",
+        "status": "FOUND",
+        "target_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+            "backend": "kusto",
+            "candidate_id": "openai-long-gaps::lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:LongGapsBetweenPrimes.coefficient"
+              },
+              {
+                "depth": 1,
+                "id": "lean:LongGapsBetweenPrimes.coefficient_neg"
+              },
+              {
+                "depth": 1,
+                "id": "lean:LongGapsBetweenPrimes.normalizer"
+              },
+              {
+                "depth": 1,
+                "id": "lean:LongGapsBetweenPrimes.normalizer_pos"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 1709,
+            "projection_nodes": 330,
+            "root": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "scope_root_modules": [
+              "LongGapsBetweenPrimes"
+            ],
+            "source_authority": null,
+            "source_id": "openai-long-gaps",
+            "source_kind": "git",
+            "source_revision": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
+            "candidate_id": "openai-long-gaps::lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "abs_coefficient_mul_le",
+            "declaration_id": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "03a1190d0bc5502d9f54eeb60ad3e45e22b0df0b",
+            "source_end_line": 844,
+            "source_id": "openai-long-gaps",
+            "source_path": "LongGapsBetweenPrimes.lean",
+            "source_row_id": "src:LongGapsBetweenPrimes.lean:831:844",
+            "source_start_line": 831
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:LongGapsBetweenPrimes.abs_coefficient_mul_le",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-long-gaps",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

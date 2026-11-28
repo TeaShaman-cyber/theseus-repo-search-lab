@@ -1,0 +1,542 @@
+{
+  "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+  "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+  "fingerprint_sha256": "9463fdccba664131d297fb92452b052644083381e41d4516938319feb8cddcfc",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain every accepted lexical chunk, including paths outside the graph; no expansion of accepted declaration authority.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve exact accepted graph and lexical scope in final split migration; witness retrieval, not proof validation.",
+    "required_modules": [
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-191-2-ErdosSupersingularPrimes\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-191-2-RandomBernoulliMatrices\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-1-DuffinSchaefferConjecture\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-2-DirichletWeylBound\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-2-EnumeratingNumberFields\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-2-RademacherEnfloType\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-2-ViscositySolutions\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-3-AbsoluteProfiniteRigidity\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-3-BoseGases\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-3-FlatLittlewoodPoly\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2020-192-3-LorentzianPolynomials\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-193-2-IntegerMultiplication\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-193-2-OnPropertyT\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-193-2-SpreadOfAFiniteGroup\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-1-UniformMordellLang\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-1-ZagierHoffmanPositiveChar\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-2-FractionalExpectationThresholds\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-2-InscribedRectangles\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-2-RectangularPegProblem\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-3-EquiangularLinesFixedAngle\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-3-FiniteTimeSingularity\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-3-ImprovedBoundsSunflowerLemma\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2021-194-3-UnitConjecture\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2022-195-3-PointwiseErgodicTheorems\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2022-195-3-Ulam\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2022-196-2-ChowlaAndTwinPrimeOverFqT\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2023-197-2-BoundedMultiplicativeFunctions\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2023-197-3-HassePrincipleRandomFano\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2023-198-1-PseudorandomGrassmann\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2023-198-2-ErdosFaberLovaszConjecture\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-199-1-MotivicInvariants\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-199-1-ReverseMinkowski\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-199-1-SimplicityConjecture\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-199-2-WilkiesConjecture\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-199-3-SupremumOfSelectorProcesses\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-200-1-AlgebraicIntegers\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-200-1-PeriodicTilingConjecture\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-200-1-SymplecticMonodromy\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2024-200-2-LocalGlobalApollonianCirclePackings\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-1-OnApproximationOfReals\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-1-OptimalMoebius\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-ConjectureOfMarton\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-HessianEstimates\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-2-vanDerWaerdenConjecture\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-201-3-OnCoherenceOfOneRelatorGroups\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2025-202-1-FractalUncertainty\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2026-203-2-GoodLTCodes\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2026-203-2-LargeValueEstimates\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2026-203-3-LinearSubspaces\u00bb",
+      "AnnalsChallenge.AnnalsOfMathematics.\u00ab2026-203-3-McKayConjecture\u00bb",
+      "AnnalsChallenge.Definitions.AlgebraicJacobian",
+      "AnnalsChallenge.Notation"
+    ],
+    "witnesses": [
+      {
+        "declaration": "ConjectureOfMarton.theorem_1_2",
+        "direction": "forward",
+        "neighbor": "ConjectureOfMarton.F",
+        "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean"
+      },
+      {
+        "declaration": "BoseGases.theorem_1_2",
+        "direction": "forward",
+        "neighbor": "BoseGases.IsRadial",
+        "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean"
+      }
+    ]
+  },
+  "plan_sha256": "461b3bd6df3c431df3da3369ac3e3e7354ae3c1b0e08ccedf6908d46ca2d035c",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "annals-challenge-full",
+  "split_evidence": {
+    "graph": {
+      "edges": 2312,
+      "nodes": 674,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_a80fe74f03c35ae567630b6a3fa0d866_nodes",
+        "my_db.main.rs_split_a80fe74f03c35ae567630b6a3fa0d866_edges",
+        "my_db.main.rs_split_a80fe74f03c35ae567630b6a3fa0d866_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+      "database": "repo-search-s-annals-challenge-full-a80fe74f03c35ae5",
+      "database_id": "01a2222c-7301-7fb9-9bd8-72ca78998d89",
+      "split_projection_sha256": "31decfea0aad0cb1f8953e8f30919303a5a85ea80e05b50bb67a955703e3ce2f",
+      "sqlite_bytes": 630784,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+      "edges": 2312,
+      "files": {
+        "edges.csv": {
+          "bytes": 269790,
+          "sha256": "e462c918d75ccb396250496d6b4b2c09bc18af3cfbaa5c4f932683f8964ecf7f"
+        },
+        "nodes.csv": {
+          "bytes": 33422,
+          "sha256": "243e490f0246dd801bdabcbe8ad094011fa682c0bf29a91c6cfa1a10dc40cb1d"
+        },
+        "search.sqlite": {
+          "bytes": 630784,
+          "sha256": "57787afc57c38957bbc09688a81568aa69d795a6724e7ec6f70dec383bb76608"
+        }
+      },
+      "full_projection_fingerprint": "ff84f83408ddb3a4c2655ce44637d4e960e6cf0d233f501224dd8be2de973305",
+      "nodes": 674,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "852536f48d5019470f7e5d7c3ebd6a294b3f152d1d2956aa21df197808b3f250",
+      "sources": 362
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "theorem_1_2",
+            "declaration_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 41,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_start_line": 28
+          },
+          {
+            "declaration_hint": "F",
+            "declaration_id": "lean:ConjectureOfMarton.F",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 27,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_start_line": 25
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 143,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "target_id": "lean:ConjectureOfMarton.F"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "target_id": "lean:ConjectureOfMarton.F"
+          }
+        ],
+        "query": "lean:ConjectureOfMarton.theorem_1_2",
+        "scope_root_modules": [
+          "AnnalsChallenge"
+        ],
+        "source_id": "annals-challenge-full",
+        "source_kind": "git",
+        "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+        "split_projection_sha256": "31decfea0aad0cb1f8953e8f30919303a5a85ea80e05b50bb67a955703e3ce2f",
+        "status": "FOUND",
+        "target_id": "lean:ConjectureOfMarton.theorem_1_2",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+            "backend": "kusto",
+            "candidate_id": "annals-challenge-full::lean:ConjectureOfMarton.theorem_1_2",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ConjectureOfMarton.F"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 2312,
+            "projection_nodes": 674,
+            "root": "lean:ConjectureOfMarton.theorem_1_2",
+            "scope_root_modules": [
+              "AnnalsChallenge"
+            ],
+            "source_authority": null,
+            "source_id": "annals-challenge-full",
+            "source_kind": "git",
+            "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+            "candidate_id": "annals-challenge-full::lean:ConjectureOfMarton.theorem_1_2",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "theorem_1_2",
+            "declaration_id": "lean:ConjectureOfMarton.theorem_1_2",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 41,
+            "source_id": "annals-challenge-full",
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean",
+            "source_row_id": "src:AnnalsChallenge/AnnalsOfMathematics/2025-201-2-ConjectureOfMarton.lean:28:41",
+            "source_start_line": 28
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ConjectureOfMarton.theorem_1_2",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "annals-challenge-full",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "theorem_1_2",
+            "declaration_id": "lean:BoseGases.theorem_1_2",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 147,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_start_line": 123
+          },
+          {
+            "declaration_hint": "e",
+            "declaration_id": "lean:BoseGases.e",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 80,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_start_line": 78
+          },
+          {
+            "declaration_hint": "IsRadial",
+            "declaration_id": "lean:BoseGases.IsRadial",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 84,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_start_line": 81
+          },
+          {
+            "declaration_hint": "a",
+            "declaration_id": "lean:BoseGases.a",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 113,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_start_line": 102
+          },
+          {
+            "declaration_hint": "\ud835\udce1",
+            "declaration_id": "lean:BoseGases.\ud835\udce1",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 116,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_start_line": 114
+          },
+          {
+            "declaration_hint": "\u03b7",
+            "declaration_id": "lean:BoseGases.\u03b7",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 119,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_start_line": 117
+          },
+          {
+            "declaration_hint": "\ud835\udcd2",
+            "declaration_id": "lean:BoseGases.\ud835\udcd2",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 122,
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_start_line": 120
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 544,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.IsRadial"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.a"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.e"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.\u03b7"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.\ud835\udcd2"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.\ud835\udce1"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.IsRadial"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.a"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.e"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.\u03b7"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.\ud835\udcd2"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:BoseGases.theorem_1_2",
+            "target_id": "lean:BoseGases.\ud835\udce1"
+          }
+        ],
+        "query": "lean:BoseGases.theorem_1_2",
+        "scope_root_modules": [
+          "AnnalsChallenge"
+        ],
+        "source_id": "annals-challenge-full",
+        "source_kind": "git",
+        "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+        "split_projection_sha256": "31decfea0aad0cb1f8953e8f30919303a5a85ea80e05b50bb67a955703e3ce2f",
+        "status": "FOUND",
+        "target_id": "lean:BoseGases.theorem_1_2",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+            "backend": "kusto",
+            "candidate_id": "annals-challenge-full::lean:BoseGases.theorem_1_2",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:BoseGases.IsRadial"
+              },
+              {
+                "depth": 1,
+                "id": "lean:BoseGases.a"
+              },
+              {
+                "depth": 1,
+                "id": "lean:BoseGases.e"
+              },
+              {
+                "depth": 1,
+                "id": "lean:BoseGases.\u03b7"
+              },
+              {
+                "depth": 1,
+                "id": "lean:BoseGases.\ud835\udcd2"
+              },
+              {
+                "depth": 1,
+                "id": "lean:BoseGases.\ud835\udce1"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 2312,
+            "projection_nodes": 674,
+            "root": "lean:BoseGases.theorem_1_2",
+            "scope_root_modules": [
+              "AnnalsChallenge"
+            ],
+            "source_authority": null,
+            "source_id": "annals-challenge-full",
+            "source_kind": "git",
+            "source_revision": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
+            "candidate_id": "annals-challenge-full::lean:BoseGases.theorem_1_2",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "theorem_1_2",
+            "declaration_id": "lean:BoseGases.theorem_1_2",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "e32eb1411db0d700ca874dd695aea92f78699db8",
+            "source_end_line": 147,
+            "source_id": "annals-challenge-full",
+            "source_path": "AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean",
+            "source_row_id": "src:AnnalsChallenge/AnnalsOfMathematics/2020-192-3-BoseGases.lean:123:147",
+            "source_start_line": 123
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:BoseGases.theorem_1_2",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "annals-challenge-full",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

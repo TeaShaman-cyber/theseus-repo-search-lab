@@ -9,7 +9,8 @@
       "receipt_asset": "annals-challenge-full-release-receipt.json",
       "source_descriptor": "producer/sources/annals-challenge-full.json",
       "artifact_identity": "8caba38c6657f6834a0a67741cc6c16194611e65be0e6222846c003408cac0f9",
-      "fingerprint_sha256": "9463fdccba664131d297fb92452b052644083381e41d4516938319feb8cddcfc"
+      "fingerprint_sha256": "9463fdccba664131d297fb92452b052644083381e41d4516938319feb8cddcfc",
+      "split_projection_sha256": "31decfea0aad0cb1f8953e8f30919303a5a85ea80e05b50bb67a955703e3ce2f"
     },
     {
       "source_id": "annals-challenge-marton",
@@ -18,7 +19,8 @@
       "receipt_asset": "annals-challenge-marton-release-receipt.json",
       "source_descriptor": "producer/sources/annals-challenge-marton.json",
       "artifact_identity": "1d0d8ce2fbeb279fc9024856a94f788a2ed015dca5aeaee94786040b89d8f17c",
-      "fingerprint_sha256": "034c0ab9a11e5e03145372158a78fd388494a84da46df4d18b3a7dd8bacfc03b"
+      "fingerprint_sha256": "034c0ab9a11e5e03145372158a78fd388494a84da46df4d18b3a7dd8bacfc03b",
+      "split_projection_sha256": "dca229528c96c1650d13e439b0e5fd62972bfd6e09d6d4dee971dd8bb2aefa92"
     },
     {
       "source_id": "anthropic-fermats-last-theorem",
@@ -37,7 +39,8 @@
       "receipt_asset": "decreasing-diagrams-complete-release-receipt.json",
       "source_descriptor": "producer/sources/decreasing-diagrams-complete.json",
       "artifact_identity": "abd7c1b4e2586c8c7641a459f07a6c0026682796a6e4222fe7bc0a0307d5a0bb",
-      "fingerprint_sha256": "c3a52418f50906ebd70c5c84a1d8086ecde0ddb3af665c946d709e9944c58d0e"
+      "fingerprint_sha256": "c3a52418f50906ebd70c5c84a1d8086ecde0ddb3af665c946d709e9944c58d0e",
+      "split_projection_sha256": "e5db6b6803834a3025a9a62d6f7245f79e97db7ccc2e2752226560ed2a8b22e4"
     },
     {
       "source_id": "formal-conjectures-bsd",
@@ -56,7 +59,8 @@
       "receipt_asset": "formal-conjectures-navier-stokes-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-navier-stokes.json",
       "artifact_identity": "362cfdbf1a35ae4288d58c7569b359687dac4e9b754637320ce748d15be0e273",
-      "fingerprint_sha256": "cc4080a9c5192f65079f631da54a15780d20d765684819660de5eb3b6ef23144"
+      "fingerprint_sha256": "cc4080a9c5192f65079f631da54a15780d20d765684819660de5eb3b6ef23144",
+      "split_projection_sha256": "a95bf6f95911f996fdd1ea856ac74108564e111ef71a40db4ecdc7b9671cfa2a"
     },
     {
       "source_id": "formal-conjectures-p-vs-np",
@@ -75,7 +79,8 @@
       "receipt_asset": "formal-conjectures-poincare-statement-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-poincare-statement.json",
       "artifact_identity": "5da3aacc4fdbf4eaa85b7ad5fd0d12b8373e3ab4e7de7e5c60b53f9dcb85b582",
-      "fingerprint_sha256": "69cc6f887457632bc94b9e31bdc09eeb953745ceeb7a083819136e6966d2e13f"
+      "fingerprint_sha256": "69cc6f887457632bc94b9e31bdc09eeb953745ceeb7a083819136e6966d2e13f",
+      "split_projection_sha256": "93112b0a5590aa08c856ad813b596436fcd932c40ecdf5d231c7dec63f40cd72"
     },
     {
       "source_id": "formal-conjectures-rh-equivalents",
@@ -84,7 +89,8 @@
       "receipt_asset": "formal-conjectures-rh-equivalents-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-rh-equivalents.json",
       "artifact_identity": "8707f81430307cffcbe2d73c48f0dfd073234649d511f0a32cf2b4ffd607514e",
-      "fingerprint_sha256": "32c560e09cdbc29a4767bfbd58b9faeca4e762e0ece81505274c6248d120fcc4"
+      "fingerprint_sha256": "32c560e09cdbc29a4767bfbd58b9faeca4e762e0ece81505274c6248d120fcc4",
+      "split_projection_sha256": "7e570bca255709b196d8017148513ce731d1aeb3d76507dc661a652cc2b604d3"
     },
     {
       "source_id": "formal-conjectures-riemann",
@@ -144,7 +150,8 @@
       "receipt_asset": "leanprover-community-flt-regular-release-receipt.json",
       "source_descriptor": "producer/sources/leanprover-community-flt-regular.json",
       "artifact_identity": "41bfa1d236ee59a856a93288d997b6cf19b7f42f2c7dd630fb2ce2482f9b3844",
-      "fingerprint_sha256": "07a937f3c7f05444ed3390c85476ca696f14c111e9e41386aa7243d3e7f70a7b"
+      "fingerprint_sha256": "07a937f3c7f05444ed3390c85476ca696f14c111e9e41386aa7243d3e7f70a7b",
+      "split_projection_sha256": "0857a1c7071eea1927c8d80ba56f2a7268e897d23cee02b35ca0062a3283c14c"
     },
     {
       "source_id": "leanprover-community-riemann-readable",
@@ -164,7 +171,8 @@
       "receipt_asset": "openai-cdc-lean-release-receipt.json",
       "source_descriptor": "producer/sources/openai-cdc-lean.json",
       "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
-      "fingerprint_sha256": "3471bd170728e2d5c72505f4eb8a1dbafd16a3c953a70f71f7664d55c94f42ee"
+      "fingerprint_sha256": "3471bd170728e2d5c72505f4eb8a1dbafd16a3c953a70f71f7664d55c94f42ee",
+      "split_projection_sha256": "6f29f9312515e91ffa8f9d22d0efe7103fbe75f2aca6b5711afff6106a3de50d"
     },
     {
       "source_id": "openai-euler",
@@ -183,7 +191,8 @@
       "receipt_asset": "openai-long-gaps-release-receipt.json",
       "source_descriptor": "producer/sources/openai-long-gaps.json",
       "artifact_identity": "9c062327474441f85bbb3cbbf6a7b9cc5ec4d79af45af9ac524ce27c93272b5d",
-      "fingerprint_sha256": "045ff1531967daadf3c3eed435e917db0e7b1eb579227be812e959d6786b7604"
+      "fingerprint_sha256": "045ff1531967daadf3c3eed435e917db0e7b1eb579227be812e959d6786b7604",
+      "split_projection_sha256": "f1b460b5088a12c4e51774016e8a5e03e41d8093e700ed2393c5037d3b0a8736"
     },
     {
       "source_id": "openai-matrix-exponent",
