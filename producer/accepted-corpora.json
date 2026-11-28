@@ -91,7 +91,8 @@
       "receipt_asset": "formal-conjectures-riemann-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-riemann.json",
       "artifact_identity": "d56ca7204a9a991c1e046b2760c1a84a99eb8e38597cd33cc6cab5bb26930eec",
-      "fingerprint_sha256": "7af3e1efe51626f2ced7e5d64e7ff67416b6508285347d679e576cbd3e680c53"
+      "fingerprint_sha256": "7af3e1efe51626f2ced7e5d64e7ff67416b6508285347d679e576cbd3e680c53",
+      "split_projection_sha256": "a728285c6fd66995cbf2df398a6e51bb166d0cb8848cdc5acc1c1f1b42ec3f02"
     },
     {
       "source_id": "formal-conjectures-zeta-moments",
@@ -119,7 +120,8 @@
       "source_descriptor": "producer/sources/imperial-flt-partial.json",
       "artifact_identity": "d218f9a11ea084b44ade06dd3fcb22ee006fd0db196f6c51497706f718c5657a",
       "fingerprint_sha256": "94992da7aceb954c523fc2161454496918733fef46002edb00850feccbc85d88",
-      "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
+      "runner_config": "producer/runners/leandepviz-lean436-adapted.json",
+      "split_projection_sha256": "00210d30903d90f2018405c508d769e3fb83bac5d8e771d1bd151969808a8c5b"
     },
     {
       "source_id": "leanprover-community-con-nf",
@@ -128,7 +130,8 @@
       "receipt_asset": "leanprover-community-con-nf-release-receipt.json",
       "source_descriptor": "producer/sources/leanprover-community-con-nf.json",
       "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
-      "fingerprint_sha256": "ab9a5553d1239ec304cd7c1de3caf972ca3ac41644045fc59f5b8afbb3480cd1"
+      "fingerprint_sha256": "ab9a5553d1239ec304cd7c1de3caf972ca3ac41644045fc59f5b8afbb3480cd1",
+      "split_projection_sha256": "e770e63d38360b0ca2b4eb4024924c3295ab2459f9b783c09e0a07de3da8ff5a"
     },
     {
       "source_id": "leanprover-community-flt-regular",
@@ -205,7 +208,8 @@
       "receipt_asset": "openai-prime-gaps-186-release-receipt.json",
       "source_descriptor": "producer/sources/openai-prime-gaps-186.json",
       "artifact_identity": "c2179956c151e840f0804eccc67c987d02a82d30c845f621e64734f32567ddce",
-      "fingerprint_sha256": "724042c62dee2f58b8e405182b7986bd3dc8a0bdae16d6de25169d94179b5d70"
+      "fingerprint_sha256": "724042c62dee2f58b8e405182b7986bd3dc8a0bdae16d6de25169d94179b5d70",
+      "split_projection_sha256": "8e33461201892813d1800786d75ad2b25d88b91cdfb1c586cf04f99379c5f27d"
     },
     {
       "source_id": "openai-ten-proofs-compactness-degeneracy",
@@ -324,7 +328,8 @@
       "receipt_asset": "zeta23-release-receipt.json",
       "source_descriptor": "producer/sources/zeta23.json",
       "artifact_identity": "786b5ab339dd85b7817642d6f4921747e5e0cdcdd3ffed2dd9d02bd79277ae2c",
-      "fingerprint_sha256": "dbd76221cda67976adca51a61aefe7f888225bba606b9298ab5984319436bcc0"
+      "fingerprint_sha256": "dbd76221cda67976adca51a61aefe7f888225bba606b9298ab5984319436bcc0",
+      "split_projection_sha256": "ed2d639c9700b871e55f7ae53e3cda4e01352a9cabd391574b5d2741bc08e4a7"
     }
   ]
 }

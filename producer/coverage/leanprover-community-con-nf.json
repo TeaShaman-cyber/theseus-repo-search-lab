@@ -1,0 +1,633 @@
+{
+  "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+  "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+  "fingerprint_sha256": "ab9a5553d1239ec304cd7c1de3caf972ca3ac41644045fc59f5b8afbb3480cd1",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "ConNF.Background.Cardinal",
+      "ConNF.Background.InductiveConstruction",
+      "ConNF.Background.Ordinal",
+      "ConNF.Background.PermutativeExtension",
+      "ConNF.Background.ReflTransGen",
+      "ConNF.Background.Rel",
+      "ConNF.Background.Set",
+      "ConNF.Background.Transfer",
+      "ConNF.Background.WellOrder",
+      "ConNF.Base.Atom",
+      "ConNF.Base.BasePerm",
+      "ConNF.Base.Litter",
+      "ConNF.Base.NearLitter",
+      "ConNF.Base.Params",
+      "ConNF.Base.Small",
+      "ConNF.Base.TypeIndex",
+      "ConNF.Construction.Code",
+      "ConNF.Construction.NewModelData",
+      "ConNF.Counting.BaseCoding",
+      "ConNF.Counting.BaseCounting",
+      "ConNF.Counting.Conclusions",
+      "ConNF.Counting.CountSupportOrbit",
+      "ConNF.Counting.Recode",
+      "ConNF.External.Basic",
+      "ConNF.External.Counting",
+      "ConNF.External.WellOrder",
+      "ConNF.FOA.BaseAction",
+      "ConNF.FOA.BaseApprox",
+      "ConNF.FOA.Coherent",
+      "ConNF.FOA.FlexApprox",
+      "ConNF.FOA.Inflexible",
+      "ConNF.FOA.StrAction",
+      "ConNF.FOA.StrActionFOA",
+      "ConNF.FOA.StrApprox",
+      "ConNF.FOA.StrApproxFOA",
+      "ConNF.Levels.Path",
+      "ConNF.Levels.StrPerm",
+      "ConNF.Levels.StrSet",
+      "ConNF.Levels.Tree",
+      "ConNF.Model.ConstructHypothesis",
+      "ConNF.Model.ConstructMotive",
+      "ConNF.Model.Externalise",
+      "ConNF.Model.Hailperin",
+      "ConNF.Model.InductionStatement",
+      "ConNF.Model.RaiseStrong",
+      "ConNF.Model.Result",
+      "ConNF.Model.RunInduction",
+      "ConNF.Model.TTT",
+      "ConNF.ModelData.CoherentData",
+      "ConNF.ModelData.Enumeration",
+      "ConNF.ModelData.Fuzz",
+      "ConNF.ModelData.Level",
+      "ConNF.ModelData.ModelData",
+      "ConNF.ModelData.PathEnumeration",
+      "ConNF.ModelData.Support",
+      "ConNF.Position.BasePositions",
+      "ConNF.Position.Deny",
+      "ConNF.Position.Position",
+      "ConNF.Strong.CodingFunction",
+      "ConNF.Strong.SMulSpec",
+      "ConNF.Strong.Spec",
+      "ConNF.Strong.SpecSame",
+      "ConNF.Strong.Strong"
+    ],
+    "witnesses": [
+      {
+        "declaration": "ConNF.\u03ba_le_of_not_small",
+        "direction": "forward",
+        "neighbor": "ConNF.Params",
+        "source_path": "ConNF/Base/Small.lean"
+      },
+      {
+        "declaration": "ConNF.\u03bc_type",
+        "direction": "forward",
+        "neighbor": "ConNF.Params",
+        "source_path": "ConNF/Base/Params.lean"
+      }
+    ]
+  },
+  "plan_sha256": "8d6b88756355432391dddca02ab8b8a561b9cf562bbbf5c8b3d5b41fc7e388e3",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "leanprover-community-con-nf",
+  "split_evidence": {
+    "graph": {
+      "edges": 56563,
+      "nodes": 2793,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_76e2729d6bb3bd5c89dd658fd0eaa79b_nodes",
+        "my_db.main.rs_split_76e2729d6bb3bd5c89dd658fd0eaa79b_edges",
+        "my_db.main.rs_split_76e2729d6bb3bd5c89dd658fd0eaa79b_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+      "database": "repo-search-s-leanprover-community-76e2729d6bb3bd5c",
+      "database_id": "01a221ec-6701-7c32-a184-4eb616aa45dd",
+      "split_projection_sha256": "e770e63d38360b0ca2b4eb4024924c3295ab2459f9b783c09e0a07de3da8ff5a",
+      "sqlite_bytes": 1957888,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+      "edges": 56563,
+      "files": {
+        "edges.csv": {
+          "bytes": 6698128,
+          "sha256": "c4a6fd75ff5d491c975c6e70504c17289036933a12dea48656f8fce6e2bbde50"
+        },
+        "nodes.csv": {
+          "bytes": 105738,
+          "sha256": "697bc7200d6ec72f0603d4bdef16da8a7c68a76538c434b3efaaffa814eb4e18"
+        },
+        "search.sqlite": {
+          "bytes": 1957888,
+          "sha256": "1752267991f9cac6f870b7864033b04302daaa5b3994173f6647a6fdfb095a67"
+        }
+      },
+      "full_projection_fingerprint": "5aaf0a3a404eb3156f23f39ed2f49a99d4d838850599cc256f00c28b2e679ee0",
+      "nodes": 2793,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "643348b7a80f3a9111232982aca895546ccfcc128ba6802b0c8e63ea3f226b62",
+      "sources": 1573
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "chunks": [
+          {
+            "declaration_hint": "\u03ba_le_of_not_small",
+            "declaration_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 90,
+            "source_path": "ConNF/Base/Small.lean",
+            "source_start_line": 87
+          },
+          {
+            "declaration_hint": "Params",
+            "declaration_id": "lean:ConNF.Params",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 78,
+            "source_path": "ConNF/Base/Params.lean",
+            "source_start_line": 20
+          },
+          {
+            "declaration_hint": "Small",
+            "declaration_id": "lean:ConNF.Small",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 23,
+            "source_path": "ConNF/Base/Small.lean",
+            "source_start_line": 20
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 772,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "target_id": "lean:ConNF.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "target_id": "lean:ConNF.Params.\u03ba"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "target_id": "lean:ConNF.Small"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "target_id": "lean:ConNF.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "target_id": "lean:ConNF.Params.\u03ba"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "target_id": "lean:ConNF.Small"
+          }
+        ],
+        "query": "lean:ConNF.\u03ba_le_of_not_small",
+        "scope_root_modules": [
+          "ConNF"
+        ],
+        "source_id": "leanprover-community-con-nf",
+        "source_kind": "git",
+        "source_revision": "55b939a3acf947793e252ff330800bfe968cc172",
+        "split_projection_sha256": "e770e63d38360b0ca2b4eb4024924c3295ab2459f9b783c09e0a07de3da8ff5a",
+        "status": "FOUND",
+        "target_id": "lean:ConNF.\u03ba_le_of_not_small",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+            "backend": "kusto",
+            "candidate_id": "leanprover-community-con-nf::lean:ConNF.\u03ba_le_of_not_small",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ConNF.Params"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConNF.Params.\u03ba"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConNF.Small"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 56563,
+            "projection_nodes": 2793,
+            "root": "lean:ConNF.\u03ba_le_of_not_small",
+            "scope_root_modules": [
+              "ConNF"
+            ],
+            "source_authority": null,
+            "source_id": "leanprover-community-con-nf",
+            "source_kind": "git",
+            "source_revision": "55b939a3acf947793e252ff330800bfe968cc172",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+            "candidate_id": "leanprover-community-con-nf::lean:ConNF.\u03ba_le_of_not_small",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "\u03ba_le_of_not_small",
+            "declaration_id": "lean:ConNF.\u03ba_le_of_not_small",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 90,
+            "source_id": "leanprover-community-con-nf",
+            "source_path": "ConNF/Base/Small.lean",
+            "source_row_id": "src:ConNF/Base/Small.lean:87:90",
+            "source_start_line": 87
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ConNF.\u03ba_le_of_not_small",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "leanprover-community-con-nf",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "chunks": [
+          {
+            "declaration_hint": "\u03bc_type",
+            "declaration_id": "lean:ConNF.\u03bc_type",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 260,
+            "source_path": "ConNF/Base/Params.lean",
+            "source_start_line": 248
+          },
+          {
+            "declaration_hint": "type_Iio",
+            "declaration_id": "lean:Ordinal.type_Iio",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 171,
+            "source_path": "ConNF/Background/Ordinal.lean",
+            "source_start_line": 161
+          },
+          {
+            "declaration_hint": "ltWellOrder",
+            "declaration_id": "lean:Equiv.ltWellOrder",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 103,
+            "source_path": "ConNF/Background/Transfer.lean",
+            "source_start_line": 98
+          },
+          {
+            "declaration_hint": "ltWellOrder_type",
+            "declaration_id": "lean:Equiv.ltWellOrder_type",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 110,
+            "source_path": "ConNF/Background/Transfer.lean",
+            "source_start_line": 104
+          },
+          {
+            "declaration_hint": "Params",
+            "declaration_id": "lean:ConNF.Params",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 78,
+            "source_path": "ConNF/Base/Params.lean",
+            "source_start_line": 20
+          },
+          {
+            "declaration_hint": "\u03bcEquiv",
+            "declaration_id": "lean:ConNF.\u03bcEquiv",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 235,
+            "source_path": "ConNF/Base/Params.lean",
+            "source_start_line": 211
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1268,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:ConNF.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:ConNF.Params.\u03bc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:ConNF.instLtWellOrder\u03bc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:LtWellOrder.toIsWellOrder"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:LtWellOrder.toLinearOrder"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:ConNF.Params"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:ConNF.Params.\u03bc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:ConNF.instLtWellOrder\u03bc"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:ConNF.\u03bcEquiv"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:Equiv.ltWellOrder"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:Equiv.ltWellOrder_type"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:LtWellOrder.toIsWellOrder"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:LtWellOrder.toLinearOrder"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:Ordinal.instLtWellOrderElemIio"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConNF.\u03bc_type",
+            "target_id": "lean:Ordinal.type_Iio"
+          }
+        ],
+        "query": "lean:ConNF.\u03bc_type",
+        "scope_root_modules": [
+          "ConNF"
+        ],
+        "source_id": "leanprover-community-con-nf",
+        "source_kind": "git",
+        "source_revision": "55b939a3acf947793e252ff330800bfe968cc172",
+        "split_projection_sha256": "e770e63d38360b0ca2b4eb4024924c3295ab2459f9b783c09e0a07de3da8ff5a",
+        "status": "FOUND",
+        "target_id": "lean:ConNF.\u03bc_type",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "d09e60327d15a011c699b8202defea13d95328dd3e2264ce4a413d3941ad9721",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+            "backend": "kusto",
+            "candidate_id": "leanprover-community-con-nf::lean:ConNF.\u03bc_type",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ConNF.Params"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConNF.Params.\u03bc"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConNF.instLtWellOrder\u03bc"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConNF.\u03bcEquiv"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Equiv.ltWellOrder"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Equiv.ltWellOrder_type"
+              },
+              {
+                "depth": 1,
+                "id": "lean:LtWellOrder.toIsWellOrder"
+              },
+              {
+                "depth": 1,
+                "id": "lean:LtWellOrder.toLinearOrder"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ordinal.instLtWellOrderElemIio"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ordinal.type_Iio"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 56563,
+            "projection_nodes": 2793,
+            "root": "lean:ConNF.\u03bc_type",
+            "scope_root_modules": [
+              "ConNF"
+            ],
+            "source_authority": null,
+            "source_id": "leanprover-community-con-nf",
+            "source_kind": "git",
+            "source_revision": "55b939a3acf947793e252ff330800bfe968cc172",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "e6bf117b57945fd451c432e0ddb6d569356e6c9c8e7b8dcb598607a9c3e639a6",
+            "candidate_id": "leanprover-community-con-nf::lean:ConNF.\u03bc_type",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "\u03bc_type",
+            "declaration_id": "lean:ConNF.\u03bc_type",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "55b939a3acf947793e252ff330800bfe968cc172",
+            "source_end_line": 260,
+            "source_id": "leanprover-community-con-nf",
+            "source_path": "ConNF/Base/Params.lean",
+            "source_row_id": "src:ConNF/Base/Params.lean:248:260",
+            "source_start_line": 248
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ConNF.\u03bc_type",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "leanprover-community-con-nf",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
