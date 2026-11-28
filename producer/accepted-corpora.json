@@ -27,7 +27,8 @@
       "receipt_asset": "anthropic-fermats-last-theorem-release-receipt.json",
       "source_descriptor": "producer/sources/anthropic-fermats-last-theorem.json",
       "artifact_identity": "21b6b292cb3160fa33a962ad72e1890691250279e016c251150cdb2f84ce62c3",
-      "fingerprint_sha256": "174f3a74e8176256ca3b7e997f53db2dd1def67d77aaf53cfea66e3e605b9c73"
+      "fingerprint_sha256": "174f3a74e8176256ca3b7e997f53db2dd1def67d77aaf53cfea66e3e605b9c73",
+      "split_projection_sha256": "8eeaa30050643ef2f7acd1f97e65262798b9f984b1b6e2dec30246581ccc81ea"
     },
     {
       "source_id": "decreasing-diagrams-complete",
