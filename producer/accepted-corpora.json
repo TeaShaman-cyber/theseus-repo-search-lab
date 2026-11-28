@@ -146,7 +146,8 @@
       "source_descriptor": "producer/sources/leanprover-community-riemann-readable.json",
       "artifact_identity": "6ee2f773cf70114e9ae09b67b56bca07143f2d36b7a137705eb60d96e1e9b5c2",
       "fingerprint_sha256": "77258a125b585577fdf152d8c8008af8dd5857a58f36724e192a74e7e35e68b9",
-      "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
+      "runner_config": "producer/runners/leandepviz-lean436-adapted.json",
+      "split_projection_sha256": "24d07cd55bd158d0d2c12bc41988b0a04e0da460a4dcbff607d1f3a76fede4d8"
     },
     {
       "source_id": "openai-cdc-lean",

@@ -1,6 +1,6 @@
 {
   "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-  "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
+  "catalog_sha256": "634fcc448fc672b6e47486e2bad66cadd39313a364f369abd7ba4753b7471fed",
   "fingerprint_sha256": "3305095057197a44b5497e3279e2efa4ba870f3571c865c6836c1d4ff928519c",
   "plan": {
     "excluded_raw_declarations": {},
@@ -682,7 +682,7 @@
     {
       "context": {
         "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
+        "catalog_sha256": "634fcc448fc672b6e47486e2bad66cadd39313a364f369abd7ba4753b7471fed",
         "chunks": [
           {
             "declaration_hint": "OAI.LinearAlgebra.SpectralBooks.SignedMachine.Program.Reachable",
@@ -787,7 +787,7 @@
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
+        "catalog_sha256": "634fcc448fc672b6e47486e2bad66cadd39313a364f369abd7ba4753b7471fed",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,
@@ -1463,7 +1463,7 @@
     {
       "context": {
         "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
+        "catalog_sha256": "634fcc448fc672b6e47486e2bad66cadd39313a364f369abd7ba4753b7471fed",
         "chunks": [
           {
             "declaration_hint": "OAI.LinearAlgebra.SpectralBooks.SignedProgram.Frame.tick_correct",
@@ -2172,7 +2172,7 @@
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
+        "catalog_sha256": "634fcc448fc672b6e47486e2bad66cadd39313a364f369abd7ba4753b7471fed",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,
@@ -3040,7 +3040,7 @@
     {
       "context": {
         "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
+        "catalog_sha256": "634fcc448fc672b6e47486e2bad66cadd39313a364f369abd7ba4753b7471fed",
         "chunks": [
           {
             "declaration_hint": "square_exponent",
@@ -3189,7 +3189,7 @@
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "724741d4a172f27e7b2d48f542d06bded42b7cee3d728078ff1920a1a1731223",
+        "catalog_sha256": "634fcc448fc672b6e47486e2bad66cadd39313a364f369abd7ba4753b7471fed",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,
