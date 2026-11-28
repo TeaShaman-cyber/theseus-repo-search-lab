@@ -1,0 +1,370 @@
+name: Poincare resume compressed stage thirteen
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [corpus/poincare-resume-compressed-13]
+    paths:
+      - .github/workflows/poincare-resume-compressed-13.yml
+      - producer/pilots/poincare-resume-compressed-13-plan.json
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: poincare-resume-compressed-13-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-stage-13:
+    runs-on: ubuntu-latest
+    timeout-minutes: 135
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - source_descriptor: producer/sources/poincare-proof-endpoints.json
+            source_kind: git
+            replay_script: scripts/replay_queued_intake.py
+            artifact_name: poincare-proof-endpoints-repo-index-v1
+    steps:
+      - name: Checkout repository lens
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Load producer configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "${{ matrix.source_descriptor }}" \
+            --runner producer/runner.json \
+            --github-env "$GITHUB_ENV"
+
+      - name: Checkout pinned source
+        if: matrix.source_kind != 'archive'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py checkout \
+            --repo-url "https://github.com/${SOURCE_REPO}.git" \
+            --commit "$SOURCE_COMMIT" \
+            --dest _target/source
+
+      - name: Materialize pinned archive source
+        if: matrix.source_kind == 'archive'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _out
+          python3 scripts/materialize_archive_source.py \
+            --source "${{ matrix.source_descriptor }}" \
+            --dest _target/source \
+            --receipt _out/source-materialization.json
+
+      - name: Verify exact source readback
+        if: matrix.source_kind != 'archive'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/producer_guard.py verify \
+            --repo-dir _target/source \
+            --expected "$SOURCE_COMMIT"
+          printf "source_readback=%s\n" "$(git -C _target/source rev-parse HEAD)"
+
+      - name: Verify archive materialization readback
+        if: matrix.source_kind == 'archive'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "${{ matrix.source_descriptor }}" \
+            "$GITHUB_WORKSPACE/_target/source" \
+            "$GITHUB_WORKSPACE/_out/source-materialization.json" <<'PY_ARCHIVE_READBACK'
+          import sys
+          from pathlib import Path
+
+          from scripts.materialize_archive_source import verify_materialized_archive_members
+          from theseus_repo_search.producer_config import load_lean_archive_source
+
+          descriptor = Path(sys.argv[1])
+          materialization_root = Path(sys.argv[2])
+          receipt = Path(sys.argv[3])
+          source = load_lean_archive_source(descriptor)
+          members = verify_materialized_archive_members(
+              source, dest=materialization_root, receipt_path=receipt
+          )
+          print(f"archive_member_count={len(members['members'])}")
+          PY_ARCHIVE_READBACK
+
+      - name: Resolve canonical source root
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/load_producer_env.py \
+            --source "${{ matrix.source_descriptor }}" \
+            --runner producer/runner.json \
+            --checkout-root "$GITHUB_WORKSPACE/_target/source" \
+            --github-env "$GITHUB_ENV"
+
+      - name: Observe source-owned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SOURCE_ROOT"
+          observed="$(python3 scripts/producer_guard.py toolchain --cwd "$SOURCE_ROOT")"
+          test -n "$observed"
+          printf "observed_lean_toolchain=%s\n" "$observed"
+
+      - name: Install pinned generic runner prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/elan.tar.gz" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  $RUNNER_TEMP/elan.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/elan"
+          tar -xzf "$RUNNER_TEMP/elan.tar.gz" -C "$RUNNER_TEMP/elan"
+          "$RUNNER_TEMP/elan/elan-init" -y --no-modify-path --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          url="https://raw.githubusercontent.com/${EXTRACTOR_REPO}/${EXTRACTOR_COMMIT}/LeanDepViz/Main.lean"
+          curl --fail --location --proto "=https" --tlsv1.2 \
+            --output "$RUNNER_TEMP/LeanDepVizMain.lean" "$url"
+          echo "${EXTRACTOR_MAIN_SHA256}  $RUNNER_TEMP/LeanDepVizMain.lean" | sha256sum --check
+
+      # Cache compressed Mathlib downloads, not the multi-GiB source/build trees.
+      # Exact source-owned Lean toolchain + Lake lock determine cache validity.
+      - name: Compute pinned Mathlib archive cache key
+        id: mathlib-cache-key
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f "$SOURCE_ROOT/lean-toolchain" ] || [ ! -f "$SOURCE_ROOT/lake-manifest.json" ]; then
+            printf 'enabled=false\n' >> "$GITHUB_OUTPUT"
+            printf 'mathlib_cache_disabled=missing_pins\n'
+            exit 0
+          fi
+          lean_pin="$(sha256sum "$SOURCE_ROOT/lean-toolchain" | cut -d ' ' -f 1)"
+          lake_pin="$(sha256sum "$SOURCE_ROOT/lake-manifest.json" | cut -d ' ' -f 1)"
+          key="mathlib-archives-v1-${RUNNER_OS}-${lean_pin}-${lake_pin}"
+          printf 'enabled=true\nkey=%s\n' "$key" >> "$GITHUB_OUTPUT"
+          printf 'mathlib_archive_cache_key=%s\n' "$key"
+
+      - name: Restore pinned Mathlib download archives
+        if: steps.mathlib-cache-key.outputs.enabled == 'true'
+        id: mathlib-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/mathlib
+          key: ${{ steps.mathlib-cache-key.outputs.key }}
+
+      - name: Restore source dependency cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v lake
+          started="$(date +%s)"
+          python3 scripts/producer_guard.py run --cwd "$SOURCE_ROOT" -- lake exe cache get
+          finished="$(date +%s)"
+          printf "cache_get_seconds=%s\n" "$((finished - started))"
+          cache_dir="${MATHLIB_CACHE_DIR:-$HOME/.cache/mathlib}"
+          if [ -d "$cache_dir" ]; then
+            printf "mathlib_cache_files=%s\n" "$(find "$cache_dir" -type f | wc -l | tr -d ' ')"
+            printf "mathlib_cache_kib=%s\n" "$(du -sk "$cache_dir" | awk '{print $1}')"
+          else
+            printf "mathlib_cache_files=0\n"
+            printf "mathlib_cache_kib=0\n"
+          fi
+          if [ -d "$SOURCE_ROOT/.lake/packages" ]; then
+            printf "source_packages_kib=%s\n" "$(du -sk "$SOURCE_ROOT/.lake/packages" | awk '{print $1}')"
+          else
+            printf "source_packages_kib=0\n"
+          fi
+
+      - name: Bound Mathlib cache persistence
+        id: mathlib-cache-size
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed=false
+          if [ -d "$HOME/.cache/mathlib" ]; then
+            cache_kib="$(du -sk "$HOME/.cache/mathlib" | awk '{print $1}')"
+            if [ "$cache_kib" -gt 0 ] && [ "$cache_kib" -le 750000 ]; then
+              allowed=true
+            fi
+            printf 'mathlib_download_archives_kib=%s\n' "$cache_kib"
+          fi
+          printf 'save=%s\n' "$allowed" >> "$GITHUB_OUTPUT"
+
+      - name: Save pinned Mathlib download archives
+        if: steps.mathlib-cache-key.outputs.enabled == 'true' && steps.mathlib-cache.outputs.cache-hit != 'true' && steps.mathlib-cache-size.outputs.save == 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/mathlib
+          key: ${{ steps.mathlib-cache-key.outputs.key }}
+
+      - name: Verify origin checkpoint and download exact ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ORIGIN_ARTIFACT_ID: '15256400389'
+          ORIGIN_DIGEST: '779e38b83d57be6342384f24605ab3e2579793cb38221e98a7e028adae6a39de'
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo=TeaShaman-cyber/theseus-repo-search-lab
+          gh api "repos/$repo/actions/jobs/140906984862" --jq '[.conclusion,.head_sha]|@tsv' | grep -Fx $'success\t146f087b887663146bdb5b653aadbbc27cff3f0e'
+          python3 - <<'PY_ORIGIN'
+          import json,os,re,subprocess,hashlib
+          from pathlib import Path
+          aid=os.environ['ORIGIN_ARTIFACT_ID'];digest=os.environ['ORIGIN_DIGEST']
+          assert re.fullmatch(r'[0-9]+',aid) and re.fullmatch(r'[0-9a-f]{64}',digest)
+          repo='TeaShaman-cyber/theseus-repo-search-lab'
+          x=json.loads(subprocess.check_output(['gh','api',f'repos/{repo}/actions/artifacts/{aid}']))
+          assert x['id']==int(aid) and x['name']=='poincare-build-stage-12' and not x['expired']
+          assert x['digest']=='sha256:'+digest
+          assert x['workflow_run']['id']==46121549829 and x['workflow_run']['head_sha']=='146f087b887663146bdb5b653aadbbc27cff3f0e'
+          z=Path(os.environ['RUNNER_TEMP'])/'origin.zip'
+          with z.open('wb') as f:subprocess.run(['gh','api',f'repos/{repo}/actions/artifacts/{aid}/zip'],stdout=f,check=True)
+          with z.open('rb') as f:assert hashlib.file_digest(f,'sha256').hexdigest()==digest
+          PY_ORIGIN
+          mkdir -p _checkpoint
+          unzip -q "$RUNNER_TEMP/origin.zip" -d _checkpoint
+          rm "$RUNNER_TEMP/origin.zip"
+
+      - name: Verify and restore compressed disposable checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd _checkpoint && sha256sum --check SHA256SUMS)
+          python3 - <<'PY_STATE'
+          import json, os, hashlib
+          from pathlib import Path
+          p=Path(os.environ['SOURCE_ROOT'])
+          x=json.loads(Path('_checkpoint/state.json').read_text())
+          assert x==dict(source=os.environ['SOURCE_COMMIT'],head='146f087b887663146bdb5b653aadbbc27cff3f0e',run='46121549829',stage=12,toolchain=(p/'lean-toolchain').read_text(),manifest=hashlib.sha256((p/'lake-manifest.json').read_bytes()).hexdigest())
+          PY_STATE
+          sudo modprobe btrfs
+          grep -w btrfs /proc/filesystems
+          if ! command -v mkfs.btrfs >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y btrfs-progs
+          fi
+          img="$RUNNER_TEMP/poincare-compressed.img"
+          test ! -e "$img"
+          truncate -s 160G "$img"
+          mkfs.btrfs -q -f "$img"
+          build="$SOURCE_ROOT/.lake/build"
+          if [ -e "$build" ]; then
+            test ! -d "$build/lib/lean"
+            mv "$build" "$RUNNER_TEMP/preexisting-build"
+          fi
+          mkdir "$build"
+          sudo mount -o loop,compress=zstd:3 "$img" "$build"
+          sudo chown "$(id -u):$(id -g)" "$build"
+          findmnt --mountpoint "$build" --output SOURCE,FSTYPE,OPTIONS
+          tar --zstd -xf _checkpoint/build.tar.zst -C "$SOURCE_ROOT/.lake"
+          tar --zstd --compare -f _checkpoint/build.tar.zst -C "$SOURCE_ROOT/.lake"
+          sync
+          printf 'COMPRESSED_ARCHIVE_PARITY_PASS\n'
+          rm _checkpoint/build.tar.zst _checkpoint/state.json _checkpoint/SHA256SUMS
+          sudo btrfs filesystem usage "$build"
+          du -B1 "$img"
+          df -h "$RUNNER_TEMP" "$build"
+
+      - name: Build stage thirteen with compressed checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY_PROBE'
+          import hashlib,json,os,subprocess,shutil,time,signal
+          from pathlib import Path
+          root=Path(os.environ['SOURCE_ROOT'])
+          build=root/'.lake/build/lib/lean'
+          plan=json.loads(Path('producer/pilots/poincare-resume-compressed-13-plan.json').read_text())
+          assert plan['source_commit']==os.environ['SOURCE_COMMIT']
+          before={m for g in plan['groups'][:12] for m in g}
+          targets=plan['groups'][12]
+          assert len(before)==12288 and len(set(targets))==len(targets)==1200 and not before.intersection(targets)
+          def inventory():
+              return {str(p.relative_to(build)).removesuffix('.olean').replace('/','.') for p in build.rglob('*.olean')}
+          def digest(m):
+              p=build.joinpath(*m.split('.')).with_suffix('.olean')
+              with p.open('rb') as f: return hashlib.file_digest(f,'sha256').hexdigest()
+          assert inventory()==before
+          sample=sorted(before)[::max(1,len(before)//100)]
+          hashes={m:digest(m) for m in sample}
+          img=Path(os.environ['RUNNER_TEMP'])/'poincare-compressed.img'
+          def metrics():
+              return dict(host_free=shutil.disk_usage(img.parent).free,
+                          image_allocated=img.stat().st_blocks*512,
+                          build_logical=sum(p.stat().st_size for p in (root/'.lake/build').rglob('*') if p.is_file()))
+          subprocess.run(['sync'],check=True)
+          pre=metrics()
+          print('COMPRESSED_PRE',json.dumps(pre),flush=True)
+          assert pre['host_free']>=40*1024**3
+          started=time.monotonic()
+          with subprocess.Popen(['lake','build',*targets],cwd=root,start_new_session=True) as proc:
+              while proc.poll() is None:
+                  if shutil.disk_usage(img.parent).free < 20*1024**3 or time.monotonic()-started>5400:
+                      os.killpg(proc.pid,signal.SIGTERM)
+                      try:
+                          proc.wait(timeout=10)
+                      except subprocess.TimeoutExpired:
+                          os.killpg(proc.pid,signal.SIGKILL)
+                          proc.wait()
+                      raise RuntimeError('stage13 disk/time guard; previous checkpoint remains authoritative')
+                  time.sleep(5)
+              assert proc.returncode==0,proc.returncode
+          assert inventory()==before|set(targets)
+          assert {m:digest(m) for m in sample}==hashes
+          subprocess.run(['sync'],check=True)
+          post=metrics()
+          result=dict(status='PASS',before=pre,after=post,modules_before=len(before),
+                      modules_after=len(inventory()),prior_sample_hashes=len(sample),seconds=time.monotonic()-started)
+          print('COMPRESSED_STAGE13_PASS',json.dumps(result),flush=True)
+          out=Path('_compression-evidence');out.mkdir()
+          (out/'receipt.json').write_text(json.dumps(result,sort_keys=True)+'\n')
+          PY_PROBE
+          sudo btrfs filesystem usage "$SOURCE_ROOT/.lake/build"
+          df -h "$RUNNER_TEMP" "$SOURCE_ROOT/.lake/build"
+
+      - name: Pack portable verified stage thirteen checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(df -PB1 "$RUNNER_TEMP" | awk 'NR==2 {print $4}')" -ge 16106127360
+          tar -C "$SOURCE_ROOT/.lake" -cf - build | zstd -T2 -3 -o _checkpoint/build.tar.zst
+          test "$(stat -c %s _checkpoint/build.tar.zst)" -le 8589934592
+          python3 - <<'PY_STATE'
+          import json,os,hashlib
+          from pathlib import Path
+          p=Path(os.environ['SOURCE_ROOT'])
+          x=dict(source=os.environ['SOURCE_COMMIT'],head=os.environ['GITHUB_SHA'],run=os.environ['GITHUB_RUN_ID'],stage=13,toolchain=(p/'lean-toolchain').read_text(),manifest=hashlib.sha256((p/'lake-manifest.json').read_bytes()).hexdigest())
+          Path('_checkpoint/state.json').write_text(json.dumps(x,sort_keys=True)+'\n')
+          PY_STATE
+          (cd _checkpoint && sha256sum build.tar.zst state.json > SHA256SUMS)
+          cp _compression-evidence/receipt.json _checkpoint/compression-receipt.json
+          df -h "$RUNNER_TEMP"
+
+      - name: Unmount disposable image
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${SOURCE_ROOT:-}" ] && mountpoint -q "$SOURCE_ROOT/.lake/build"; then
+            sudo umount "$SOURCE_ROOT/.lake/build"
+          fi
+
+      - name: Upload exact resumable stage thirteen checkpoint
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: poincare-build-stage-13
+          path: _checkpoint/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
