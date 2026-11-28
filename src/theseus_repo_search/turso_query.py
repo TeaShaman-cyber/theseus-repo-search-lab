@@ -12,6 +12,7 @@ from .accepted_catalog import AcceptedCatalog, AcceptedCorpus, accepted_catalog_
 from .errors import RepoSearchError
 from .graph import GraphResult, path_connection, traverse_connection
 from .multicorpus import MultiCorpusResult, federate_search
+from .projection import QueryConnection
 from .retrieval import SearchHit, SearchMode, context_connection, search_connection
 from .split_projection import PROFILE
 from .split_turso import split_database_name
@@ -79,7 +80,7 @@ def search_turso_catalog(catalog: AcceptedCatalog, client: TursoHttpClient, *, q
     )
 
 
-def query_graph(conn: ReadConnection, operation: str, name: str, *, target: str | None = None,
+def query_graph(conn: QueryConnection, operation: str, name: str, *, target: str | None = None,
                 depth: int = 1, max_edges: int = 200, token_budget: int = 4000) -> GraphResult | dict[str, object]:
     if not 1 <= len(name) <= 512 or not 0 <= depth <= 5 or not 1 <= max_edges <= 500:
         raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "invalid graph query bounds")

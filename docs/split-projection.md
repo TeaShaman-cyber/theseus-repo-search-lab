@@ -54,3 +54,46 @@ This is an intake/recovery operation, not an operation to repeat per query.
 The local graph is disposable, no MotherDuck credentials are inherited,
 and no cloud query is made by the native graph builder. Do not select a
 split catalog row until the remote projection and query routing gates pass.
+
+### Candidate cloud intake
+
+`prepare-corpus` also returns the logical split pin, independent of physical
+SQLite page layout. Once the candidate catalog entry is pinned and the exact
+cloud targets and lifecycle are recorded in its owner issue, invoke:
+
+```sh
+PYTHONPATH=.:src python3 scripts/split_projection.py materialize-corpus \
+  --catalog producer/accepted-corpora.json --source-id openai-matrix-exponent \
+  --cache-dir "$CACHE" --organization "$ORG" --group repo-search \
+  --platform-base-url "$TURSO_PLATFORM_URL" \
+  --motherduck-launcher "$GOVERNED_MD_LAUNCHER" --motherduck-db "$MD_DATABASE"
+```
+
+The command resolves the accepted release, verifies local preparation, creates
+or reuses the pinned Turso search candidate, and exports the native graph to
+temporary compressed Parquet for the configured MotherDuck SQL-file launcher.
+The graph tables are created transactionally if absent, with exact typed row
+and identity checks before returning success. A partial or mismatched cloud
+target is blocked for reconciliation, not overwritten. Successful retry reuses
+verified resources; selection and retirement are deliberately not performed by
+this command. Kusto remains unchanged. The command is an intake operation,
+not a warm graph query. The existing accepted release is still authoritative.
+
+### Local graph serving
+
+For a selected split entry, `query deps/rdeps/path/context` resolves metadata
+and source text through the exact Turso search projection and routes bounded
+edge frontiers to standalone local DuckDB. No MotherDuck connection is
+required on this path. Kusto reach/reach-all and graph-search remain on
+the existing analytical route in this iteration.
+
+Set `REPO_SEARCH_GRAPH_CACHE` to the same directory passed to candidate
+materialization (default `~/.cache/theseus-repo-search`). Intake publishes
+a compact serving graph under artifact identity and split pin; a warm query
+checks its local receipt and file digest without rebuilding the full
+projection. A missing serving graph is restored by the existing accepted
+release path. A changed file is blocked rather than silently served.
+The receipt is a trusted-local-runtime corruption check, not protection
+against an adversary who can rewrite both files. Full graph row verification
+is performed during preparation. Local cache lifecycle and cold recovery
+must be checked before retiring the previous full cloud target.
