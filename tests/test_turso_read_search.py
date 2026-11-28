@@ -37,13 +37,19 @@ class TursoReadSearchTests(unittest.TestCase):
                 AcceptedCorpus(s, f"accepted/{s}", "a", "r", "descriptor", identity, "b"*64)
                 for s in ("good", "bad")))
             client = Mock()
-            client.get_database.side_effect = [{"hostname":"db.example"}, None]
+            from theseus_repo_search.turso_materializer import derive_database_name
+            client.get_database.side_effect = lambda name: (
+                {"hostname":"db.example"} if name == derive_database_name("good", identity) else None
+            )
             client.mint_database_token.return_value = "read-token"
             with sqlite3.connect(db) as local:
                 local.execute("INSERT OR REPLACE INTO meta VALUES ('artifact_identity', ?)", (identity,))
                 local.commit()
-                client.query_rows.side_effect = lambda _host, _token, sql, args=(): local.execute(sql, args).fetchall()
-                result = search_turso_catalog(catalog, client, query="moment", limit=3)
+            def query_rows(_host, _token, sql, args=()):
+                with sqlite3.connect(db) as connection:
+                    return connection.execute(sql, args).fetchall()
+            client.query_rows.side_effect = query_rows
+            result = search_turso_catalog(catalog, client, query="moment", limit=3)
             self.assertEqual(result.searched_corpora, 1)
             self.assertEqual(result.unavailable_corpora[0].source_id, "bad")
             self.assertEqual([x.hit for x in result.hits], search(db, "moment", limit=3))

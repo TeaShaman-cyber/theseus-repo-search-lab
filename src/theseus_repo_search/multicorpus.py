@@ -10,6 +10,8 @@ import tempfile
 import uuid
 from collections.abc import Callable
 from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor
+from typing import TypeVar
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
@@ -113,36 +115,44 @@ def search_local_catalog(
     )
 
 
+_T = TypeVar("_T")
+_R = TypeVar("_R")
+
+
+def ordered_fanout(items: tuple[_T, ...], work: Callable[[_T], _R], workers: int) -> tuple[_R, ...]:
+    """Bound concurrent independent reads; merge in input order, never completion order."""
+    if type(workers) is not int or not 1 <= workers <= 8:
+        raise RepoSearchError("BLOCKED_QUERY_BOUNDS", "federation workers must be 1..8")
+    if workers == 1 or len(items) <= 1:
+        return tuple(map(work, items))
+    with ThreadPoolExecutor(max_workers=min(workers, len(items))) as pool:
+        return tuple(pool.map(work, items))
+
+
 def federate_search(
     queries: tuple[tuple[str, Callable[[], list[SearchHit]]], ...],
     unavailable_corpora: tuple[UnavailableCorpus, ...], *, catalog_sha256: str, limit: int,
+    workers: int = 1,
 ) -> MultiCorpusResult:
     searched = 0
     unavailable = list(unavailable_corpora)
     federated: list[MultiCorpusHit] = []
 
-    for source_id, query_fn in queries:
+    def execute(query: tuple[str, Callable[[], list[SearchHit]]]) -> list[SearchHit] | UnavailableCorpus:
+        source_id, query_fn = query
         try:
-            local_hits = query_fn()
+            return query_fn()
         except RepoSearchError as exc:
-            unavailable.append(
-                UnavailableCorpus(
-                    source_id=source_id,
-                    code=exc.code,
-                    message=str(exc),
-                )
-            )
-            continue
+            return UnavailableCorpus(source_id, exc.code, str(exc))
         except sqlite3.Error as exc:
-            unavailable.append(
-                UnavailableCorpus(
-                    source_id=source_id,
-                    code="UNAVAILABLE_PROJECTION",
-                    message=f"SQLite projection unavailable: {exc}",
-                )
-            )
-            continue
+            return UnavailableCorpus(source_id, "UNAVAILABLE_PROJECTION",
+                                     f"SQLite projection unavailable: {exc}")
 
+    outcomes = ordered_fanout(queries, execute, workers)
+    for (source_id, _), local_hits in zip(queries, outcomes, strict=True):
+        if isinstance(local_hits, UnavailableCorpus):
+            unavailable.append(local_hits)
+            continue
         searched += 1
         for local_rank, hit in enumerate(local_hits, start=1):
             federated.append(
