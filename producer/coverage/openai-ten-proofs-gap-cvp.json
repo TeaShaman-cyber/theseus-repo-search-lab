@@ -1,0 +1,633 @@
+{
+  "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+  "catalog_sha256": "8661e2d3bdd6e6f43bc124bf16652bc5d172ee33e0410de823f89509dd137cec",
+  "fingerprint_sha256": "e1b49405a6ee24b497bce70f552e4e83c67ce398404dd398abb7617301c5f4a6",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain accepted lexical source chunks including declarations outside selected graph and generated nodes without source binding.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve full accepted GapCVP elaborated graph during split migration; no new proof claim.",
+    "required_modules": [
+      "GapCVP"
+    ],
+    "witnesses": [
+      {
+        "declaration": "GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+        "direction": "forward",
+        "neighbor": "GapCVP.BitLanguage",
+        "source_path": "GapCVP.lean"
+      },
+      {
+        "declaration": "GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+        "direction": "forward",
+        "neighbor": "GapCVP.Core.binaryResidue",
+        "source_path": "GapCVP.lean"
+      }
+    ]
+  },
+  "plan_sha256": "aca6376e012e1d705d160f63df731d9ce665473701f3d394354ff6cacf2a1255",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-gap-cvp",
+  "split_evidence": {
+    "graph": {
+      "edges": 90992,
+      "nodes": 9032,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_b44e2e97c37db1161a4a9baa2bf315a7_nodes",
+        "my_db.main.rs_split_b44e2e97c37db1161a4a9baa2bf315a7_edges",
+        "my_db.main.rs_split_b44e2e97c37db1161a4a9baa2bf315a7_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+      "database": "repo-search-s-openai-ten-proofs-gap-b44e2e97c37db116",
+      "database_id": "01a2216a-3101-728d-8d9d-72411bab5354",
+      "split_projection_sha256": "c5b7de09c2b4a9e4b7325d623d88bfd34492d59bc37d7f64c11c21dfe34e2560",
+      "sqlite_bytes": 43241472,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+      "edges": 90992,
+      "files": {
+        "edges.csv": {
+          "bytes": 10842587,
+          "sha256": "06e0f4d96db20ced55d7e60aa54229701264140a93ea8acdea2d8cd36fdfb649"
+        },
+        "nodes.csv": {
+          "bytes": 773689,
+          "sha256": "e165afcb844b0944a792f92d85c38635010dbf21d5f645c44e0574d19a7847d0"
+        },
+        "search.sqlite": {
+          "bytes": 43241472,
+          "sha256": "3cb88c8339fa76898c447660549e1aded6aa3014a1a7a5822158a33be67f8767"
+        }
+      },
+      "full_projection_fingerprint": "b0d396157b13f5246e956f6964c2d6b9940f96f6b5951a88410391dcff6cf240",
+      "nodes": 9032,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "abb1cb6db7f4b10cdbde0aa07aa49cefd81e893433a1e66e413709856296410a",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+        "catalog_sha256": "8661e2d3bdd6e6f43bc124bf16652bc5d172ee33e0410de823f89509dd137cec",
+        "chunks": [
+          {
+            "declaration_hint": "paperOriginalThreeSATIsNPHard",
+            "declaration_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 88661,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 88641
+          },
+          {
+            "declaration_hint": "BitLanguage",
+            "declaration_id": "lean:GapCVP.BitLanguage",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 621,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 620
+          },
+          {
+            "declaration_hint": "BitTM",
+            "declaration_id": "lean:GapCVP.BitTM",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 632,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 630
+          },
+          {
+            "declaration_hint": "VerifierTM",
+            "declaration_id": "lean:GapCVP.VerifierTM",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 636,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 633
+          },
+          {
+            "declaration_hint": "IsNP",
+            "declaration_id": "lean:GapCVP.IsNP",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 646,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 637
+          },
+          {
+            "declaration_hint": "PolynomialReduction",
+            "declaration_id": "lean:GapCVP.PolynomialReduction",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 651,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 647
+          },
+          {
+            "declaration_hint": "NPHard",
+            "declaration_id": "lean:GapCVP.NPHard",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 663,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 660
+          },
+          {
+            "declaration_hint": "structuralWholeCNFWord",
+            "declaration_id": "lean:GapCVP.CLStructuralWholeCNFOutputTM.structuralWholeCNFWord",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 22887,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 22881
+          },
+          {
+            "declaration_hint": "actualWholeStructuralCNFOutputComputable",
+            "declaration_id": "lean:GapCVP.CNFFiveFamilySourceIndexedORGadgetFinalCert.actualWholeStructuralCNFOutputComputable",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 62095,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 62082
+          },
+          {
+            "declaration_hint": "paperOriginalThreeSATLanguage",
+            "declaration_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATLanguage",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 88584,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 88577
+          },
+          {
+            "declaration_hint": "structuralWholeCNFWord_mem_paperOriginalThreeSAT_iff",
+            "declaration_id": "lean:GapCVP.OriginalThreeSATNPHardness.structuralWholeCNFWord_mem_paperOriginalThreeSAT_iff",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 88640,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 88625
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 824,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.NPHard"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATLanguage"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.BitLanguage"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.BitTM"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.CLStructuralWholeCNFOutputTM.structuralWholeCNFWord"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.CNFFiveFamilySourceIndexedORGadgetFinalCert.actualWholeStructuralCNFOutputComputable"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.IsNP"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.NPHard"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATLanguage"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.OriginalThreeSATNPHardness.structuralWholeCNFWord_mem_paperOriginalThreeSAT_iff"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.PolynomialReduction"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.PolynomialReduction.mk"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "target_id": "lean:GapCVP.VerifierTM"
+          }
+        ],
+        "query": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+        "scope_root_modules": [
+          "GapCVP"
+        ],
+        "source_id": "openai-ten-proofs-gap-cvp",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "c5b7de09c2b4a9e4b7325d623d88bfd34492d59bc37d7f64c11c21dfe34e2560",
+        "status": "FOUND",
+        "target_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "8661e2d3bdd6e6f43bc124bf16652bc5d172ee33e0410de823f89509dd137cec",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-gap-cvp::lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.BitLanguage"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.BitTM"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.CLStructuralWholeCNFOutputTM.structuralWholeCNFWord"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.CNFFiveFamilySourceIndexedORGadgetFinalCert.actualWholeStructuralCNFOutputComputable"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.IsNP"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.NPHard"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATLanguage"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.OriginalThreeSATNPHardness.structuralWholeCNFWord_mem_paperOriginalThreeSAT_iff"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.PolynomialReduction"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.PolynomialReduction.mk"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.VerifierTM"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 90992,
+            "projection_nodes": 9032,
+            "root": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "scope_root_modules": [
+              "GapCVP"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-gap-cvp",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+            "candidate_id": "openai-ten-proofs-gap-cvp::lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "paperOriginalThreeSATIsNPHard",
+            "declaration_id": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 88661,
+            "source_id": "openai-ten-proofs-gap-cvp",
+            "source_path": "GapCVP.lean",
+            "source_row_id": "src:GapCVP.lean:88641:88661",
+            "source_start_line": 88641
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:GapCVP.OriginalThreeSATNPHardness.paperOriginalThreeSATIsNPHard",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-gap-cvp",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+        "catalog_sha256": "8661e2d3bdd6e6f43bc124bf16652bc5d172ee33e0410de823f89509dd137cec",
+        "chunks": [
+          {
+            "declaration_hint": "integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "declaration_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 126291,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 126271
+          },
+          {
+            "declaration_hint": "binaryResidue",
+            "declaration_id": "lean:GapCVP.Core.binaryResidue",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 63726,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 63724
+          },
+          {
+            "declaration_hint": "integerSquaredNorm",
+            "declaration_id": "lean:GapCVP.Core.integerSquaredNorm",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 65532,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 65530
+          },
+          {
+            "declaration_hint": "binaryWordLift",
+            "declaration_id": "lean:GapCVP.Factor400BinaryCodeDecodingCorollary.binaryWordLift",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 87485,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 87477
+          },
+          {
+            "declaration_hint": "integerSquaredNorm_binaryWordLift",
+            "declaration_id": "lean:GapCVP.Factor400BinaryDecodingPromiseReduction.integerSquaredNorm_binaryWordLift",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 89205,
+            "source_path": "GapCVP.lean",
+            "source_start_line": 89191
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 473,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "target_id": "lean:GapCVP.Core.binaryResidue"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "target_id": "lean:GapCVP.Core.integerSquaredNorm"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "target_id": "lean:GapCVP.Core.binaryResidue"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "target_id": "lean:GapCVP.Core.integerSquaredNorm"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "target_id": "lean:GapCVP.Factor400BinaryCodeDecodingCorollary.binaryWordLift"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "target_id": "lean:GapCVP.Factor400BinaryDecodingPromiseReduction.integerSquaredNorm_binaryWordLift"
+          }
+        ],
+        "query": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+        "scope_root_modules": [
+          "GapCVP"
+        ],
+        "source_id": "openai-ten-proofs-gap-cvp",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "c5b7de09c2b4a9e4b7325d623d88bfd34492d59bc37d7f64c11c21dfe34e2560",
+        "status": "FOUND",
+        "target_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "8661e2d3bdd6e6f43bc124bf16652bc5d172ee33e0410de823f89509dd137cec",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-gap-cvp::lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.Core.binaryResidue"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.Core.integerSquaredNorm"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.Factor400BinaryCodeDecodingCorollary.binaryWordLift"
+              },
+              {
+                "depth": 1,
+                "id": "lean:GapCVP.Factor400BinaryDecodingPromiseReduction.integerSquaredNorm_binaryWordLift"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 90992,
+            "projection_nodes": 9032,
+            "root": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "scope_root_modules": [
+              "GapCVP"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-gap-cvp",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "5ef64520d8fa115028c5bd04e832d501305dd832d12711be31168d5dabb2ba4d",
+            "candidate_id": "openai-ten-proofs-gap-cvp::lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "declaration_id": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 126291,
+            "source_id": "openai-ten-proofs-gap-cvp",
+            "source_path": "GapCVP.lean",
+            "source_row_id": "src:GapCVP.lean:126271:126291",
+            "source_start_line": 126271
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:GapCVP.Factor400BinaryDecodingPromiseHardness.integerSquaredNorm_eq_hammingNorm_binaryResidue",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-gap-cvp",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
