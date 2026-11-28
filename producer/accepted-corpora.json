@@ -214,7 +214,8 @@
       "receipt_asset": "openai-ten-proofs-compactness-degeneracy-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-compactness-degeneracy.json",
       "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
-      "fingerprint_sha256": "11d07c3c06204e008c4d9bbe35cbaec3dedc24434f2662df58c22224809d0545"
+      "fingerprint_sha256": "11d07c3c06204e008c4d9bbe35cbaec3dedc24434f2662df58c22224809d0545",
+      "split_projection_sha256": "bd95571728cda96a53bd8578a8c509d1167d6ca0abe44520b01e88b94294c3ee"
     },
     {
       "source_id": "openai-ten-proofs-connes-rigidity",
@@ -263,7 +264,8 @@
       "receipt_asset": "openai-ten-proofs-multicolor-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-multicolor.json",
       "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
-      "fingerprint_sha256": "c5bf25665d4d22b943e30df80f83773bbb0dc7135ff241ba1056618663ff7d51"
+      "fingerprint_sha256": "c5bf25665d4d22b943e30df80f83773bbb0dc7135ff241ba1056618663ff7d51",
+      "split_projection_sha256": "3d510c9b7a1a3e29faeb177c7f9fba372d8263d647d24c7f25fc3f2be2ee3c8c"
     },
     {
       "source_id": "openai-ten-proofs-non-sofic",
@@ -272,7 +274,8 @@
       "receipt_asset": "openai-ten-proofs-non-sofic-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-non-sofic.json",
       "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
-      "fingerprint_sha256": "04c4fb190a1e7d8b149976c5ed73e029e7e23652dbe3aa69c013550b1b518097"
+      "fingerprint_sha256": "04c4fb190a1e7d8b149976c5ed73e029e7e23652dbe3aa69c013550b1b518097",
+      "split_projection_sha256": "d6c4be94b4b427c2c53b6d81b5c48a6fd359ff3eb011a2b51f2ef7a0150af7f4"
     },
     {
       "source_id": "openai-ten-proofs-permanent",
@@ -281,7 +284,8 @@
       "receipt_asset": "openai-ten-proofs-permanent-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-permanent.json",
       "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
-      "fingerprint_sha256": "b609443a04a2f21d7a23c59a624c6a4bf1512bcec2aeb513147dd64b545c4a70"
+      "fingerprint_sha256": "b609443a04a2f21d7a23c59a624c6a4bf1512bcec2aeb513147dd64b545c4a70",
+      "split_projection_sha256": "d4357dc72ba544ce3dc4ef9f4e5084bdac7596f542d68658fdf0817a0ccef6d6"
     },
     {
       "source_id": "openai-ten-proofs-quantum-repetition",
@@ -300,7 +304,8 @@
       "receipt_asset": "openai-ten-proofs-sphere-packing-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-sphere-packing.json",
       "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
-      "fingerprint_sha256": "a4ecbd30db23a4b379500eb594c445ab52b258b0dc51064bf4280b2ada65b19a"
+      "fingerprint_sha256": "a4ecbd30db23a4b379500eb594c445ab52b258b0dc51064bf4280b2ada65b19a",
+      "split_projection_sha256": "6cf96b82a576932b5f12803718911f2ea2309f47205dec119e8975f588248a08"
     },
     {
       "source_id": "sphere-eversion-main",

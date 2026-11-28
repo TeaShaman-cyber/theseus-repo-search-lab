@@ -1,0 +1,613 @@
+{
+  "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+  "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+  "fingerprint_sha256": "c5bf25665d4d22b943e30df80f83773bbb0dc7135ff241ba1056618663ff7d51",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "MulticolorTriangleRamsey"
+    ],
+    "witnesses": [
+      {
+        "declaration": "ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+        "direction": "forward",
+        "neighbor": "ErdosProblems.MulticolourTriangleRamsey.exists_paletteStage_bracket",
+        "source_path": "MulticolorTriangleRamsey.lean"
+      },
+      {
+        "declaration": "ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+        "direction": "forward",
+        "neighbor": "ErdosProblems.MulticolourTriangleRamsey.quantitativeLowerBound_explicit_all",
+        "source_path": "MulticolorTriangleRamsey.lean"
+      }
+    ]
+  },
+  "plan_sha256": "b7ebb6f9cd46ff4f8f52ecdeae723e110b113dd6b94ecf406b3301c9551390ef",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-multicolor",
+  "split_evidence": {
+    "graph": {
+      "edges": 596,
+      "nodes": 163,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_997696f20eea1c63f4151508e53311dd_nodes",
+        "my_db.main.rs_split_997696f20eea1c63f4151508e53311dd_edges",
+        "my_db.main.rs_split_997696f20eea1c63f4151508e53311dd_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+      "database": "repo-search-s-openai-ten-proofs-mul-997696f20eea1c63",
+      "database_id": "01a221d3-4501-762f-8213-dcd71b70467e",
+      "split_projection_sha256": "3d510c9b7a1a3e29faeb177c7f9fba372d8263d647d24c7f25fc3f2be2ee3c8c",
+      "sqlite_bytes": 40697856,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+      "edges": 596,
+      "files": {
+        "edges.csv": {
+          "bytes": 69104,
+          "sha256": "3d0832e57c3c4a12c5488315344b0aea3c409888d8a2a163e33f95f1eb7262f7"
+        },
+        "nodes.csv": {
+          "bytes": 12709,
+          "sha256": "4afd88cc9b13cddbe12fce4d1f4a0dc20999df24afd0509059f65cd54fa7a42b"
+        },
+        "search.sqlite": {
+          "bytes": 40697856,
+          "sha256": "a9180c9028a79e0bac30f0f3ae8d8105e11cd03e2ffce5583c7cf1c67344028a"
+        }
+      },
+      "full_projection_fingerprint": "e1adbe59f6fabdc0c2b71f22bc844d6f0be1d366f613002d64eaac69c628bbb0",
+      "nodes": 163,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "e6c5ed40091d27490755c77cf71189d26e6f7b52fc5d7e0427e92f1af4f8d2d7",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "allColourPaletteRamsey_exponential_bound_sharp",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2592,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2555
+          },
+          {
+            "declaration_hint": "triangleRamseyNumber",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 322,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 320
+          },
+          {
+            "declaration_hint": "triangleRamseyNumber_mono",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_mono",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 383,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 374
+          },
+          {
+            "declaration_hint": "recursivePaletteRamsey_exponential_bound",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.recursivePaletteRamsey_exponential_bound",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2239,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2158
+          },
+          {
+            "declaration_hint": "paletteLogWidth",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteLogWidth",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2242,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2240
+          },
+          {
+            "declaration_hint": "paletteColourCount",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2245,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2243
+          },
+          {
+            "declaration_hint": "paletteLogWidth_two_le",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteLogWidth_two_le",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2248,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2246
+          },
+          {
+            "declaration_hint": "log_le_paletteLogWidth",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.log_le_paletteLogWidth",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2256,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2249
+          },
+          {
+            "declaration_hint": "paletteColourCount_mono",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount_mono",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2380,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2359
+          },
+          {
+            "declaration_hint": "exists_paletteStage_bracket",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.exists_paletteStage_bracket",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2422,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2396
+          },
+          {
+            "declaration_hint": "paletteColourCount_adjacent_scaled_sharp",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount_adjacent_scaled_sharp",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2529,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2482
+          },
+          {
+            "declaration_hint": "palette_exponential_adjacent_transfer_sharp",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.palette_exponential_adjacent_transfer_sharp",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2554,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2530
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 2629,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.exists_paletteStage_bracket"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.log_le_paletteLogWidth"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount_adjacent_scaled_sharp"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount_mono"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteLogWidth"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteLogWidth_two_le"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.palette_exponential_adjacent_transfer_sharp"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.recursivePaletteRamsey_exponential_bound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_mono"
+          }
+        ],
+        "query": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+        "scope_root_modules": [
+          "MulticolorTriangleRamsey"
+        ],
+        "source_id": "openai-ten-proofs-multicolor",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "3d510c9b7a1a3e29faeb177c7f9fba372d8263d647d24c7f25fc3f2be2ee3c8c",
+        "status": "FOUND",
+        "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-multicolor::lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.exists_paletteStage_bracket"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.log_le_paletteLogWidth"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount_adjacent_scaled_sharp"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteColourCount_mono"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteLogWidth"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.paletteLogWidth_two_le"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.palette_exponential_adjacent_transfer_sharp"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.recursivePaletteRamsey_exponential_bound"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_mono"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 596,
+            "projection_nodes": 163,
+            "root": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "scope_root_modules": [
+              "MulticolorTriangleRamsey"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-multicolor",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+            "candidate_id": "openai-ten-proofs-multicolor::lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "allColourPaletteRamsey_exponential_bound_sharp",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2592,
+            "source_id": "openai-ten-proofs-multicolor",
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_row_id": "src:MulticolorTriangleRamsey.lean:2555:2592",
+            "source_start_line": 2555
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ErdosProblems.MulticolourTriangleRamsey.allColourPaletteRamsey_exponential_bound_sharp",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-multicolor",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "triangleRamseyNumber_log_sharp_coefficients",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2877,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2791
+          },
+          {
+            "declaration_hint": "triangleRamseyNumber",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 322,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 320
+          },
+          {
+            "declaration_hint": "triangleRamseyNumber_factorial_upper",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_factorial_upper",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 362,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 333
+          },
+          {
+            "declaration_hint": "quantitativeLowerBound_explicit_all",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.quantitativeLowerBound_explicit_all",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2790,
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_start_line": 2751
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1560,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.quantitativeLowerBound_explicit_all"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_factorial_upper"
+          }
+        ],
+        "query": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+        "scope_root_modules": [
+          "MulticolorTriangleRamsey"
+        ],
+        "source_id": "openai-ten-proofs-multicolor",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "3d510c9b7a1a3e29faeb177c7f9fba372d8263d647d24c7f25fc3f2be2ee3c8c",
+        "status": "FOUND",
+        "target_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-multicolor::lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.quantitativeLowerBound_explicit_all"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_factorial_upper"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 596,
+            "projection_nodes": 163,
+            "root": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "scope_root_modules": [
+              "MulticolorTriangleRamsey"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-multicolor",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "3f2d8edd1077cc4db1d2f991c6d51b0b1259840a83542bf2eb49612335cc9690",
+            "candidate_id": "openai-ten-proofs-multicolor::lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "triangleRamseyNumber_log_sharp_coefficients",
+            "declaration_id": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2877,
+            "source_id": "openai-ten-proofs-multicolor",
+            "source_path": "MulticolorTriangleRamsey.lean",
+            "source_row_id": "src:MulticolorTriangleRamsey.lean:2791:2877",
+            "source_start_line": 2791
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ErdosProblems.MulticolourTriangleRamsey.triangleRamseyNumber_log_sharp_coefficients",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-multicolor",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

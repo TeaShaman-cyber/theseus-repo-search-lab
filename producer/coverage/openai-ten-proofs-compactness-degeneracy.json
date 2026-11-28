@@ -1,0 +1,805 @@
+{
+  "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+  "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+  "fingerprint_sha256": "11d07c3c06204e008c4d9bbe35cbaec3dedc24434f2662df58c22224809d0545",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "CompactnessAndDegeneracy"
+    ],
+    "witnesses": [
+      {
+        "declaration": "CompactnessConjecture.badFourPathTripleWitness_card",
+        "direction": "forward",
+        "neighbor": "CompactnessConjecture.BadFourPathTripleWitness",
+        "source_path": "CompactnessAndDegeneracy.lean"
+      },
+      {
+        "declaration": "TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+        "direction": "forward",
+        "neighbor": "TwoDegenerateGraphs.hammingExpectedRetainedEdgeCount",
+        "source_path": "CompactnessAndDegeneracy.lean"
+      }
+    ]
+  },
+  "plan_sha256": "0c3a0bb1a4099d6324d1f7a5c5e2e06c7713e70dd84870c549a3c2672c53b526",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-compactness-degeneracy",
+  "split_evidence": {
+    "graph": {
+      "edges": 7448,
+      "nodes": 1014,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_2b0e6f3ee8991505799fdf78e5031e27_nodes",
+        "my_db.main.rs_split_2b0e6f3ee8991505799fdf78e5031e27_edges",
+        "my_db.main.rs_split_2b0e6f3ee8991505799fdf78e5031e27_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+      "database": "repo-search-s-openai-ten-proofs-com-2b0e6f3ee8991505",
+      "database_id": "01a221d3-4601-7a6b-ab73-bce5b7f72be9",
+      "split_projection_sha256": "bd95571728cda96a53bd8578a8c509d1167d6ca0abe44520b01e88b94294c3ee",
+      "sqlite_bytes": 40919040,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+      "edges": 7448,
+      "files": {
+        "edges.csv": {
+          "bytes": 870829,
+          "sha256": "0a8eb690c40271100d998d1e0accdc615f6580aa85a1d977b96192410d497163"
+        },
+        "nodes.csv": {
+          "bytes": 61890,
+          "sha256": "1ad3be8cb78f80ce98e6c9e440a1c69fe47acc5fe80cb2115e30e9949a740b13"
+        },
+        "search.sqlite": {
+          "bytes": 40919040,
+          "sha256": "c5b115faa9e8d885c54fe13dc2b800d3296bbd7752896a363ca8051cb6632d4f"
+        }
+      },
+      "full_projection_fingerprint": "6601508dc0f61104386fd2db5ea0d38bcbcbc37715bab94845ec9e8fb484eb7e",
+      "nodes": 1014,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "84ac2831e7ac79f37054358371b236c9b39abf0ff5aed11e95a221c254de9fb2",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "badFourPathTripleWitness_card",
+            "declaration_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 6002,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5985
+          },
+          {
+            "declaration_hint": "CommonNeighborRelated",
+            "declaration_id": "lean:CompactnessConjecture.CommonNeighborRelated",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 3042,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 3039
+          },
+          {
+            "declaration_hint": "UnrelatedFourPathEndpoint",
+            "declaration_id": "lean:CompactnessConjecture.UnrelatedFourPathEndpoint",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 3401,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 3399
+          },
+          {
+            "declaration_hint": "CommonSecondNeighbor",
+            "declaration_id": "lean:CompactnessConjecture.CommonSecondNeighbor",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 3405,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 3402
+          },
+          {
+            "declaration_hint": "unrelatedFourPathEndpointFintype",
+            "declaration_id": "lean:CompactnessConjecture.unrelatedFourPathEndpointFintype",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 3410,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 3406
+          },
+          {
+            "declaration_hint": "commonSecondNeighborFintype",
+            "declaration_id": "lean:CompactnessConjecture.commonSecondNeighborFintype",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 3415,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 3411
+          },
+          {
+            "declaration_hint": "commonSecondNeighborTripleMass",
+            "declaration_id": "lean:CompactnessConjecture.commonSecondNeighborTripleMass",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5011,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5007
+          },
+          {
+            "declaration_hint": "GammaGood",
+            "declaration_id": "lean:CompactnessConjecture.GammaGood",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5146,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5143
+          },
+          {
+            "declaration_hint": "gammaBadVertices",
+            "declaration_id": "lean:CompactnessConjecture.gammaBadVertices",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5444,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5439
+          },
+          {
+            "declaration_hint": "mem_gammaBadVertices",
+            "declaration_id": "lean:CompactnessConjecture.mem_gammaBadVertices",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5448,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5445
+          },
+          {
+            "declaration_hint": "commonSecondNeighborFinset",
+            "declaration_id": "lean:CompactnessConjecture.commonSecondNeighborFinset",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5773,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5766
+          },
+          {
+            "declaration_hint": "commonSecondNeighborFinset_card",
+            "declaration_id": "lean:CompactnessConjecture.commonSecondNeighborFinset_card",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5788,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5782
+          },
+          {
+            "declaration_hint": "BadFourPathTripleWitness",
+            "declaration_id": "lean:CompactnessConjecture.BadFourPathTripleWitness",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5795,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5789
+          },
+          {
+            "declaration_hint": "badFourPathTripleWitnessFintype",
+            "declaration_id": "lean:CompactnessConjecture.badFourPathTripleWitnessFintype",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 5805,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 5801
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 704,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.BadFourPathTripleWitness"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.badFourPathTripleWitnessFintype"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.commonSecondNeighborTripleMass"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.gammaBadVertices"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.BadFourPathTripleWitness"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.CommonNeighborRelated"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.CommonSecondNeighbor"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.GammaGood"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.UnrelatedFourPathEndpoint"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.badFourPathTripleWitnessFintype"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.commonSecondNeighborFinset"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.commonSecondNeighborFinset_card"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.commonSecondNeighborFintype"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.commonSecondNeighborTripleMass"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.gammaBadVertices"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.mem_gammaBadVertices"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "target_id": "lean:CompactnessConjecture.unrelatedFourPathEndpointFintype"
+          }
+        ],
+        "query": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+        "scope_root_modules": [
+          "CompactnessAndDegeneracy"
+        ],
+        "source_id": "openai-ten-proofs-compactness-degeneracy",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "bd95571728cda96a53bd8578a8c509d1167d6ca0abe44520b01e88b94294c3ee",
+        "status": "FOUND",
+        "target_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-compactness-degeneracy::lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.BadFourPathTripleWitness"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.CommonNeighborRelated"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.CommonSecondNeighbor"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.GammaGood"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.UnrelatedFourPathEndpoint"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.badFourPathTripleWitnessFintype"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.commonSecondNeighborFinset"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.commonSecondNeighborFinset_card"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.commonSecondNeighborFintype"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.commonSecondNeighborTripleMass"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.gammaBadVertices"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.mem_gammaBadVertices"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CompactnessConjecture.unrelatedFourPathEndpointFintype"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 7448,
+            "projection_nodes": 1014,
+            "root": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "scope_root_modules": [
+              "CompactnessAndDegeneracy"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-compactness-degeneracy",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+            "candidate_id": "openai-ten-proofs-compactness-degeneracy::lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "badFourPathTripleWitness_card",
+            "declaration_id": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 6002,
+            "source_id": "openai-ten-proofs-compactness-degeneracy",
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_row_id": "src:CompactnessAndDegeneracy.lean:5985:6002",
+            "source_start_line": 5985
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:CompactnessConjecture.badFourPathTripleWitness_card",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-compactness-degeneracy",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "manuscriptSamplingFailureBound_tendsto_zero",
+            "declaration_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 17830,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 17799
+          },
+          {
+            "declaration_hint": "hammingRetentionProbability",
+            "declaration_id": "lean:TwoDegenerateGraphs.hammingRetentionProbability",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 14662,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 14660
+          },
+          {
+            "declaration_hint": "hammingRetentionProbability_mul_wordCount_inv_tendsto_zero",
+            "declaration_id": "lean:TwoDegenerateGraphs.hammingRetentionProbability_mul_wordCount_inv_tendsto_zero",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 14745,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 14734
+          },
+          {
+            "declaration_hint": "hammingExpectedRetainedVertexCount",
+            "declaration_id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedVertexCount",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 15048,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 15042
+          },
+          {
+            "declaration_hint": "hammingExpectedRetainedVertexCount_inv_tendsto_zero",
+            "declaration_id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedVertexCount_inv_tendsto_zero",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 15087,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 15077
+          },
+          {
+            "declaration_hint": "pairLayerExclusionProbability_tendsto_zero",
+            "declaration_id": "lean:TwoDegenerateGraphs.pairLayerExclusionProbability_tendsto_zero",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 15773,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 15759
+          },
+          {
+            "declaration_hint": "hammingExpectedRetainedEdgeCount",
+            "declaration_id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedEdgeCount",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 16210,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 16201
+          },
+          {
+            "declaration_hint": "manuscriptHammingRadius",
+            "declaration_id": "lean:TwoDegenerateGraphs.manuscriptHammingRadius",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 17595,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 17593
+          },
+          {
+            "declaration_hint": "manuscriptExpectedRetainedEdgeCount_inv_tendsto_zero",
+            "declaration_id": "lean:TwoDegenerateGraphs.manuscriptExpectedRetainedEdgeCount_inv_tendsto_zero",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 17788,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 17777
+          },
+          {
+            "declaration_hint": "manuscriptSamplingFailureBound",
+            "declaration_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 17798,
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_start_line": 17789
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1079,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedEdgeCount"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedVertexCount"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedVertexCount_inv_tendsto_zero"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.hammingRetentionProbability"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.hammingRetentionProbability_mul_wordCount_inv_tendsto_zero"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.manuscriptExpectedRetainedEdgeCount_inv_tendsto_zero"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.manuscriptHammingRadius"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "target_id": "lean:TwoDegenerateGraphs.pairLayerExclusionProbability_tendsto_zero"
+          }
+        ],
+        "query": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+        "scope_root_modules": [
+          "CompactnessAndDegeneracy"
+        ],
+        "source_id": "openai-ten-proofs-compactness-degeneracy",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "bd95571728cda96a53bd8578a8c509d1167d6ca0abe44520b01e88b94294c3ee",
+        "status": "FOUND",
+        "target_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-compactness-degeneracy::lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedEdgeCount"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedVertexCount"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.hammingExpectedRetainedVertexCount_inv_tendsto_zero"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.hammingRetentionProbability"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.hammingRetentionProbability_mul_wordCount_inv_tendsto_zero"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.manuscriptExpectedRetainedEdgeCount_inv_tendsto_zero"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.manuscriptHammingRadius"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound"
+              },
+              {
+                "depth": 1,
+                "id": "lean:TwoDegenerateGraphs.pairLayerExclusionProbability_tendsto_zero"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 7448,
+            "projection_nodes": 1014,
+            "root": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "scope_root_modules": [
+              "CompactnessAndDegeneracy"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-compactness-degeneracy",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "56fd3aaaa913054f2ec9f129b3d61ad0c22223d52d2c454a1c0a4ef989e4aba5",
+            "candidate_id": "openai-ten-proofs-compactness-degeneracy::lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "manuscriptSamplingFailureBound_tendsto_zero",
+            "declaration_id": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 17830,
+            "source_id": "openai-ten-proofs-compactness-degeneracy",
+            "source_path": "CompactnessAndDegeneracy.lean",
+            "source_row_id": "src:CompactnessAndDegeneracy.lean:17799:17830",
+            "source_start_line": 17799
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:TwoDegenerateGraphs.manuscriptSamplingFailureBound_tendsto_zero",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-compactness-degeneracy",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
