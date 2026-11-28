@@ -1,0 +1,1166 @@
+{
+  "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+  "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+  "fingerprint_sha256": "3471bd170728e2d5c72505f4eb8a1dbafd16a3c953a70f71f7664d55c94f42ee",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain every accepted lexical chunk, including paths outside the graph; no expansion of accepted declaration authority.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve exact accepted graph and lexical scope in final split migration; witness retrieval, not proof validation.",
+    "required_modules": [
+      "CDCLean.Basic",
+      "CDCLean.CubicBridge",
+      "CDCLean.CubicLabeling",
+      "CDCLean.CubicTheorem",
+      "CDCLean.CycleDecomposition",
+      "CDCLean.EvenCover",
+      "CDCLean.Expansion",
+      "CDCLean.FlowCount",
+      "CDCLean.GeneralGraph",
+      "CDCLean.JaegerKilpatrick",
+      "CDCLean.Main",
+      "CDCLean.NashWilliams",
+      "CDCLean.PathCut",
+      "CDCLean.SixFlow"
+    ],
+    "witnesses": [
+      {
+        "declaration": "CDCLean.cycleDoubleCover_of_bridgeless",
+        "direction": "forward",
+        "neighbor": "CDCLean.CubicGraph",
+        "source_path": "CDCLean/Main.lean"
+      },
+      {
+        "declaration": "CDCLean.cycleDoubleCover_of_gammaFlow",
+        "direction": "forward",
+        "neighbor": "CDCLean.CubicGraph",
+        "source_path": "CDCLean/Main.lean"
+      }
+    ]
+  },
+  "plan_sha256": "552221327eb7a49fe9eda57e3ac080178a920a217f0e893daa6ec6655e574d1a",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-cdc-lean",
+  "split_evidence": {
+    "graph": {
+      "edges": 4562,
+      "nodes": 552,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_f79ddff1c7027c6392e708041b5a09c8_nodes",
+        "my_db.main.rs_split_f79ddff1c7027c6392e708041b5a09c8_edges",
+        "my_db.main.rs_split_f79ddff1c7027c6392e708041b5a09c8_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+      "database": "repo-search-s-openai-cdc-lean-f79ddff1c7027c63",
+      "database_id": "01a2222d-5601-7882-91a9-3aa1d102efe0",
+      "split_projection_sha256": "6f29f9312515e91ffa8f9d22d0efe7103fbe75f2aca6b5711afff6106a3de50d",
+      "sqlite_bytes": 753664,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+      "edges": 4562,
+      "files": {
+        "edges.csv": {
+          "bytes": 532108,
+          "sha256": "399c0cf8ce0dacc486801563d71a1c74964643376d8c2fc73724d5a64b83fa36"
+        },
+        "nodes.csv": {
+          "bytes": 28341,
+          "sha256": "ae732ba104ba0ab4d5950f897c5d48b13e7f2a18d42b8966b4b0a537ab343921"
+        },
+        "search.sqlite": {
+          "bytes": 753664,
+          "sha256": "fea62ecd22261baf83cd28a04a401e69de5a4e304692be25795c40c797709eea"
+        }
+      },
+      "full_projection_fingerprint": "b3b014e2d3dd81ce45963340ef707ad77416b5b47e707b0f467cffd7cbc8c351",
+      "nodes": 552,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "bc89b3847c8322d5c87b23113cd4c99ba1b4971efc47fc2f487bf3a144b6e657",
+      "sources": 379
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "cycleDoubleCover_of_bridgeless",
+            "declaration_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 69,
+            "source_path": "CDCLean/Main.lean",
+            "source_start_line": 54
+          },
+          {
+            "declaration_hint": "F\u2082",
+            "declaration_id": "lean:CDCLean.F\u2082",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 22,
+            "source_path": "CDCLean/Basic.lean",
+            "source_start_line": 20
+          },
+          {
+            "declaration_hint": "Gamma",
+            "declaration_id": "lean:CDCLean.Gamma",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 25,
+            "source_path": "CDCLean/Basic.lean",
+            "source_start_line": 23
+          },
+          {
+            "declaration_hint": "CubicGraph",
+            "declaration_id": "lean:CDCLean.CubicGraph",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 37,
+            "source_path": "CDCLean/Basic.lean",
+            "source_start_line": 26
+          },
+          {
+            "declaration_hint": "toFiniteGraph",
+            "declaration_id": "lean:CDCLean.CubicGraph.toFiniteGraph",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 23,
+            "source_path": "CDCLean/CubicBridge.lean",
+            "source_start_line": 15
+          },
+          {
+            "declaration_hint": "CycleDoubleCover",
+            "declaration_id": "lean:CDCLean.FiniteGraph.CycleDoubleCover",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 106,
+            "source_path": "CDCLean/CycleDecomposition.lean",
+            "source_start_line": 101
+          },
+          {
+            "declaration_hint": "RotationSystem",
+            "declaration_id": "lean:CDCLean.FiniteGraph.RotationSystem",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 27,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 18
+          },
+          {
+            "declaration_hint": "rotationSystemOfBridgeless",
+            "declaration_id": "lean:CDCLean.FiniteGraph.rotationSystemOfBridgeless",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 195,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 192
+          },
+          {
+            "declaration_hint": "ExpandedVertex",
+            "declaration_id": "lean:CDCLean.FiniteGraph.ExpandedVertex",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 198,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 196
+          },
+          {
+            "declaration_hint": "ExpandedEdge",
+            "declaration_id": "lean:CDCLean.FiniteGraph.ExpandedEdge",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 203,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 199
+          },
+          {
+            "declaration_hint": "cubicExpansion",
+            "declaration_id": "lean:CDCLean.FiniteGraph.cubicExpansion",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 250,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 240
+          },
+          {
+            "declaration_hint": "cubicExpansion_bridgeless",
+            "declaration_id": "lean:CDCLean.FiniteGraph.cubicExpansion_bridgeless",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 413,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 405
+          },
+          {
+            "declaration_hint": "FiniteGraph",
+            "declaration_id": "lean:CDCLean.FiniteGraph",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 24,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 15
+          },
+          {
+            "declaration_hint": "HalfEdge",
+            "declaration_id": "lean:CDCLean.FiniteGraph.HalfEdge",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 27,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 25
+          },
+          {
+            "declaration_hint": "Bridgeless",
+            "declaration_id": "lean:CDCLean.FiniteGraph.Bridgeless",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 52,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 49
+          },
+          {
+            "declaration_hint": "NowhereZeroFlow",
+            "declaration_id": "lean:CDCLean.FiniteGraph.NowhereZeroFlow",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 72,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 67
+          },
+          {
+            "declaration_hint": "jaegerKilpatrickEightFlow",
+            "declaration_id": "lean:CDCLean.FiniteGraph.jaegerKilpatrickEightFlow",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 1223,
+            "source_path": "CDCLean/JaegerKilpatrick.lean",
+            "source_start_line": 1202
+          },
+          {
+            "declaration_hint": "cycleDoubleCover_of_gammaFlow",
+            "declaration_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 53,
+            "source_path": "CDCLean/Main.lean",
+            "source_start_line": 41
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1477,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.Bridgeless"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.CycleDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.CubicGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.CubicGraph.toFiniteGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.Bridgeless"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.CycleDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.ExpandedEdge"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.ExpandedVertex"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.HalfEdge"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.NowhereZeroFlow"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.RotationSystem"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.cubicExpansion"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.cubicExpansion_bridgeless"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.jaegerKilpatrickEightFlow"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.FiniteGraph.rotationSystemOfBridgeless"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.F\u2082"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.Gamma"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "target_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow"
+          }
+        ],
+        "query": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+        "scope_root_modules": [
+          "CDCLean"
+        ],
+        "source_id": "openai-cdc-lean",
+        "source_kind": "git",
+        "source_revision": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+        "split_projection_sha256": "6f29f9312515e91ffa8f9d22d0efe7103fbe75f2aca6b5711afff6106a3de50d",
+        "status": "FOUND",
+        "target_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+            "backend": "kusto",
+            "candidate_id": "openai-cdc-lean::lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.CubicGraph"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.CubicGraph.toFiniteGraph"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.Bridgeless"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.CycleDoubleCover"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.ExpandedEdge"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.ExpandedVertex"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.HalfEdge"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.NowhereZeroFlow"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.RotationSystem"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.cubicExpansion"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.cubicExpansion_bridgeless"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.jaegerKilpatrickEightFlow"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.rotationSystemOfBridgeless"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.F\u2082"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.Gamma"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 4562,
+            "projection_nodes": 552,
+            "root": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "scope_root_modules": [
+              "CDCLean"
+            ],
+            "source_authority": null,
+            "source_id": "openai-cdc-lean",
+            "source_kind": "git",
+            "source_revision": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+            "candidate_id": "openai-cdc-lean::lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "cycleDoubleCover_of_bridgeless",
+            "declaration_id": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 69,
+            "source_id": "openai-cdc-lean",
+            "source_path": "CDCLean/Main.lean",
+            "source_row_id": "src:CDCLean/Main.lean:54:69",
+            "source_start_line": 54
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:CDCLean.cycleDoubleCover_of_bridgeless",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-cdc-lean",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "chunks": [
+          {
+            "declaration_hint": "cycleDoubleCover_of_gammaFlow",
+            "declaration_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 53,
+            "source_path": "CDCLean/Main.lean",
+            "source_start_line": 41
+          },
+          {
+            "declaration_hint": "F\u2082",
+            "declaration_id": "lean:CDCLean.F\u2082",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 22,
+            "source_path": "CDCLean/Basic.lean",
+            "source_start_line": 20
+          },
+          {
+            "declaration_hint": "Gamma",
+            "declaration_id": "lean:CDCLean.Gamma",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 25,
+            "source_path": "CDCLean/Basic.lean",
+            "source_start_line": 23
+          },
+          {
+            "declaration_hint": "CubicGraph",
+            "declaration_id": "lean:CDCLean.CubicGraph",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 37,
+            "source_path": "CDCLean/Basic.lean",
+            "source_start_line": 26
+          },
+          {
+            "declaration_hint": "toFiniteGraph",
+            "declaration_id": "lean:CDCLean.CubicGraph.toFiniteGraph",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 23,
+            "source_path": "CDCLean/CubicBridge.lean",
+            "source_start_line": 15
+          },
+          {
+            "declaration_hint": "gammaFlowOfNowhereZero",
+            "declaration_id": "lean:CDCLean.CubicGraph.gammaFlowOfNowhereZero",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 61,
+            "source_path": "CDCLean/CubicBridge.lean",
+            "source_start_line": 40
+          },
+          {
+            "declaration_hint": "CycleDoubleCover",
+            "declaration_id": "lean:CDCLean.FiniteGraph.CycleDoubleCover",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 106,
+            "source_path": "CDCLean/CycleDecomposition.lean",
+            "source_start_line": 101
+          },
+          {
+            "declaration_hint": "IndexedEvenDoubleCover",
+            "declaration_id": "lean:CDCLean.IndexedEvenDoubleCover",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 22,
+            "source_path": "CDCLean/EvenCover.lean",
+            "source_start_line": 16
+          },
+          {
+            "declaration_hint": "cubic_even_double_cover",
+            "declaration_id": "lean:CDCLean.cubic_even_double_cover",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 44,
+            "source_path": "CDCLean/EvenCover.lean",
+            "source_start_line": 30
+          },
+          {
+            "declaration_hint": "RotationSystem",
+            "declaration_id": "lean:CDCLean.FiniteGraph.RotationSystem",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 27,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 18
+          },
+          {
+            "declaration_hint": "ExpandedVertex",
+            "declaration_id": "lean:CDCLean.FiniteGraph.ExpandedVertex",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 198,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 196
+          },
+          {
+            "declaration_hint": "ExpandedEdge",
+            "declaration_id": "lean:CDCLean.FiniteGraph.ExpandedEdge",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 203,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 199
+          },
+          {
+            "declaration_hint": "cubicExpansion",
+            "declaration_id": "lean:CDCLean.FiniteGraph.cubicExpansion",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 250,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 240
+          },
+          {
+            "declaration_hint": "projectEvenDoubleCover",
+            "declaration_id": "lean:CDCLean.FiniteGraph.projectEvenDoubleCover",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 494,
+            "source_path": "CDCLean/Expansion.lean",
+            "source_start_line": 482
+          },
+          {
+            "declaration_hint": "FiniteGraph",
+            "declaration_id": "lean:CDCLean.FiniteGraph",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 24,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 15
+          },
+          {
+            "declaration_hint": "HalfEdge",
+            "declaration_id": "lean:CDCLean.FiniteGraph.HalfEdge",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 27,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 25
+          },
+          {
+            "declaration_hint": "NowhereZeroFlow",
+            "declaration_id": "lean:CDCLean.FiniteGraph.NowhereZeroFlow",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 72,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 67
+          },
+          {
+            "declaration_hint": "IndexedEvenDoubleCover",
+            "declaration_id": "lean:CDCLean.FiniteGraph.IndexedEvenDoubleCover",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 91,
+            "source_path": "CDCLean/GeneralGraph.lean",
+            "source_start_line": 78
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1527,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.CubicGraph.toFiniteGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.CycleDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.ExpandedEdge"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.ExpandedVertex"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.HalfEdge"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.NowhereZeroFlow"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.RotationSystem"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.cubicExpansion"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.F\u2082"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.Gamma"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.CubicGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.CubicGraph.gammaFlowOfNowhereZero"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.CubicGraph.toFiniteGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.CycleDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.ExpandedEdge"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.ExpandedVertex"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.HalfEdge"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.IndexedEvenDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.IndexedEvenDoubleCover.toCycleDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.NowhereZeroFlow"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.RotationSystem"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.cubicExpansion"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.FiniteGraph.projectEvenDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.F\u2082"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.Gamma"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.IndexedEvenDoubleCover"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "target_id": "lean:CDCLean.cubic_even_double_cover"
+          }
+        ],
+        "query": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+        "scope_root_modules": [
+          "CDCLean"
+        ],
+        "source_id": "openai-cdc-lean",
+        "source_kind": "git",
+        "source_revision": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+        "split_projection_sha256": "6f29f9312515e91ffa8f9d22d0efe7103fbe75f2aca6b5711afff6106a3de50d",
+        "status": "FOUND",
+        "target_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "7c5dc04ed2d56593144017373bee8176689df90e00b1b4f8bc7c4a6c5af7776b",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+            "backend": "kusto",
+            "candidate_id": "openai-cdc-lean::lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.CubicGraph"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.CubicGraph.gammaFlowOfNowhereZero"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.CubicGraph.toFiniteGraph"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.CycleDoubleCover"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.ExpandedEdge"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.ExpandedVertex"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.HalfEdge"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.IndexedEvenDoubleCover"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.IndexedEvenDoubleCover.toCycleDoubleCover"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.NowhereZeroFlow"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.RotationSystem"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.cubicExpansion"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.FiniteGraph.projectEvenDoubleCover"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.F\u2082"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.Gamma"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.IndexedEvenDoubleCover"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CDCLean.cubic_even_double_cover"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 4562,
+            "projection_nodes": 552,
+            "root": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "scope_root_modules": [
+              "CDCLean"
+            ],
+            "source_authority": null,
+            "source_id": "openai-cdc-lean",
+            "source_kind": "git",
+            "source_revision": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "154e254c84a94b262f8df022e5e81bea4ee544677830a7de6e1d44b2ea15d978",
+            "candidate_id": "openai-cdc-lean::lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "cycleDoubleCover_of_gammaFlow",
+            "declaration_id": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "577e9d9ea326d520f80672ee69b830bf1d513df5",
+            "source_end_line": 53,
+            "source_id": "openai-cdc-lean",
+            "source_path": "CDCLean/Main.lean",
+            "source_row_id": "src:CDCLean/Main.lean:41:53",
+            "source_start_line": 41
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:CDCLean.cycleDoubleCover_of_gammaFlow",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-cdc-lean",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
