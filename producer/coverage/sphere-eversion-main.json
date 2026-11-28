@@ -1,6 +1,6 @@
 {
   "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
-  "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+  "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
   "fingerprint_sha256": "2314f870187d7b003fcc49783e6e4723826d88bae6a697e93cc8f69cafc65563",
   "plan": {
     "excluded_raw_declarations": {},
@@ -79,11 +79,54 @@
   "plan_sha256": "dfe9f1550d2317cea607b63a3cf829ebf154ec7ec9f072ab0cd4f6e799f12c2d",
   "schema": "theseus.corpus-selection-coverage.v1",
   "source_id": "sphere-eversion-main",
+  "split_evidence": {
+    "graph": {
+      "edges": 10947,
+      "nodes": 1552,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_62d034d02e99c182f67611c38031e4a2_nodes",
+        "my_db.main.rs_split_62d034d02e99c182f67611c38031e4a2_edges",
+        "my_db.main.rs_split_62d034d02e99c182f67611c38031e4a2_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+      "database": "repo-search-s-sphere-eversion-main-62d034d02e99c182",
+      "database_id": "01a22220-6a01-73bd-b013-ca321e2c33d7",
+      "split_projection_sha256": "85a34a09851415611bd3d90bd869e901b332564d51454072ae02f3eb824859b6",
+      "sqlite_bytes": 1802240,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
+      "edges": 10947,
+      "files": {
+        "edges.csv": {
+          "bytes": 1466264,
+          "sha256": "dc26d27ffa65ed0be08b7f96cf6337c55e0899d44f66bde6a0277541057dc7ac"
+        },
+        "nodes.csv": {
+          "bytes": 70129,
+          "sha256": "4062659aa8c256a1e1587f353e24623dd6a1a03459353a3679b1fc66121429d0"
+        },
+        "search.sqlite": {
+          "bytes": 1802240,
+          "sha256": "5d9250d24531f2a05599d210599b6728f27841061430b7aedd5eee9a35a22c8b"
+        }
+      },
+      "full_projection_fingerprint": "01f2f18373264d9db18d8bedfbe05f46effb6d51c3ba00e23d93b2a7e503753b",
+      "nodes": 1552,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "496a85fc90dcc08bd21c6d88709bb0c01e1c4cfbc595ec23628b47d5fbdeb4f1",
+      "sources": 1149
+    }
+  },
   "witnesses": [
     {
       "context": {
         "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "chunks": [
           {
             "declaration_hint": "Smale",
@@ -121,6 +164,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 928,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [
           {
             "depth": 1,
@@ -188,13 +232,14 @@
         "source_id": "sphere-eversion-main",
         "source_kind": "git",
         "source_revision": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+        "split_projection_sha256": "85a34a09851415611bd3d90bd869e901b332564d51454072ae02f3eb824859b6",
         "status": "FOUND",
         "target_id": "lean:SphereEversion.Main.Smale",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,
@@ -323,7 +368,7 @@
     {
       "context": {
         "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "chunks": [
           {
             "declaration_hint": "OneJetSec.localize",
@@ -391,6 +436,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 1147,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [
           {
             "depth": 1,
@@ -554,13 +600,14 @@
         "source_id": "sphere-eversion-main",
         "source_kind": "git",
         "source_revision": "33ab3d626854a0f0f04ed5772e3102d652e96475",
+        "split_projection_sha256": "85a34a09851415611bd3d90bd869e901b332564d51454072ae02f3eb824859b6",
         "status": "FOUND",
         "target_id": "lean:OneJetSec.localize",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,

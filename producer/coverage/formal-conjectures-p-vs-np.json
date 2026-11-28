@@ -1,6 +1,6 @@
 {
   "artifact_identity": "23733a97119fe99ac175f8bf781141c74036ce5016420fa8185ae4ce6cda4d99",
-  "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+  "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
   "fingerprint_sha256": "a986944bb8c5f5fad9af3c59ad86ef351e10a7dc0cec301399015f8e6d09a2df",
   "plan": {
     "excluded_raw_declarations": {},
@@ -163,8 +163,8 @@
       "FormalConjecturesForMathlib.Geometry.Manifold.LieGroupPresentation": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.Geometry.Metric": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.Geometry.OrdinaryLines": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
-      "FormalConjecturesForMathlib.Geometry.«2d»": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
-      "FormalConjecturesForMathlib.Geometry.«3d»": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
+      "FormalConjecturesForMathlib.Geometry.\u00ab2d\u00bb": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
+      "FormalConjecturesForMathlib.Geometry.\u00ab3d\u00bb": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.GroupTheory.DerivedLength": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.GroupTheory.ElementOrders": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.GroupTheory.GroupAction.InvolutionFixedPoints": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
@@ -302,11 +302,54 @@
   "plan_sha256": "d065ba1fe7765a91ae789d4491c7d32ae14e0a095ca757843f82d0430530710c",
   "schema": "theseus.corpus-selection-coverage.v1",
   "source_id": "formal-conjectures-p-vs-np",
+  "split_evidence": {
+    "graph": {
+      "edges": 2,
+      "nodes": 7,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_87541dfd20256797c665261c3ef6c988_nodes",
+        "my_db.main.rs_split_87541dfd20256797c665261c3ef6c988_edges",
+        "my_db.main.rs_split_87541dfd20256797c665261c3ef6c988_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "23733a97119fe99ac175f8bf781141c74036ce5016420fa8185ae4ce6cda4d99",
+      "database": "repo-search-s-formal-conjectures-p-87541dfd20256797",
+      "database_id": "01a22220-0f01-750c-b53b-f5f542a7b7a0",
+      "split_projection_sha256": "ae4177da9cffcd4849fa2cfe80f7b865a1ba204b4eac4fa201df086b5681ed73",
+      "sqlite_bytes": 2232320,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "23733a97119fe99ac175f8bf781141c74036ce5016420fa8185ae4ce6cda4d99",
+      "edges": 2,
+      "files": {
+        "edges.csv": {
+          "bytes": 283,
+          "sha256": "dd309fdd7208023f62f24f84ac2ae9c06a2272bf71e0b848aac063ffce089b6a"
+        },
+        "nodes.csv": {
+          "bytes": 256,
+          "sha256": "439460882ad243a057437d93c36793d5b94e535c7cb9be261442de58043c4f92"
+        },
+        "search.sqlite": {
+          "bytes": 2232320,
+          "sha256": "29ac17b95c5df94ec1fca9d8a5f7be569c77f61a4b5bcb620ede8d0e2f030983"
+        }
+      },
+      "full_projection_fingerprint": "fed72410fa3b9dc0a127939e39656f8793bf5ff131a9ca56fb51a3cf9f87707e",
+      "nodes": 7,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "7bd074d905c1a496fc10372f53bf2c3a6afe87066c52ae7b23397fac5103fe28",
+      "sources": 1952
+    }
+  },
   "witnesses": [
     {
       "context": {
         "artifact_identity": "23733a97119fe99ac175f8bf781141c74036ce5016420fa8185ae4ce6cda4d99",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "chunks": [
           {
             "declaration_hint": "P_ne_NP",
@@ -324,6 +367,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 42,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [],
         "query": "lean:ComplexityTheory.P_ne_NP",
         "scope_root_modules": [
@@ -332,13 +376,14 @@
         "source_id": "formal-conjectures-p-vs-np",
         "source_kind": "git",
         "source_revision": "ea8e3e198ded6fc73efb7f5653b74b28ac4ae1a8",
+        "split_projection_sha256": "ae4177da9cffcd4849fa2cfe80f7b865a1ba204b4eac4fa201df086b5681ed73",
         "status": "FOUND",
         "target_id": "lean:ComplexityTheory.P_ne_NP",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,
@@ -404,7 +449,7 @@
     {
       "context": {
         "artifact_identity": "23733a97119fe99ac175f8bf781141c74036ce5016420fa8185ae4ce6cda4d99",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "chunks": [
           {
             "declaration_hint": "P_subset_NP",
@@ -422,6 +467,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 31,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [],
         "query": "lean:ComplexityTheory.P_subset_NP",
         "scope_root_modules": [
@@ -430,13 +476,14 @@
         "source_id": "formal-conjectures-p-vs-np",
         "source_kind": "git",
         "source_revision": "ea8e3e198ded6fc73efb7f5653b74b28ac4ae1a8",
+        "split_projection_sha256": "ae4177da9cffcd4849fa2cfe80f7b865a1ba204b4eac4fa201df086b5681ed73",
         "status": "FOUND",
         "target_id": "lean:ComplexityTheory.P_subset_NP",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,

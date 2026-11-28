@@ -1,6 +1,6 @@
 {
   "artifact_identity": "e6f46dcbbaeca2c6431fb78b373cea380b26a7327109a377cc8bd1c885d5a5b1",
-  "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+  "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
   "fingerprint_sha256": "389145de4e597fa025f6453a8a54de3e63ffe0116223c7eb8e51397dc49d6790",
   "plan": {
     "excluded_raw_declarations": {},
@@ -165,8 +165,8 @@
       "FormalConjecturesForMathlib.Geometry.Manifold.LieGroupPresentation": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.Geometry.Metric": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.Geometry.OrdinaryLines": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
-      "FormalConjecturesForMathlib.Geometry.«2d»": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
-      "FormalConjecturesForMathlib.Geometry.«3d»": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
+      "FormalConjecturesForMathlib.Geometry.\u00ab2d\u00bb": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
+      "FormalConjecturesForMathlib.Geometry.\u00ab3d\u00bb": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.GroupTheory.DerivedLength": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.GroupTheory.ElementOrders": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
       "FormalConjecturesForMathlib.GroupTheory.GroupAction.InvolutionFixedPoints": "Imported support or reference module outside the deliberately single-file statement graph; not a proof-corpus claim.",
@@ -298,11 +298,54 @@
   "plan_sha256": "75137815cfb00c95c63ead487368bb8c84943b344b80823636db42cd855e6349",
   "schema": "theseus.corpus-selection-coverage.v1",
   "source_id": "formal-conjectures-bsd",
+  "split_evidence": {
+    "graph": {
+      "edges": 13,
+      "nodes": 8,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_0db9ba355777fb9015747c95e5462c94_nodes",
+        "my_db.main.rs_split_0db9ba355777fb9015747c95e5462c94_edges",
+        "my_db.main.rs_split_0db9ba355777fb9015747c95e5462c94_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "e6f46dcbbaeca2c6431fb78b373cea380b26a7327109a377cc8bd1c885d5a5b1",
+      "database": "repo-search-s-formal-conjectures-bs-0db9ba355777fb90",
+      "database_id": "01a22220-1801-7812-835d-960570730a2b",
+      "split_projection_sha256": "259ac87e88b612c67b6cf4af5eb8f12da81f52ae58444b9da8969d571e82c250",
+      "sqlite_bytes": 3919872,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "e6f46dcbbaeca2c6431fb78b373cea380b26a7327109a377cc8bd1c885d5a5b1",
+      "edges": 13,
+      "files": {
+        "edges.csv": {
+          "bytes": 1525,
+          "sha256": "2cd86b401e870b2fd5a11cbf6b62245070c7cd98fb019062c8267196d42210ff"
+        },
+        "nodes.csv": {
+          "bytes": 424,
+          "sha256": "e4fa7c395868a4ae50c8cacf26f5f7ec48ca157f1ec22e13d5ba98d5348c3c33"
+        },
+        "search.sqlite": {
+          "bytes": 3919872,
+          "sha256": "5b9acea9b43ebe72c4a87923bc7e082599eb4ea7a1a0554ebed226b2e1b4638d"
+        }
+      },
+      "full_projection_fingerprint": "e346ca5b54c2fe8c180b9e554a75b68576b7389d7909c5bf8b58b3b60b0d7f19",
+      "nodes": 8,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "b91c0dd58a562930e9e6471b63e48c33a6d32ba0915c89a70a6f86ab6e5fabc3",
+      "sources": 3433
+    }
+  },
   "witnesses": [
     {
       "context": {
         "artifact_identity": "e6f46dcbbaeca2c6431fb78b373cea380b26a7327109a377cc8bd1c885d5a5b1",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "chunks": [
           {
             "declaration_hint": "WeierstrassCurve.Affine.NumberField.weakBSD",
@@ -330,6 +373,7 @@
         "dependency_boundary": "internal_only",
         "estimated_tokens": 252,
         "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
         "graph_edges": [
           {
             "depth": 1,
@@ -355,13 +399,14 @@
         "source_id": "formal-conjectures-bsd",
         "source_kind": "git",
         "source_revision": "ea8e3e198ded6fc73efb7f5653b74b28ac4ae1a8",
+        "split_projection_sha256": "259ac87e88b612c67b6cf4af5eb8f12da81f52ae58444b9da8969d571e82c250",
         "status": "FOUND",
         "target_id": "lean:WeierstrassCurve.Affine.NumberField.weakBSD",
         "token_estimate_method": "ceil(chars/4)"
       },
       "graph_search": {
         "backend": "turso+kusto",
-        "catalog_sha256": "cdc72c725676cf50f96b9bcee36a2b41374e7c320c2e5381ae7548d3aab757e1",
+        "catalog_sha256": "adb338be74d812e68d4f2e7e3f63d1a6c6173685eed2205c0c51b3a9673271f8",
         "graph_coverage": "selected_lexical_declaration_seeds",
         "graph_limit_per_seed": 50,
         "graph_seeds": 1,

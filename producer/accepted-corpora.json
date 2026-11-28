@@ -46,7 +46,8 @@
       "receipt_asset": "formal-conjectures-bsd-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-bsd.json",
       "artifact_identity": "e6f46dcbbaeca2c6431fb78b373cea380b26a7327109a377cc8bd1c885d5a5b1",
-      "fingerprint_sha256": "389145de4e597fa025f6453a8a54de3e63ffe0116223c7eb8e51397dc49d6790"
+      "fingerprint_sha256": "389145de4e597fa025f6453a8a54de3e63ffe0116223c7eb8e51397dc49d6790",
+      "split_projection_sha256": "259ac87e88b612c67b6cf4af5eb8f12da81f52ae58444b9da8969d571e82c250"
     },
     {
       "source_id": "formal-conjectures-navier-stokes",
@@ -64,7 +65,8 @@
       "receipt_asset": "formal-conjectures-p-vs-np-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-p-vs-np.json",
       "artifact_identity": "23733a97119fe99ac175f8bf781141c74036ce5016420fa8185ae4ce6cda4d99",
-      "fingerprint_sha256": "a986944bb8c5f5fad9af3c59ad86ef351e10a7dc0cec301399015f8e6d09a2df"
+      "fingerprint_sha256": "a986944bb8c5f5fad9af3c59ad86ef351e10a7dc0cec301399015f8e6d09a2df",
+      "split_projection_sha256": "ae4177da9cffcd4849fa2cfe80f7b865a1ba204b4eac4fa201df086b5681ed73"
     },
     {
       "source_id": "formal-conjectures-poincare-statement",
@@ -101,7 +103,8 @@
       "receipt_asset": "formal-conjectures-zeta-moments-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-zeta-moments.json",
       "artifact_identity": "8614fceceabc4d599200e1eb1f9ff13ad5f20dd5753a6ffbdba39ecc9e965ada",
-      "fingerprint_sha256": "fa3f4d46f3a3b1ccc3fb8ce5120df8017895bd53689524ab431095e591eb8adc"
+      "fingerprint_sha256": "fa3f4d46f3a3b1ccc3fb8ce5120df8017895bd53689524ab431095e591eb8adc",
+      "split_projection_sha256": "0a224cc5feb6d325da72019bf9964b58c5b6c965e7fbb6173b8f6080a9831841"
     },
     {
       "source_id": "formal-conjectures-zeta-zeros",
@@ -110,7 +113,8 @@
       "receipt_asset": "formal-conjectures-zeta-zeros-release-receipt.json",
       "source_descriptor": "producer/sources/formal-conjectures-zeta-zeros.json",
       "artifact_identity": "bce024f4450c928b2537c9264f9a75b379d00b8a228b196e94475d9dc97a3fa2",
-      "fingerprint_sha256": "d1638e336bfcb8f17123e410836c803004e21949f7706bd1ead3d5b5c3ce6252"
+      "fingerprint_sha256": "d1638e336bfcb8f17123e410836c803004e21949f7706bd1ead3d5b5c3ce6252",
+      "split_projection_sha256": "47966df38fa7a0b675dc91b08f1e9a0b073ae11d7cda22c8b321f3cb164438c0"
     },
     {
       "source_id": "imperial-flt-partial",
@@ -319,7 +323,8 @@
       "source_descriptor": "producer/sources/sphere-eversion-main.json",
       "artifact_identity": "37e76b8ebaecb87adcc1690235bdefe326828b4a986c5884ee1db5c80e73d235",
       "fingerprint_sha256": "2314f870187d7b003fcc49783e6e4723826d88bae6a697e93cc8f69cafc65563",
-      "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
+      "runner_config": "producer/runners/leandepviz-lean436-adapted.json",
+      "split_projection_sha256": "85a34a09851415611bd3d90bd869e901b332564d51454072ae02f3eb824859b6"
     },
     {
       "source_id": "zeta23",
