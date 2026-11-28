@@ -97,3 +97,12 @@ The receipt is a trusted-local-runtime corruption check, not protection
 against an adversary who can rewrite both files. Full graph row verification
 is performed during preparation. Local cache lifecycle and cold recovery
 must be checked before retiring the previous full cloud target.
+
+The successful output of `materialize-corpus` (status READY) is accepted
+directly by `scripts/check_corpus_selection.py record-live --split-evidence
+<receipt.json>` along with the catalog, source ID, coverage plan and output
+path. The coverage record keeps the split/search/graph evidence, not local
+runtime paths. Successful search evidence requires the stable provider DB ID.
+The ordinary `sync-turso-catalog` command also handles selected split entries
+using their pinned search projection; it never recreates a full Turso graph.
+Use `--duckdb` or `REPO_SEARCH_DUCKDB` for a custom native executable.

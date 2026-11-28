@@ -146,7 +146,8 @@
       "source_descriptor": "producer/sources/leanprover-community-riemann-readable.json",
       "artifact_identity": "6ee2f773cf70114e9ae09b67b56bca07143f2d36b7a137705eb60d96e1e9b5c2",
       "fingerprint_sha256": "77258a125b585577fdf152d8c8008af8dd5857a58f36724e192a74e7e35e68b9",
-      "runner_config": "producer/runners/leandepviz-lean436-adapted.json"
+      "runner_config": "producer/runners/leandepviz-lean436-adapted.json",
+      "split_projection_sha256": "24d07cd55bd158d0d2c12bc41988b0a04e0da460a4dcbff607d1f3a76fede4d8"
     },
     {
       "source_id": "openai-cdc-lean",
@@ -182,7 +183,8 @@
       "receipt_asset": "openai-matrix-exponent-release-receipt.json",
       "source_descriptor": "producer/sources/openai-matrix-exponent.json",
       "artifact_identity": "db43e3627eeb6d8ffb1c2a1b8db69c46eea2cc354994d2205429d3259e5f78b0",
-      "fingerprint_sha256": "3305095057197a44b5497e3279e2efa4ba870f3571c865c6836c1d4ff928519c"
+      "fingerprint_sha256": "3305095057197a44b5497e3279e2efa4ba870f3571c865c6836c1d4ff928519c",
+      "split_projection_sha256": "6c848a462e1d9d26ba440ce44e0ad062e9a1470d90e907a1811fee10dcd591ea"
     },
     {
       "source_id": "openai-navier-stokes",
