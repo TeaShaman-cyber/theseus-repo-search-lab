@@ -47,7 +47,12 @@ from .producer_config import (
     load_lean_source,
 )
 from .projection import QueryConnection, build_projection, read_projection_provenance
-from .query_capabilities import QUERY_DESCRIPTION, operation_help, query_capabilities
+from .query_capabilities import (
+    QUERY_DESCRIPTION,
+    operation_help,
+    query_capabilities,
+    query_startup,
+)
 from .retrieval import SearchHit
 from .retrieval import context as build_context
 from .retrieval import search as search_repo
@@ -1055,12 +1060,18 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
         return 0
     catalog_path = args.catalog or os.environ.get("REPO_SEARCH_CATALOG")
     if not catalog_path:
+        if args.operation == "startup":
+            _emit(query_startup(None))
+            return 0
         raise RepoSearchError("BLOCKED_QUERY_PROFILE", "set REPO_SEARCH_CATALOG or --catalog")
     args.catalog = Path(catalog_path)
     try:
         catalog = load_accepted_catalog(args.catalog)
     except (OSError, TypeError, ValueError) as exc:
         raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "accepted corpus catalog invalid") from exc
+    if args.operation == "startup":
+        _emit(query_startup(catalog))
+        return 0
     if args.operation == "corpora":
         _emit({"status": "FOUND", "availability": "NOT_CHECKED",
                "catalog_sha256": accepted_catalog_sha256(catalog),
@@ -1118,7 +1129,7 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
 
 
 def _add_agent_query(subparsers) -> None:
-    parser = subparsers.add_parser("query", help="read-only mathematical research (start with query capabilities)",
+    parser = subparsers.add_parser("query", help="read-only mathematical research (start with query startup)",
                                    description=QUERY_DESCRIPTION)
     parser.add_argument("--catalog", type=Path)
     parser.add_argument("--duckdb")
@@ -1127,6 +1138,7 @@ def _add_agent_query(subparsers) -> None:
     parser.add_argument("--platform-token-env")
     parser.set_defaults(func=_cmd_agent_query)
     ops = parser.add_subparsers(dest="operation", required=True)
+    ops.add_parser("startup", help=operation_help("startup"), description=operation_help("startup"))
     ops.add_parser("capabilities", help=operation_help("capabilities"), description=operation_help("capabilities"))
     ops.add_parser("corpora", help=operation_help("corpora"), description=operation_help("corpora"))
     overlap = ops.add_parser("overlap", help=operation_help("overlap"), description=operation_help("overlap"))

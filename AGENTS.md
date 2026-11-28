@@ -42,8 +42,13 @@ not a replacement for that scope.
   Record intended graph scope, explicit exclusions, and meaningful live
   Turso+Kusto witnesses before changing the accepted catalog. Do not equate
   graph availability or count parity with mathematical coverage.
-- **Research query discovery:** start with `repo-search query capabilities` or
-  `query --help`. Select by research intent: `graph-search` for structural
+- **Startup and whole-system reports:** run `./tools/repo-search query startup`
+  at task start/resume and before whole-system reports. It lists all components,
+  current local catalog counts, routes and checks without network access. Cover
+  every listed component in system reports, marking unverified health explicitly.
+  Run only task-relevant live checks; startup is not a health probe.
+- **Research query discovery:** use `repo-search query capabilities` or
+  `query --help` for details. Select by research intent: `graph-search` for structural
   discovery, `reach/reach-all` for known roots, `context` for source evidence,
   `search` for text only. Do not rely on remembering database names; inspect
   returned coverage and evidence boundaries.
