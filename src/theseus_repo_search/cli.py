@@ -966,13 +966,14 @@ def _cmd_turso_graph(args: argparse.Namespace, *, catalog: AcceptedCatalog | Non
     if item is None:
         raise RepoSearchError("BLOCKED_ACCEPTED_CATALOG", "source not in accepted catalog")
     db: Path | None = None
+    executable = getattr(args, "duckdb", None) or os.environ.get("REPO_SEARCH_DUCKDB", "duckdb")
     if item.split_projection_sha256 is not None:
         cache = Path(os.environ.get("REPO_SEARCH_GRAPH_CACHE", str(Path.home() / ".cache/theseus-repo-search")))
         db = ensure_serving_graph(catalog, item, repository_root=args.catalog.resolve().parent.parent,
-                                  cache_root=cache)
+                                  cache_root=cache, executable=executable)
     conn: QueryConnection = connect_corpus(item, _turso_client(args))
     if db is not None:
-        conn = SplitGraphConnection(conn, db)
+        conn = SplitGraphConnection(conn, db, executable=executable)
     with (conn if isinstance(conn, SplitGraphConnection) else nullcontext(conn)):
         result = query_graph(conn, args.operation, args.name, target=args.target, depth=args.depth,
                              max_edges=args.max_edges, token_budget=args.token_budget)
@@ -1098,6 +1099,7 @@ def _cmd_agent_query(args: argparse.Namespace) -> int:
 def _add_agent_query(subparsers) -> None:
     parser = subparsers.add_parser("query", help="unified read-only accepted-corpus interface")
     parser.add_argument("--catalog", type=Path)
+    parser.add_argument("--duckdb")
     parser.add_argument("--organization")
     parser.add_argument("--platform-base-url")
     parser.add_argument("--platform-token-env")
@@ -1340,6 +1342,7 @@ def build_parser() -> argparse.ArgumentParser:
     turso_graph.add_argument("--depth", type=int, default=1)
     turso_graph.add_argument("--max-edges", type=int, default=200)
     turso_graph.add_argument("--token-budget", type=int, default=4000)
+    turso_graph.add_argument("--duckdb")
     turso_graph.set_defaults(func=_cmd_turso_graph)
 
     search = subparsers.add_parser("search")

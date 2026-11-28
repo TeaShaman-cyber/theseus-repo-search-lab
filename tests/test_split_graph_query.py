@@ -162,3 +162,18 @@ class SplitGraphQueryTests(unittest.TestCase):
         ):
             ensure_serving_graph(self.catalog,self.item,repository_root=self.root,cache_root=self.root)
         self.assertEqual(error.exception.code,"BLOCKED_LOCAL_GRAPH_INTEGRITY")
+
+    def test_configured_executable_used_for_recovery_and_serving(self):
+        from theseus_repo_search import cli
+
+        args=cli.build_parser().parse_args(["turso-graph","--catalog","catalog.json","--source-id",self.item.source_id,"--organization","example","--operation","deps","--name","a","--duckdb","/custom/duckdb"])
+        with (
+            patch.object(cli,"ensure_serving_graph",return_value=self.prepared/"graph.duckdb") as recover,
+            patch.object(cli,"connect_corpus",return_value=Mock()),
+            patch.object(cli,"_turso_client"),
+            patch.object(cli,"query_graph",side_effect=RepoSearchError("FIXTURE","stop")) as query,
+            self.assertRaises(RepoSearchError),
+        ):
+            cli._cmd_turso_graph(args,catalog=self.catalog)
+        self.assertEqual(recover.call_args.kwargs["executable"],"/custom/duckdb")
+        self.assertEqual(query.call_args.args[0].executable,"/custom/duckdb")

@@ -120,3 +120,14 @@ class SplitTursoTests(unittest.TestCase):
         self.assertTrue(all("LIMIT 4096" in call.args[2] for call in calls))
         self.assertTrue(any("sources_fts_idx" in call.args[2] for call in calls))
         self.assertTrue(all(call.kwargs.get("verification") is True for call in calls))
+
+    def test_created_id_reported_before_upload_failure(self):
+        client = self.client()
+        client.create_upload_database.return_value = {"hostname":"fixture.invalid","DbId":"actual-id"}
+        client.upload_sqlite.side_effect = RepoSearchError("UNAVAILABLE","upload")
+        receipts = []
+        with self.assertRaises(RepoSearchError):
+            materialize_split_search(self.item,self.split,self.fp,client,group="repo-search",on_observed=receipts.append)
+        self.assertEqual(len(receipts),1)
+        self.assertEqual(receipts[0]["database_id"],"actual-id")
+        self.assertEqual(receipts[0]["status"],"CREATED_UNVERIFIED")

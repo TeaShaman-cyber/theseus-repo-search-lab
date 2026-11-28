@@ -159,3 +159,22 @@ class SplitIntakeTests(unittest.TestCase):
         ):
             materialize_motherduck(self.item,self.root,self.receipt,launcher=self.root/"launcher.py",database="my_db")
         export.assert_not_called()
+
+    def test_turso_post_create_failure_preserves_id_in_journal(self):
+        import json
+
+        from theseus_repo_search.split_intake import materialize_corpus
+
+        def search(*args, **kwargs):
+            kwargs["on_observed"]({"database_id":"actual-id","status":"CREATED_UNVERIFIED"})
+            raise RepoSearchError("UNAVAILABLE","upload")
+        with (
+            patch("theseus_repo_search.split_intake.prepare_catalog_graph",return_value={"split":self.receipt,"directory":str(self.root)}),
+            patch("theseus_repo_search.split_intake.publish_serving_graph",return_value=self.root/"graph.duckdb"),
+            patch("theseus_repo_search.split_intake.materialize_split_search",side_effect=search),
+            self.assertRaises(RepoSearchError),
+        ):
+            materialize_corpus(self.catalog,"fixture",repository_root=self.root,cache_root=self.root,client=Mock(),group="repo-search",launcher=self.root/"launcher.py",database="my_db")
+        receipt=json.loads(next((self.root/"intake-receipts").rglob("*.json")).read_text())
+        self.assertEqual(receipt["search"]["database_id"],"actual-id")
+        self.assertEqual(receipt["phase"],"TURSO")

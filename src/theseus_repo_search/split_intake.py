@@ -163,10 +163,13 @@ def materialize_corpus(catalog: AcceptedCatalog, source_id: str, *,
             f.write("\n")
             staged = Path(f.name)
         os.replace(staged, journal)
+    def observed_search(receipt: dict[str, object]) -> None:
+        result["search"] = receipt
+        persist()
     persist()
     try:
         result["search"] = materialize_split_search(item, root, receipt["full_projection_fingerprint"],
-                                                     client, group=group)
+                                                     client, group=group, on_observed=observed_search)
         result["phase"] = "MOTHERDUCK"
         persist()
         result["graph"] = materialize_motherduck(item, root, receipt, launcher=launcher,

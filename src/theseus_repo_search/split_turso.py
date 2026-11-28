@@ -10,6 +10,7 @@ import re
 import shutil
 import sqlite3
 import tempfile
+from collections.abc import Callable
 from contextlib import closing
 from hashlib import sha256
 from pathlib import Path
@@ -45,7 +46,8 @@ def split_database_name(item: AcceptedCorpus) -> str:
 
 
 def materialize_split_search(item: AcceptedCorpus, root: Path, expected_full: str,
-                             client: TursoHttpClient, *, group: str) -> dict[str, object]:
+                             client: TursoHttpClient, *, group: str,
+                             on_observed: Callable[[dict[str, object]], None] | None = None) -> dict[str, object]:
     """Publish/reuse an exact candidate without overwriting any existing DB."""
     receipt = verify_split_projection(root, expected_full)
     pin = split_projection_sha256(receipt)
@@ -67,8 +69,15 @@ def materialize_split_search(item: AcceptedCorpus, root: Path, expected_full: st
             if expected_geometry[0] != (4096,) or c.execute("PRAGMA auto_vacuum").fetchone() != (0,):
                 raise RepoSearchError("TURSO_UPLOAD_INCOMPATIBLE", "split upload page geometry is incompatible")
         db = client.get_database(name)
+        created = db is None
         if db is None:
             db = client.create_upload_database(name, group=group)
+        if on_observed is not None:
+            on_observed({"status": "CREATED_UNVERIFIED" if created else "EXISTING_UNVERIFIED",
+                         "database": name, "artifact_identity": item.artifact_identity,
+                         "split_projection_sha256": pin,
+                         "database_id": db.get("DbId") or db.get("id") or db.get("db_id")})
+        if created:
             host = _database_hostname(db)
             token = client.mint_database_token(name, expiration="15m", authorization="full-access")
             client.upload_sqlite(host, token, upload)
