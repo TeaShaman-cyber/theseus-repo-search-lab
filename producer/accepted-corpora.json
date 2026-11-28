@@ -165,7 +165,8 @@
       "receipt_asset": "openai-euler-release-receipt.json",
       "source_descriptor": "producer/sources/openai-euler.json",
       "artifact_identity": "d96ee5ae8f32131dc18193cd86a695fe63b9e641de1fe37ac7f16defc41c6a09",
-      "fingerprint_sha256": "877b9715cf40d2ed3b569dc1ea154874d1e3e6c2bf0524670d38e6df901da416"
+      "fingerprint_sha256": "877b9715cf40d2ed3b569dc1ea154874d1e3e6c2bf0524670d38e6df901da416",
+      "split_projection_sha256": "1a549f9248bcded6341584ab4639fa666c32bdc9de80fc7cf09741ca4216a67a"
     },
     {
       "source_id": "openai-long-gaps",
