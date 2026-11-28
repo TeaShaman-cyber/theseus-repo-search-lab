@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class HeavyPostgresWorkflowTests(unittest.TestCase):
     def test_heavy_postgres_runner_contract_is_repo_local_and_ephemeral(self):
-        workflow = ROOT / ".github" / "workflows" / "heavy-postgres.yml"
+        workflow = ROOT / "workflows" / "heavy-postgres.yml"
         endpoint = ROOT / "tools" / "ci" / "heavy-postgres"
         smoke = ROOT / "qa" / "postgres" / "runner-smoke.sql"
 
