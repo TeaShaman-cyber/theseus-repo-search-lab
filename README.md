@@ -134,6 +134,18 @@ python3 -m theseus_repo_search multicorpus-search \
 
 The command verifies accepted release evidence, rebuilds disposable SQLite/FTS5 projections when the identity-bound cache is absent or stale, and federates results without comparing raw BM25 scores across corpora. Exact matches sort before lexical candidates; other ordering uses corpus-local rank, accepted `source_id`, and stable candidate identity. The JSON result always reports the catalog digest, searched-corpus count, explicit unavailable-corpus reasons, and provenance-rich hits. A partial corpus failure is reported as `DEGRADED`; it is never silently omitted.
 
+### Current storage and retired PostgreSQL experiment
+
+The active query plane uses Turso/libSQL for lexical search, standalone
+DuckDB for split graph serving, MotherDuck for durable graph projections,
+and Kusto for bounded analytical reachability. Immutable accepted GitHub
+Releases remain recovery authority. See [split projection contract](docs/split-projection.md).
+
+The former Neon/PostgreSQL query plane and its SQL-specific QA are
+[historical research](archive/neon-postgres/README.md), not active
+runtime dependencies or PR gates. Private MCP hosting/authentication
+(#123) remains to be verified independently of the backend choice.
+
 ### Durable Turso/libSQL projection
 
 Accepted immutable releases remain corpus authority. A verified local SQLite/FTS5
