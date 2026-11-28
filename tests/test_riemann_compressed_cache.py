@@ -151,9 +151,11 @@ class CompressedCacheTests(unittest.TestCase):
                 self.assertFalse(_process_alive(123))
 
     def test_process_liveness_does_not_hide_permission_errors(self):
-        with patch.object(Path, "read_text", side_effect=PermissionError):
-            with self.assertRaises(PermissionError):
-                _process_alive(123)
+        with (
+            patch.object(Path, "read_text", side_effect=PermissionError),
+            self.assertRaises(PermissionError),
+        ):
+            _process_alive(123)
 
     def test_process_liveness_preserves_state_checks(self):
         for state, alive in (("S", True), ("Z", False), ("X", False)):
