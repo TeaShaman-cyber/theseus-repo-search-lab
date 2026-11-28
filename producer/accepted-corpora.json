@@ -251,7 +251,8 @@
       "receipt_asset": "openai-ten-proofs-metric-codes-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-metric-codes.json",
       "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
-      "fingerprint_sha256": "70b9f4109d4afdc7f88d12ed26f16e34f7b4fdd34376b05c02be32c7ca484b2c"
+      "fingerprint_sha256": "70b9f4109d4afdc7f88d12ed26f16e34f7b4fdd34376b05c02be32c7ca484b2c",
+      "split_projection_sha256": "c5ece23977af04878848f7c12eb024d642826080f0601e8cb91bf2f9490a9c9e"
     },
     {
       "source_id": "openai-ten-proofs-multicolor",
