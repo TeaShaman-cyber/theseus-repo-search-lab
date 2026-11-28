@@ -1,0 +1,2596 @@
+{
+  "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+  "catalog_sha256": "3931c70ab456e02dd5c4ccc13b4e2817892ffa85d45d5fea4f05a3888c67ed46",
+  "fingerprint_sha256": "9d8564138fd2574a67cb978fef3ad0fcdc8db3c725f4184726929363e2a59ca1",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Lexical source context outside elaborated graph is not evidence of graph coverage or proof authority.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve accepted NavierStokes dependency graph and retrieve supporting dependencies for activation continuation, global slow profiles and correction step; no proof certification.",
+    "required_modules": [
+      "NavierStokes.ActivationBounds",
+      "NavierStokes.ActivationCone",
+      "NavierStokes.ActivationContinuation",
+      "NavierStokes.ActivationHolomorphic",
+      "NavierStokes.ActivationStocks",
+      "NavierStokes.ActiveAnnulusWeight",
+      "NavierStokes.ActualBasePressureBounds",
+      "NavierStokes.ActualBaseResidual",
+      "NavierStokes.ActualBaseVelocityBounds",
+      "NavierStokes.ActualCandidateAssembly",
+      "NavierStokes.ActualCandidateConstruction",
+      "NavierStokes.ActualCarrierGeometry",
+      "NavierStokes.ActualCarrierTransport",
+      "NavierStokes.ActualCarrierTransportBase",
+      "NavierStokes.ActualCopySliceRegularity",
+      "NavierStokes.ActualCoreSupport",
+      "NavierStokes.ActualCurrentCarrierJets",
+      "NavierStokes.ActualCurrentParticularAssembly",
+      "NavierStokes.ActualCurrentParticularBounds",
+      "NavierStokes.ActualCurrentParticularPhysical",
+      "NavierStokes.ActualCurrentWaveSupport",
+      "NavierStokes.ActualCycleAssembly",
+      "NavierStokes.ActualCycleCoherence",
+      "NavierStokes.ActualCycleExcluded",
+      "NavierStokes.ActualCycleGeometry",
+      "NavierStokes.ActualCycleParameters",
+      "NavierStokes.ActualCyclePeriodicity",
+      "NavierStokes.ActualCyclePreservation",
+      "NavierStokes.ActualCycleResidualBounds",
+      "NavierStokes.ActualEndpointInputs",
+      "NavierStokes.ActualExteriorPrefix",
+      "NavierStokes.ActualGaussianCoverage",
+      "NavierStokes.ActualInitialCoherence",
+      "NavierStokes.ActualInitialExcluded",
+      "NavierStokes.ActualInitialMean",
+      "NavierStokes.ActualInitialMeanEquation",
+      "NavierStokes.ActualInitialization",
+      "NavierStokes.ActualIntermediateDebtBounds",
+      "NavierStokes.ActualIterationLedger",
+      "NavierStokes.ActualMeanExterior",
+      "NavierStokes.ActualMeanPhysicalData",
+      "NavierStokes.ActualMeanPotentialRealization",
+      "NavierStokes.ActualMeanStageData",
+      "NavierStokes.ActualParticularBackground",
+      "NavierStokes.ActualParticularCoherence",
+      "NavierStokes.ActualParticularControl",
+      "NavierStokes.ActualParticularCycleData",
+      "NavierStokes.ActualParticularDynamics",
+      "NavierStokes.ActualParticularGaussian",
+      "NavierStokes.ActualParticularMeanGain",
+      "NavierStokes.ActualParticularPotentialCoherence",
+      "NavierStokes.ActualParticularRealization",
+      "NavierStokes.ActualParticularStageControls",
+      "NavierStokes.ActualPeriodizedSignedRealization",
+      "NavierStokes.ActualPhaseDefect",
+      "NavierStokes.ActualPhaseJetBounds",
+      "NavierStokes.ActualPhysicalPrefixFields",
+      "NavierStokes.ActualPhysicalStageBounds",
+      "NavierStokes.ActualPolarCoverage",
+      "NavierStokes.ActualPrimaryBounds",
+      "NavierStokes.ActualPrimaryCoherence",
+      "NavierStokes.ActualPrimaryCovariance",
+      "NavierStokes.ActualPrimaryDynamics",
+      "NavierStokes.ActualReferenceRebase",
+      "NavierStokes.ActualSeedPeriodicity",
+      "NavierStokes.ActualSignedCoherence",
+      "NavierStokes.ActualSignedCommonDynamics",
+      "NavierStokes.ActualSignedControl",
+      "NavierStokes.ActualSignedCurrentSupport",
+      "NavierStokes.ActualSignedDynamics",
+      "NavierStokes.ActualSignedExterior",
+      "NavierStokes.ActualSignedFamilySupport",
+      "NavierStokes.ActualSignedGaussian",
+      "NavierStokes.ActualSignedGaussianCoherence",
+      "NavierStokes.ActualSignedGeometry",
+      "NavierStokes.ActualSignedMeanBinding",
+      "NavierStokes.ActualSignedNativeBounds",
+      "NavierStokes.ActualSignedNativeProfiles",
+      "NavierStokes.ActualSignedNativeRegularity",
+      "NavierStokes.ActualSignedOutputBounds",
+      "NavierStokes.ActualSignedPhysicalBinding",
+      "NavierStokes.ActualSignedPhysicalCoherence",
+      "NavierStokes.ActualSignedPhysicalData",
+      "NavierStokes.ActualSignedPhysicalGeometry",
+      "NavierStokes.ActualSignedPhysicalZeros",
+      "NavierStokes.ActualSignedPotentialCoherence",
+      "NavierStokes.ActualSignedReferenceGeometry",
+      "NavierStokes.ActualSignedStageControls",
+      "NavierStokes.ActualSignedUnmaskedBinding",
+      "NavierStokes.ActualSignedUnmaskedBounds",
+      "NavierStokes.ActualSignedWaveData",
+      "NavierStokes.ActualSlowAxis",
+      "NavierStokes.ActualStageEstimates",
+      "NavierStokes.ActualValidBandWaves",
+      "NavierStokes.ActualWaveCoefficientPeriodicity",
+      "NavierStokes.ActualWaveRegularity",
+      "NavierStokes.ActualWaveRegularityData",
+      "NavierStokes.AlignedProfileSpectralCone",
+      "NavierStokes.AllBandBaseJets",
+      "NavierStokes.AnalyticCoefficientBounds",
+      "NavierStokes.AnalyticPrimitive",
+      "NavierStokes.AngularMomentReset",
+      "NavierStokes.AnnularAuxiliary",
+      "NavierStokes.AnnularEndpoint",
+      "NavierStokes.AppendixHeatResults",
+      "NavierStokes.AppendixJoiningResults",
+      "NavierStokes.AssembledSlowBase",
+      "NavierStokes.AxisAnalyticCoefficients",
+      "NavierStokes.AxisAnalyticRadialSeries",
+      "NavierStokes.AxisCoefficientSpace",
+      "NavierStokes.AxisContraction",
+      "NavierStokes.AxisEvaluation",
+      "NavierStokes.AxisEvaluationAlgebra",
+      "NavierStokes.AxisHolomorphic",
+      "NavierStokes.AxisHolomorphicJoint",
+      "NavierStokes.AxisInverseFactors",
+      "NavierStokes.AxisJointAnalytic",
+      "NavierStokes.AxisModelBounds",
+      "NavierStokes.AxisOperators",
+      "NavierStokes.AxisPreservation",
+      "NavierStokes.AxisProfile",
+      "NavierStokes.AxisReference",
+      "NavierStokes.AxisResolvent",
+      "NavierStokes.AxisRootPressureBounds",
+      "NavierStokes.AxisSeries",
+      "NavierStokes.AxisSourceRegularity",
+      "NavierStokes.AxisTailRegularity",
+      "NavierStokes.AxisWeightEstimates",
+      "NavierStokes.AxisymmetricFields",
+      "NavierStokes.AxisymmetricResidual",
+      "NavierStokes.AxisymmetricResidualGrouping",
+      "NavierStokes.BandReindexedSignedMeanGain",
+      "NavierStokes.BaseAngularGrowth",
+      "NavierStokes.BaseChartJets",
+      "NavierStokes.BaseContextAssembly",
+      "NavierStokes.BaseExterior",
+      "NavierStokes.BasePhaseGeometry",
+      "NavierStokes.BasePrefixIdentity",
+      "NavierStokes.BaseRadialJets",
+      "NavierStokes.BaseRankPatch",
+      "NavierStokes.BaseResidual",
+      "NavierStokes.BaseStressClasses",
+      "NavierStokes.BlowupImplication",
+      "NavierStokes.BorelExtension",
+      "NavierStokes.BoundaryAxisJets",
+      "NavierStokes.CandidateConsequences",
+      "NavierStokes.CandidateFromLimits",
+      "NavierStokes.CartesianCopySource",
+      "NavierStokes.CauchyRestriction",
+      "NavierStokes.ChartScales",
+      "NavierStokes.ClosedIntervalCk",
+      "NavierStokes.ClosedIntervalCkOperators",
+      "NavierStokes.ClosedIntervalJetAlgebra",
+      "NavierStokes.ClosedIntervalMomentRepair",
+      "NavierStokes.ClosedNativeWaveIdentities",
+      "NavierStokes.CommonBaseContext",
+      "NavierStokes.CommonCoverClass",
+      "NavierStokes.CommonCoverSolve",
+      "NavierStokes.CommonCoverWithin",
+      "NavierStokes.CompactForceDecay",
+      "NavierStokes.CompactHolomorphicFamily",
+      "NavierStokes.CompactSmoothFamily",
+      "NavierStokes.CompactSpatialForceDecay",
+      "NavierStokes.ComparatorBridge",
+      "NavierStokes.ComparatorDefinitions",
+      "NavierStokes.ComparatorR3Bridge",
+      "NavierStokes.ComparatorR3Theorem",
+      "NavierStokes.ComparatorSolution",
+      "NavierStokes.ComparatorTheorem",
+      "NavierStokes.ConeAlgebra",
+      "NavierStokes.ConstructedSlowBase",
+      "NavierStokes.CoordinateAlgebra",
+      "NavierStokes.CopyAngularInvariance",
+      "NavierStokes.CopySolveCompatibility",
+      "NavierStokes.CorrectedPressureBounds",
+      "NavierStokes.CorrectedPulseAmplitude",
+      "NavierStokes.CorrectionAnalyticStep",
+      "NavierStokes.CorrectionInitialization",
+      "NavierStokes.CorrectionState",
+      "NavierStokes.CorrectionStep",
+      "NavierStokes.Covariance",
+      "NavierStokes.CrossBasedMeanComposition",
+      "NavierStokes.CurlClassBounds",
+      "NavierStokes.CurlGeometry",
+      "NavierStokes.CurrentModeGeometry",
+      "NavierStokes.CurrentParticularLabelBounds",
+      "NavierStokes.CurrentParticularPhysicalCoherence",
+      "NavierStokes.CurrentPhysicalChartJets",
+      "NavierStokes.CurrentPhysicalModeGerms",
+      "NavierStokes.CurrentPhysicalRadialClosure",
+      "NavierStokes.CurrentSignedCurl",
+      "NavierStokes.CutStageEstimates",
+      "NavierStokes.CycleMeanEquation",
+      "NavierStokes.CyclePhysicalPrefixes",
+      "NavierStokes.CycleStateCoherence",
+      "NavierStokes.CylindricalResidual",
+      "NavierStokes.DefectIncrementBounds",
+      "NavierStokes.DependentSignedPhysicalFamily",
+      "NavierStokes.DiagonalJetBounds",
+      "NavierStokes.DiagonalResidual",
+      "NavierStokes.DiagonalScale",
+      "NavierStokes.DiophantineGraph",
+      "NavierStokes.DirectAngularDiagonal",
+      "NavierStokes.EdgeWeightJets",
+      "NavierStokes.EndpointCoordinates",
+      "NavierStokes.EndpointExtension",
+      "NavierStokes.EntranceAlignedBase",
+      "NavierStokes.ErrorHarmonics",
+      "NavierStokes.EvenSmoothDescent",
+      "NavierStokes.ExponentLedger",
+      "NavierStokes.ExponentialMomentMatrix",
+      "NavierStokes.ExtendedHeatDebts",
+      "NavierStokes.ExtendedHeatedOutgoing",
+      "NavierStokes.FinalSlowBase",
+      "NavierStokes.FiniteHeadClass",
+      "NavierStokes.FirstOrderBaseEdge",
+      "NavierStokes.FiveProfileMoments",
+      "NavierStokes.FiveRowRank",
+      "NavierStokes.FlatCovariance",
+      "NavierStokes.FlatCutoff",
+      "NavierStokes.FlatDyadicExtension",
+      "NavierStokes.FlatKernelBounds",
+      "NavierStokes.FlatPrimitive",
+      "NavierStokes.FlatPrimitiveFactor",
+      "NavierStokes.FlatPrimitivePaper",
+      "NavierStokes.FlatZeroExtension",
+      "NavierStokes.Flatness",
+      "NavierStokes.FourierAlias",
+      "NavierStokes.FuturePressureBounds",
+      "NavierStokes.GaugeAliasDecay",
+      "NavierStokes.GaugeDebtIncrement",
+      "NavierStokes.GaugeExcludedBounds",
+      "NavierStokes.GaugeMassPreservation",
+      "NavierStokes.GaugeMomentBalances",
+      "NavierStokes.GaugeRadialResidualBounds",
+      "NavierStokes.GaugeStateCoherence",
+      "NavierStokes.GaussianEnvelope",
+      "NavierStokes.GaussianErrorNaturality",
+      "NavierStokes.GaussianTailFlat",
+      "NavierStokes.GenericAngularRecovery",
+      "NavierStokes.GenericDiagonalSchedule",
+      "NavierStokes.GenericDifferentialPolynomial",
+      "NavierStokes.GenericEndpointExtension",
+      "NavierStokes.GenericFactorSupport",
+      "NavierStokes.GenericJetRateAlgebra",
+      "NavierStokes.GenericRealization",
+      "NavierStokes.GenericRealizationBounds",
+      "NavierStokes.GenericSolenoidalRealization",
+      "NavierStokes.GenericSummationRealization",
+      "NavierStokes.GenericSupportLocalCoefficients",
+      "NavierStokes.GenericSupportLocalSummation",
+      "NavierStokes.GenericSupportedPolynomial",
+      "NavierStokes.GenericTupleRealization",
+      "NavierStokes.GenericTupleSupport",
+      "NavierStokes.GenericVelocityRates",
+      "NavierStokes.GermCandidateAssembly",
+      "NavierStokes.GermEndpointInputs",
+      "NavierStokes.GlobalBaseError",
+      "NavierStokes.GlobalSlowProfiles",
+      "NavierStokes.GlobalStressSupport",
+      "NavierStokes.GluedStageEstimates",
+      "NavierStokes.GraphCalculus",
+      "NavierStokes.GrowingMode",
+      "NavierStokes.HarmonicCalculus",
+      "NavierStokes.HarmonicCovariance",
+      "NavierStokes.HarmonicFields",
+      "NavierStokes.HarmonicMeanInteraction",
+      "NavierStokes.HarmonicResidual",
+      "NavierStokes.HarmonicSourceSupport",
+      "NavierStokes.HarmonicStructurePreservation",
+      "NavierStokes.HarmonicWaveInteraction",
+      "NavierStokes.HeatProfileExtension",
+      "NavierStokes.HeatSwitchCone",
+      "NavierStokes.HeatSwitchHistoryDerivatives",
+      "NavierStokes.HeatTailEdit",
+      "NavierStokes.HeatTailHistoryLimits",
+      "NavierStokes.HeatedOutgoing",
+      "NavierStokes.HolomorphicFamily",
+      "NavierStokes.HolomorphicFamilyAnalytic",
+      "NavierStokes.InitialNativeRegularity",
+      "NavierStokes.InitialPhysicalData",
+      "NavierStokes.InitializedPhysicalBackground",
+      "NavierStokes.IntegratedMeanBalances",
+      "NavierStokes.IntervalCopyTransport",
+      "NavierStokes.JetBounds",
+      "NavierStokes.JointODE",
+      "NavierStokes.JointResidualLimits",
+      "NavierStokes.LabelCounting",
+      "NavierStokes.LabelCountingFinite",
+      "NavierStokes.LabelSumBounds",
+      "NavierStokes.LabelSupportPreservation",
+      "NavierStokes.LeadingStress",
+      "NavierStokes.LeadingStressWeights",
+      "NavierStokes.LiftedMeanResidual",
+      "NavierStokes.LinearWaveBounds",
+      "NavierStokes.LinearWaveResidual",
+      "NavierStokes.LocalAngularDiagonal",
+      "NavierStokes.LocalAngularGrowth",
+      "NavierStokes.LocalAngularScalar",
+      "NavierStokes.LocalAxisymmetricResidual",
+      "NavierStokes.LocalHeatExterior",
+      "NavierStokes.LocalHeatFormula",
+      "NavierStokes.LocalHeatPressure",
+      "NavierStokes.LocalJetBounds",
+      "NavierStokes.LocalMeanPhysicalBounds",
+      "NavierStokes.LocalPaperDomain",
+      "NavierStokes.LocalPaperHeat",
+      "NavierStokes.LocalPaperTheorem",
+      "NavierStokes.LocalPhysicalCopyBounds",
+      "NavierStokes.LocalPotentialRebundle",
+      "NavierStokes.LocalRankDefect",
+      "NavierStokes.LocalResidualFlatness",
+      "NavierStokes.LocalResidualGrouping",
+      "NavierStokes.LocalScaleApproach",
+      "NavierStokes.LocalScaleGeometry",
+      "NavierStokes.LocalScheduleAngular",
+      "NavierStokes.LocalScheduleWitness",
+      "NavierStokes.LocalSignedRequest",
+      "NavierStokes.LocalizedCurlRealization",
+      "NavierStokes.LocalizedGaussianBounds",
+      "NavierStokes.LocalizedMeanInteraction",
+      "NavierStokes.LocalizedMomentRepair",
+      "NavierStokes.LocalizedWaveBounds",
+      "NavierStokes.LoopMoments",
+      "NavierStokes.LoopVariance",
+      "NavierStokes.MatchingConeBounds",
+      "NavierStokes.MatchingDebtBounds",
+      "NavierStokes.MaximalLifespan",
+      "NavierStokes.MeanBoundsReindex",
+      "NavierStokes.MeanChartCompatibility",
+      "NavierStokes.MeanIncrementBounds",
+      "NavierStokes.MeanLocalCoefficient",
+      "NavierStokes.MeanLocalDefectBounds",
+      "NavierStokes.MeanMomentBounds",
+      "NavierStokes.MeanRankUpdate",
+      "NavierStokes.MeanResidual",
+      "NavierStokes.MeanStageRegularity",
+      "NavierStokes.MeanStateRegularity",
+      "NavierStokes.MixedAxisPreservation",
+      "NavierStokes.MixedCandidateAssembly",
+      "NavierStokes.MixedCandidateWitness",
+      "NavierStokes.MixedDiagonalExtensions",
+      "NavierStokes.MixedDiagonalResidual",
+      "NavierStokes.MixedDiagonalSchedule",
+      "NavierStokes.MixedFiniteBackground",
+      "NavierStokes.MixedPeriodicAssembly",
+      "NavierStokes.ModeSolenoidalReindex",
+      "NavierStokes.ModulatedCone",
+      "NavierStokes.ModulatedExterior",
+      "NavierStokes.ModulatedHistories",
+      "NavierStokes.ModulatedProfileAssembly",
+      "NavierStokes.ModulatedProfileJetRates",
+      "NavierStokes.ModulatedStockBounds",
+      "NavierStokes.MomentRepair",
+      "NavierStokes.MomentRepairPicard",
+      "NavierStokes.MomentRepairPicardConvergence",
+      "NavierStokes.MovingFrameODE",
+      "NavierStokes.MovingMomentBounds",
+      "NavierStokes.NativeBandExtension",
+      "NavierStokes.NativeCutoffJets",
+      "NavierStokes.NativePrincipalEquations",
+      "NavierStokes.NaturalAxisBridge",
+      "NavierStokes.NaturalAxisCoefficients",
+      "NavierStokes.NaturalAxisData",
+      "NavierStokes.NaturalAxisJointAnalytic",
+      "NavierStokes.NaturalAxisRange",
+      "NavierStokes.NaturalCoefficientBridge",
+      "NavierStokes.NaturalCore",
+      "NavierStokes.NaturalEntrance",
+      "NavierStokes.NaturalExitBounds",
+      "NavierStokes.NaturalExitParameterJets",
+      "NavierStokes.NaturalProfile",
+      "NavierStokes.NilpotentVolterra",
+      "NavierStokes.NominalConeAssembly",
+      "NavierStokes.NominalProfile",
+      "NavierStokes.NormalScaling",
+      "NavierStokes.OffplaneCorrectionExtensions",
+      "NavierStokes.OffplaneJetExtensions",
+      "NavierStokes.OscillatoryCurl",
+      "NavierStokes.OutgoingCone",
+      "NavierStokes.OutgoingDilation",
+      "NavierStokes.OutgoingEntranceCone",
+      "NavierStokes.OutgoingHistories",
+      "NavierStokes.OutgoingNegativeSlopeCone",
+      "NavierStokes.OutgoingProfile",
+      "NavierStokes.OutgoingPulseBounds",
+      "NavierStokes.OutgoingSchedule",
+      "NavierStokes.OutgoingTail",
+      "NavierStokes.PaperLocalization",
+      "NavierStokes.ParameterizedMomentRepair",
+      "NavierStokes.ParametricEvenDescent",
+      "NavierStokes.ParametricFlatFactor",
+      "NavierStokes.ParametricHeatTail",
+      "NavierStokes.ParametricKernelBounds",
+      "NavierStokes.ParametricModulation",
+      "NavierStokes.ParametricODE",
+      "NavierStokes.ParametricRadialExtension",
+      "NavierStokes.ParametricRephase",
+      "NavierStokes.ParametricTerminalCompensation",
+      "NavierStokes.ParametricTorusInverse",
+      "NavierStokes.ParticularCopyBounds",
+      "NavierStokes.ParticularOneSided",
+      "NavierStokes.ParticularPaddedBackground",
+      "NavierStokes.ParticularWaveAssembly",
+      "NavierStokes.ParticularWaveBounds",
+      "NavierStokes.ParticularWithinBounds",
+      "NavierStokes.ParticularWithinPressure",
+      "NavierStokes.PartitionedCovariance",
+      "NavierStokes.PastExtension",
+      "NavierStokes.PeriodicComparatorSolution",
+      "NavierStokes.PeriodicIntegration",
+      "NavierStokes.PeriodicLocalization",
+      "NavierStokes.PeriodicPaperComparator",
+      "NavierStokes.PeriodicPaperScalingSupport",
+      "NavierStokes.PeriodicPaperSupport",
+      "NavierStokes.PeriodicPaperTheorem",
+      "NavierStokes.PeriodicPhaseAssembly",
+      "NavierStokes.PeriodicResidualLimits",
+      "NavierStokes.PeriodicSobolev",
+      "NavierStokes.PeriodicUniqueness",
+      "NavierStokes.PeriodicViscosity",
+      "NavierStokes.PeriodicViscosityUniqueness",
+      "NavierStokes.PeriodizeLatticeCover",
+      "NavierStokes.PeriodizePDE",
+      "NavierStokes.PeriodizedWaveBounds",
+      "NavierStokes.PhaseCalculus",
+      "NavierStokes.PhaseEstimates",
+      "NavierStokes.PhaseJetBounds",
+      "NavierStokes.PhysicalClassBounds",
+      "NavierStokes.PhysicalCoordinateBounds",
+      "NavierStokes.PhysicalCopyBounds",
+      "NavierStokes.PhysicalCurlCovariance",
+      "NavierStokes.PhysicalGraphBounds",
+      "NavierStokes.PhysicalHeatCoordinates",
+      "NavierStokes.PhysicalMeanDomain",
+      "NavierStokes.PhysicalMeanJetBounds",
+      "NavierStokes.PhysicalParticularWave",
+      "NavierStokes.PhysicalResidualBridge",
+      "NavierStokes.PhysicalResidualJetBounds",
+      "NavierStokes.PhysicalResidualNaturality",
+      "NavierStokes.PhysicalResidualTZ",
+      "NavierStokes.PhysicalSignedWave",
+      "NavierStokes.PhysicalStageBounds",
+      "NavierStokes.PhysicalStageSupport",
+      "NavierStokes.PhysicalWaveSum",
+      "NavierStokes.PolarCharts",
+      "NavierStokes.PositiveAxisDifferential",
+      "NavierStokes.PositiveAxisExistence",
+      "NavierStokes.PositiveAxisSystem",
+      "NavierStokes.PositiveOrderMoments",
+      "NavierStokes.PositiveRepresentatives",
+      "NavierStokes.PositiveTimeCopyFamily",
+      "NavierStokes.PositiveTimeSignedData",
+      "NavierStokes.PositiveTimeSignedLocalization",
+      "NavierStokes.PowerMomentMatrix",
+      "NavierStokes.PreparedOutgoing",
+      "NavierStokes.PressureDatum",
+      "NavierStokes.PressureStream",
+      "NavierStokes.PrimaryCopyBounds",
+      "NavierStokes.PrimaryCopyBridge",
+      "NavierStokes.PrimaryCovarianceBounds",
+      "NavierStokes.PrimaryFieldAssembly",
+      "NavierStokes.PrimaryGeometryAssembly",
+      "NavierStokes.PrimaryMaterialDefect",
+      "NavierStokes.PrimaryODE",
+      "NavierStokes.PrimaryPulseBounds",
+      "NavierStokes.PrimaryRepresentatives",
+      "NavierStokes.PrimaryResidualClass",
+      "NavierStokes.PrimaryTargetBounds",
+      "NavierStokes.ProblemStatement",
+      "NavierStokes.ProfileHistories",
+      "NavierStokes.ProfileSpectralCone",
+      "NavierStokes.PulseAmplitude",
+      "NavierStokes.PulseCone",
+      "NavierStokes.PulseCovariance",
+      "NavierStokes.PulseEnergyHistory",
+      "NavierStokes.PulseGrowth",
+      "NavierStokes.PulseLag",
+      "NavierStokes.QuadraticLinearization",
+      "NavierStokes.R3.ActualCandidate",
+      "NavierStokes.R3.ActualPressureFlux",
+      "NavierStokes.R3.CandidateBreakdown",
+      "NavierStokes.R3.CompactComparisonBounds",
+      "NavierStokes.R3.CompactEnergy",
+      "NavierStokes.R3.CompactForceBound",
+      "NavierStokes.R3.CompactSchwartz",
+      "NavierStokes.R3.CompactTimeIntegral",
+      "NavierStokes.R3.ComparatorBridge",
+      "NavierStokes.R3.ComparisonCutoffs",
+      "NavierStokes.R3.ComparisonFiniteEnergy",
+      "NavierStokes.R3.ComparisonFourierSetup",
+      "NavierStokes.R3.ComparisonGronwall",
+      "NavierStokes.R3.ComparisonRateBound",
+      "NavierStokes.R3.ComparisonSetup",
+      "NavierStokes.R3.ComparisonTimeAverages",
+      "NavierStokes.R3.ComparisonYoung",
+      "NavierStokes.R3.ConservativeDifference",
+      "NavierStokes.R3.DelayedExtension",
+      "NavierStokes.R3.ForceL2Norm",
+      "NavierStokes.R3.FourierConvolution",
+      "NavierStokes.R3.FourierSobolevWeights",
+      "NavierStokes.R3.FourierTestDerivatives",
+      "NavierStokes.R3.GaussianMoments",
+      "NavierStokes.R3.GradientOperator",
+      "NavierStokes.R3.H3Approximation",
+      "NavierStokes.R3.H3Blowup",
+      "NavierStokes.R3.H3BoxIntegral",
+      "NavierStokes.R3.H3CandidateStrong",
+      "NavierStokes.R3.H3CandidateUniqueness",
+      "NavierStokes.R3.H3CompactCurve",
+      "NavierStokes.R3.H3CompactHelpers",
+      "NavierStokes.R3.H3Comparison",
+      "NavierStokes.R3.H3Continuity",
+      "NavierStokes.R3.H3Curve",
+      "NavierStokes.R3.H3Definitions",
+      "NavierStokes.R3.H3DivCurlFourier",
+      "NavierStokes.R3.H3Embedding",
+      "NavierStokes.R3.H3Energy",
+      "NavierStokes.R3.H3MaximalLifespan",
+      "NavierStokes.R3.H3Operations",
+      "NavierStokes.R3.H3PressureDistribution",
+      "NavierStokes.R3.H3PressureOrthogonality",
+      "NavierStokes.R3.H3Products",
+      "NavierStokes.R3.H3StrongSolution",
+      "NavierStokes.R3.H3Transport",
+      "NavierStokes.R3.H3UniformApproximation",
+      "NavierStokes.R3.H3WeakEmbedding",
+      "NavierStokes.R3.H3WeakStrong",
+      "NavierStokes.R3.HarmonicTestFunctionals",
+      "NavierStokes.R3.HeatKernel",
+      "NavierStokes.R3.HeatKernelCancellation",
+      "NavierStokes.R3.HeatKernelCommutator",
+      "NavierStokes.R3.HeatKernelFourier",
+      "NavierStokes.R3.HeatKernelFubini",
+      "NavierStokes.R3.HeatKernelPairedBound",
+      "NavierStokes.R3.HeatKernelTimeBound",
+      "NavierStokes.R3.HilbertFunctionalExtension",
+      "NavierStokes.R3.IntegratedDissipation",
+      "NavierStokes.R3.L2TimeDerivative",
+      "NavierStokes.R3.LocalizedDifferenceEnergy",
+      "NavierStokes.R3.LocalizedFluxEstimates",
+      "NavierStokes.R3.LocalizedLaplacian",
+      "NavierStokes.R3.LocalizedTensorBounds",
+      "NavierStokes.R3.LocalizedTransport",
+      "NavierStokes.R3.LpNormTools",
+      "NavierStokes.R3.PairedKernelBound",
+      "NavierStokes.R3.ParabolicCalculus",
+      "NavierStokes.R3.ParabolicDefinitions",
+      "NavierStokes.R3.ParabolicEnergy",
+      "NavierStokes.R3.ParabolicScaling",
+      "NavierStokes.R3.ParabolicSupport",
+      "NavierStokes.R3.PositiveTimeForce",
+      "NavierStokes.R3.PressureFlux",
+      "NavierStokes.R3.PressureFluxIdentity",
+      "NavierStokes.R3.PressureFluxTest",
+      "NavierStokes.R3.PressureFunctionals",
+      "NavierStokes.R3.PressureRecovery",
+      "NavierStokes.R3.PressureRecoveryHelpers",
+      "NavierStokes.R3.PressureTemporalIdentity",
+      "NavierStokes.R3.PressureTestBounds",
+      "NavierStokes.R3.ProblemStatement",
+      "NavierStokes.R3.RadialKernelBounds",
+      "NavierStokes.R3.RieszHeatRepresentation",
+      "NavierStokes.R3.RieszL2Bounds",
+      "NavierStokes.R3.RieszLinearityDecay",
+      "NavierStokes.R3.RieszPairing",
+      "NavierStokes.R3.RieszSymbolRegularity",
+      "NavierStokes.R3.RieszTestOperators",
+      "NavierStokes.R3.ScalarEnergyBound",
+      "NavierStokes.R3.SchwartzCompactApproximation",
+      "NavierStokes.R3.SchwartzParseval",
+      "NavierStokes.R3.SharpEnergyBound",
+      "NavierStokes.R3.SmoothSobolevL6",
+      "NavierStokes.R3.SpatialCauchySchwarz",
+      "NavierStokes.R3.SpatialEnergyScaling",
+      "NavierStokes.R3.SpatialSupportScaling",
+      "NavierStokes.R3.TemporalTestUniqueness",
+      "NavierStokes.R3.Theorem",
+      "NavierStokes.R3.ViscosityScaling",
+      "NavierStokes.R3.ViscousEnergyBalance",
+      "NavierStokes.R3.WeakFourierUniqueness",
+      "NavierStokes.R3.WeakTimeContinuity",
+      "NavierStokes.R3.WeightedInterpolation",
+      "NavierStokes.R3.WeightedSobolev",
+      "NavierStokes.R3.WholeSpaceComparisonClosure",
+      "NavierStokes.R3.WholeSpaceEnergyLimit",
+      "NavierStokes.R3.WholeSpaceUniqueness",
+      "NavierStokes.R3ActualCandidate",
+      "NavierStokes.R3CompactCandidate",
+      "NavierStokes.R3FiniteEnergyComparison",
+      "NavierStokes.RadialAlias",
+      "NavierStokes.RadialFluxResidual",
+      "NavierStokes.RadialHeatProfile",
+      "NavierStokes.RadialModulation",
+      "NavierStokes.RadialPullback",
+      "NavierStokes.RadialSchedule",
+      "NavierStokes.RankStateBounds",
+      "NavierStokes.RankStateCoherence",
+      "NavierStokes.ReferenceBounds",
+      "NavierStokes.ReferenceEndpointRate",
+      "NavierStokes.ReferenceJetBounds",
+      "NavierStokes.ReferencePath",
+      "NavierStokes.ReferenceUniformJets",
+      "NavierStokes.ReferenceUniformStocks",
+      "NavierStokes.RegularSingularIntegral",
+      "NavierStokes.ReleaseMoments",
+      "NavierStokes.RenormalizedHeatMoment",
+      "NavierStokes.RepairConeBounds",
+      "NavierStokes.ReservedPatches",
+      "NavierStokes.ResetEnergyBounds",
+      "NavierStokes.ResidualCalculus",
+      "NavierStokes.ResidualPolarGraph",
+      "NavierStokes.ResidualRegularity",
+      "NavierStokes.ResidualStability",
+      "NavierStokes.ScalarParticularSupport",
+      "NavierStokes.ScaledActualParticularControl",
+      "NavierStokes.ScaledParticularFrameJets",
+      "NavierStokes.ScaledTangentTransport",
+      "NavierStokes.Scaling",
+      "NavierStokes.SchedulePressure",
+      "NavierStokes.ScheduledProfileChoice",
+      "NavierStokes.SeedConePaper",
+      "NavierStokes.SeedHandbackJets",
+      "NavierStokes.ShapeTransition",
+      "NavierStokes.ShapedWaitBounds",
+      "NavierStokes.SharpActualStageBounds",
+      "NavierStokes.SharpCommonGraphJets",
+      "NavierStokes.SharpCurrentModeJets",
+      "NavierStokes.SharpCurrentParticularBounds",
+      "NavierStokes.SharpCurrentPhysicalPhase",
+      "NavierStokes.SharpGeometricModeJets",
+      "NavierStokes.SharpGluedStageBounds",
+      "NavierStokes.SharpGraphBounds",
+      "NavierStokes.SharpLogWeights",
+      "NavierStokes.SharpMeanJetBounds",
+      "NavierStokes.SharpMeanStageBounds",
+      "NavierStokes.SharpParticularGluing",
+      "NavierStokes.SharpParticularStageBounds",
+      "NavierStokes.SharpPhaseJetAlgebra",
+      "NavierStokes.SharpPhysicalCarrier",
+      "NavierStokes.SharpPhysicalCopyBounds",
+      "NavierStokes.SharpPhysicalLogBounds",
+      "NavierStokes.SharpPhysicalLoss",
+      "NavierStokes.SharpPhysicalPhase",
+      "NavierStokes.SharpWaveStageBounds",
+      "NavierStokes.SignedCopyBounds",
+      "NavierStokes.SignedCovariance",
+      "NavierStokes.SignedCrossDefectClass",
+      "NavierStokes.SignedMeanGain",
+      "NavierStokes.SignedPhysicalSumCalculus",
+      "NavierStokes.SignedStressPrimitive",
+      "NavierStokes.SignedWaveUpdate",
+      "NavierStokes.SimilarityApproach",
+      "NavierStokes.SimilarityCoordinates",
+      "NavierStokes.SimilarityHomogeneity",
+      "NavierStokes.SimilarityProfile",
+      "NavierStokes.SlotColoring",
+      "NavierStokes.SlotGeometry",
+      "NavierStokes.SlowBaseEndpoint",
+      "NavierStokes.SlowBorelBase",
+      "NavierStokes.SlowDivergence",
+      "NavierStokes.SlowExpansionResidual",
+      "NavierStokes.SlowFirstOrderEdge",
+      "NavierStokes.SlowRecursion",
+      "NavierStokes.SlowResidualMatching",
+      "NavierStokes.SlowStressSupport",
+      "NavierStokes.SmoothCovariance",
+      "NavierStokes.SmoothCutoffs",
+      "NavierStokes.SmoothExponentialMomentMatrix",
+      "NavierStokes.SmoothFamilyTorusInverse",
+      "NavierStokes.SmoothFourierData",
+      "NavierStokes.SmoothLoop",
+      "NavierStokes.SmoothMomentRepair",
+      "NavierStokes.SmoothParameterIntegral",
+      "NavierStokes.SmoothPathFamily",
+      "NavierStokes.SmoothPowerMomentMatrix",
+      "NavierStokes.SmoothQuadraticBranch",
+      "NavierStokes.SolenoidalDiagonal",
+      "NavierStokes.SpacetimeEndpoint",
+      "NavierStokes.SpacetimeGluing",
+      "NavierStokes.SpatialBorelExtension",
+      "NavierStokes.SpatialCurl",
+      "NavierStokes.SpatialLocalization",
+      "NavierStokes.SquaredPartition",
+      "NavierStokes.StateMomentBalances",
+      "NavierStokes.StateReindex",
+      "NavierStokes.StressActivation",
+      "NavierStokes.StressAlgebra",
+      "NavierStokes.SubcoverPeriodicity",
+      "NavierStokes.TailCone",
+      "NavierStokes.TailEnergyBounds",
+      "NavierStokes.TailGaugePotential",
+      "NavierStokes.TangentODE",
+      "NavierStokes.TangentProjection",
+      "NavierStokes.TemporalMeanUpdate",
+      "NavierStokes.TemporalStateCoherence",
+      "NavierStokes.TerminalCompensation",
+      "NavierStokes.TerminalCone",
+      "NavierStokes.TerminalEdgeFactor",
+      "NavierStokes.TerminalEdgePaper",
+      "NavierStokes.TerminalHistoryBridge",
+      "NavierStokes.TerminalPressure",
+      "NavierStokes.TerminalStress",
+      "NavierStokes.TimeLocalization",
+      "NavierStokes.TorusAverages",
+      "NavierStokes.TorusCoverDegree",
+      "NavierStokes.TorusCoverLattice",
+      "NavierStokes.TorusInverse",
+      "NavierStokes.TorusMeanRequestRebase",
+      "NavierStokes.TransitionRamp",
+      "NavierStokes.TransportPrimitive",
+      "NavierStokes.TrueConeLoop",
+      "NavierStokes.TrueConeLoopPaper",
+      "NavierStokes.UniformAngularReset",
+      "NavierStokes.UniformBlockBounds",
+      "NavierStokes.UniformCone",
+      "NavierStokes.UniformFourierAlias",
+      "NavierStokes.UniformHarmonicInteraction",
+      "NavierStokes.UniformPrimaryWeights",
+      "NavierStokes.UniformQuadraticBranch",
+      "NavierStokes.ValidBandGluing",
+      "NavierStokes.ValidDyadicBandCover",
+      "NavierStokes.VariableGaugeMean",
+      "NavierStokes.ViscousPropagator",
+      "NavierStokes.VolterraAnalyticBounds",
+      "NavierStokes.VolterraParity",
+      "NavierStokes.VolterraRegularity",
+      "NavierStokes.WaveEdgeExtension",
+      "NavierStokes.WaveEnvelopeTransport",
+      "NavierStokes.WaveInteractionBounds",
+      "NavierStokes.WaveStateRegularity",
+      "NavierStokes.WeightedClasses",
+      "NavierStokes.WeightedODEJets",
+      "NavierStokes.WeightedQuotients",
+      "NavierStokes.WeightedRadialPrimitive",
+      "NavierStokes.WholeDomainActualStageBounds",
+      "NavierStokes.WholeDomainBaseBounds",
+      "NavierStokes.WholeDomainCompactBounds",
+      "NavierStokes.WholeDomainHeatBounds",
+      "NavierStokes.WholeDomainHeatCompact",
+      "NavierStokes.WholeDomainHeatGeometry",
+      "NavierStokes.WholeDomainHeatScaling",
+      "NavierStokes.WholeDomainInitializationBounds",
+      "NavierStokes.WholeDomainPhysicalCompact",
+      "NavierStokes.WholeDomainPhysicalStageTheorem",
+      "NavierStokes.WholeDomainPrefixBounds",
+      "NavierStokes.WholeDomainStageBounds",
+      "NavierStokes.WithinJointODE",
+      "NavierStokes.WithinPathFamily",
+      "NavierStokes.ZerothStressIdentity"
+    ],
+    "witnesses": [
+      {
+        "declaration": "NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+        "direction": "forward",
+        "neighbor": "NavierStokes.ActivationContinuation.RampParameters",
+        "source_path": "NavierStokes/ActivationContinuation.lean"
+      },
+      {
+        "declaration": "NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+        "direction": "forward",
+        "neighbor": "NavierStokes.GlobalSlowProfiles.Domain",
+        "source_path": "NavierStokes/GlobalSlowProfiles.lean"
+      },
+      {
+        "declaration": "NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+        "direction": "forward",
+        "neighbor": "NavierStokes.CorrectionState.Context",
+        "source_path": "NavierStokes/CorrectionStep.lean"
+      }
+    ]
+  },
+  "plan_sha256": "0f6db98b02d1d1fe9b612fb5fcb454b16c3d04425692fee7e5d60e639d3a2803",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-navier-stokes",
+  "split_evidence": {
+    "graph": {
+      "edges": 704638,
+      "nodes": 41511,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_c7cbf490525464ee3c76d7f06789dfac_nodes",
+        "my_db.main.rs_split_c7cbf490525464ee3c76d7f06789dfac_edges",
+        "my_db.main.rs_split_c7cbf490525464ee3c76d7f06789dfac_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+      "database": "repo-search-s-openai-navier-stokes-c7cbf490525464ee",
+      "database_id": "01a220eb-ba01-7484-a730-01b153506d7b",
+      "split_projection_sha256": "e467a5949195f269999f388fa59cf8e62bb0394828111d43f45e727c34a47ce5",
+      "sqlite_bytes": 79216640,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+      "edges": 704638,
+      "files": {
+        "edges.csv": {
+          "bytes": 85044051,
+          "sha256": "12e1c548026386c553baf00a8634c629b272c672b47a6c1db8f27a1972cff372"
+        },
+        "nodes.csv": {
+          "bytes": 2698437,
+          "sha256": "900d77b7bb00a9191165fee07f64fcae211586ab65a148fa2d001230e8ce4f2e"
+        },
+        "search.sqlite": {
+          "bytes": 79216640,
+          "sha256": "5991de36dcef53fdb7bc898ad29776d2240e17015180f45ff87ddaa07b138f1a"
+        }
+      },
+      "full_projection_fingerprint": "2d20e3a15f571fba7d5e89ae02315437f12c4b0fed17dbde17c7d2388a38ee0c",
+      "nodes": 41511,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "3050f018e3d7f55c825584756f079e4853e8970d443e55e58b38b424c71c4c85",
+      "sources": 49734
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+        "catalog_sha256": "3931c70ab456e02dd5c4ccc13b4e2817892ffa85d45d5fea4f05a3888c67ed46",
+        "chunks": [
+          {
+            "declaration_hint": "endpointLogarithm_eq_actual",
+            "declaration_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 2031,
+            "source_path": "NavierStokes/ActivationContinuation.lean",
+            "source_start_line": 2021
+          },
+          {
+            "declaration_hint": "RampParameters",
+            "declaration_id": "lean:NavierStokes.ActivationContinuation.RampParameters",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 1496,
+            "source_path": "NavierStokes/ActivationContinuation.lean",
+            "source_start_line": 1465
+          },
+          {
+            "declaration_hint": "reference",
+            "declaration_id": "lean:NavierStokes.ActivationContinuation.RampParameters.reference",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 1499,
+            "source_path": "NavierStokes/ActivationContinuation.lean",
+            "source_start_line": 1497
+          },
+          {
+            "declaration_hint": "profiles",
+            "declaration_id": "lean:NavierStokes.ActivationContinuation.RampParameters.profiles",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 1503,
+            "source_path": "NavierStokes/ActivationContinuation.lean",
+            "source_start_line": 1500
+          },
+          {
+            "declaration_hint": "bigTime_pos",
+            "declaration_id": "lean:NavierStokes.ActivationContinuation.RampParameters.bigTime_pos",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 1521,
+            "source_path": "NavierStokes/ActivationContinuation.lean",
+            "source_start_line": 1520
+          },
+          {
+            "declaration_hint": "endpointLogarithm",
+            "declaration_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 1992,
+            "source_path": "NavierStokes/ActivationContinuation.lean",
+            "source_start_line": 1990
+          },
+          {
+            "declaration_hint": "AnalyticInputs",
+            "declaration_id": "lean:NavierStokes.NaturalAxisCoefficients.AnalyticInputs",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 471,
+            "source_path": "NavierStokes/NaturalAxisCoefficients.lean",
+            "source_start_line": 458
+          },
+          {
+            "declaration_hint": "SmallParameters",
+            "declaration_id": "lean:NavierStokes.NaturalAxisData.SmallParameters",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 45,
+            "source_path": "NavierStokes/NaturalAxisData.lean",
+            "source_start_line": 39
+          },
+          {
+            "declaration_hint": "ProfileFamily",
+            "declaration_id": "lean:NavierStokes.NaturalProfile.ProfileFamily",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 583,
+            "source_path": "NavierStokes/NaturalProfile.lean",
+            "source_start_line": 556
+          },
+          {
+            "declaration_hint": "E",
+            "declaration_id": "lean:NavierStokes.ProfileHistories.Profiles.E",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 318,
+            "source_path": "NavierStokes/ProfileHistories.lean",
+            "source_start_line": 318
+          },
+          {
+            "declaration_hint": "parameterInterval",
+            "declaration_id": "lean:NavierStokes.ReferencePath.parameterInterval",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 330,
+            "source_path": "NavierStokes/ReferencePath.lean",
+            "source_start_line": 328
+          },
+          {
+            "declaration_hint": "parameterInterval_open",
+            "declaration_id": "lean:NavierStokes.ReferencePath.parameterInterval_open",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 332,
+            "source_path": "NavierStokes/ReferencePath.lean",
+            "source_start_line": 331
+          },
+          {
+            "declaration_hint": "radialDomain",
+            "declaration_id": "lean:NavierStokes.ReferencePath.Input.radialDomain",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 458,
+            "source_path": "NavierStokes/ReferencePath.lean",
+            "source_start_line": 445
+          },
+          {
+            "declaration_hint": "bigTime",
+            "declaration_id": "lean:NavierStokes.TransitionRamp.StockReference.bigTime",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 269,
+            "source_path": "NavierStokes/TransitionRamp.lean",
+            "source_start_line": 268
+          },
+          {
+            "declaration_hint": "finalTime",
+            "declaration_id": "lean:NavierStokes.TransitionRamp.StockReference.finalTime",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 270,
+            "source_path": "NavierStokes/TransitionRamp.lean",
+            "source_start_line": 270
+          },
+          {
+            "declaration_hint": "ofNatural",
+            "declaration_id": "lean:NavierStokes.TransitionRamp.ofNatural",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 765,
+            "source_path": "NavierStokes/TransitionRamp.lean",
+            "source_start_line": 750
+          },
+          {
+            "declaration_hint": "radius0_lt_100",
+            "declaration_id": "lean:NavierStokes.TransitionRamp.StockReference.radius0_lt_100",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 1201,
+            "source_path": "NavierStokes/TransitionRamp.lean",
+            "source_start_line": 1197
+          },
+          {
+            "declaration_hint": "endpointLog_eq_actual",
+            "declaration_id": "lean:NavierStokes.TransitionRamp.StockReference.endpointLog_eq_actual",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 1271,
+            "source_path": "NavierStokes/TransitionRamp.lean",
+            "source_start_line": 1259
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1854,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.profiles"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.NaturalAxisCoefficients.AnalyticInputs"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.NaturalAxisData.SmallParameters"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.NaturalProfile.ProfileFamily"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ProfileHistories.Profiles.E"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ReferencePath.Input.ofNatural"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ReferencePath.Input.radialDomain"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ReferencePath.parameterInterval"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.actTime"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.bigTime_pos"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.finish_before"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.kappa"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.refTime"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.refTime_bound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.refTime_pos"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.reference"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.widthA"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.widthA_pos"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.widthU"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.NaturalAxisCoefficients.AnalyticInputs"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.NaturalAxisData.SmallParameters"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.NaturalProfile.ProfileFamily"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ReferencePath.parameterInterval"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.ReferencePath.parameterInterval_open"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.TransitionRamp.StockReference.bigTime"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.TransitionRamp.StockReference.endpointLog_eq_actual"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.TransitionRamp.StockReference.finalTime"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.TransitionRamp.StockReference.radius0"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.TransitionRamp.StockReference.radius0_lt_100"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "target_id": "lean:NavierStokes.TransitionRamp.ofNatural"
+          }
+        ],
+        "query": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+        "scope_root_modules": [
+          "NavierStokes"
+        ],
+        "source_id": "openai-navier-stokes",
+        "source_kind": "git",
+        "source_revision": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+        "split_projection_sha256": "e467a5949195f269999f388fa59cf8e62bb0394828111d43f45e727c34a47ce5",
+        "status": "FOUND",
+        "target_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "3931c70ab456e02dd5c4ccc13b4e2817892ffa85d45d5fea4f05a3888c67ed46",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+            "backend": "kusto",
+            "candidate_id": "openai-navier-stokes::lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.actTime"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.bigTime_pos"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.finish_before"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.kappa"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.profiles"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.refTime"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.refTime_bound"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.refTime_pos"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.reference"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.widthA"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.widthA_pos"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ActivationContinuation.RampParameters.widthU"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.NaturalAxisCoefficients.AnalyticInputs"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.NaturalAxisData.SmallParameters"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.NaturalProfile.ProfileFamily"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ProfileHistories.Profiles.E"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ReferencePath.Input.ofNatural"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ReferencePath.Input.radialDomain"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ReferencePath.parameterInterval"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.ReferencePath.parameterInterval_open"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.TransitionRamp.StockReference.bigTime"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.TransitionRamp.StockReference.endpointLog_eq_actual"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.TransitionRamp.StockReference.finalTime"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.TransitionRamp.StockReference.radius0"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.TransitionRamp.StockReference.radius0_lt_100"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.TransitionRamp.ofNatural"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 704638,
+            "projection_nodes": 41511,
+            "root": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "scope_root_modules": [
+              "NavierStokes"
+            ],
+            "source_authority": null,
+            "source_id": "openai-navier-stokes",
+            "source_kind": "git",
+            "source_revision": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+            "candidate_id": "openai-navier-stokes::lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "endpointLogarithm_eq_actual",
+            "declaration_id": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 2031,
+            "source_id": "openai-navier-stokes",
+            "source_path": "NavierStokes/ActivationContinuation.lean",
+            "source_row_id": "src:NavierStokes/ActivationContinuation.lean:2021:2031",
+            "source_start_line": 2021
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:NavierStokes.ActivationContinuation.RampParameters.endpointLogarithm_eq_actual",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-navier-stokes",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+        "catalog_sha256": "3931c70ab456e02dd5c4ccc13b4e2817892ffa85d45d5fea4f05a3888c67ed46",
+        "chunks": [
+          {
+            "declaration_hint": "betaFromU_eq_fluxHistory",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 235,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 223
+          },
+          {
+            "declaration_hint": "Field",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.Field",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 26,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 25
+          },
+          {
+            "declaration_hint": "regularAlgebra",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.regularAlgebra",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 60,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 53
+          },
+          {
+            "declaration_hint": "EvenProfile",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.EvenProfile",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 64,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 61
+          },
+          {
+            "declaration_hint": "parameter",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.parameter",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 104,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 102
+          },
+          {
+            "declaration_hint": "etaDerivative",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.etaDerivative",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 127,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 119
+          },
+          {
+            "declaration_hint": "massAverage",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.massAverage",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 183,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 165
+          },
+          {
+            "declaration_hint": "massHistory_eq_massAverage",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.massHistory_eq_massAverage",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 194,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 184
+          },
+          {
+            "declaration_hint": "parameterMassHistory_eq_massAverage",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.parameterMassHistory_eq_massAverage",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 203,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 195
+          },
+          {
+            "declaration_hint": "Domain",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.Domain",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 207,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 204
+          },
+          {
+            "declaration_hint": "betaFromU",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 222,
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_start_line": 215
+          },
+          {
+            "declaration_hint": "dScale",
+            "declaration_id": "lean:NavierStokes.PositiveAxisSystem.dScale",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 52,
+            "source_path": "NavierStokes/PositiveAxisSystem.lean",
+            "source_start_line": 52
+          },
+          {
+            "declaration_hint": "edge",
+            "declaration_id": "lean:NavierStokes.PositiveAxisSystem.edge",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 53,
+            "source_path": "NavierStokes/PositiveAxisSystem.lean",
+            "source_start_line": 53
+          },
+          {
+            "declaration_hint": "ell",
+            "declaration_id": "lean:NavierStokes.PositiveAxisSystem.ell",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 54,
+            "source_path": "NavierStokes/PositiveAxisSystem.lean",
+            "source_start_line": 54
+          },
+          {
+            "declaration_hint": "massHistory",
+            "declaration_id": "lean:NavierStokes.PositiveOrderMoments.massHistory",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 523,
+            "source_path": "NavierStokes/PositiveOrderMoments.lean",
+            "source_start_line": 521
+          },
+          {
+            "declaration_hint": "parameterMassHistory",
+            "declaration_id": "lean:NavierStokes.PositiveOrderMoments.parameterMassHistory",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 526,
+            "source_path": "NavierStokes/PositiveOrderMoments.lean",
+            "source_start_line": 524
+          },
+          {
+            "declaration_hint": "fluxHistory",
+            "declaration_id": "lean:NavierStokes.PositiveOrderMoments.fluxHistory",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 531,
+            "source_path": "NavierStokes/PositiveOrderMoments.lean",
+            "source_start_line": 527
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1230,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.Domain"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.EvenProfile"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.Field"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.regularAlgebra"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.PositiveOrderMoments.fluxHistory"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.Domain"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.Domain.isOpen"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.EvenProfile"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.Field"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.etaDerivative"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.massAverage"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.massHistory_eq_massAverage"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.parameter"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.parameterMassHistory_eq_massAverage"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.GlobalSlowProfiles.regularAlgebra"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.PositiveAxisSystem.dScale"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.PositiveAxisSystem.edge"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.PositiveAxisSystem.ell"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.PositiveOrderMoments.fluxHistory"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.PositiveOrderMoments.massHistory"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "target_id": "lean:NavierStokes.PositiveOrderMoments.parameterMassHistory"
+          }
+        ],
+        "query": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+        "scope_root_modules": [
+          "NavierStokes"
+        ],
+        "source_id": "openai-navier-stokes",
+        "source_kind": "git",
+        "source_revision": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+        "split_projection_sha256": "e467a5949195f269999f388fa59cf8e62bb0394828111d43f45e727c34a47ce5",
+        "status": "FOUND",
+        "target_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "3931c70ab456e02dd5c4ccc13b4e2817892ffa85d45d5fea4f05a3888c67ed46",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+            "backend": "kusto",
+            "candidate_id": "openai-navier-stokes::lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.Domain"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.Domain.isOpen"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.EvenProfile"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.Field"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.etaDerivative"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.massAverage"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.massHistory_eq_massAverage"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.parameter"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.parameterMassHistory_eq_massAverage"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.GlobalSlowProfiles.regularAlgebra"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.PositiveAxisSystem.dScale"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.PositiveAxisSystem.edge"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.PositiveAxisSystem.ell"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.PositiveOrderMoments.fluxHistory"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.PositiveOrderMoments.massHistory"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.PositiveOrderMoments.parameterMassHistory"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 704638,
+            "projection_nodes": 41511,
+            "root": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "scope_root_modules": [
+              "NavierStokes"
+            ],
+            "source_authority": null,
+            "source_id": "openai-navier-stokes",
+            "source_kind": "git",
+            "source_revision": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+            "candidate_id": "openai-navier-stokes::lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "betaFromU_eq_fluxHistory",
+            "declaration_id": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 235,
+            "source_id": "openai-navier-stokes",
+            "source_path": "NavierStokes/GlobalSlowProfiles.lean",
+            "source_row_id": "src:NavierStokes/GlobalSlowProfiles.lean:223:235",
+            "source_start_line": 223
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:NavierStokes.GlobalSlowProfiles.betaFromU_eq_fluxHistory",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-navier-stokes",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+        "catalog_sha256": "3931c70ab456e02dd5c4ccc13b4e2817892ffa85d45d5fea4f05a3888c67ed46",
+        "chunks": [
+          {
+            "declaration_hint": "finalBlock_increment_bounds",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 8669,
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_start_line": 8640
+          },
+          {
+            "declaration_hint": "Context",
+            "declaration_id": "lean:NavierStokes.CorrectionState.Context",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 35,
+            "source_path": "NavierStokes/CorrectionState.lean",
+            "source_start_line": 29
+          },
+          {
+            "declaration_hint": "State",
+            "declaration_id": "lean:NavierStokes.CorrectionState.State",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 70,
+            "source_path": "NavierStokes/CorrectionState.lean",
+            "source_start_line": 63
+          },
+          {
+            "declaration_hint": "CyclePoint",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CyclePoint",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 4985,
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_start_line": 4984
+          },
+          {
+            "declaration_hint": "CycleCoefficients",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CycleCoefficients",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 4998,
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_start_line": 4990
+          },
+          {
+            "declaration_hint": "CycleParameters",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CycleParameters",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 5016,
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_start_line": 4999
+          },
+          {
+            "declaration_hint": "particularBlock",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CycleParameters.particularBlock",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 5024,
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_start_line": 5017
+          },
+          {
+            "declaration_hint": "signedBlock",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CycleParameters.signedBlock",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 5052,
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_start_line": 5050
+          },
+          {
+            "declaration_hint": "finalBlock",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 5088,
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_start_line": 5086
+          },
+          {
+            "declaration_hint": "UniformWaveClass",
+            "declaration_id": "lean:NavierStokes.LabelSumBounds.UniformWaveClass",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 52,
+            "source_path": "NavierStokes/LabelSumBounds.lean",
+            "source_start_line": 44
+          },
+          {
+            "declaration_hint": "congr",
+            "declaration_id": "lean:NavierStokes.LabelSumBounds.UniformClass.congr",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 86,
+            "source_path": "NavierStokes/LabelSumBounds.lean",
+            "source_start_line": 74
+          },
+          {
+            "declaration_hint": "mono_exponent",
+            "declaration_id": "lean:NavierStokes.LabelSumBounds.UniformClass.mono_exponent",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 112,
+            "source_path": "NavierStokes/LabelSumBounds.lean",
+            "source_start_line": 100
+          },
+          {
+            "declaration_hint": "add",
+            "declaration_id": "lean:NavierStokes.LabelSumBounds.UniformClass.add",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 131,
+            "source_path": "NavierStokes/LabelSumBounds.lean",
+            "source_start_line": 113
+          },
+          {
+            "declaration_hint": "Plane",
+            "declaration_id": "lean:NavierStokes.LocalSignedRequest.Plane",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 23,
+            "source_path": "NavierStokes/LocalSignedRequest.lean",
+            "source_start_line": 22
+          },
+          {
+            "declaration_hint": "Plane",
+            "declaration_id": "lean:NavierStokes.PressureStream.Plane",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 25,
+            "source_path": "NavierStokes/PressureStream.lean",
+            "source_start_line": 24
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1631,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.Context"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.HarmonicBlock.pressure"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.HarmonicBlock.velocity"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.State"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleCoefficients"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleCoefficients.blocks"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.particularBlock"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.signedBlock"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.strip"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CyclePoint"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.LabelSumBounds.UniformWaveClass"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.LocalSignedRequest.Plane"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.PressureStream.Plane"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.Context"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.HarmonicBlock.pressure"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.HarmonicBlock.velocity"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionState.State"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleCoefficients"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleCoefficients.blocks"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.particularBlock"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.signedBlock"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.strip"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.CorrectionStep.CyclePoint"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.LabelSumBounds.UniformClass.add"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.LabelSumBounds.UniformClass.congr"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.LabelSumBounds.UniformClass.mono_exponent"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.LabelSumBounds.UniformWaveClass"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.LocalSignedRequest.Plane"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.PressureStream.Plane"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.WeightedClasses.StripData.domain"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "target_id": "lean:NavierStokes.WeightedClasses.StripData.zeta"
+          }
+        ],
+        "query": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+        "scope_root_modules": [
+          "NavierStokes"
+        ],
+        "source_id": "openai-navier-stokes",
+        "source_kind": "git",
+        "source_revision": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+        "split_projection_sha256": "e467a5949195f269999f388fa59cf8e62bb0394828111d43f45e727c34a47ce5",
+        "status": "FOUND",
+        "target_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "3931c70ab456e02dd5c4ccc13b4e2817892ffa85d45d5fea4f05a3888c67ed46",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+            "backend": "kusto",
+            "candidate_id": "openai-navier-stokes::lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionState.Context"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionState.HarmonicBlock.pressure"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionState.HarmonicBlock.velocity"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionState.State"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CycleCoefficients"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CycleCoefficients.blocks"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CycleParameters"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CycleParameters.particularBlock"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CycleParameters.signedBlock"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CycleParameters.strip"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.CorrectionStep.CyclePoint"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.LabelSumBounds.UniformClass.add"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.LabelSumBounds.UniformClass.congr"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.LabelSumBounds.UniformClass.mono_exponent"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.LabelSumBounds.UniformWaveClass"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.LocalSignedRequest.Plane"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.PressureStream.Plane"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.WeightedClasses.StripData.domain"
+              },
+              {
+                "depth": 1,
+                "id": "lean:NavierStokes.WeightedClasses.StripData.zeta"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 704638,
+            "projection_nodes": 41511,
+            "root": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "scope_root_modules": [
+              "NavierStokes"
+            ],
+            "source_authority": null,
+            "source_id": "openai-navier-stokes",
+            "source_kind": "git",
+            "source_revision": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "83408cf0626503c2a6f04e2bcb068d70103dc0af18c563f93e459123f90d0fc8",
+            "candidate_id": "openai-navier-stokes::lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "finalBlock_increment_bounds",
+            "declaration_id": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "f9e8bc5b38b6e212696e8a30e3e91517af887bbd",
+            "source_end_line": 8669,
+            "source_id": "openai-navier-stokes",
+            "source_path": "NavierStokes/CorrectionStep.lean",
+            "source_row_id": "src:NavierStokes/CorrectionStep.lean:8640:8669",
+            "source_start_line": 8640
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:NavierStokes.CorrectionStep.CycleParameters.finalBlock_increment_bounds",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-navier-stokes",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
