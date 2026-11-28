@@ -1,0 +1,631 @@
+{
+  "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+  "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+  "fingerprint_sha256": "b609443a04a2f21d7a23c59a624c6a4bf1512bcec2aeb513147dd64b545c4a70",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "Permanent"
+    ],
+    "witnesses": [
+      {
+        "declaration": "PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+        "direction": "forward",
+        "neighbor": "PermanentFormulaLowerBound.Formula",
+        "source_path": "Permanent.lean"
+      },
+      {
+        "declaration": "PermanentRollout.twice_criticalDimension_lt_blockVariables",
+        "direction": "forward",
+        "neighbor": "PermanentRollout.blockColumns",
+        "source_path": "Permanent.lean"
+      }
+    ]
+  },
+  "plan_sha256": "ebcc539310584ef620b2795fb3678e6b910289d0c9fe78fec8ab9c28bf1d3383",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-permanent",
+  "split_evidence": {
+    "graph": {
+      "edges": 11641,
+      "nodes": 1793,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_8a175b518587ddf1b1496607ddba68dc_nodes",
+        "my_db.main.rs_split_8a175b518587ddf1b1496607ddba68dc_edges",
+        "my_db.main.rs_split_8a175b518587ddf1b1496607ddba68dc_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+      "database": "repo-search-s-openai-ten-proofs-per-8a175b518587ddf1",
+      "database_id": "01a221d1-7a01-7603-925e-75728da610d0",
+      "split_projection_sha256": "d4357dc72ba544ce3dc4ef9f4e5084bdac7596f542d68658fdf0817a0ccef6d6",
+      "sqlite_bytes": 41082880,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+      "edges": 11641,
+      "files": {
+        "edges.csv": {
+          "bytes": 1370765,
+          "sha256": "d8d933a276c68732c79cbed9dc6c177dc464f872f260abada252c528e2b9ab9e"
+        },
+        "nodes.csv": {
+          "bytes": 118450,
+          "sha256": "1c9145b0782fb417348ee93c9a94f3248206feae113cf4c4ff7a1e1356042b00"
+        },
+        "search.sqlite": {
+          "bytes": 41082880,
+          "sha256": "11eda9ef02a86b5610c99184cd8d36fb4567eed3ac2b850b67b499da4e35c436"
+        }
+      },
+      "full_projection_fingerprint": "3edd3475d453332c6cecd0530f2f739e70c35a70b0b465e13deecc55500e2836",
+      "nodes": 1793,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "f00173620c4d272627c04b0242c4a74442b41ec1603cada5d4be1f810b1d5ff7",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "contractedSkeletonBinaryGenerators_card_le",
+            "declaration_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 25972,
+            "source_path": "Permanent.lean",
+            "source_start_line": 25956
+          },
+          {
+            "declaration_hint": "Formula",
+            "declaration_id": "lean:PermanentFormulaLowerBound.Formula",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 20414,
+            "source_path": "Permanent.lean",
+            "source_start_line": 20404
+          },
+          {
+            "declaration_hint": "ContractedSkeleton",
+            "declaration_id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 25870,
+            "source_path": "Permanent.lean",
+            "source_start_line": 25859
+          },
+          {
+            "declaration_hint": "contractedSkeletonBinaryExtras",
+            "declaration_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryExtras",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 25901,
+            "source_path": "Permanent.lean",
+            "source_start_line": 25891
+          },
+          {
+            "declaration_hint": "contractedSkeletonBinaryGenerators",
+            "declaration_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 25909,
+            "source_path": "Permanent.lean",
+            "source_start_line": 25902
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 609,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton.generators"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton.generators"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton.intercept"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton.slope"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryExtras"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "target_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators"
+          }
+        ],
+        "query": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+        "scope_root_modules": [
+          "Permanent"
+        ],
+        "source_id": "openai-ten-proofs-permanent",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "d4357dc72ba544ce3dc4ef9f4e5084bdac7596f542d68658fdf0817a0ccef6d6",
+        "status": "FOUND",
+        "target_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-permanent::lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:PermanentFormulaLowerBound.Formula"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton.generators"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton.intercept"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentFormulaLowerBound.Formula.ContractedSkeleton.slope"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryExtras"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 11641,
+            "projection_nodes": 1793,
+            "root": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "scope_root_modules": [
+              "Permanent"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-permanent",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+            "candidate_id": "openai-ten-proofs-permanent::lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "contractedSkeletonBinaryGenerators_card_le",
+            "declaration_id": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 25972,
+            "source_id": "openai-ten-proofs-permanent",
+            "source_path": "Permanent.lean",
+            "source_row_id": "src:Permanent.lean:25956:25972",
+            "source_start_line": 25956
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:PermanentFormulaLowerBound.Formula.contractedSkeletonBinaryGenerators_card_le",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-permanent",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "twice_criticalDimension_lt_blockVariables",
+            "declaration_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11316,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11303
+          },
+          {
+            "declaration_hint": "blockWidth",
+            "declaration_id": "lean:PermanentRollout.blockWidth",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11190,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11189
+          },
+          {
+            "declaration_hint": "blockCount",
+            "declaration_id": "lean:PermanentRollout.blockCount",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11192,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11191
+          },
+          {
+            "declaration_hint": "blockColumns",
+            "declaration_id": "lean:PermanentRollout.blockColumns",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11196,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11195
+          },
+          {
+            "declaration_hint": "blockVariables",
+            "declaration_id": "lean:PermanentRollout.blockVariables",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11198,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11197
+          },
+          {
+            "declaration_hint": "powerSumParameter",
+            "declaration_id": "lean:PermanentRollout.powerSumParameter",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11200,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11199
+          },
+          {
+            "declaration_hint": "powerSum_cost_le_quarter",
+            "declaration_id": "lean:PermanentRollout.powerSum_cost_le_quarter",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11282,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11276
+          },
+          {
+            "declaration_hint": "minorSum_cost_lt_quarter",
+            "declaration_id": "lean:PermanentRollout.minorSum_cost_lt_quarter",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11294,
+            "source_path": "Permanent.lean",
+            "source_start_line": 11283
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 454,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockColumns"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockCount"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockVariables"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockWidth"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.powerSumParameter"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockColumns"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockCount"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockVariables"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.blockWidth"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.minorSum_cost_lt_quarter"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.powerSumParameter"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "target_id": "lean:PermanentRollout.powerSum_cost_le_quarter"
+          }
+        ],
+        "query": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+        "scope_root_modules": [
+          "Permanent"
+        ],
+        "source_id": "openai-ten-proofs-permanent",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "d4357dc72ba544ce3dc4ef9f4e5084bdac7596f542d68658fdf0817a0ccef6d6",
+        "status": "FOUND",
+        "target_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-permanent::lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:PermanentRollout.blockColumns"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentRollout.blockCount"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentRollout.blockVariables"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentRollout.blockWidth"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentRollout.minorSum_cost_lt_quarter"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentRollout.powerSumParameter"
+              },
+              {
+                "depth": 1,
+                "id": "lean:PermanentRollout.powerSum_cost_le_quarter"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 11641,
+            "projection_nodes": 1793,
+            "root": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "scope_root_modules": [
+              "Permanent"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-permanent",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "b097ff91a1413a83bd9aaf2edc88bf16fa1ba339f1976f2e62f20b8ca0b8232c",
+            "candidate_id": "openai-ten-proofs-permanent::lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "twice_criticalDimension_lt_blockVariables",
+            "declaration_id": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11316,
+            "source_id": "openai-ten-proofs-permanent",
+            "source_path": "Permanent.lean",
+            "source_row_id": "src:Permanent.lean:11303:11316",
+            "source_start_line": 11303
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:PermanentRollout.twice_criticalDimension_lt_blockVariables",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-permanent",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

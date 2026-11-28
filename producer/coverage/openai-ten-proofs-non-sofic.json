@@ -1,0 +1,803 @@
+{
+  "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+  "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+  "fingerprint_sha256": "04c4fb190a1e7d8b149976c5ed73e029e7e23652dbe3aa69c013550b1b518097",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "NonSoficGroup"
+    ],
+    "witnesses": [
+      {
+        "declaration": "SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+        "direction": "forward",
+        "neighbor": "SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad",
+        "source_path": "NonSoficGroup.lean"
+      },
+      {
+        "declaration": "SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+        "direction": "forward",
+        "neighbor": "SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad",
+        "source_path": "NonSoficGroup.lean"
+      }
+    ]
+  },
+  "plan_sha256": "163ecaa082cce362fd74723f446c18520847e80cf8c27eac36546ff51d3393c0",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-non-sofic",
+  "split_evidence": {
+    "graph": {
+      "edges": 13019,
+      "nodes": 1717,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_fb56dd9c5df5d2632cd433a6d0e570d5_nodes",
+        "my_db.main.rs_split_fb56dd9c5df5d2632cd433a6d0e570d5_edges",
+        "my_db.main.rs_split_fb56dd9c5df5d2632cd433a6d0e570d5_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+      "database": "repo-search-s-openai-ten-proofs-non-fb56dd9c5df5d263",
+      "database_id": "01a221d1-7a01-76cb-afdf-15c01d71171d",
+      "split_projection_sha256": "d6c4be94b4b427c2c53b6d81b5c48a6fd359ff3eb011a2b51f2ef7a0150af7f4",
+      "sqlite_bytes": 41095168,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+      "edges": 13019,
+      "files": {
+        "edges.csv": {
+          "bytes": 1535035,
+          "sha256": "1a0198fdbe8cce69b8299e825c2c9916131be9563ba8383d7d0e53d459a05abf"
+        },
+        "nodes.csv": {
+          "bytes": 121581,
+          "sha256": "25e0014d25ffff5c58993732605ead21a8d13b47cbac4c1f35c6f3ba9bcecf3f"
+        },
+        "search.sqlite": {
+          "bytes": 41095168,
+          "sha256": "ba601ef541ec06f0e8628b954339304beb23bbb261bd98e0e57f729115281092"
+        }
+      },
+      "full_projection_fingerprint": "06f971eb62fd0fe9c45848a5a709e7d62e6e2e2ba92d6d0e515d45f24eedcc3f",
+      "nodes": 1717,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "8cdc4c5be519447bf42068d5f333e2c493ece5adc6f292109b067c06f78d17cc",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "canonicalProductRadiusBad_density_tendsto_zero",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28532,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28471
+          },
+          {
+            "declaration_hint": "SoficApproximation",
+            "declaration_id": "lean:SoficGroups.SoficApproximation",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 280,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 269
+          },
+          {
+            "declaration_hint": "finiteRootBad",
+            "declaration_id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 16817,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 16813
+          },
+          {
+            "declaration_hint": "finiteRootBad_density_tendsto_zero",
+            "declaration_id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad_density_tendsto_zero",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 16901,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 16861
+          },
+          {
+            "declaration_hint": "sourceFirstFactorCayleyRadiusBad",
+            "declaration_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28355,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28345
+          },
+          {
+            "declaration_hint": "sourceFirstFactorCayleyRadiusBad_density_tendsto_zero",
+            "declaration_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad_density_tendsto_zero",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28373,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28356
+          },
+          {
+            "declaration_hint": "sourceProductRadiusLabels",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.sourceProductRadiusLabels",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28414,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28403
+          },
+          {
+            "declaration_hint": "canonicalProductRadiusBad",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28470,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28457
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1587,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.PermutationModel.size"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.SoficApproximation"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.SoficApproximation.model"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.sourceProductRadiusLabels"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad_density_tendsto_zero"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad_density_tendsto_zero"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.PermutationModel.size"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.SoficApproximation"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "target_id": "lean:SoficGroups.SoficApproximation.model"
+          }
+        ],
+        "query": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+        "scope_root_modules": [
+          "NonSoficGroup"
+        ],
+        "source_id": "openai-ten-proofs-non-sofic",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "d6c4be94b4b427c2c53b6d81b5c48a6fd359ff3eb011a2b51f2ef7a0150af7f4",
+        "status": "FOUND",
+        "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-non-sofic::lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.sourceProductRadiusLabels"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad_density_tendsto_zero"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad_density_tendsto_zero"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.PermutationModel.size"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.SoficApproximation"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.SoficApproximation.model"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 13019,
+            "projection_nodes": 1717,
+            "root": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "scope_root_modules": [
+              "NonSoficGroup"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-non-sofic",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+            "candidate_id": "openai-ten-proofs-non-sofic::lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "canonicalProductRadiusBad_density_tendsto_zero",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28532,
+            "source_id": "openai-ten-proofs-non-sofic",
+            "source_path": "NonSoficGroup.lean",
+            "source_row_id": "src:NonSoficGroup.lean:28471:28532",
+            "source_start_line": 28471
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad_density_tendsto_zero",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-non-sofic",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "canonical_source_matched_component_cayley_ball_realization",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28785,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28716
+          },
+          {
+            "declaration_hint": "SoficApproximation",
+            "declaration_id": "lean:SoficGroups.SoficApproximation",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 280,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 269
+          },
+          {
+            "declaration_hint": "partitionWordCrossing",
+            "declaration_id": "lean:SoficGroups.partitionWordCrossing",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1060,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 1057
+          },
+          {
+            "declaration_hint": "matchedRadiusBad",
+            "declaration_id": "lean:SoficGroups.matchedRadiusBad",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 6164,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 6160
+          },
+          {
+            "declaration_hint": "finiteRootBad",
+            "declaration_id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 16817,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 16813
+          },
+          {
+            "declaration_hint": "sourceFirstFactorCayleyRadiusBad",
+            "declaration_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28355,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28345
+          },
+          {
+            "declaration_hint": "sourceFirstFactor_injective_ball",
+            "declaration_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactor_injective_ball",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28402,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28374
+          },
+          {
+            "declaration_hint": "sourceProductRadiusLabels",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.sourceProductRadiusLabels",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28414,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28403
+          },
+          {
+            "declaration_hint": "firstFactor_mem_sourceProductRadiusLabels",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.firstFactor_mem_sourceProductRadiusLabels",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28423,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28415
+          },
+          {
+            "declaration_hint": "canonicalProductRadiusBad",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28470,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28457
+          },
+          {
+            "declaration_hint": "component_exit_mem_partitionWordCrossing",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.component_exit_mem_partitionWordCrossing",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28620,
+            "source_path": "NonSoficGroup.lean",
+            "source_start_line": 28608
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1591,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.sourceProductRadiusLabels"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.PermutationModel.action"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.PermutationModel.size"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.SoficApproximation"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.SoficApproximation.model"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.matchedRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.component_exit_mem_partitionWordCrossing"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.firstFactor_mem_sourceProductRadiusLabels"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.sourceProductRadiusLabels"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactor_injective_ball"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.PermutationModel.action"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.PermutationModel.size"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.SoficApproximation"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.SoficApproximation.model"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.matchedRadiusBad"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "target_id": "lean:SoficGroups.partitionWordCrossing"
+          }
+        ],
+        "query": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+        "scope_root_modules": [
+          "NonSoficGroup"
+        ],
+        "source_id": "openai-ten-proofs-non-sofic",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "d6c4be94b4b427c2c53b6d81b5c48a6fd359ff3eb011a2b51f2ef7a0150af7f4",
+        "status": "FOUND",
+        "target_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-non-sofic::lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonicalProductRadiusBad"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.component_exit_mem_partitionWordCrossing"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.firstFactor_mem_sourceProductRadiusLabels"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.sourceProductRadiusLabels"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactorCayleyRadiusBad"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.ChosenCayleyMatchedComponentRealization.sourceFirstFactor_injective_ball"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.KunActualSoficRootRadius.finiteRootBad"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.PermutationModel.action"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.PermutationModel.size"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.SoficApproximation"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.SoficApproximation.model"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.matchedRadiusBad"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SoficGroups.partitionWordCrossing"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 13019,
+            "projection_nodes": 1717,
+            "root": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "scope_root_modules": [
+              "NonSoficGroup"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-non-sofic",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "1aebfced96d3d61c6190fdd5828fb4dd14b166f804842b5ab39b06e9c05b8dca",
+            "candidate_id": "openai-ten-proofs-non-sofic::lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "canonical_source_matched_component_cayley_ball_realization",
+            "declaration_id": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28785,
+            "source_id": "openai-ten-proofs-non-sofic",
+            "source_path": "NonSoficGroup.lean",
+            "source_row_id": "src:NonSoficGroup.lean:28716:28785",
+            "source_start_line": 28716
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:SoficGroups.CanonicalProductRadiusBadMatchedCapture.canonical_source_matched_component_cayley_ball_realization",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-non-sofic",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

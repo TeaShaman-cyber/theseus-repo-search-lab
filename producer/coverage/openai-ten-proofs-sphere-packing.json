@@ -1,0 +1,527 @@
+{
+  "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+  "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+  "fingerprint_sha256": "a4ecbd30db23a4b379500eb594c445ab52b258b0dc51064bf4280b2ada65b19a",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "SpherePacking"
+    ],
+    "witnesses": [
+      {
+        "declaration": "CohnElkies.eventualUpperBound_of_constructivePrimal",
+        "direction": "forward",
+        "neighbor": "CohnElkies.Admissible",
+        "source_path": "SpherePacking.lean"
+      },
+      {
+        "declaration": "SpherePacking.upper_packing_density_le_one",
+        "direction": "forward",
+        "neighbor": "SpherePacking.SpherePacking",
+        "source_path": "SpherePacking.lean"
+      }
+    ]
+  },
+  "plan_sha256": "031b2ab2f85d252b6f73262d489a88b3027b3be1e0cf584e9213b8343349d8cf",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-sphere-packing",
+  "split_evidence": {
+    "graph": {
+      "edges": 14844,
+      "nodes": 2398,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_5b7328440faaea1e9aa11d82c697a9ea_nodes",
+        "my_db.main.rs_split_5b7328440faaea1e9aa11d82c697a9ea_edges",
+        "my_db.main.rs_split_5b7328440faaea1e9aa11d82c697a9ea_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+      "database": "repo-search-s-openai-ten-proofs-sph-5b7328440faaea1e",
+      "database_id": "01a221d1-7b01-775e-b3dc-efaf47392262",
+      "split_projection_sha256": "6cf96b82a576932b5f12803718911f2ea2309f47205dec119e8975f588248a08",
+      "sqlite_bytes": 41230336,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+      "edges": 14844,
+      "files": {
+        "edges.csv": {
+          "bytes": 1756166,
+          "sha256": "1a8d0452c7b00ed96c46084d468f00851f6d65dc4589c747d7ec9ae51d2c235f"
+        },
+        "nodes.csv": {
+          "bytes": 140795,
+          "sha256": "3211320367dcc56560c3eed8e92f9897f2affca4cd36afceda2d0cc5ed77ed8d"
+        },
+        "search.sqlite": {
+          "bytes": 41230336,
+          "sha256": "1bd750a072c105bb7135d7288339a9d06c7b72f808f585f2a803dd68c7698312"
+        }
+      },
+      "full_projection_fingerprint": "b0637f1e369df38bf720d15f4bac9651eaaffb84dd681b8a9e46eba3c50fabfe",
+      "nodes": 2398,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "64bb0797f6ba6b9c73495274332e5f9eab9005d9ace65a9ed28145831aca6d3b",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "eventualUpperBound_of_constructivePrimal",
+            "declaration_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 39833,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 39828
+          },
+          {
+            "declaration_hint": "Admissible",
+            "declaration_id": "lean:CohnElkies.Admissible",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 56,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 47
+          },
+          {
+            "declaration_hint": "normalizedCost",
+            "declaration_id": "lean:CohnElkies.normalizedCost",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 81,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 79
+          },
+          {
+            "declaration_hint": "normalizedProgram",
+            "declaration_id": "lean:CohnElkies.normalizedProgram",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 84,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 82
+          },
+          {
+            "declaration_hint": "criticalRadius",
+            "declaration_id": "lean:CohnElkies.criticalRadius",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 86,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 85
+          },
+          {
+            "declaration_hint": "EventualUpperBound",
+            "declaration_id": "lean:CohnElkies.EventualUpperBound",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 39811,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 39808
+          },
+          {
+            "declaration_hint": "ConstructivePrimalUpperBound",
+            "declaration_id": "lean:CohnElkies.ConstructivePrimalUpperBound",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 39821,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 39817
+          },
+          {
+            "declaration_hint": "normalizedProgram_le_normalizedCost",
+            "declaration_id": "lean:CohnElkies.normalizedProgram_le_normalizedCost",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 39827,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 39822
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 323,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.ConstructivePrimalUpperBound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.EventualUpperBound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.Admissible"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.ConstructivePrimalUpperBound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.criticalRadius"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.normalizedCost"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.normalizedProgram"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "target_id": "lean:CohnElkies.normalizedProgram_le_normalizedCost"
+          }
+        ],
+        "query": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+        "scope_root_modules": [
+          "SpherePacking"
+        ],
+        "source_id": "openai-ten-proofs-sphere-packing",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "6cf96b82a576932b5f12803718911f2ea2309f47205dec119e8975f588248a08",
+        "status": "FOUND",
+        "target_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-sphere-packing::lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:CohnElkies.Admissible"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CohnElkies.ConstructivePrimalUpperBound"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CohnElkies.EventualUpperBound"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CohnElkies.criticalRadius"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CohnElkies.normalizedCost"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CohnElkies.normalizedProgram"
+              },
+              {
+                "depth": 1,
+                "id": "lean:CohnElkies.normalizedProgram_le_normalizedCost"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 14844,
+            "projection_nodes": 2398,
+            "root": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "scope_root_modules": [
+              "SpherePacking"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-sphere-packing",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+            "candidate_id": "openai-ten-proofs-sphere-packing::lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "eventualUpperBound_of_constructivePrimal",
+            "declaration_id": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 39833,
+            "source_id": "openai-ten-proofs-sphere-packing",
+            "source_path": "SpherePacking.lean",
+            "source_row_id": "src:SpherePacking.lean:39828:39833",
+            "source_start_line": 39828
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:CohnElkies.eventualUpperBound_of_constructivePrimal",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-sphere-packing",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "chunks": [
+          {
+            "declaration_hint": "upper_packing_density_le_one",
+            "declaration_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 48263,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 48258
+          },
+          {
+            "declaration_hint": "SpherePacking",
+            "declaration_id": "lean:SpherePacking.SpherePacking",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 48067,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 48062
+          },
+          {
+            "declaration_hint": "local_density_le_one",
+            "declaration_id": "lean:SpherePacking.local_density_le_one",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 48257,
+            "source_path": "SpherePacking.lean",
+            "source_start_line": 48253
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 171,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "target_id": "lean:SpherePacking.SpherePacking"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "target_id": "lean:SpherePacking.upperPackingDensity"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "target_id": "lean:SpherePacking.SpherePacking"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "target_id": "lean:SpherePacking.densityInsideRadius"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "target_id": "lean:SpherePacking.local_density_le_one"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "target_id": "lean:SpherePacking.upperPackingDensity"
+          }
+        ],
+        "query": "lean:SpherePacking.upper_packing_density_le_one",
+        "scope_root_modules": [
+          "SpherePacking"
+        ],
+        "source_id": "openai-ten-proofs-sphere-packing",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "6cf96b82a576932b5f12803718911f2ea2309f47205dec119e8975f588248a08",
+        "status": "FOUND",
+        "target_id": "lean:SpherePacking.upper_packing_density_le_one",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "131ceb0ce762271599874ddbfae6413a1cf258c667032d8b894006bd1726c464",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-sphere-packing::lean:SpherePacking.upper_packing_density_le_one",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.SpherePacking"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.densityInsideRadius"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.local_density_le_one"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.upperPackingDensity"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 14844,
+            "projection_nodes": 2398,
+            "root": "lean:SpherePacking.upper_packing_density_le_one",
+            "scope_root_modules": [
+              "SpherePacking"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-sphere-packing",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "5350eca08be34180e7cb562b569bf5837873548dc6eb5e0ee62a42fce62e1cc9",
+            "candidate_id": "openai-ten-proofs-sphere-packing::lean:SpherePacking.upper_packing_density_le_one",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "upper_packing_density_le_one",
+            "declaration_id": "lean:SpherePacking.upper_packing_density_le_one",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 48263,
+            "source_id": "openai-ten-proofs-sphere-packing",
+            "source_path": "SpherePacking.lean",
+            "source_row_id": "src:SpherePacking.lean:48258:48263",
+            "source_start_line": 48258
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:SpherePacking.upper_packing_density_le_one",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-sphere-packing",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
