@@ -1,0 +1,845 @@
+{
+  "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+  "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+  "fingerprint_sha256": "dfa7ca99797b28662ef00f4e0bdee91fdf46b6802128c59c1f06c3133153d199",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "EhrhartVolumeInequality"
+    ],
+    "witnesses": [
+      {
+        "declaration": "Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+        "direction": "forward",
+        "neighbor": "Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyMovingBergmanProbability",
+        "source_path": "EhrhartVolumeInequality.lean"
+      },
+      {
+        "declaration": "Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+        "direction": "forward",
+        "neighbor": "Ehrhart.BodyMeasure.volume_interior_eq_volume",
+        "source_path": "EhrhartVolumeInequality.lean"
+      }
+    ]
+  },
+  "plan_sha256": "7ddeb7c4028dedd46d723a835e493dfb0ad3fa87d0448671ab2ced6aa68a2d3f",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-ehrhart",
+  "split_evidence": {
+    "graph": {
+      "edges": 31971,
+      "nodes": 2483,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_cebbd0627fa24c68a35c4229b34a9ca4_nodes",
+        "my_db.main.rs_split_cebbd0627fa24c68a35c4229b34a9ca4_edges",
+        "my_db.main.rs_split_cebbd0627fa24c68a35c4229b34a9ca4_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+      "database": "repo-search-s-openai-ten-proofs-ehr-cebbd0627fa24c68",
+      "database_id": "01a221c1-0901-71f4-9ab3-88b04c72e583",
+      "split_projection_sha256": "15f640fc832b29f1e9891458bb4729c43b36b377d59c9d8b68073c6875b0d304",
+      "sqlite_bytes": 41476096,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+      "edges": 31971,
+      "files": {
+        "edges.csv": {
+          "bytes": 3785553,
+          "sha256": "c0ae683162fd6a4d1e036eec318fd08c1606a0d3a4f3e2cca973b94303b6224b"
+        },
+        "nodes.csv": {
+          "bytes": 216567,
+          "sha256": "51dce6a5a82b558893ac67b76cd1b8eb4bd79ee36e9de6189d7e1765f35c2127"
+        },
+        "search.sqlite": {
+          "bytes": 41476096,
+          "sha256": "e6972fd83b76f9ae1e9e1b897f0f01ecc6ecd76b297b49acacd57aaff6fc0b56"
+        }
+      },
+      "full_projection_fingerprint": "25b0144499cdb152a44caecb2ee1db9de454a2f32a701adca014bcf0b668db62",
+      "nodes": 2483,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "7c061e3c1e01b25b015f79d21f5e8d6c00bac9ad809e6bdad9ead6b3bc3b6842",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "chunks": [
+          {
+            "declaration_hint": "normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "declaration_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 53078,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 53055
+          },
+          {
+            "declaration_hint": "Space",
+            "declaration_id": "lean:Ehrhart.Space",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 13,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 12
+          },
+          {
+            "declaration_hint": "normalizedVolume",
+            "declaration_id": "lean:Ehrhart.normalizedVolume",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 26
+          },
+          {
+            "declaration_hint": "CenteredBody",
+            "declaration_id": "lean:Ehrhart.CenteredBody",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 42,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 35
+          },
+          {
+            "declaration_hint": "sharpConstant",
+            "declaration_id": "lean:Ehrhart.sharpConstant",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 58,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 51
+          },
+          {
+            "declaration_hint": "LogSpace",
+            "declaration_id": "lean:Ehrhart.TorusCharacters.LogSpace",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 937,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 936
+          },
+          {
+            "declaration_hint": "AngularTorus",
+            "declaration_id": "lean:Ehrhart.TorusCharacters.AngularTorus",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 939,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 938
+          },
+          {
+            "declaration_hint": "LogTorus",
+            "declaration_id": "lean:Ehrhart.WeightedTorusHilbert.LogTorus",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1052,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 1050
+          },
+          {
+            "declaration_hint": "canonicalScale",
+            "declaration_id": "lean:Ehrhart.BodyScale.canonicalScale",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2854,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 2851
+          },
+          {
+            "declaration_hint": "canonicalScale_pos",
+            "declaration_id": "lean:Ehrhart.BodyScale.canonicalScale_pos",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2864,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 2860
+          },
+          {
+            "declaration_hint": "canonicalScale_pow",
+            "declaration_id": "lean:Ehrhart.BodyScale.canonicalScale_pow",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 2879,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 2865
+          },
+          {
+            "declaration_hint": "momentBodyMovingBergmanProbability",
+            "declaration_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyMovingBergmanProbability",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 52579,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 52571
+          },
+          {
+            "declaration_hint": "momentBodyZeroGibbsProbability",
+            "declaration_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyZeroGibbsProbability",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 52585,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 52580
+          },
+          {
+            "declaration_hint": "momentBodySharpJetScale_le_dimension_of_weakProbability",
+            "declaration_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodySharpJetScale_le_dimension_of_weakProbability",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 53054,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 53002
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1264,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyMovingBergmanProbability"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyZeroGibbsProbability"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.CenteredBody"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.CenteredBody.carrier"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.Space"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.TorusCharacters.AngularTorus"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.TorusCharacters.LogSpace"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.WeightedTorusHilbert.LogTorus"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.normalizedVolume"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.sharpConstant"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyMovingBergmanProbability"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodySharpJetScale_le_dimension_of_weakProbability"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyZeroGibbsProbability"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BodyScale.canonicalScale"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BodyScale.canonicalScale_pos"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.BodyScale.canonicalScale_pow"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.CenteredBody"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.CenteredBody.carrier"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.Space"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.TorusCharacters.AngularTorus"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.TorusCharacters.LogSpace"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.WeightedTorusHilbert.LogTorus"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.normalizedVolume"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "target_id": "lean:Ehrhart.sharpConstant"
+          }
+        ],
+        "query": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+        "scope_root_modules": [
+          "EhrhartVolumeInequality"
+        ],
+        "source_id": "openai-ten-proofs-ehrhart",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "15f640fc832b29f1e9891458bb4729c43b36b377d59c9d8b68073c6875b0d304",
+        "status": "FOUND",
+        "target_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-ehrhart::lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyMovingBergmanProbability"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodySharpJetScale_le_dimension_of_weakProbability"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.momentBodyZeroGibbsProbability"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.BodyScale.canonicalScale"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.BodyScale.canonicalScale_pos"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.BodyScale.canonicalScale_pow"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.CenteredBody"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.CenteredBody.carrier"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.Space"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.TorusCharacters.AngularTorus"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.TorusCharacters.LogSpace"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.WeightedTorusHilbert.LogTorus"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.normalizedVolume"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.sharpConstant"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 31971,
+            "projection_nodes": 2483,
+            "root": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "scope_root_modules": [
+              "EhrhartVolumeInequality"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-ehrhart",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+            "candidate_id": "openai-ten-proofs-ehrhart::lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "declaration_id": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 53078,
+            "source_id": "openai-ten-proofs-ehrhart",
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_row_id": "src:EhrhartVolumeInequality.lean:53055:53078",
+            "source_start_line": 53055
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:Ehrhart.BergmanJetPortmanteauActualVolumeBridge.normalizedVolume_le_sharpConstant_of_momentBodyWeakProbability",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-ehrhart",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "chunks": [
+          {
+            "declaration_hint": "monomial_count_div_pow_tendsto_volume",
+            "declaration_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 181,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 149
+          },
+          {
+            "declaration_hint": "Space",
+            "declaration_id": "lean:Ehrhart.Space",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 13,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 12
+          },
+          {
+            "declaration_hint": "normalizedVolume",
+            "declaration_id": "lean:Ehrhart.normalizedVolume",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 28,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 26
+          },
+          {
+            "declaration_hint": "CenteredBody",
+            "declaration_id": "lean:Ehrhart.CenteredBody",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 42,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 35
+          },
+          {
+            "declaration_hint": "volume_interior_eq_volume",
+            "declaration_id": "lean:Ehrhart.BodyMeasure.volume_interior_eq_volume",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 71,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 59
+          },
+          {
+            "declaration_hint": "monomialIndex",
+            "declaration_id": "lean:Ehrhart.LatticeAsymptotics.monomialIndex",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 80,
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_start_line": 77
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 504,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.CenteredBody"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.CenteredBody.carrier"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.LatticeAsymptotics.monomialIndex"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.Space"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.normalizedVolume"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.BodyMeasure.volume_interior_eq_volume"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.CenteredBody"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.CenteredBody.carrier"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.CenteredBody.compact"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.CenteredBody.convex"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.LatticeAsymptotics.monomialIndex"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.Space"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "target_id": "lean:Ehrhart.normalizedVolume"
+          }
+        ],
+        "query": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+        "scope_root_modules": [
+          "EhrhartVolumeInequality"
+        ],
+        "source_id": "openai-ten-proofs-ehrhart",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "15f640fc832b29f1e9891458bb4729c43b36b377d59c9d8b68073c6875b0d304",
+        "status": "FOUND",
+        "target_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-ehrhart::lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.BodyMeasure.volume_interior_eq_volume"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.CenteredBody"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.CenteredBody.carrier"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.CenteredBody.compact"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.CenteredBody.convex"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.LatticeAsymptotics.monomialIndex"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.Space"
+              },
+              {
+                "depth": 1,
+                "id": "lean:Ehrhart.normalizedVolume"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 31971,
+            "projection_nodes": 2483,
+            "root": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "scope_root_modules": [
+              "EhrhartVolumeInequality"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-ehrhart",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
+            "candidate_id": "openai-ten-proofs-ehrhart::lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "monomial_count_div_pow_tendsto_volume",
+            "declaration_id": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 181,
+            "source_id": "openai-ten-proofs-ehrhart",
+            "source_path": "EhrhartVolumeInequality.lean",
+            "source_row_id": "src:EhrhartVolumeInequality.lean:149:181",
+            "source_start_line": 149
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:Ehrhart.LatticeAsymptotics.monomial_count_div_pow_tendsto_volume",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-ehrhart",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

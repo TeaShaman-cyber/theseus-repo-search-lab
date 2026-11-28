@@ -1,0 +1,709 @@
+{
+  "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+  "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+  "fingerprint_sha256": "2c92fb87860a38234b01430ba0361c5ee676aab73b96b71502382db711272afe",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "QuantumParallelRepetition"
+    ],
+    "witnesses": [
+      {
+        "declaration": "QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+        "direction": "forward",
+        "neighbor": "QuantumParallelRepetition.ClassicalInformation.finite_relative_entropy_joint_chain_rule",
+        "source_path": "QuantumParallelRepetition.lean"
+      },
+      {
+        "declaration": "QuantumParallelRepetition.winning_expectation_transfer",
+        "direction": "forward",
+        "neighbor": "QuantumParallelRepetition.Pinsker.finiteTotalVariation",
+        "source_path": "QuantumParallelRepetition.lean"
+      }
+    ]
+  },
+  "plan_sha256": "0ab6be25d4b873ba63e3965457420169fd6b726e9b82cbba673a514afe6b0f18",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-quantum-repetition",
+  "split_evidence": {
+    "graph": {
+      "edges": 40417,
+      "nodes": 2987,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_94bd0da3167aaceba9215a344a914813_nodes",
+        "my_db.main.rs_split_94bd0da3167aaceba9215a344a914813_edges",
+        "my_db.main.rs_split_94bd0da3167aaceba9215a344a914813_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+      "database": "repo-search-s-openai-ten-proofs-qua-94bd0da3167aaceb",
+      "database_id": "01a221c2-2d01-704e-838d-8069d91e7ec8",
+      "split_projection_sha256": "5f381b91f41600aa6f40f329e705e3c4fd810150d70be51c7016a6f338e1d27c",
+      "sqlite_bytes": 41562112,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+      "edges": 40417,
+      "files": {
+        "edges.csv": {
+          "bytes": 4779029,
+          "sha256": "6a65a2b2b2fe59ec307ee29c5e0680362d076186b91def77d3074a0b410e7a70"
+        },
+        "nodes.csv": {
+          "bytes": 226521,
+          "sha256": "9f0cd3cbd25ec3841551d73f0794ef9264e14d1000e08e08d4dc2b76d33b931d"
+        },
+        "search.sqlite": {
+          "bytes": 41562112,
+          "sha256": "f8455ca048ee87a2f61e4d8e5a6f81babbabe9b6ba43925c62ecf4fe829f0890"
+        }
+      },
+      "full_projection_fingerprint": "0a34c1a57adb1ea5acc078e85ece7ee3bf228cf75b18446063019042953e7e6a",
+      "nodes": 2987,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "25adc3fd1e769307e251b5b41abc790b8d7ce0eb96b6bb1be22fdcbc30afd033",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "chunks": [
+          {
+            "declaration_hint": "uniformFlagRelativeEntropy_le",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26398,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26335
+          },
+          {
+            "declaration_hint": "finiteRelativeEntropy",
+            "declaration_id": "lean:QuantumParallelRepetition.Pinsker.finiteRelativeEntropy",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 10401,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10398
+          },
+          {
+            "declaration_hint": "jointFirstMarginal",
+            "declaration_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 10946,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10944
+          },
+          {
+            "declaration_hint": "jointConditional",
+            "declaration_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointConditional",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 10951,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10947
+          },
+          {
+            "declaration_hint": "jointFirstMarginal_nonneg",
+            "declaration_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal_nonneg",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 10959,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10952
+          },
+          {
+            "declaration_hint": "jointFirstMarginal_sum",
+            "declaration_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal_sum",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 10966,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10960
+          },
+          {
+            "declaration_hint": "jointConditional_sum",
+            "declaration_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointConditional_sum",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 10994,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10985
+          },
+          {
+            "declaration_hint": "finite_relative_entropy_joint_chain_rule",
+            "declaration_id": "lean:QuantumParallelRepetition.ClassicalInformation.finite_relative_entropy_joint_chain_rule",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 11153,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10995
+          },
+          {
+            "declaration_hint": "finiteUniformWeight",
+            "declaration_id": "lean:QuantumParallelRepetition.finiteUniformWeight",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26183,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26181
+          },
+          {
+            "declaration_hint": "finiteRelativeEntropy_uniform_le_log_card",
+            "declaration_id": "lean:QuantumParallelRepetition.finiteRelativeEntropy_uniform_le_log_card",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26254,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26214
+          },
+          {
+            "declaration_hint": "uniformFlagReference",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagReference",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26259,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26255
+          },
+          {
+            "declaration_hint": "uniformFlagReference_nonneg",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagReference_nonneg",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26269,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26260
+          },
+          {
+            "declaration_hint": "uniformFlagReference_sum",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagReference_sum",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26282,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26270
+          },
+          {
+            "declaration_hint": "uniformFlagReference_firstMarginal",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagReference_firstMarginal",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26294,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26283
+          },
+          {
+            "declaration_hint": "uniformFlagReference_conditional",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagReference_conditional",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26310,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26295
+          },
+          {
+            "declaration_hint": "uniformFlagReference_absolute_continuity",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagReference_absolute_continuity",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26334,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 26311
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 3556,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.Pinsker.finiteRelativeEntropy"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.uniformFlagReference"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.ClassicalInformation.finite_relative_entropy_joint_chain_rule"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointConditional"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointConditional_sum"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal_nonneg"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal_sum"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.Pinsker.finiteRelativeEntropy"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.finiteRelativeEntropy_uniform_le_log_card"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.finiteUniformWeight"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.uniformFlagReference"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.uniformFlagReference_absolute_continuity"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.uniformFlagReference_conditional"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.uniformFlagReference_firstMarginal"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.uniformFlagReference_nonneg"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "target_id": "lean:QuantumParallelRepetition.uniformFlagReference_sum"
+          }
+        ],
+        "query": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+        "scope_root_modules": [
+          "QuantumParallelRepetition"
+        ],
+        "source_id": "openai-ten-proofs-quantum-repetition",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "5f381b91f41600aa6f40f329e705e3c4fd810150d70be51c7016a6f338e1d27c",
+        "status": "FOUND",
+        "target_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-quantum-repetition::lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.ClassicalInformation.finite_relative_entropy_joint_chain_rule"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.ClassicalInformation.jointConditional"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.ClassicalInformation.jointConditional_sum"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal_nonneg"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.ClassicalInformation.jointFirstMarginal_sum"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.Pinsker.finiteRelativeEntropy"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.finiteRelativeEntropy_uniform_le_log_card"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.finiteUniformWeight"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.uniformFlagReference"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.uniformFlagReference_absolute_continuity"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.uniformFlagReference_conditional"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.uniformFlagReference_firstMarginal"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.uniformFlagReference_nonneg"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.uniformFlagReference_sum"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 40417,
+            "projection_nodes": 2987,
+            "root": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "scope_root_modules": [
+              "QuantumParallelRepetition"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-quantum-repetition",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+            "candidate_id": "openai-ten-proofs-quantum-repetition::lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "uniformFlagRelativeEntropy_le",
+            "declaration_id": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26398,
+            "source_id": "openai-ten-proofs-quantum-repetition",
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_row_id": "src:QuantumParallelRepetition.lean:26335:26398",
+            "source_start_line": 26335
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:QuantumParallelRepetition.uniformFlagRelativeEntropy_le",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-quantum-repetition",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "chunks": [
+          {
+            "declaration_hint": "winning_expectation_transfer",
+            "declaration_id": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 23817,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 23789
+          },
+          {
+            "declaration_hint": "finiteTotalVariation",
+            "declaration_id": "lean:QuantumParallelRepetition.Pinsker.finiteTotalVariation",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 10405,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 10402
+          },
+          {
+            "declaration_hint": "finiteTotalVariation_comm",
+            "declaration_id": "lean:QuantumParallelRepetition.finiteTotalVariation_comm",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 23752,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 23743
+          },
+          {
+            "declaration_hint": "expectation_le_add_totalVariation",
+            "declaration_id": "lean:QuantumParallelRepetition.expectation_le_add_totalVariation",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 23788,
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_start_line": 23753
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 593,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "target_id": "lean:QuantumParallelRepetition.Pinsker.finiteTotalVariation"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "target_id": "lean:QuantumParallelRepetition.Pinsker.finiteTotalVariation"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "target_id": "lean:QuantumParallelRepetition.expectation_le_add_totalVariation"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "target_id": "lean:QuantumParallelRepetition.finiteTotalVariation_comm"
+          }
+        ],
+        "query": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+        "scope_root_modules": [
+          "QuantumParallelRepetition"
+        ],
+        "source_id": "openai-ten-proofs-quantum-repetition",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "5f381b91f41600aa6f40f329e705e3c4fd810150d70be51c7016a6f338e1d27c",
+        "status": "FOUND",
+        "target_id": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-quantum-repetition::lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.Pinsker.finiteTotalVariation"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.expectation_le_add_totalVariation"
+              },
+              {
+                "depth": 1,
+                "id": "lean:QuantumParallelRepetition.finiteTotalVariation_comm"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 40417,
+            "projection_nodes": 2987,
+            "root": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "scope_root_modules": [
+              "QuantumParallelRepetition"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-quantum-repetition",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
+            "candidate_id": "openai-ten-proofs-quantum-repetition::lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "winning_expectation_transfer",
+            "declaration_id": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 23817,
+            "source_id": "openai-ten-proofs-quantum-repetition",
+            "source_path": "QuantumParallelRepetition.lean",
+            "source_row_id": "src:QuantumParallelRepetition.lean:23789:23817",
+            "source_start_line": 23789
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:QuantumParallelRepetition.winning_expectation_transfer",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-quantum-repetition",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}

@@ -223,7 +223,8 @@
       "receipt_asset": "openai-ten-proofs-connes-rigidity-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-connes-rigidity.json",
       "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
-      "fingerprint_sha256": "38e8eafd362b9237779903a60ad78275b0052616ad4ac326932abf32567593b4"
+      "fingerprint_sha256": "38e8eafd362b9237779903a60ad78275b0052616ad4ac326932abf32567593b4",
+      "split_projection_sha256": "8686c9b9036f7f93130805cc3110bb80b643460ac7da1276a0ad306970620c39"
     },
     {
       "source_id": "openai-ten-proofs-ehrhart",
@@ -232,7 +233,8 @@
       "receipt_asset": "openai-ten-proofs-ehrhart-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-ehrhart.json",
       "artifact_identity": "58dd32b798fbac0431f8266a542484ecfad1a80fe3d03bee5f7aadc86ea5c4a8",
-      "fingerprint_sha256": "dfa7ca99797b28662ef00f4e0bdee91fdf46b6802128c59c1f06c3133153d199"
+      "fingerprint_sha256": "dfa7ca99797b28662ef00f4e0bdee91fdf46b6802128c59c1f06c3133153d199",
+      "split_projection_sha256": "15f640fc832b29f1e9891458bb4729c43b36b377d59c9d8b68073c6875b0d304"
     },
     {
       "source_id": "openai-ten-proofs-gap-cvp",
@@ -288,7 +290,8 @@
       "receipt_asset": "openai-ten-proofs-quantum-repetition-release-receipt.json",
       "source_descriptor": "producer/sources/openai-ten-proofs-quantum-repetition.json",
       "artifact_identity": "48895ebe70405d1d4c6b44c4e37f59b8310bbe832bd9aa2d26f9cb25696cc6d5",
-      "fingerprint_sha256": "2c92fb87860a38234b01430ba0361c5ee676aab73b96b71502382db711272afe"
+      "fingerprint_sha256": "2c92fb87860a38234b01430ba0361c5ee676aab73b96b71502382db711272afe",
+      "split_projection_sha256": "5f381b91f41600aa6f40f329e705e3c4fd810150d70be51c7016a6f338e1d27c"
     },
     {
       "source_id": "openai-ten-proofs-sphere-packing",

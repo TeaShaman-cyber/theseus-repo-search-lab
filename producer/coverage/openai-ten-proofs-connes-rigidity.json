@@ -1,0 +1,423 @@
+{
+  "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+  "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+  "fingerprint_sha256": "38e8eafd362b9237779903a60ad78275b0052616ad4ac326932abf32567593b4",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Retain all accepted lexical chunks including paths outside the accepted graph.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve existing accepted elaborated graph during batched split migration; no new proof claim.",
+    "required_modules": [
+      "ConnesRigidity"
+    ],
+    "witnesses": [
+      {
+        "declaration": "ConnesRigidity.universalLatticePropertyT_of_elementary",
+        "direction": "forward",
+        "neighbor": "ConnesRigidity.ErshovJaikinElementaryPropertyT",
+        "source_path": "ConnesRigidity.lean"
+      },
+      {
+        "declaration": "ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+        "direction": "forward",
+        "neighbor": "ConnesRigidity.vonNeumannClosure",
+        "source_path": "ConnesRigidity.lean"
+      }
+    ]
+  },
+  "plan_sha256": "2fc63ac168883a17e00ec98ef6c8c46ba83b249de641b8d81c52390dd57fdf65",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-connes-rigidity",
+  "split_evidence": {
+    "graph": {
+      "edges": 33377,
+      "nodes": 3281,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_1f584087060f5c86899b8890ca781d50_nodes",
+        "my_db.main.rs_split_1f584087060f5c86899b8890ca781d50_edges",
+        "my_db.main.rs_split_1f584087060f5c86899b8890ca781d50_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+      "database": "repo-search-s-openai-ten-proofs-con-1f584087060f5c86",
+      "database_id": "01a221c1-0701-7e0f-b646-d993a3cd6262",
+      "split_projection_sha256": "8686c9b9036f7f93130805cc3110bb80b643460ac7da1276a0ad306970620c39",
+      "sqlite_bytes": 41508864,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+      "edges": 33377,
+      "files": {
+        "edges.csv": {
+          "bytes": 3948322,
+          "sha256": "cc6354d95f3f5a960abdfb90b7efb1495dc0f1a437ba7b7f200f464273c80a83"
+        },
+        "nodes.csv": {
+          "bytes": 192592,
+          "sha256": "6710df0c3f820a08e9125f68026c37abcace9f73873892014ad9cfa4c0731ab0"
+        },
+        "search.sqlite": {
+          "bytes": 41508864,
+          "sha256": "6462a8bfcc464bec9b2d98cf4cf0b2010a8ee2a1d775752cc1c5216ba6f28477"
+        }
+      },
+      "full_projection_fingerprint": "5f7fca029483ccb6eb22ec5cc0cf23bd8f5154340d7900301c6ef66ffd90b868",
+      "nodes": 3281,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "5523a5eb725c6c2dabe433ab04230efa9a918e67559ed390f2f1c3eb789737ca",
+      "sources": 25809
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "chunks": [
+          {
+            "declaration_hint": "universalLatticePropertyT_of_elementary",
+            "declaration_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1586,
+            "source_path": "ConnesRigidity.lean",
+            "source_start_line": 1581
+          },
+          {
+            "declaration_hint": "ErshovJaikinUniversalLatticePropertyT",
+            "declaration_id": "lean:ConnesRigidity.ErshovJaikinUniversalLatticePropertyT",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1393,
+            "source_path": "ConnesRigidity.lean",
+            "source_start_line": 1391
+          },
+          {
+            "declaration_hint": "SuslinElementaryGeneration",
+            "declaration_id": "lean:ConnesRigidity.SuslinElementaryGeneration",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1564,
+            "source_path": "ConnesRigidity.lean",
+            "source_start_line": 1562
+          },
+          {
+            "declaration_hint": "ErshovJaikinElementaryPropertyT",
+            "declaration_id": "lean:ConnesRigidity.ErshovJaikinElementaryPropertyT",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1567,
+            "source_path": "ConnesRigidity.lean",
+            "source_start_line": 1565
+          },
+          {
+            "declaration_hint": "integralElementaryGroup_propertyT_iff_integralGroup",
+            "declaration_id": "lean:ConnesRigidity.integralElementaryGroup_propertyT_iff_integralGroup",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1580,
+            "source_path": "ConnesRigidity.lean",
+            "source_start_line": 1573
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 214,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "target_id": "lean:ConnesRigidity.ErshovJaikinElementaryPropertyT"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "target_id": "lean:ConnesRigidity.ErshovJaikinUniversalLatticePropertyT"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "target_id": "lean:ConnesRigidity.SuslinElementaryGeneration"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "target_id": "lean:ConnesRigidity.ErshovJaikinElementaryPropertyT"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "target_id": "lean:ConnesRigidity.ErshovJaikinUniversalLatticePropertyT"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "target_id": "lean:ConnesRigidity.SuslinElementaryGeneration"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "target_id": "lean:ConnesRigidity.integralElementaryGroup_propertyT_iff_integralGroup"
+          }
+        ],
+        "query": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+        "scope_root_modules": [
+          "ConnesRigidity"
+        ],
+        "source_id": "openai-ten-proofs-connes-rigidity",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "8686c9b9036f7f93130805cc3110bb80b643460ac7da1276a0ad306970620c39",
+        "status": "FOUND",
+        "target_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-connes-rigidity::lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ConnesRigidity.ErshovJaikinElementaryPropertyT"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConnesRigidity.ErshovJaikinUniversalLatticePropertyT"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConnesRigidity.SuslinElementaryGeneration"
+              },
+              {
+                "depth": 1,
+                "id": "lean:ConnesRigidity.integralElementaryGroup_propertyT_iff_integralGroup"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 33377,
+            "projection_nodes": 3281,
+            "root": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "scope_root_modules": [
+              "ConnesRigidity"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-connes-rigidity",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+            "candidate_id": "openai-ten-proofs-connes-rigidity::lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "universalLatticePropertyT_of_elementary",
+            "declaration_id": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 1586,
+            "source_id": "openai-ten-proofs-connes-rigidity",
+            "source_path": "ConnesRigidity.lean",
+            "source_row_id": "src:ConnesRigidity.lean:1581:1586",
+            "source_start_line": 1581
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ConnesRigidity.universalLatticePropertyT_of_elementary",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-connes-rigidity",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "chunks": [
+          {
+            "declaration_hint": "vonNeumannClosure_eq_of_factor_generators",
+            "declaration_id": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 35908,
+            "source_path": "ConnesRigidity.lean",
+            "source_start_line": 35869
+          },
+          {
+            "declaration_hint": "vonNeumannClosure",
+            "declaration_id": "lean:ConnesRigidity.vonNeumannClosure",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 194,
+            "source_path": "ConnesRigidity.lean",
+            "source_start_line": 176
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 564,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+            "target_id": "lean:ConnesRigidity.vonNeumannClosure"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+            "target_id": "lean:ConnesRigidity.vonNeumannClosure"
+          }
+        ],
+        "query": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+        "scope_root_modules": [
+          "ConnesRigidity"
+        ],
+        "source_id": "openai-ten-proofs-connes-rigidity",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "8686c9b9036f7f93130805cc3110bb80b643460ac7da1276a0ad306970620c39",
+        "status": "FOUND",
+        "target_id": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "712ab816b158a4a81cf8b5f4463a8b99ab58487265822c306805d3d92ed6ae74",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-connes-rigidity::lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:ConnesRigidity.vonNeumannClosure"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 33377,
+            "projection_nodes": 3281,
+            "root": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+            "scope_root_modules": [
+              "ConnesRigidity"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-connes-rigidity",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "ab6b61dd51b0598081d317423ac52965fe2011f53e413f173666ea878f06d8ef",
+            "candidate_id": "openai-ten-proofs-connes-rigidity::lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "vonNeumannClosure_eq_of_factor_generators",
+            "declaration_id": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 35908,
+            "source_id": "openai-ten-proofs-connes-rigidity",
+            "source_path": "ConnesRigidity.lean",
+            "source_row_id": "src:ConnesRigidity.lean:35869:35908",
+            "source_start_line": 35869
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:ConnesRigidity.vonNeumannClosure_eq_of_factor_generators",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-connes-rigidity",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
