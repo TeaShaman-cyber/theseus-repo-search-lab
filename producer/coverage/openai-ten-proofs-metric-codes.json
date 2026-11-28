@@ -1,0 +1,951 @@
+{
+  "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+  "catalog_sha256": "00431fb020ffca6aa7c47b06a4ebc24ebdb404b5972b992b4327cd3c41e15e4e",
+  "fingerprint_sha256": "70b9f4109d4afdc7f88d12ed26f16e34f7b4fdd34376b05c02be32c7ca484b2c",
+  "plan": {
+    "excluded_raw_declarations": {},
+    "excluded_raw_modules": {},
+    "lexical_boundary": "Preserve all accepted lexical source chunks, including other files and generated declarations without source binding.",
+    "producer_kind": "lean-dep-viz",
+    "purpose": "Preserve accepted MetricCodes elaborated graph during split migration; no new proof claim.",
+    "required_modules": [
+      "MetricCodes"
+    ],
+    "witnesses": [
+      {
+        "declaration": "MetricCodes.bassalygo_elias_bound",
+        "direction": "forward",
+        "neighbor": "MetricCodes.BinaryWord",
+        "source_path": "MetricCodes.lean"
+      },
+      {
+        "declaration": "SpherePacking.finiteGramCertificate_sphericalCode_bound",
+        "direction": "forward",
+        "neighbor": "SpherePacking.Euclidean",
+        "source_path": "MetricCodes.lean"
+      }
+    ]
+  },
+  "plan_sha256": "f46400600d862737514f326371ffbdf66c4a0be441573d4c0b6feab6ec103ce4",
+  "schema": "theseus.corpus-selection-coverage.v1",
+  "source_id": "openai-ten-proofs-metric-codes",
+  "split_evidence": {
+    "graph": {
+      "edges": 62177,
+      "nodes": 6222,
+      "status": "CREATED",
+      "tables": [
+        "my_db.main.rs_split_5d342cb42691df924527e57dc132e7c4_nodes",
+        "my_db.main.rs_split_5d342cb42691df924527e57dc132e7c4_edges",
+        "my_db.main.rs_split_5d342cb42691df924527e57dc132e7c4_meta"
+      ]
+    },
+    "search": {
+      "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+      "database": "repo-search-s-openai-ten-proofs-met-5d342cb42691df92",
+      "database_id": "01a22179-d801-798c-b9ec-96fb57cb3dd4",
+      "split_projection_sha256": "c5ece23977af04878848f7c12eb024d642826080f0601e8cb91bf2f9490a9c9e",
+      "sqlite_bytes": 42553344,
+      "status": "CREATED"
+    },
+    "split": {
+      "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+      "edges": 62177,
+      "files": {
+        "edges.csv": {
+          "bytes": 7392163,
+          "sha256": "6a37e0e4ef0fff5de9a41d356b9a9dcf7708e5321d50b102f8e2715b31949b50"
+        },
+        "nodes.csv": {
+          "bytes": 574799,
+          "sha256": "89fc7a765b8bdaf917b4b77c0c40a03fe6fcbb97760c015c4aac55f310196475"
+        },
+        "search.sqlite": {
+          "bytes": 42553344,
+          "sha256": "6a63b75f8170476a36c465988bc2d50d9dfb2cef35be600cf30e6e084ebb2500"
+        }
+      },
+      "full_projection_fingerprint": "89c3e35385b87cebc3b20f9bbd8b74c0cab98197dcb497a8e7edea061d3b9bfe",
+      "nodes": 6222,
+      "profile": "repo-search-split-v1",
+      "search_projection_fingerprint": "49f076b4ff5585874a1cfe3899aec2be94aeb96b313cdb1f8a9b66a45ba4589f",
+      "sources": 25682
+    }
+  },
+  "witnesses": [
+    {
+      "context": {
+        "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+        "catalog_sha256": "00431fb020ffca6aa7c47b06a4ebc24ebdb404b5972b992b4327cd3c41e15e4e",
+        "chunks": [
+          {
+            "declaration_hint": "bassalygo_elias_bound",
+            "declaration_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4206,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4188
+          },
+          {
+            "declaration_hint": "BinaryWord",
+            "declaration_id": "lean:MetricCodes.BinaryWord",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 13,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 12
+          },
+          {
+            "declaration_hint": "IsBinaryCode",
+            "declaration_id": "lean:MetricCodes.IsBinaryCode",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 24
+          },
+          {
+            "declaration_hint": "weightShell",
+            "declaration_id": "lean:MetricCodes.weightShell",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4055,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4049
+          },
+          {
+            "declaration_hint": "localizedCode",
+            "declaration_id": "lean:MetricCodes.localizedCode",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4118,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4109
+          },
+          {
+            "declaration_hint": "translateLocalizedCode",
+            "declaration_id": "lean:MetricCodes.translateLocalizedCode",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4122,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4119
+          },
+          {
+            "declaration_hint": "translateLocalizedCode_subset_weightShell",
+            "declaration_id": "lean:MetricCodes.translateLocalizedCode_subset_weightShell",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4129,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4123
+          },
+          {
+            "declaration_hint": "card_translateLocalizedCode",
+            "declaration_id": "lean:MetricCodes.card_translateLocalizedCode",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4134,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4130
+          },
+          {
+            "declaration_hint": "translateLocalizedCode_isBinaryCode",
+            "declaration_id": "lean:MetricCodes.translateLocalizedCode_isBinaryCode",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4147,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4135
+          },
+          {
+            "declaration_hint": "localization_double_count",
+            "declaration_id": "lean:MetricCodes.localization_double_count",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4187,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4148
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 1070,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.BinaryWord"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.IsBinaryCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.weightShell"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.BinaryWord"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.IsBinaryCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.card_translateLocalizedCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.localization_double_count"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.localizedCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.translateLocalizedCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.translateLocalizedCode_isBinaryCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.translateLocalizedCode_subset_weightShell"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "target_id": "lean:MetricCodes.weightShell"
+          }
+        ],
+        "query": "lean:MetricCodes.bassalygo_elias_bound",
+        "scope_root_modules": [
+          "MetricCodes"
+        ],
+        "source_id": "openai-ten-proofs-metric-codes",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "c5ece23977af04878848f7c12eb024d642826080f0601e8cb91bf2f9490a9c9e",
+        "status": "FOUND",
+        "target_id": "lean:MetricCodes.bassalygo_elias_bound",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "00431fb020ffca6aa7c47b06a4ebc24ebdb404b5972b992b4327cd3c41e15e4e",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-metric-codes::lean:MetricCodes.bassalygo_elias_bound",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.BinaryWord"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.IsBinaryCode"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.card_translateLocalizedCode"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.localization_double_count"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.localizedCode"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.translateLocalizedCode"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.translateLocalizedCode_isBinaryCode"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.translateLocalizedCode_subset_weightShell"
+              },
+              {
+                "depth": 1,
+                "id": "lean:MetricCodes.weightShell"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 62177,
+            "projection_nodes": 6222,
+            "root": "lean:MetricCodes.bassalygo_elias_bound",
+            "scope_root_modules": [
+              "MetricCodes"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-metric-codes",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+            "candidate_id": "openai-ten-proofs-metric-codes::lean:MetricCodes.bassalygo_elias_bound",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "bassalygo_elias_bound",
+            "declaration_id": "lean:MetricCodes.bassalygo_elias_bound",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4206,
+            "source_id": "openai-ten-proofs-metric-codes",
+            "source_path": "MetricCodes.lean",
+            "source_row_id": "src:MetricCodes.lean:4188:4206",
+            "source_start_line": 4188
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:MetricCodes.bassalygo_elias_bound",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-metric-codes",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    },
+    {
+      "context": {
+        "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+        "catalog_sha256": "00431fb020ffca6aa7c47b06a4ebc24ebdb404b5972b992b4327cd3c41e15e4e",
+        "chunks": [
+          {
+            "declaration_hint": "finiteGramCertificate_sphericalCode_bound",
+            "declaration_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "distance": 0,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30785,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30687
+          },
+          {
+            "declaration_hint": "Euclidean",
+            "declaration_id": "lean:SpherePacking.Euclidean",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 4285,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 4282
+          },
+          {
+            "declaration_hint": "finite_linear_programming_bound",
+            "declaration_id": "lean:SpherePacking.finite_linear_programming_bound",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26535,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 26505
+          },
+          {
+            "declaration_hint": "harmonicDimension_pos",
+            "declaration_id": "lean:SpherePacking.Gegenbauer.harmonicDimension_pos",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26807,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 26798
+          },
+          {
+            "declaration_hint": "fibreDimension",
+            "declaration_id": "lean:SpherePacking.Gegenbauer.fibreDimension",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26849,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 26848
+          },
+          {
+            "declaration_hint": "fibreDimension_pos",
+            "declaration_id": "lean:SpherePacking.Gegenbauer.fibreDimension_pos",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 26856,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 26852
+          },
+          {
+            "declaration_hint": "truncatedHarmonicDimension",
+            "declaration_id": "lean:SpherePacking.truncatedHarmonicDimension",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 29676,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 29674
+          },
+          {
+            "declaration_hint": "harmonicDimension_le_truncated",
+            "declaration_id": "lean:SpherePacking.harmonicDimension_le_truncated",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 29733,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 29714
+          },
+          {
+            "declaration_hint": "isometricPackingKernel",
+            "declaration_id": "lean:SpherePacking.isometricPackingKernel",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30309,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30302
+          },
+          {
+            "declaration_hint": "FiniteGramCertificate",
+            "declaration_id": "lean:SpherePacking.FiniteGramCertificate",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30529,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30466
+          },
+          {
+            "declaration_hint": "auxiliaryFiniteGramKernel",
+            "declaration_id": "lean:SpherePacking.auxiliaryFiniteGramKernel",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30535,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30530
+          },
+          {
+            "declaration_hint": "isometricPackingKernel_nonneg",
+            "declaration_id": "lean:SpherePacking.isometricPackingKernel_nonneg",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30588,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30579
+          },
+          {
+            "declaration_hint": "isometricPackingKernel_diag",
+            "declaration_id": "lean:SpherePacking.isometricPackingKernel_diag",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30600,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30589
+          },
+          {
+            "declaration_hint": "isometricPackingKernel_trace_cauchy",
+            "declaration_id": "lean:SpherePacking.isometricPackingKernel_trace_cauchy",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30612,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30601
+          },
+          {
+            "declaration_hint": "finiteGramCertificate_auxiliary_sum_lower",
+            "declaration_id": "lean:SpherePacking.finiteGramCertificate_auxiliary_sum_lower",
+            "distance": 1,
+            "evidence_grade": "LEXICAL_HIT",
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30686,
+            "source_path": "MetricCodes.lean",
+            "source_start_line": 30655
+          }
+        ],
+        "complete_within_scope": true,
+        "created_from_authoritative_commit": true,
+        "dependency_boundary": "internal_only",
+        "estimated_tokens": 2980,
+        "evidence_boundary": "ELABORATED_DEPENDENCY",
+        "graph_backend": "local-duckdb",
+        "graph_edges": [
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Euclidean"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.FiniteGramCertificate"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Gegenbauer.fibreDimension"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Jacobi.topEigenvalue"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.SphericalCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.SphericalCode.points"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_TYPE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "type_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.truncatedHarmonicDimension"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Euclidean"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.FiniteGramCertificate"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.FiniteGramCertificate.fibre"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Gegenbauer.fibreDimension"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Gegenbauer.fibreDimension_pos"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Gegenbauer.harmonicDimension"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Gegenbauer.harmonicDimension_pos"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.Jacobi.topEigenvalue"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.SphericalCode"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.SphericalCode.inner_le"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.SphericalCode.points"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.SphericalCode.unit_norm"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.auxiliaryFiniteGramKernel"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.finiteGramCertificate_auxiliary_sum_lower"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.finite_linear_programming_bound"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.harmonicDimension_le_truncated"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.isometricPackingKernel"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.isometricPackingKernel_diag"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.isometricPackingKernel_nonneg"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.isometricPackingKernel_trace_cauchy"
+          },
+          {
+            "depth": 1,
+            "evidence_grade": "ELABORATED_VALUE_DEPENDENCY",
+            "producer": "cameronfreer/LeanDepViz@7859d91f89b37c9193d9a09709a58be6d98f94d6",
+            "relation": "value_dependency",
+            "source_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "target_id": "lean:SpherePacking.truncatedHarmonicDimension"
+          }
+        ],
+        "query": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+        "scope_root_modules": [
+          "MetricCodes"
+        ],
+        "source_id": "openai-ten-proofs-metric-codes",
+        "source_kind": "git",
+        "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+        "split_projection_sha256": "c5ece23977af04878848f7c12eb024d642826080f0601e8cb91bf2f9490a9c9e",
+        "status": "FOUND",
+        "target_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+        "token_estimate_method": "ceil(chars/4)"
+      },
+      "graph_search": {
+        "backend": "turso+kusto",
+        "catalog_sha256": "00431fb020ffca6aa7c47b06a4ebc24ebdb404b5972b992b4327cd3c41e15e4e",
+        "graph_coverage": "selected_lexical_declaration_seeds",
+        "graph_limit_per_seed": 50,
+        "graph_seeds": 1,
+        "graph_status": "FOUND",
+        "graph_unavailable": [],
+        "graphs": [
+          {
+            "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+            "backend": "kusto",
+            "candidate_id": "openai-ten-proofs-metric-codes::lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "complete_within_scope": true,
+            "created_from_authoritative_source": true,
+            "dependency_boundary": "internal_only",
+            "depth": 1,
+            "direction": "forward",
+            "evidence": "reachability_over_indexed_typed_edges",
+            "found": true,
+            "nodes": [
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.Euclidean"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.FiniteGramCertificate"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.FiniteGramCertificate.fibre"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.Gegenbauer.fibreDimension"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.Gegenbauer.fibreDimension_pos"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.Gegenbauer.harmonicDimension"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.Gegenbauer.harmonicDimension_pos"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.Jacobi.topEigenvalue"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.SphericalCode"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.SphericalCode.inner_le"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.SphericalCode.points"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.SphericalCode.unit_norm"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.auxiliaryFiniteGramKernel"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.finiteGramCertificate_auxiliary_sum_lower"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.finite_linear_programming_bound"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.harmonicDimension_le_truncated"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.isometricPackingKernel"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.isometricPackingKernel_diag"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.isometricPackingKernel_nonneg"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.isometricPackingKernel_trace_cauchy"
+              },
+              {
+                "depth": 1,
+                "id": "lean:SpherePacking.truncatedHarmonicDimension"
+              }
+            ],
+            "producer_kind": "lean-dep-viz",
+            "projection_edges": 62177,
+            "projection_nodes": 6222,
+            "root": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "scope_root_modules": [
+              "MetricCodes"
+            ],
+            "source_authority": null,
+            "source_id": "openai-ten-proofs-metric-codes",
+            "source_kind": "git",
+            "source_revision": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "status": "FOUND"
+          }
+        ],
+        "hits": [
+          {
+            "artifact_identity": "4185b2baa6fc54bfdf369f74cf00781f20bf04d2fc83f216b995bbd0cb0a5684",
+            "candidate_id": "openai-ten-proofs-metric-codes::lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "created_from_authoritative_commit": true,
+            "declaration_hint": "finiteGramCertificate_sphericalCode_bound",
+            "declaration_id": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+            "evidence_grade": "LEXICAL_HIT",
+            "local_rank": 1,
+            "match_mode": "exact",
+            "query_mode": "evidence",
+            "score": 0.0,
+            "source_commit": "94bc0feb6a9ff12c7d31d6de640a725c9d43d2b6",
+            "source_end_line": 30785,
+            "source_id": "openai-ten-proofs-metric-codes",
+            "source_path": "MetricCodes.lean",
+            "source_row_id": "src:MetricCodes.lean:30687:30785",
+            "source_start_line": 30687
+          }
+        ],
+        "lexical_status": "FOUND",
+        "query": "lean:SpherePacking.finiteGramCertificate_sphericalCode_bound",
+        "query_mode": "evidence",
+        "searched_corpora": 1,
+        "source_filter": "openai-ten-proofs-metric-codes",
+        "status": "FOUND",
+        "unavailable": [],
+        "unavailable_corpora": 0
+      }
+    }
+  ]
+}
